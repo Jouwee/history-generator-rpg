@@ -48,6 +48,7 @@ struct Person<'a> {
     death: u32,
     culture: &'a CulturePrefab,
     spouse: Option<Box<Person<'a>>>,
+    heirs: Vec<Box<Person<'a>>>,
     leader: bool
 }
 
@@ -260,6 +261,15 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
                 events.push(Event::Marriage(year, person.clone(), spouse.clone()));
             }
 
+            if age > 18.0 && person.spouse.is_some() && rng.rand_chance(0.1) {
+                let mut child = generate_person(seed, year, person.culture);
+
+                events.push(Event::PersonBorn(year, child.clone()));
+                person.heirs.push(Box::new(child));
+                // TODO: Now I need references...
+                //new_people.push(child);
+            }
+
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
 
                 let region = regions[rng.randu_range(0, regions.len())];
@@ -374,6 +384,7 @@ fn generate_person<'a>(seed: u32, birth_year: u32, culture: &'a CulturePrefab) -
         culture,
         death: 0,
         spouse: None,
+        heirs: Vec::new(),
         leader: false
     }
 }
