@@ -1,13 +1,23 @@
 use std::{cmp, collections::HashMap, io};
 use commons::rng::Rng;
 
-
 pub mod commons;
 
-struct CulturePrefab {
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+struct PersonId(i32);
+
+impl PersonId {
+    pub fn next(&mut self) -> PersonId {
+        let clone = self.clone();
+        self.0 = self.0 + 1;
+        clone
+    }
+}
+
+struct CulturePrefab<'a> {
     name: String,
     language: LanguagePrefab,
-    names: Vec<String>
+    names: Vec<&'a str>
 }
 
 struct LanguagePrefab {
@@ -25,7 +35,7 @@ struct RegionPrefab {
 struct VillageEncyclopedia<'a> {
     name: String,
     founding_year: u32,
-    culture: &'a CulturePrefab,
+    culture: &'a CulturePrefab<'a>,
     region: &'a RegionPrefab,
     allies: Vec<&'a VillageEncyclopedia<'a>>,
     enemies: Vec<&'a VillageEncyclopedia<'a>>,
@@ -33,7 +43,7 @@ struct VillageEncyclopedia<'a> {
 
 struct WorldGraph<'a> {
     nodes: Vec<WorldGraphNode<'a>>,
-    people: Vec<Person<'a>>,
+    people: HashMap<PersonId, Person<'a>>,
     events: Vec<Event<'a>>
 }
 
@@ -43,20 +53,22 @@ enum WorldGraphNode<'a> {
 
 #[derive(Clone)]
 struct Person<'a> {
+    id: PersonId,
     name: String,
     birth: u32,
     death: u32,
-    culture: &'a CulturePrefab,
-    spouse: Option<Box<Person<'a>>>,
-    heirs: Vec<Box<Person<'a>>>,
+    culture: &'a CulturePrefab<'a>,
+    spouse: Option<PersonId>,
+    heirs: Vec<PersonId>,
     leader: bool
 }
 
 enum Event<'a> {
-    PersonBorn(u32, Person<'a>),
-    PersonDeath(u32, Person<'a>),
-    Marriage(u32, Person<'a>, Person<'a>),
-    VillageFounded(u32, VillageEncyclopedia<'a>, Person<'a>)
+    PersonBorn(u32, PersonId),
+    PersonDeath(u32, PersonId),
+    Marriage(u32, PersonId, PersonId),
+    Inheritance(u32, PersonId, PersonId),
+    VillageFounded(u32, VillageEncyclopedia<'a>, PersonId)
 }
 
 fn main() {
@@ -79,16 +91,16 @@ fn main() {
             ])
         },
         names: vec!(
-            String::from("Brefdemar Bog-Dawn"),
-            String::from("Kjarkmar Maiden-Pommel"),
-            String::from("Norratr Bog-Crusher"),
-            String::from("Berami Hammer-Shield"),
-            String::from("Holmis Blackthorn"),
-            String::from("Batorolf Whitemane"),
-            String::from("Yngokmar the Feeble"),
-            String::from("Kverlam Hahranssen"),
-            String::from("Belehl Hararikssen"),
-            String::from("Gisljof Fanrarikesen")
+            "Brefdemar Bog-Dawn",
+            "Kjarkmar Maiden-Pommel",
+            "Norratr Bog-Crusher",
+            "Berami Hammer-Shield",
+            "Holmis Blackthorn",
+            "Batorolf Whitemane",
+            "Yngokmar the Feeble",
+            "Kverlam Hahranssen",
+            "Belehl Hararikssen",
+            "Gisljof Fanrarikesen"
         )
     };
 
@@ -110,16 +122,16 @@ fn main() {
             ])
         },
         names: vec!(
-            String::from("Arababa"),
-            String::from("Qa'asi"),
-            String::from("J'rji"),
-            String::from("Nisaravi"),
-            String::from("Shavrasha"),
-            String::from("Kisi Rojstahe"),
-            String::from("Zahleena Xatannil"),
-            String::from("Ahjiuki Ahjbes"),
-            String::from("Yusadhi Rahkhan"),
-            String::from("Shivrri Karabi")
+            "Arababa",
+            "Qa'asi",
+            "J'rji",
+            "Nisaravi",
+            "Shavrasha",
+            "Kisi Rojstahe",
+            "Zahleena Xatannil",
+            "Ahjiuki Ahjbes",
+            "Yusadhi Rahkhan",
+            "Shivrri Karabi"
         )
     };
 
@@ -184,10 +196,11 @@ fn main() {
 
         for event in world.events.iter() {
             match event {
-                Event::PersonBorn(year, person) => anals.push(format!("In {}, {} was born", year, person.name)),
-                Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, person.name)),
-                Event::VillageFounded(year, village, person) => anals.push(format!("In {}, {} found the city of {}", year, person.name, village.name)),
-                Event::Marriage(year, person_a, person_b) => anals.push(format!("In {}, {} and {} married", year, person_a.name, person_b.name)),
+                Event::PersonBorn(year, person) => anals.push(format!("In {}, {} was born", year, world.people.get(person).unwrap().name)),
+                Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name)),
+                Event::VillageFounded(year, village, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name, village.name)),
+                Event::Marriage(year, person_a, person_b) => anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
+                Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
             }
             
         }
@@ -214,21 +227,22 @@ struct VillageSimulationData {
 fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab>, regions: Vec<&'a RegionPrefab>) -> WorldGraph<'a> {
     let mut year: u32 = 1;
     let mut nodes: Vec<WorldGraphNode> = Vec::new();
-    let mut people: Vec<Person> = Vec::new();
+    let mut people: HashMap<PersonId, Person> = HashMap::new();
 
     let mut events: Vec<Event> = Vec::new();
     let mut node_simulation: Vec<VillageSimulationData> = Vec::new();
 
     let mut rng = Rng::new(seed);
 
+    let mut id = PersonId(0);
+
     // Generate starter people
     for i in 0..10 {
         let culture = cultures[rng.randu_range(0, cultures.len())];
-        let person = generate_person(seed + i, year, culture);
-        people.push(person.clone());
-        events.push(Event::PersonBorn(year, person.clone()));
+        let person = generate_person(seed + i, id.next(), year, culture);
+        events.push(Event::PersonBorn(year, person.id));
+        people.insert(person.id, person);
     }
-
 
     loop {
         year = year + 1;
@@ -238,7 +252,8 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
         let mut new_people: Vec<Person> = Vec::new();
 
-        for person in people.iter_mut() {
+        // TODO: Rethink this. Can't read and modify people at the same time. My current approach doesn't allow two modifications for the same person in the same year
+        for (_, person) in people.iter() {
             // TODO: More performant approach
             if person.death > 0 {
                 continue
@@ -246,28 +261,49 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
             let age = (year - person.birth) as f32;
             if rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
+                let mut person = person.clone();
                 person.death = year;
-                events.push(Event::PersonDeath(year, person.clone()));
+                events.push(Event::PersonDeath(year, person.id));
+                if let Some(spouse) = person.spouse {
+                    let mut spouse = people.get(&spouse).unwrap().clone();
+                    spouse.spouse = None;
+                    new_people.push(spouse);    
+                }
+
+                if person.leader {
+                    if let Some(heir_id) = person.heirs.first() {
+                        let mut heir = people.get(&heir_id).unwrap().clone();
+                        // TODO: Leader of what?
+                        heir.leader = true;
+                        events.push(Event::Inheritance(year, person.id, heir.id));
+                        new_people.push(heir);    
+                    }
+                }
+
+                new_people.push(person);
+
                 continue
             }
 
             if age > 18.0 && person.spouse.is_none() && rng.rand_chance(0.1) {
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
-                let mut spouse = generate_person(seed, spouse_birth_year, person.culture);
-                spouse.spouse = Some(Box::new(person.clone()));
-                person.spouse = Some(Box::new(spouse.clone()));
+                let mut spouse = generate_person(seed, id.next(), spouse_birth_year, person.culture);
+                let mut person = person.clone();
+                spouse.spouse = Some(person.id);
+                person.spouse = Some(spouse.id);
+                events.push(Event::Marriage(year, person.id, spouse.id));
+                new_people.push(person);
                 new_people.push(spouse.clone());
-                events.push(Event::Marriage(year, person.clone(), spouse.clone()));
             }
 
-            if age > 18.0 && person.spouse.is_some() && rng.rand_chance(0.1) {
-                let mut child = generate_person(seed, year, person.culture);
-
-                events.push(Event::PersonBorn(year, child.clone()));
-                person.heirs.push(Box::new(child));
-                // TODO: Now I need references...
-                //new_people.push(child);
+            if age > 18.0 && person.spouse.is_some() && rng.rand_chance(0.01) {
+                let child = generate_person(seed, id.next(), year, person.culture);
+                events.push(Event::PersonBorn(year, child.id));
+                let mut person = person.clone();
+                person.heirs.push(child.id);
+                new_people.push(child);
+                new_people.push(person);
             }
 
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
@@ -276,11 +312,12 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
                 let village = generate_village_encyclopedia(seed, year, person.culture, region);
                 
-                // TODO: Ideally this would be a reference, but I can't figure out how to do it
-                events.push(Event::VillageFounded(year, village.clone(), person.clone()));
+                events.push(Event::VillageFounded(year, village.clone(), person.id));
                 nodes.push(WorldGraphNode::Village(village));
 
+                let mut person = person.clone();
                 person.leader = true;
+                new_people.push(person);
                 
                 node_simulation.push(VillageSimulationData {
                     farmers: 30.0,
@@ -296,7 +333,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         }
 
         for new_person in new_people {
-            people.push(new_person)
+            people.insert(new_person.id, new_person);
         }
 
         
@@ -316,7 +353,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
     return WorldGraph {
         nodes: Vec::from(nodes),
-        people: Vec::from(people),
+        people: HashMap::from(people),
         events: Vec::from(events)
     }
 }
@@ -375,11 +412,10 @@ fn simulate_village_year(seed: u32, village: &VillageEncyclopedia, simulation: &
 
 }
 
-fn generate_person<'a>(seed: u32, birth_year: u32, culture: &'a CulturePrefab) -> Person<'a> {
-    let mut rng = Rng::new(seed);
+fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, culture: &'a CulturePrefab) -> Person<'a> {
     return Person {
-        // TODO: Markov chains: https://www.samcodes.co.uk/project/markov-namegen/
-        name: culture.names[rng.randu_range(0, culture.name.len())].clone(),
+        id: next_id,
+        name: generate_name(seed + next_id.0 as u32, culture.names.clone()),
         birth: birth_year,
         culture,
         death: 0,
@@ -387,6 +423,48 @@ fn generate_person<'a>(seed: u32, birth_year: u32, culture: &'a CulturePrefab) -
         heirs: Vec::new(),
         leader: false
     }
+}
+
+fn generate_name(seed: u32, possible_names: Vec<&str>) -> String {
+    // TODO: This is an extremely inneficient and stupid Markov Chain-like algorithm.
+    // TODO: Markov chains: https://www.samcodes.co.uk/project/markov-namegen/
+    let mut rng = Rng::new(seed);
+
+    let mut name = String::from("");
+
+    let mut char = '^';
+
+    for _ in 0..15 {
+        let mut probabilities: Vec<char> = Vec::new();
+        for p in possible_names.iter() {
+            if char == '^' {
+                probabilities.push((*p).chars().next().unwrap());
+            } else {
+                let mut prev = '^';
+                for c in (*p).chars() {
+                    if prev.to_ascii_lowercase() == char.to_ascii_lowercase() {
+                        probabilities.push(c.to_ascii_lowercase())
+                    }
+                    prev = c;
+                }
+                let c = '$';
+                if prev.to_ascii_lowercase() == char.to_ascii_lowercase() {
+                    probabilities.push(c.to_ascii_lowercase())
+                }
+            }
+        }
+        if probabilities.len() == 0 {
+            break;
+        }
+        char = probabilities[rng.randu_range(0, probabilities.len())];
+        if char == '$' {
+            break
+        }
+        name.push(char);
+    }
+
+
+    return name;
 }
 
 fn generate_village_encyclopedia<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, region: &'a RegionPrefab) -> VillageEncyclopedia<'a> {
