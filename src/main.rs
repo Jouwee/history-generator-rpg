@@ -138,6 +138,11 @@ enum Event<'a> {
 }
 
 fn main() {
+
+    use std::time::Instant;
+    let now = Instant::now();
+
+
     let seed: u32 = 123456;
     let nords = CulturePrefab {
         name: String::from("Nords"),
@@ -300,8 +305,11 @@ fn main() {
         },
     );
 
+    let elapsed = now.elapsed();
 
-    use std::time::Instant;
+    println!("");
+    println!("Models created in {:.2?}", elapsed);
+
     let now = Instant::now();
 
     let world = generate_world(seed, 200, vec!(&nords, &khajit), &regions);
@@ -339,9 +347,9 @@ fn main() {
         }
 
         for gospel in anals {
-            // if filter.len() == 0 || gospel.contains(&filter) {
+            if filter.len() == 0 || gospel.contains(&filter) {
                 println!("{}", gospel);
-            // }
+            }
         }
 
     }
@@ -492,8 +500,8 @@ fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, sex: Perso
 fn generate_name<'a>(seed: u32, sex: &PersonSex, culture: &'a CulturePrefab) -> String {
     let first_name;
     match sex {
-        PersonSex::Male => first_name = culture.first_name_male_model.generate(seed, 4, 15),
-        PersonSex::Female => first_name = culture.first_name_female_model.generate(seed, 4, 15)
+        PersonSex::Male => first_name = culture.first_name_male_model.generate(seed + 13, 4, 15),
+        PersonSex::Female => first_name = culture.first_name_female_model.generate(seed + 17, 4, 15)
     }
     let first_name = Strings::capitalize(&first_name);
     let last_name = Strings::capitalize(&culture.last_name_model.generate(seed, 4, 15));
