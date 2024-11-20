@@ -1,10 +1,24 @@
-use std::{cmp, collections::HashMap, io};
-use commons::rng::Rng;
+use std::{collections::HashMap, io, vec};
+use colored::Colorize;
+use commons::rng::{self, Rng};
+use noise::{NoiseFn, Perlin};
 
 pub mod commons;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 struct PersonId(i32);
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+struct Point(usize, usize);
+
+impl Point {
+
+    pub fn dist_squared(&self, another: &Point) -> f32 {
+        let x = another.0 as f32 - self.0 as f32;
+        let y = another.1 as f32 - self.1 as f32;
+        return x*x + y*y
+    }
+}
 
 impl PersonId {
     pub fn next(&mut self) -> PersonId {
@@ -25,20 +39,22 @@ struct LanguagePrefab {
 }
 
 
+#[derive(Debug)]
 struct RegionPrefab {
     name: String,
+    elevation: (u8, u8),
+    temperature: (u8, u8),
     fauna: Vec<String>,
     flora: Vec<String>,
 }
 
 #[derive(Clone)]
-struct VillageEncyclopedia<'a> {
+struct Settlement<'a> {
+    xy: Point,
     name: String,
     founding_year: u32,
     culture: &'a CulturePrefab<'a>,
-    region: &'a RegionPrefab,
-    allies: Vec<&'a VillageEncyclopedia<'a>>,
-    enemies: Vec<&'a VillageEncyclopedia<'a>>,
+    region_id: usize,
 }
 
 struct WorldGraph<'a> {
@@ -48,7 +64,37 @@ struct WorldGraph<'a> {
 }
 
 enum WorldGraphNode<'a> {
-    Village(VillageEncyclopedia<'a>)
+    SettlementNode(Settlement<'a>)
+}
+
+const WORLD_MAP_HEIGHT: usize = 64;
+const WORLD_MAP_WIDTH: usize = 64;
+
+struct WorldMap {
+    elevation: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+    temperature: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+    region_id: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH]
+}
+
+impl WorldMap {
+
+    pub fn get_world_tile(&self, x: usize, y: usize) -> WorldTileData {
+        let i = (y * WORLD_MAP_WIDTH) + x;
+        return WorldTileData {
+            xy: Point(x, y),
+            elevation: self.elevation[i],
+            temperature: self.temperature[i],
+            region_id: self.region_id[i],
+        }
+    }
+
+}
+
+struct WorldTileData {
+    xy: Point,
+    elevation: u8,
+    temperature: u8,
+    region_id: u8
 }
 
 #[derive(Clone)]
@@ -68,7 +114,7 @@ enum Event<'a> {
     PersonDeath(u32, PersonId),
     Marriage(u32, PersonId, PersonId),
     Inheritance(u32, PersonId, PersonId),
-    VillageFounded(u32, VillageEncyclopedia<'a>, PersonId)
+    SettlementFounded(u32, Settlement<'a>, PersonId)
 }
 
 fn main() {
@@ -83,11 +129,15 @@ fn main() {
                 (String::from("boar"), String::from("vevel")),
                 (String::from("fortress"), String::from("stad")),
                 (String::from("sea"), String::from("so")),
-                (String::from("port"), String::from("por")),
+                (String::from("port"), String::from("pør")),
                 (String::from("fish"), String::from("fisk")),
                 (String::from("whale"), String::from("vale")),
                 (String::from("kelp"), String::from("kjel")),
                 (String::from("coral"), String::from("krall")),
+                (String::from("scorpion"), String::from("skør")),
+                (String::from("vulture"), String::from("vøl")),
+                (String::from("cactus"), String::from("kak")),
+                (String::from("palm"), String::from("pølm")),
             ])
         },
         names: vec!(
@@ -119,6 +169,10 @@ fn main() {
                 (String::from("coral"), String::from("fal")),
                 (String::from("fortress"), String::from("'kanash")),
                 (String::from("port"), String::from("'kapor")),
+                (String::from("scorpion"), String::from("sacrah")),
+                (String::from("vulture"), String::from("va'al")),
+                (String::from("cactus"), String::from("kazh")),
+                (String::from("palm"), String::from("pahz")),
             ])
         },
         names: vec!(
@@ -135,41 +189,56 @@ fn main() {
         )
     };
 
-    let coastal = RegionPrefab {
-        name: String::from("Coastal"),
-        fauna: Vec::from([
-            String::from("whale"),
-            String::from("fish")
-        ]),
-        flora: Vec::from([
-            String::from("kelp"),
-            String::from("coral")
-        ])
-    };
-
-    let forest = RegionPrefab {
-        name: String::from("Forest"),
-        fauna: Vec::from([
-            String::from("elk"),
-            String::from("boar")
-        ]),
-        flora: Vec::from([
-            String::from("pine"),
-            String::from("birch")
-        ])
-    };
+    let regions = vec!(
+        RegionPrefab {
+            name: String::from("Coastal"),
+            elevation: (0, 0),
+            temperature: (0, 5),
+            fauna: Vec::from([
+                String::from("whale"),
+                String::from("fish")
+            ]),
+            flora: Vec::from([
+                String::from("kelp"),
+                String::from("coral")
+            ])
+        },
+        RegionPrefab {
+            name: String::from("Forest"),
+            elevation: (1, 5),
+            temperature: (0, 3),
+            fauna: Vec::from([
+                String::from("elk"),
+                String::from("boar")
+            ]),
+            flora: Vec::from([
+                String::from("pine"),
+                String::from("birch")
+            ])
+        },
+        RegionPrefab {
+            name: String::from("Desert"),
+            elevation: (1, 5),
+            temperature: (4, 5),
+            fauna: Vec::from([
+                String::from("scorpion"),
+                String::from("vulture")
+            ]),
+            flora: Vec::from([
+                String::from("cactus"),
+                String::from("palm")
+            ])
+        },
+    );
 
 
     use std::time::Instant;
     let now = Instant::now();
 
-    let world = generate_world(seed, 200, vec!(&nords, &khajit), vec!(&coastal, &forest));
-
-    // let village = generate_village_encyclopedia(seed, &culture, &region);
+    let world = generate_world(seed, 200, vec!(&nords, &khajit), &regions);
 
     let elapsed = now.elapsed();
 
-    //display_village(village);
     println!("");
     println!("World generated in {:.2?}", elapsed);
 
@@ -185,11 +254,6 @@ fn main() {
 
         filter = filter.trim().to_string();
 
-        // for node in world.nodes {
-        //     match node {
-        //         WorldGraphNode::Village(village) => display_village(&village)
-        //     }
-        // }
         println!();
 
         let mut anals: Vec<String> = Vec::new();
@@ -198,7 +262,7 @@ fn main() {
             match event {
                 Event::PersonBorn(year, person) => anals.push(format!("In {}, {} was born", year, world.people.get(person).unwrap().name)),
                 Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name)),
-                Event::VillageFounded(year, village, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name, village.name)),
+                Event::SettlementFounded(year, settlement, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name, settlement.name)),
                 Event::Marriage(year, person_a, person_b) => anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
                 Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
             }
@@ -214,23 +278,17 @@ fn main() {
     }
 }
 
-#[derive(Debug)]
-struct VillageSimulationData {
-    farmers: f32,
-    extractors: f32,
-    industry: f32,
-    army: f32,
-    food: f32,
-    money: f32,
-}
-
-fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab>, regions: Vec<&'a RegionPrefab>) -> WorldGraph<'a> {
+fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab>, regions: &'a Vec<RegionPrefab>) -> WorldGraph<'a> {
     let mut year: u32 = 1;
-    let mut nodes: Vec<WorldGraphNode> = Vec::new();
     let mut people: HashMap<PersonId, Person> = HashMap::new();
+    let mut world_graph = WorldGraph {
+        nodes: vec!(),
+        people: HashMap::new(),
+        events: vec!()
+    };
+    let world_map = generate_world_map(seed, regions);
 
     let mut events: Vec<Event> = Vec::new();
-    let mut node_simulation: Vec<VillageSimulationData> = Vec::new();
 
     let mut rng = Rng::new(seed);
 
@@ -249,6 +307,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         if year > world_age {
             break;
         }
+        print_world_map(&world_graph, &world_map);
 
         let mut new_people: Vec<Person> = Vec::new();
 
@@ -308,26 +367,15 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
 
-                let region = regions[rng.randu_range(0, regions.len())];
-
-                let village = generate_village_encyclopedia(seed, year, person.culture, region);
+                let settlement = generate_settlement(seed, year, person.culture, &world_graph, &world_map, regions);
                 
-                events.push(Event::VillageFounded(year, village.clone(), person.id));
-                nodes.push(WorldGraphNode::Village(village));
+                events.push(Event::SettlementFounded(year, settlement.clone(), person.id));
+                world_graph.nodes.push(WorldGraphNode::SettlementNode(settlement));
 
                 let mut person = person.clone();
                 person.leader = true;
                 new_people.push(person);
                 
-                node_simulation.push(VillageSimulationData {
-                    farmers: 30.0,
-                    extractors: 10.0,
-                    industry: 5.0,
-                    army: 5.0,
-                    food: 50.0,
-                    money: 0.0
-                });
-
             }
 
         }
@@ -336,80 +384,9 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
             people.insert(new_person.id, new_person);
         }
 
-        
-
-        for i in 0..nodes.len() {
-            let node = &nodes[i];
-            match node {
-                // TODO: This will break if node is not village - Vectors mismatch
-                WorldGraphNode::Village(village) => simulate_village_year(seed, &village, &mut node_simulation[i])
-            }
-            
-        }
-
     }
 
-    // println!("{:?}", node_simulation);
-
-    return WorldGraph {
-        nodes: Vec::from(nodes),
-        people: HashMap::from(people),
-        events: Vec::from(events)
-    }
-}
-
-fn simulate_village_year(seed: u32, village: &VillageEncyclopedia, simulation: &mut VillageSimulationData) {
-
-    let total_population = simulation.farmers + simulation.extractors + simulation.industry + simulation.army;
-
-    // TODO: random from region
-    simulation.food += simulation.farmers * 2.0;
-    simulation.food -= (simulation.farmers * 1.0) + (simulation.extractors * 1.0) + (simulation.industry * 1.1) + (simulation.army * 1.2);
-
-    simulation.money += simulation.industry;
-    simulation.money -= simulation.army * 0.2;
-
-    // Buy food if necessary
-    if simulation.food < 0.0 {
-        let can_buy = simulation.money * 10.0;
-        let need_to_buy = -simulation.food;
-        if can_buy < need_to_buy {
-            simulation.food += can_buy;
-            simulation.money = 0.0;
-        } else {
-            simulation.food += need_to_buy;
-            simulation.money -= need_to_buy / 10.0;
-        }
-    }
-
-    if simulation.food > 0.0 {
-        // TODO: IDK, some logic on culture precepts? Or whats missing?
-        let growth = 1.05;
-        simulation.farmers = simulation.farmers * growth;
-        simulation.extractors = simulation.extractors * growth;
-        simulation.industry = simulation.industry * growth;
-        simulation.army = simulation.army * growth;
-
-        // simulation.population = simulation.population * 1.1;
-    } else {
-
-        let starvation = simulation.food / total_population;
-
-        simulation.farmers = simulation.farmers * starvation;
-        simulation.extractors = simulation.extractors * starvation;
-        simulation.industry = simulation.industry * starvation;
-        simulation.army = simulation.army * starvation;
-
-        simulation.food = 0.0;
-    }
-
-    let death_rate = 0.98;
-    simulation.farmers = simulation.farmers * death_rate;
-    simulation.extractors = simulation.extractors * death_rate;
-    simulation.industry = simulation.industry * death_rate;
-    simulation.army = simulation.army * death_rate;
-
-
+    return world_graph
 }
 
 fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, culture: &'a CulturePrefab) -> Person<'a> {
@@ -467,15 +444,31 @@ fn generate_name(seed: u32, possible_names: Vec<&str>) -> String {
     return name;
 }
 
-fn generate_village_encyclopedia<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, region: &'a RegionPrefab) -> VillageEncyclopedia<'a> {
+fn generate_settlement<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &'a Vec<RegionPrefab>) -> Settlement<'a> {
     let seed = seed + founding_year as u32;
-    return VillageEncyclopedia {
+    let mut rng = Rng::new(seed);
+    let mut xy;
+    'candidates: loop {
+        xy = Point(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
+        for node in world_graph.nodes.iter() {
+            match node {
+                WorldGraphNode::SettlementNode(settlement) => {
+                    if settlement.xy.dist_squared(&xy) < 5.0_f32.powi(2) {
+                        continue 'candidates;
+                    }
+                }
+            }
+        }
+        break;
+    }
+    let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
+    let region = regions.get(region_id).unwrap();
+    return Settlement {
+        xy, 
         name: String::from(generate_location_name(seed, culture, region)),
         founding_year: founding_year,
         culture: culture,
-        region: region,
-        allies: vec!(),
-        enemies: vec!()
+        region_id,
     };
 }
 
@@ -499,13 +492,90 @@ fn generate_location_name(seed: u32, culture: &CulturePrefab, region: &RegionPre
         }
     }
     // TODO: Fallback to something
-    return String::from("Village")
+    return String::from("Settlement")
 }
 
-fn display_village(village: &VillageEncyclopedia) {
-    println!("");
-    println!("Village of {}", village.name);
-    println!("--------------");
+fn generate_world_map(seed: u32, regions: &Vec<RegionPrefab>) -> WorldMap {
+    let mut map = WorldMap {
+        elevation: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+        temperature: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+        region_id: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+    };
+    let n_elev = Perlin::new(seed + 37);
+    let n_temp = Perlin::new(seed + 101);
+    let n_reg = Perlin::new(seed + 537);
+    for y in 0..WORLD_MAP_HEIGHT {
+        for x in 0..WORLD_MAP_WIDTH {
+            let i = (y * WORLD_MAP_WIDTH) + x;
+            let xf = x as f64;
+            let yf = y as f64;
+            {
+                let low = n_elev.get([xf / 10.0, yf / 10.0]);
+                let med = n_elev.get([xf / 4.0, yf / 4.0]);
+                map.elevation[i] = ((1.0+low+med) / 4.0 * 5.0) as u8;
+            }
+            {
+                let low = n_temp.get([xf / 10.0, yf / 10.0]);
+                // let med = n_temp.get([xf / 4.0, yf / 4.0]);
+                map.temperature[i] = (low * 5.0) as u8;
+            }
+            {
+                let mut region_candidates: Vec<u8> = Vec::new();
+                for (j, region) in regions.iter().enumerate() {
+                    if map.elevation[i] >= region.elevation.0 && map.elevation[i] <= region.elevation.1 && map.temperature[i] >= region.temperature.0 && map.temperature[i] <= region.temperature.1 {
+                        region_candidates.push(j as u8);
+                    }
+                }
+                match region_candidates.len() {
+                    0 => panic!("No region candidate for elevation {} and temperature {}", map.elevation[i], map.temperature[i]),
+                    1 => map.region_id[i] = region_candidates.pop().expect("Already checked"),
+                    _ => {
+                        let noise = n_reg.get([xf / 10.0, yf / 10.0]);
+                        map.region_id[i] = region_candidates[(noise * region_candidates.len() as f64) as usize];
+                    }
+                }
+            }
+        }
+    }
+    return map;
+}
 
-    println!("The {} village of {} was funded in the year {} by the {}.", village.region.name, village.name, village.founding_year, village.culture.name);
+fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
+    println!("--------------------------------------------------------------------------------------------------------------------------------");
+    for y in 0..WORLD_MAP_HEIGHT {
+        for x in 0..WORLD_MAP_WIDTH {
+            let tile = world_map.get_world_tile(x, y);
+            let mut string;
+            match tile.elevation {
+                0 => string = String::from(" ,"),
+                1 => string = String::from(", "),
+                2 => string = String::from("--"),
+                3 => string = String::from("++"),
+                4 => string = String::from("##"),
+                _ => string = String::from("??")
+            }
+
+            for node in world_graph.nodes.iter() {
+                match node {
+                    WorldGraphNode::SettlementNode(settlement) => {
+                        if settlement.xy.0 == x && settlement.xy.1 == y {
+                            string = String::from("@");
+                        }
+                    }
+                }
+            }
+
+            let colored_string;
+            match tile.elevation {
+                0 => colored_string = string.blue(),
+                1 => colored_string = string.green(),
+                2 => colored_string = string.yellow(),
+                3 => colored_string = string.white(),
+                4 => colored_string = string.white(),
+                _ => colored_string = string.white()
+            }
+            print!("{}", colored_string);
+        }
+        println!("")
+    }
 }
