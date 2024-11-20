@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io, vec};
 use colored::Colorize;
-use commons::rng::{self, Rng};
+use commons::{markovchains::MarkovChainSingleWordModel, rng::{self, Rng}, strings::Strings};
 use noise::{NoiseFn, Perlin};
 
 pub mod commons;
@@ -28,10 +28,12 @@ impl PersonId {
     }
 }
 
-struct CulturePrefab<'a> {
+struct CulturePrefab {
     name: String,
     language: LanguagePrefab,
-    names: Vec<&'a str>
+    first_name_male_model: MarkovChainSingleWordModel,
+    first_name_female_model: MarkovChainSingleWordModel,
+    last_name_model: MarkovChainSingleWordModel,
 }
 
 struct LanguagePrefab {
@@ -53,7 +55,7 @@ struct Settlement<'a> {
     xy: Point,
     name: String,
     founding_year: u32,
-    culture: &'a CulturePrefab<'a>,
+    culture: &'a CulturePrefab,
     region_id: usize,
 }
 
@@ -98,12 +100,30 @@ struct WorldTileData {
 }
 
 #[derive(Clone)]
+enum PersonSex {
+    Male,
+    Female
+}
+
+impl PersonSex {
+
+    fn opposite(&self) -> PersonSex {
+        match self {
+            PersonSex::Male => return PersonSex::Female,
+            PersonSex::Female => return PersonSex::Male,
+        }
+    }
+
+}
+
+#[derive(Clone)]
 struct Person<'a> {
     id: PersonId,
     name: String,
     birth: u32,
+    sex: PersonSex,
     death: u32,
-    culture: &'a CulturePrefab<'a>,
+    culture: &'a CulturePrefab,
     spouse: Option<PersonId>,
     heirs: Vec<PersonId>,
     leader: bool
@@ -140,18 +160,70 @@ fn main() {
                 (String::from("palm"), String::from("pølm")),
             ])
         },
-        names: vec!(
-            "Brefdemar Bog-Dawn",
-            "Kjarkmar Maiden-Pommel",
-            "Norratr Bog-Crusher",
-            "Berami Hammer-Shield",
-            "Holmis Blackthorn",
-            "Batorolf Whitemane",
-            "Yngokmar the Feeble",
-            "Kverlam Hahranssen",
-            "Belehl Hararikssen",
-            "Gisljof Fanrarikesen"
-        )
+        first_name_male_model: MarkovChainSingleWordModel::train(vec!(
+            "Alald", "Alan", "Alar", "Alarik", "Alarke", "Alarne", "Aleld", "Alen", "Alens",
+            "Aler", "Alik", "Alis", "Alorn", "Asgald", "Asgan", "Asgar", "Asgarik", "Asgarke",
+            "Asgarne", "Asgeld", "Asgen", "Asgens", "Asger", "Asgik", "Asgis", "Asgorn", "Bjald",
+            "Bjan", "Bjar", "Bjarik", "Bjarke", "Bjarne", "Bjeld", "Bjen", "Bjens", "Bjer",
+            "Bjik", "Bjis", "Bjorn", "Erald", "Eran", "Erar", "Erarik", "Erarke", "Erarne",
+            "Ereld", "Eren", "Erens", "Erer", "Erik", "Eris", "Erorn", "Fenrald", "Fenran",
+            "Fenrar", "Fenrarik", "Fenrarke", "Fenrarne", "Fenreld", "Fenren", "Fenrens",
+            "Fenrer", "Fenrik", "Fenris", "Fenrorn", "Harald", "Haran", "Harar", "Hararik", 
+            "Hararke", "Hararne", "Hareld", "Haren", "Harens", "Harer", "Harik", "Haris", 
+            "Harorn", "Ingmald", "Ingman", "Ingmar", "Ingmarik", "Ingmarke", "Ingmarne", 
+            "Ingmeld", "Ingmen", "Ingmens", "Ingmer", "Ingmik", "Ingmis", "Ingmorn", "Jurgald", 
+            "Jurgan", "Jurgar", "Jurgarik", "Jurgarke", "Jurgarne", "Jurgeld", "Jurgen", 
+            "Jurgens", "Jurger", "Jurgik", "Jurgis", "Jurgorn", "Kjald", "Kjan", "Kjar", "Kjarik", 
+            "Kjarke", "Kjarne", "Kjeld", "Kjen", "Kjens", "Kjer", "Kjik", "Kjis", "Kjorn", "Mojald", 
+            "Mojan", "Mojar", "Mojarik", "Mojarke", "Mojarne", "Mojeld", "Mojen", "Mojens", "Mojer", 
+            "Mojik", "Mojis", "Mojorn", "Sorald", "Soran", "Sorar", "Sorarik", "Sorarke", "Sorarne", 
+            "Soreld", "Soren", "Sorens", "Sorer", "Sorik", "Soris", "Sororn", "Torbald", "Torban", 
+            "Torbar", "Torbarik", "Torbarke", "Torbarne", "Torbeld", "Torben", "Torbens", "Torber", 
+            "Torbik", "Torbis", "Torborn", "Ulrald", "Ulran", "Ulrar", "Ulrarik", "Ulrarke", 
+            "Ulrarne", "Ulreld", "Ulren", "Ulrens", "Ulrer", "Ulrik", "Ulris", "Ulrorn"
+        ), 3),
+        first_name_female_model: MarkovChainSingleWordModel::train(vec!(
+            "Ana", "Ane", "Anen", "Ania", "Anina", "Anne", "Ante", "Beta", "Bete", "Beten",
+            "Betia", "Betina", "Betne", "Bette", "Dora", "Dore", "Doren", "Doria", "Dorina",
+            "Dorne", "Dorte", "Ella", "Elle", "Ellen", "Ellia", "Ellina", "Ellne", "Ellte",
+            "Hana", "Hane", "Hanen", "Hania", "Hanina", "Hanne", "Hante", "Hella", "Helle",
+            "Hellen", "Hellia", "Hellina", "Hellne", "Hellte", "Inga", "Inge", "Ingen", "Ingia",
+            "Ingina", "Ingne", "Ingte", "Jyta", "Jyte", "Jyten", "Jytia", "Jytina", "Jytne",
+            "Jytte", "Kirsta", "Kirste", "Kirsten", "Kirstia", "Kirstina", "Kirstne", "Kirstte",
+            "Meta", "Mete", "Meten", "Metia", "Metina", "Metne", "Mette", "Morga", "Morge",
+            "Morgen", "Morgia", "Morgina", "Morgne", "Morgte", "Silla", "Sille", "Sillen",
+            "Sillia", "Sillina", "Sillne", "Sillte", "Ulla", "Ulle", "Ullen", "Ullia", "Ullina",
+            "Ullne", "Ullte"
+        ), 3),
+        last_name_model: MarkovChainSingleWordModel::train(vec!(
+            "Alaldsen", "Alansen", "Alarsen", "Alariksen", "Alarkesen", "Alarnesen", "Aleldsen",
+            "Alensen", "Alenssen", "Alersen", "Aliksen", "Alissen", "Alornsen", "Asgaldsen",
+            "Asgansen", "Asgarsen", "Asgariksen", "Asgarkesen", "Asgarnesen", "Asgeldsen",
+            "Asgensen", "Asgenssen", "Asgersen", "Asgiksen", "Asgissen", "Asgornsen",
+            "Bjaldsen", "Bjansen", "Bjarsen", "Bjariksen", "Bjarkesen", "Bjarnesen", "Bjeldsen",
+            "Bjensen", "Bjenssen", "Bjersen", "Bjiksen", "Bjissen", "Bjornsen", "Eraldsen",
+            "Eransen", "Erarsen", "Erariksen", "Erarkesen", "Erarnesen", "Ereldsen", "Erensen",
+            "Erenssen", "Erersen", "Eriksen", "Erissen", "Erornsen", "Fenraldsen", "Fenransen",
+            "Fenrarsen", "Fenrariksen", "Fenrarkesen", "Fenrarnesen", "Fenreldsen", "Fenrensen",
+            "Fenrenssen", "Fenrersen", "Fenriksen", "Fenrissen", "Fenrornsen", "Haraldsen",
+            "Haransen", "Hararsen", "Harariksen", "Hararkesen", "Hararnesen", "Hareldsen",
+            "Harensen", "Harenssen", "Harersen", "Hariksen", "Harissen", "Harornsen",
+            "Ingmaldsen", "Ingmansen", "Ingmarsen", "Ingmariksen", "Ingmarkesen", "Ingmarnesen",
+            "Ingmeldsen", "Ingmensen", "Ingmenssen", "Ingmersen", "Ingmiksen", "Ingmissen",
+            "Ingmornsen", "Jurgaldsen", "Jurgansen", "Jurgarsen", "Jurgariksen", "Jurgarkesen",
+            "Jurgarnesen", "Jurgeldsen", "Jurgensen", "Jurgenssen", "Jurgersen", "Jurgiksen",
+            "Jurgissen", "Jurgornsen", "Kjaldsen", "Kjansen", "Kjarsen", "Kjariksen", "Kjarkesen",
+            "Kjarnesen", "Kjeldsen", "Kjensen", "Kjenssen", "Kjersen", "Kjiksen", "Kjissen",
+            "Kjornsen", "Mojaldsen", "Mojansen", "Mojarsen", "Mojariksen", "Mojarkesen",
+            "Mojarnesen", "Mojeldsen", "Mojensen", "Mojenssen", "Mojersen", "Mojiksen",
+            "Mojissen", "Mojornsen", "Soraldsen", "Soransen", "Sorarsen", "Sorariksen",
+            "Sorarkesen", "Sorarnesen", "Soreldsen", "Sorensen", "Sorenssen", "Sorersen",
+            "Soriksen", "Sorissen", "Sorornsen", "Torbaldsen", "Torbansen", "Torbarsen",
+            "Torbariksen", "Torbarkesen", "Torbarnesen", "Torbeldsen", "Torbensen", "Torbenssen",
+            "Torbersen", "Torbiksen", "Torbissen", "Torbornsen", "Ulraldsen", "Ulransen",
+            "Ulrarsen", "Ulrariksen", "Ulrarkesen", "Ulrarnesen", "Ulreldsen", "Ulrensen",
+            "Ulrenssen", "Ulrersen", "Ulriksen", "Ulrissen", "Ulrornsen"
+        ), 3)
     };
 
     let khajit = CulturePrefab {
@@ -175,18 +247,15 @@ fn main() {
                 (String::from("palm"), String::from("pahz")),
             ])
         },
-        names: vec!(
-            "Arababa",
-            "Qa'asi",
-            "J'rji",
-            "Nisaravi",
-            "Shavrasha",
-            "Kisi Rojstahe",
-            "Zahleena Xatannil",
-            "Ahjiuki Ahjbes",
-            "Yusadhi Rahkhan",
-            "Shivrri Karabi"
-        )
+        first_name_male_model: MarkovChainSingleWordModel::train(vec!(
+            "Ab'ar", "Ab'bar", "Ab'bil", "Ab'der", "Ab'dul", "Ab'gh", "Ab'ir", "Ab'kir", "Ab'med", "Ab'nir", "Ab'noud", "Ab'sien", "Ab'soud", "Ab'taba", "Ab'tabe", "Ab'urabi", "Ak'ar", "Ak'bar", "Ak'bil", "Ak'der", "Ak'dul", "Ak'gh", "Ak'ir", "Ak'kir", "Ak'med", "Ak'nir", "Ak'noud", "Ak'sien", "Ak'soud", "Ak'taba", "Ak'tabe", "Ak'urabi", "Akh'ar", "Akh'bar", "Akh'bil", "Akh'der", "Akh'dul", "Akh'gh", "Akh'ir", "Akh'kir", "Akh'med", "Akh'nir", "Akh'noud", "Akh'sien", "Akh'soud", "Akh'taba", "Akh'tabe", "Akh'urabi", "Amar", "Ambar", "Ambil", "Amder", "Amdul", "Amgh", "Amir", "Amkir", "Ammed", "Amnir", "Amnoud", "Amsien", "Amsoud", "Amtaba", "Amtabe", "Amurabi", "Fa'ar", "Fa'bar", "Fa'bil", "Fa'der", "Fa'dul", "Fa'gh", "Fa'ir", "Fa'kir", "Fa'med", "Fa'nir", "Fa'noud", "Fa'sien", "Fa'soud", "Fa'taba", "Fa'tabe", "Fa'urabi", "Husar", "Husbar", "Husbil", "Husder", "Husdul", "Husgh", "Husir", "Huskir", "Husmed", "Husnir", "Husnoud", "Hussien", "Hussoud", "Hustaba", "Hustabe", "Husurabi", "Moar", "Mobar", "Mobil", "Moder", "Modul", "Mogh", "Moir", "Mokir", "Momed", "Monir", "Monoud", "Mosien", "Mosoud", "Motaba", "Motabe", "Mourabi", "Mohamar", "Mohambar", "Mohambil", "Mohamder", "Mohamdul", "Mohamgh", "Mohamir", "Mohamkir", "Mohammed", "Mohamnir", "Mohamnoud", "Mohamsien", "Mohamsoud", "Mohamtaba", "Mohamtabe", "Mohamurabi", "Mojar", "Mojbar", "Mojbil", "Mojder", "Mojdul", "Mojgh", "Mojir", "Mojkir", "Mojmed", "Mojnir", "Mojnoud", "Mojsien", "Mojsoud", "Mojtaba", "Mojtabe", "Mojurabi", "Naar", "Nabar", "Nabil", "Nader", "Nadul", "Nagh", "Nair", "Nakir", "Named", "Nanir", "Nanoud", "Nasien", "Nasoud", "Nataba", "Natabe", "Naurabi", "Omar", "Ombar", "Ombil", "Omder", "Omdul", "Omgh", "Omir", "Omkir", "Ommed", "Omnir", "Omnoud", "Omsien", "Omsoud", "Omtaba", "Omtabe", "Omurabi", "Shaar", "Shabar", "Shabil", "Shader", "Shadul", "Shagh", "Shair", "Shakir", "Shamed", "Shanir", "Shanoud", "Shasien", "Shasoud", "Shataba", "Shatabe", "Shaurabi", "Sinar", "Sinbar", "Sinbil", "Sinder", "Sindul", "Singh", "Sinir", "Sinkir", "Sinmed", "Sinnir", "Sinnoud", "Sinsien", "Sinsoud", "Sintaba", "Sintabe", "Sinurabi", "Za'ar", "Za'bar", "Za'bil", "Za'der", "Za'dul", "Za'gh", "Za'ir", "Za'kir", "Za'med", "Za'nir", "Za'noud", "Za'sien", "Za'soud", "Za'taba", "Za'tabe", "Za'urabi", "Zan'ar", "Zan'bar", "Zan'bil", "Zan'der", "Zan'dul", "Zan'gh", "Zan'ir", "Zan'kir", "Zan'med", "Zan'nir", "Zan'noud", "Zan'sien", "Zan'soud", "Zan'taba", "Zan'tabe", "Zan'urabi",
+        ), 3),
+        first_name_female_model: MarkovChainSingleWordModel::train(vec!(
+            "Aahin", "Aahni", "Afeliz", "Ahana", "Aheh", "Ahrazad", "Ajjan", "Akhtar", "Anita", "Araya", "Ariba", "Ashima", "Asrin", "Atima", "Azita", "Aziahin", "Aziahni", "Azifeliz", "Azihana", "Aziheh", "Azihrazad", "Azijjan", "Azikhtar", "Azinita", "Aziraya", "Aziriba", "Azishima", "Azisrin", "Azitima", "Azizita", "Elaahin", "Elaahni", "Elafeliz", "Elahana", "Elaheh", "Elahrazad", "Elajjan", "Elakhtar", "Elanita", "Elaraya", "Elariba", "Elashima", "Elasrin", "Elatima", "Elazita", "Faahin", "Faahni", "Fafeliz", "Fahana", "Faheh", "Fahrazad", "Fajjan", "Fakhtar", "Fanita", "Faraya", "Fariba", "Fashima", "Fasrin", "Fatima", "Fazita", "Khaahin", "Khaahni", "Khafeliz", "Khahana", "Khaheh", "Khahrazad", "Khajjan", "Khakhtar", "Khanita", "Kharaya", "Khariba", "Khashima", "Khasrin", "Khatima", "Khazita", "Kiahin", "Kiahni", "Kifeliz", "Kihana", "Kiheh", "Kihrazad", "Kijjan", "Kikhtar", "Kinita", "Kiraya", "Kiriba", "Kishima", "Kisrin", "Kitima", "Kizita", "Moahin", "Moahni", "Mofeliz", "Mohana", "Moheh", "Mohrazad", "Mojjan", "Mokhtar", "Monita", "Moraya", "Moriba", "Moshima", "Mosrin", "Motima", "Mozita", "Naahin", "Naahni", "Nafeliz", "Nahana", "Naheh", "Nahrazad", "Najjan", "Nakhtar", "Nanita", "Naraya", "Nariba", "Nashima", "Nasrin", "Natima", "Nazita", "Raahin", "Raahni", "Rafeliz", "Rahana", "Raheh", "Rahrazad", "Rajjan", "Rakhtar", "Ranita", "Raraya", "Rariba", "Rashima", "Rasrin", "Ratima", "Razita", "Riahin", "Riahni", "Rifeliz", "Rihana", "Riheh", "Rihrazad", "Rijjan", "Rikhtar", "Rinita", "Riraya", "Ririba", "Rishima", "Risrin", "Ritima", "Rizita", "Saahin", "Saahni", "Safeliz", "Sahana", "Saheh", "Sahrazad", "Sajjan", "Sakhtar", "Sanita", "Saraya", "Sariba", "Sashima", "Sasrin", "Satima", "Sazita", "Shaahin", "Shaahni", "Shafeliz", "Shahana", "Shaheh", "Shahrazad", "Shajjan", "Shakhtar", "Shanita", "Sharaya", "Shariba", "Shashima", "Shasrin", "Shatima", "Shazita", "Soahin", "Soahni", "Sofeliz", "Sohana", "Soheh", "Sohrazad", "Sojjan", "Sokhtar", "Sonita", "Soraya", "Soriba", "Soshima", "Sosrin", "Sotima", "Sozita", "Taahin", "Taahni", "Tafeliz", "Tahana", "Taheh", "Tahrazad", "Tajjan", "Takhtar", "Tanita", "Taraya", "Tariba", "Tashima", "Tasrin", "Tatima", "Tazita", "Zaahin", "Zaahni", "Zafeliz", "Zahana", "Zaheh", "Zahrazad", "Zajjan", "Zakhtar", "Zanita", "Zaraya", "Zariba", "Zashima", "Zasrin", "Zatima", "Zazita", 
+        ), 3),
+        last_name_model: MarkovChainSingleWordModel::train(vec!(
+            "Abiri", "Abus", "Adavi", "Ahan", "Ahir", "Akar", "Amanni", "Amnin", "Anai", "Aoni", "Arabi", "Aspoor", "Astae", "Atani", "Avandi", "Barabiri", "Barabus", "Baradavi", "Barahan", "Barahir", "Barakar", "Baramanni", "Baramnin", "Baranai", "Baraoni", "Bararabi", "Baraspoor", "Barastae", "Baratani", "Baravandi", "Hammubiri", "Hammubus", "Hammudavi", "Hammuhan", "Hammuhir", "Hammukar", "Hammumanni", "Hammumnin", "Hammunai", "Hammuoni", "Hammurabi", "Hammuspoor", "Hammustae", "Hammutani", "Hammuvandi", "Jabiri", "Jabus", "Jadavi", "Jahan", "Jahir", "Jakar", "Jamanni", "Jamnin", "Janai", "Jaoni", "Jarabi", "Jaspoor", "Jastae", "Jatani", "Javandi", "Khabiri", "Khabus", "Khadavi", "Khahan", "Khahir", "Khakar", "Khamanni", "Khamnin", "Khanai", "Khaoni", "Kharabi", "Khaspoor", "Khastae", "Khatani", "Khavandi", "Kibiri", "Kibus", "Kidavi", "Kihan", "Kihir", "Kikar", "Kimanni", "Kimnin", "Kinai", "Kioni", "Kirabi", "Kispoor", "Kistae", "Kitani", "Kivandi", "Mahbiri", "Mahbus", "Mahdavi", "Mahhan", "Mahhir", "Mahkar", "Mahmanni", "Mahmnin", "Mahnai", "Mahoni", "Mahrabi", "Mahspoor", "Mahstae", "Mahtani", "Mahvandi", "Raibiri", "Raibus", "Raidavi", "Raihan", "Raihir", "Raikar", "Raimanni", "Raimnin", "Rainai", "Raioni", "Rairabi", "Raispoor", "Raistae", "Raitani", "Raivandi", "Robiri", "Robus", "Rodavi", "Rohan", "Rohir", "Rokar", "Romanni", "Romnin", "Ronai", "Rooni", "Rorabi", "Rospoor", "Rostae", "Rotani", "Rovandi", "Sabiri", "Sabus", "Sadavi", "Sahan", "Sahir", "Sakar", "Samanni", "Samnin", "Sanai", "Saoni", "Sarabi", "Saspoor", "Sastae", "Satani", "Savandi", "Sibiri", "Sibus", "Sidavi", "Sihan", "Sihir", "Sikar", "Simanni", "Simnin", "Sinai", "Sioni", "Sirabi", "Sispoor", "Sistae", "Sitani", "Sivandi", "Solbiri", "Solbus", "Soldavi", "Solhan", "Solhir", "Solkar", "Solmanni", "Solmnin", "Solnai", "Soloni", "Solrabi", "Solspoor", "Solstae", "Soltani", "Solvandi", "Tavakbiri", "Tavakbus", "Tavakdavi", "Tavakhan", "Tavakhir", "Tavakkar", "Tavakmanni", "Tavakmnin", "Tavaknai", "Tavakoni", "Tavakrabi", "Tavakspoor", "Tavakstae", "Tavaktani", "Tavakvandi", "Zabiri", "Zabus", "Zadavi", "Zahan", "Zahir", "Zakar", "Zamanni", "Zamnin", "Zanai", "Zaoni", "Zarabi", "Zaspoor", "Zastae", "Zatani", "Zavandi", 
+        ), 3)
     };
 
     let regions = vec!(
@@ -270,9 +339,9 @@ fn main() {
         }
 
         for gospel in anals {
-            if filter.len() == 0 || gospel.contains(&filter) {
+            // if filter.len() == 0 || gospel.contains(&filter) {
                 println!("{}", gospel);
-            }
+            // }
         }
 
     }
@@ -280,7 +349,6 @@ fn main() {
 
 fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab>, regions: &'a Vec<RegionPrefab>) -> WorldGraph<'a> {
     let mut year: u32 = 1;
-    let mut people: HashMap<PersonId, Person> = HashMap::new();
     let mut world_graph = WorldGraph {
         nodes: vec!(),
         people: HashMap::new(),
@@ -288,18 +356,25 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
     };
     let world_map = generate_world_map(seed, regions);
 
-    let mut events: Vec<Event> = Vec::new();
-
     let mut rng = Rng::new(seed);
 
     let mut id = PersonId(0);
 
     // Generate starter people
-    for i in 0..10 {
+    for _ in 0..10 {
+        let id = id.next();
+        let seed = seed * id.0 as u32;
         let culture = cultures[rng.randu_range(0, cultures.len())];
-        let person = generate_person(seed + i, id.next(), year, culture);
-        events.push(Event::PersonBorn(year, person.id));
-        people.insert(person.id, person);
+        let mut rng = Rng::new(seed);
+        let sex;
+        if rng.rand_chance(0.5) {
+            sex = PersonSex::Male;
+        } else {
+            sex = PersonSex::Female;
+        }
+        let person = generate_person(seed, id, year, sex, culture);
+        world_graph.events.push(Event::PersonBorn(year, person.id));
+        world_graph.people.insert(person.id, person);
     }
 
     loop {
@@ -307,12 +382,12 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         if year > world_age {
             break;
         }
-        print_world_map(&world_graph, &world_map);
+//        print_world_map(&world_graph, &world_map);
 
         let mut new_people: Vec<Person> = Vec::new();
 
         // TODO: Rethink this. Can't read and modify people at the same time. My current approach doesn't allow two modifications for the same person in the same year
-        for (_, person) in people.iter() {
+        for (_, person) in world_graph.people.iter() {
             // TODO: More performant approach
             if person.death > 0 {
                 continue
@@ -322,19 +397,19 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
             if rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
                 let mut person = person.clone();
                 person.death = year;
-                events.push(Event::PersonDeath(year, person.id));
+                world_graph.events.push(Event::PersonDeath(year, person.id));
                 if let Some(spouse) = person.spouse {
-                    let mut spouse = people.get(&spouse).unwrap().clone();
+                    let mut spouse = world_graph.people.get(&spouse).unwrap().clone();
                     spouse.spouse = None;
                     new_people.push(spouse);    
                 }
 
                 if person.leader {
                     if let Some(heir_id) = person.heirs.first() {
-                        let mut heir = people.get(&heir_id).unwrap().clone();
+                        let mut heir = world_graph.people.get(&heir_id).unwrap().clone();
                         // TODO: Leader of what?
                         heir.leader = true;
-                        events.push(Event::Inheritance(year, person.id, heir.id));
+                        world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
                         new_people.push(heir);    
                     }
                 }
@@ -345,20 +420,31 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
             }
 
             if age > 18.0 && person.spouse.is_none() && rng.rand_chance(0.1) {
+                let id = id.next();
+                let seed = seed * id.0 as u32;
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
-                let mut spouse = generate_person(seed, id.next(), spouse_birth_year, person.culture);
+                let mut spouse = generate_person(seed, id, spouse_birth_year, person.sex.opposite(), person.culture);
                 let mut person = person.clone();
                 spouse.spouse = Some(person.id);
                 person.spouse = Some(spouse.id);
-                events.push(Event::Marriage(year, person.id, spouse.id));
+                world_graph.events.push(Event::Marriage(year, person.id, spouse.id));
                 new_people.push(person);
                 new_people.push(spouse.clone());
             }
 
             if age > 18.0 && person.spouse.is_some() && rng.rand_chance(0.01) {
-                let child = generate_person(seed, id.next(), year, person.culture);
-                events.push(Event::PersonBorn(year, child.id));
+                let id = id.next();
+                let seed = seed * id.0 as u32;
+                let mut rng = Rng::new(seed);
+                let sex;
+                if rng.rand_chance(0.5) {
+                    sex = PersonSex::Male;
+                } else {
+                    sex = PersonSex::Female;
+                }
+                let child = generate_person(seed, id, year, sex, person.culture);
+                world_graph.events.push(Event::PersonBorn(year, child.id));
                 let mut person = person.clone();
                 person.heirs.push(child.id);
                 new_people.push(child);
@@ -369,7 +455,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
                 let settlement = generate_settlement(seed, year, person.culture, &world_graph, &world_map, regions);
                 
-                events.push(Event::SettlementFounded(year, settlement.clone(), person.id));
+                world_graph.events.push(Event::SettlementFounded(year, settlement.clone(), person.id));
                 world_graph.nodes.push(WorldGraphNode::SettlementNode(settlement));
 
                 let mut person = person.clone();
@@ -381,7 +467,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         }
 
         for new_person in new_people {
-            people.insert(new_person.id, new_person);
+            world_graph.people.insert(new_person.id, new_person);
         }
 
     }
@@ -389,11 +475,12 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
     return world_graph
 }
 
-fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, culture: &'a CulturePrefab) -> Person<'a> {
+fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, sex: PersonSex, culture: &'a CulturePrefab) -> Person<'a> {
     return Person {
         id: next_id,
-        name: generate_name(seed + next_id.0 as u32, culture.names.clone()),
+        name: generate_name(seed, &sex, culture),
         birth: birth_year,
+        sex,
         culture,
         death: 0,
         spouse: None,
@@ -402,46 +489,15 @@ fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, culture: &
     }
 }
 
-fn generate_name(seed: u32, possible_names: Vec<&str>) -> String {
-    // TODO: This is an extremely inneficient and stupid Markov Chain-like algorithm.
-    // TODO: Markov chains: https://www.samcodes.co.uk/project/markov-namegen/
-    let mut rng = Rng::new(seed);
-
-    let mut name = String::from("");
-
-    let mut char = '^';
-
-    for _ in 0..15 {
-        let mut probabilities: Vec<char> = Vec::new();
-        for p in possible_names.iter() {
-            if char == '^' {
-                probabilities.push((*p).chars().next().unwrap());
-            } else {
-                let mut prev = '^';
-                for c in (*p).chars() {
-                    if prev.to_ascii_lowercase() == char.to_ascii_lowercase() {
-                        probabilities.push(c.to_ascii_lowercase())
-                    }
-                    prev = c;
-                }
-                let c = '$';
-                if prev.to_ascii_lowercase() == char.to_ascii_lowercase() {
-                    probabilities.push(c.to_ascii_lowercase())
-                }
-            }
-        }
-        if probabilities.len() == 0 {
-            break;
-        }
-        char = probabilities[rng.randu_range(0, probabilities.len())];
-        if char == '$' {
-            break
-        }
-        name.push(char);
+fn generate_name<'a>(seed: u32, sex: &PersonSex, culture: &'a CulturePrefab) -> String {
+    let first_name;
+    match sex {
+        PersonSex::Male => first_name = culture.first_name_male_model.generate(seed, 4, 15),
+        PersonSex::Female => first_name = culture.first_name_female_model.generate(seed, 4, 15)
     }
-
-
-    return name;
+    let first_name = Strings::capitalize(&first_name);
+    let last_name = Strings::capitalize(&culture.last_name_model.generate(seed, 4, 15));
+    return format!("{first_name} {last_name}");
 }
 
 fn generate_settlement<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &'a Vec<RegionPrefab>) -> Settlement<'a> {
@@ -547,7 +603,7 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
             let tile = world_map.get_world_tile(x, y);
             let mut string;
             match tile.elevation {
-                0 => string = String::from(" ,"),
+                0 => string = String::from(" "),
                 1 => string = String::from(", "),
                 2 => string = String::from("--"),
                 3 => string = String::from("++"),

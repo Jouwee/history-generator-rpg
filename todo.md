@@ -1,8 +1,17 @@
 # Doing
 
-# Backlog
-
 ## feat - Better name generation
+
+- ✓ Implement actual Markov Chains
+- ✓ Train model only once
+- ✓ First vs Last names
+- ✓ Min/max length
+- Markov Chain order
+- ✓ Male vs Female names
+- ✓ Capitalization
+- ✓ Increase training-set size
+
+# Backlog
 
 ## refactor - Load definitions from yaml/toml files
 
