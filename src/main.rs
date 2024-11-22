@@ -99,7 +99,7 @@ struct WorldTileData {
     region_id: u8
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum PersonSex {
     Male,
     Female
@@ -119,14 +119,112 @@ impl PersonSex {
 #[derive(Clone)]
 struct Person<'a> {
     id: PersonId,
-    name: String,
+    first_name: String,
+    last_name: String,
+    birth_last_name: String,
+    importance: Importance,
     birth: u32,
     sex: PersonSex,
     death: u32,
     culture: &'a CulturePrefab,
-    spouse: Option<PersonId>,
-    heirs: Vec<PersonId>,
+    next_of_kin: Vec<NextOfKin>,
     leader: bool
+}
+
+#[derive(Clone, PartialEq)]
+enum Importance {
+    Important,
+    Unimportant,
+    Unknown
+}
+
+impl Importance {
+    fn lower(&self) -> Importance {
+        match self {
+            Importance::Important => return Importance::Unimportant,
+            Importance::Unimportant => return Importance::Unknown,
+            Importance::Unknown => return Importance::Unknown,
+        }
+    }
+}
+
+impl Person<'_> {
+
+    fn birth_name(&self) -> String {
+        return format!("{} {}", self.first_name, self.birth_last_name)
+    }
+
+    fn name(&self) -> String {
+        return format!("{} {}", self.first_name, self.last_name)
+    }
+
+    fn spouse(&self) -> Option<&PersonId> {
+        let spouse = self.next_of_kin.iter().find(|r| r.relative == Relative::Spouse);
+        if let Some(spouse) = spouse {
+            return Some(&spouse.person_id)
+        };
+        return None
+    }
+
+    fn fertility(&self, year: u32) -> f32 {
+        let age = (year - self.birth) as f32;
+        // https://thefertilityshop.co.uk/wp-content/uploads/2021/12/bfs-monthly-fertility-by-age-1024x569.png
+        if self.sex == PersonSex::Male {
+            return f32::max(0.0, -(age / 60.0).powf(2.0) + 1.0)
+        } else {
+            return f32::max(0.0, -(age / 40.0).powf(6.0) + 1.0)
+        }
+    }
+
+    fn find_next_of_kin(&self, relative: Relative) -> Option<&PersonId> {
+        let spouse = self.next_of_kin.iter().find(|r| r.relative == relative);
+        if let Some(spouse) = spouse {
+            return Some(&spouse.person_id)
+        };
+        return None
+    }
+
+    fn remove_next_of_kin(&mut self, person_id: PersonId) {
+        let i = self.next_of_kin.iter().position(|r: &NextOfKin| r.person_id == person_id);
+        if let Some(i) = i {
+            self.next_of_kin.remove(i);
+        }
+    }
+
+    fn next_heir(&self) -> Option<&NextOfKin> {
+        let priorities = [
+            Relative::Child,
+            Relative::Spouse,
+            Relative::Sibling,
+        ];
+        let mut better_heir = None;
+        let mut better_heir_priority = usize::MAX;
+        for next_of_kin in self.next_of_kin.iter() {
+            let priority = priorities.iter().position(|r| *r == next_of_kin.relative);
+            if let Some(priority) = priority {
+                if priority < better_heir_priority {
+                    better_heir = Some(next_of_kin);
+                    better_heir_priority = priority;
+                }
+            }
+        }
+        return better_heir
+    }
+
+}
+
+#[derive(Clone)]
+struct NextOfKin {
+    person_id: PersonId,
+    relative: Relative
+}
+
+#[derive(Clone, PartialEq)]
+enum Relative {
+    Spouse,
+    Sibling,
+    Parent,
+    Child,
 }
 
 enum Event<'a> {
@@ -337,11 +435,21 @@ fn main() {
 
         for event in world.events.iter() {
             match event {
-                Event::PersonBorn(year, person) => anals.push(format!("In {}, {} was born", year, world.people.get(person).unwrap().name)),
-                Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name)),
-                Event::SettlementFounded(year, settlement, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name, settlement.name)),
-                Event::Marriage(year, person_a, person_b) => anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
-                Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_a).unwrap().name, world.people.get(person_b).unwrap().name)),
+                Event::PersonBorn(year, person) => {
+                    let person = world.people.get(person).unwrap();
+                    if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
+                        let parent = world.people.get(person_id).unwrap();
+                        anals.push(format!("In {}, {} fathered {}", year, parent.name(), person.name()))
+                    } else {
+                        anals.push(format!("In {}, {} was born", year, person.name()))
+                    }
+                },
+                Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name())),
+                Event::SettlementFounded(year, settlement, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name)),
+                Event::Marriage(year, person_a, person_b) => {
+                    anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name(), world.people.get(person_b).unwrap().birth_name()))
+                },
+                Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_b).unwrap().name(), world.people.get(person_a).unwrap().name())),
             }
             
         }
@@ -380,7 +488,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         } else {
             sex = PersonSex::Female;
         }
-        let person = generate_person(seed, id, year, sex, culture);
+        let person = generate_person(seed, Importance::Important, id, year, sex, culture, None);
         world_graph.events.push(Event::PersonBorn(year, person.id));
         world_graph.people.insert(person.id, person);
     }
@@ -390,14 +498,18 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         if year > world_age {
             break;
         }
-//        print_world_map(&world_graph, &world_map);
+
+        if year % 10 == 0 {
+            println!("Year {}", year);
+            print_world_map(&world_graph, &world_map);
+        }
 
         let mut new_people: Vec<Person> = Vec::new();
 
         // TODO: Rethink this. Can't read and modify people at the same time. My current approach doesn't allow two modifications for the same person in the same year
         for (_, person) in world_graph.people.iter() {
             // TODO: More performant approach
-            if person.death > 0 {
+            if person.death > 0 || person.importance == Importance::Unknown {
                 continue
             }
 
@@ -406,20 +518,22 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
                 let mut person = person.clone();
                 person.death = year;
                 world_graph.events.push(Event::PersonDeath(year, person.id));
-                if let Some(spouse) = person.spouse {
-                    let mut spouse = world_graph.people.get(&spouse).unwrap().clone();
-                    spouse.spouse = None;
-                    new_people.push(spouse);    
-                }
 
                 if person.leader {
-                    if let Some(heir_id) = person.heirs.first() {
-                        let mut heir = world_graph.people.get(&heir_id).unwrap().clone();
+                    if let Some(heir) = person.next_heir() {
+                        let mut heir = world_graph.people.get(&heir.person_id).unwrap().clone();
                         // TODO: Leader of what?
                         heir.leader = true;
+                        heir.importance = Importance::Important;
                         world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
                         new_people.push(heir);    
                     }
+                }
+
+                for next_of_kin in person.next_of_kin.iter() {
+                    let mut next_of_kin = world_graph.people.get(&next_of_kin.person_id).unwrap().clone();
+                    next_of_kin.remove_next_of_kin(person.id);
+                    new_people.push(next_of_kin);
                 }
 
                 new_people.push(person);
@@ -427,36 +541,55 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
                 continue
             }
 
-            if age > 18.0 && person.spouse.is_none() && rng.rand_chance(0.1) {
+            if age > 18.0 && person.spouse().is_none() && rng.rand_chance(0.1) {
                 let id = id.next();
                 let seed = seed * id.0 as u32;
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
-                let mut spouse = generate_person(seed, id, spouse_birth_year, person.sex.opposite(), person.culture);
+                let mut spouse = generate_person(seed, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), person.culture, None);
+                spouse.last_name = person.last_name.clone();
                 let mut person = person.clone();
-                spouse.spouse = Some(person.id);
-                person.spouse = Some(spouse.id);
+                spouse.next_of_kin.push(NextOfKin {
+                    person_id: person.id,
+                    relative: Relative::Spouse
+                });
+                person.next_of_kin.push(NextOfKin {
+                    person_id: spouse.id,
+                    relative: Relative::Spouse
+                });
                 world_graph.events.push(Event::Marriage(year, person.id, spouse.id));
                 new_people.push(person);
                 new_people.push(spouse.clone());
             }
 
-            if age > 18.0 && person.spouse.is_some() && rng.rand_chance(0.01) {
-                let id = id.next();
-                let seed = seed * id.0 as u32;
-                let mut rng = Rng::new(seed);
-                let sex;
-                if rng.rand_chance(0.5) {
-                    sex = PersonSex::Male;
-                } else {
-                    sex = PersonSex::Female;
+            if age > 18.0 && person.spouse().is_some() {
+                let spouse = world_graph.people.get(person.spouse().unwrap()).unwrap();
+                let couple_fertility = person.fertility(year) * spouse.fertility(year);
+
+                if rng.rand_chance(couple_fertility * 0.3) {
+                    let id = id.next();
+                    let seed = seed * id.0 as u32;
+                    let mut rng = Rng::new(seed);
+                    let sex;
+                    if rng.rand_chance(0.5) {
+                        sex = PersonSex::Male;
+                    } else {
+                        sex = PersonSex::Female;
+                    }
+                    let mut child = generate_person(seed, person.importance.lower(), id, year, sex, person.culture, Some(&person.last_name));
+                    child.next_of_kin.push(NextOfKin { 
+                        person_id: person.id,
+                        relative: Relative::Parent
+                    });
+                    world_graph.events.push(Event::PersonBorn(year, child.id));
+                    let mut person = person.clone();
+                    person.next_of_kin.push(NextOfKin { 
+                        person_id: child.id,
+                        relative: Relative::Child
+                    });
+                    new_people.push(child);
+                    new_people.push(person);
                 }
-                let child = generate_person(seed, id, year, sex, person.culture);
-                world_graph.events.push(Event::PersonBorn(year, child.id));
-                let mut person = person.clone();
-                person.heirs.push(child.id);
-                new_people.push(child);
-                new_people.push(person);
             }
 
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
@@ -483,30 +616,33 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
     return world_graph
 }
 
-fn generate_person<'a>(seed: u32, next_id: PersonId, birth_year: u32, sex: PersonSex, culture: &'a CulturePrefab) -> Person<'a> {
-    return Person {
-        id: next_id,
-        name: generate_name(seed, &sex, culture),
-        birth: birth_year,
-        sex,
-        culture,
-        death: 0,
-        spouse: None,
-        heirs: Vec::new(),
-        leader: false
-    }
-}
-
-fn generate_name<'a>(seed: u32, sex: &PersonSex, culture: &'a CulturePrefab) -> String {
+fn generate_person<'a>(seed: u32, importance: Importance, next_id: PersonId, birth_year: u32, sex: PersonSex, culture: &'a CulturePrefab, surname: Option<&str>) -> Person<'a> {
     let first_name;
     match sex {
         PersonSex::Male => first_name = culture.first_name_male_model.generate(seed + 13, 4, 15),
         PersonSex::Female => first_name = culture.first_name_female_model.generate(seed + 17, 4, 15)
     }
     let first_name = Strings::capitalize(&first_name);
-    let last_name = Strings::capitalize(&culture.last_name_model.generate(seed, 4, 15));
-    return format!("{first_name} {last_name}");
+    let last_name;
+    match surname {
+        Some(str) => last_name = String::from(str),
+        None => last_name = Strings::capitalize(&culture.last_name_model.generate(seed, 4, 15))
+    }
+    return Person {
+        id: next_id,
+        importance,
+        first_name,
+        last_name: last_name.clone(),
+        birth_last_name: last_name.clone(),
+        birth: birth_year,
+        sex,
+        culture,
+        death: 0,
+        next_of_kin: Vec::new(),
+        leader: false
+    }
 }
+
 
 fn generate_settlement<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &'a Vec<RegionPrefab>) -> Settlement<'a> {
     let seed = seed + founding_year as u32;

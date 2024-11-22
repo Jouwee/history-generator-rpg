@@ -1,23 +1,27 @@
 # Doing
 
-# Backlog
-
 ## feat - Better family trees
 
-- Record who is the parent of who
-- Better settlement legacy
+- ✓ Record who is next-of-kin of who
+- ✓ Better settlement inheritance
+- ✓ Family surnames
+- ✓ Fertility curve
+- ✓ Simulation importance level
+
+# Backlog
+
+## feat - Basic settlement simulation
+
+- Population
+- Conflicts
 
 ## refactor - Load definitions from yaml/toml files
 
 ## refactor - Better data sctructures for the universe
 
-## refactor - Don't generate cosmetic data until necessary
-
 ## refactor - Re-implement noise
 
 Package-size, learning
-
-Names
 
 ## bug - Markov Chain doesn't work with order different than 3
 
