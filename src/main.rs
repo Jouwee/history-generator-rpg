@@ -6,9 +6,6 @@ use noise::{NoiseFn, Perlin};
 pub mod commons;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-struct PersonId(i32);
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 struct Point(usize, usize);
 
 impl Point {
@@ -20,15 +17,20 @@ impl Point {
     }
 }
 
-impl PersonId {
-    pub fn next(&mut self) -> PersonId {
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+struct Id(i32);
+
+impl Id {
+    pub fn next(&mut self) -> Id {
         let clone = self.clone();
         self.0 = self.0 + 1;
         clone
     }
 }
 
+#[derive(Clone)]
 struct CulturePrefab {
+    id: Id,
     name: String,
     language: LanguagePrefab,
     first_name_male_model: MarkovChainSingleWordModel,
@@ -36,6 +38,7 @@ struct CulturePrefab {
     last_name_model: MarkovChainSingleWordModel,
 }
 
+#[derive(Clone)]
 struct LanguagePrefab {
     dictionary: HashMap<String, String>
 }
@@ -51,22 +54,23 @@ struct RegionPrefab {
 }
 
 #[derive(Clone)]
-struct Settlement<'a> {
+struct Settlement {
     xy: Point,
     name: String,
     founding_year: u32,
-    culture: &'a CulturePrefab,
+    culture_id: Id,
     region_id: usize,
 }
 
-struct WorldGraph<'a> {
-    nodes: Vec<WorldGraphNode<'a>>,
-    people: HashMap<PersonId, Person<'a>>,
-    events: Vec<Event<'a>>
+struct WorldGraph {
+    cultures: HashMap<Id, CulturePrefab>,
+    nodes: HashMap<Id, WorldGraphNode>,
+    people: HashMap<Id, Person>,
+    events: Vec<Event>
 }
 
-enum WorldGraphNode<'a> {
-    SettlementNode(Settlement<'a>)
+enum WorldGraphNode {
+    SettlementNode(Settlement)
 }
 
 const WORLD_MAP_HEIGHT: usize = 64;
@@ -117,8 +121,8 @@ impl PersonSex {
 }
 
 #[derive(Clone)]
-struct Person<'a> {
-    id: PersonId,
+struct Person {
+    id: Id,
     first_name: String,
     last_name: String,
     birth_last_name: String,
@@ -126,7 +130,7 @@ struct Person<'a> {
     birth: u32,
     sex: PersonSex,
     death: u32,
-    culture: &'a CulturePrefab,
+    culture_id: Id,
     next_of_kin: Vec<NextOfKin>,
     leader: bool
 }
@@ -148,7 +152,7 @@ impl Importance {
     }
 }
 
-impl Person<'_> {
+impl Person {
 
     fn birth_name(&self) -> String {
         return format!("{} {}", self.first_name, self.birth_last_name)
@@ -158,7 +162,7 @@ impl Person<'_> {
         return format!("{} {}", self.first_name, self.last_name)
     }
 
-    fn spouse(&self) -> Option<&PersonId> {
+    fn spouse(&self) -> Option<&Id> {
         let spouse = self.next_of_kin.iter().find(|r| r.relative == Relative::Spouse);
         if let Some(spouse) = spouse {
             return Some(&spouse.person_id)
@@ -176,7 +180,7 @@ impl Person<'_> {
         }
     }
 
-    fn find_next_of_kin(&self, relative: Relative) -> Option<&PersonId> {
+    fn find_next_of_kin(&self, relative: Relative) -> Option<&Id> {
         let spouse = self.next_of_kin.iter().find(|r| r.relative == relative);
         if let Some(spouse) = spouse {
             return Some(&spouse.person_id)
@@ -184,7 +188,7 @@ impl Person<'_> {
         return None
     }
 
-    fn remove_next_of_kin(&mut self, person_id: PersonId) {
+    fn remove_next_of_kin(&mut self, person_id: Id) {
         let i = self.next_of_kin.iter().position(|r: &NextOfKin| r.person_id == person_id);
         if let Some(i) = i {
             self.next_of_kin.remove(i);
@@ -215,7 +219,7 @@ impl Person<'_> {
 
 #[derive(Clone)]
 struct NextOfKin {
-    person_id: PersonId,
+    person_id: Id,
     relative: Relative
 }
 
@@ -227,12 +231,12 @@ enum Relative {
     Child,
 }
 
-enum Event<'a> {
-    PersonBorn(u32, PersonId),
-    PersonDeath(u32, PersonId),
-    Marriage(u32, PersonId, PersonId),
-    Inheritance(u32, PersonId, PersonId),
-    SettlementFounded(u32, Settlement<'a>, PersonId)
+enum Event {
+    PersonBorn(u32, Id),
+    PersonDeath(u32, Id),
+    Marriage(u32, Id, Id),
+    Inheritance(u32, Id, Id),
+    SettlementFounded(u32, Id, Id)
 }
 
 fn main() {
@@ -243,6 +247,7 @@ fn main() {
 
     let seed: u32 = 123456;
     let nords = CulturePrefab {
+        id: Id(0),
         name: String::from("Nords"),
         language: LanguagePrefab {
             dictionary: HashMap::from([
@@ -330,6 +335,7 @@ fn main() {
     };
 
     let khajit = CulturePrefab {
+        id: Id(0),
         name: String::from("Khajiit"),
         language: LanguagePrefab {
             dictionary: HashMap::from([
@@ -410,7 +416,7 @@ fn main() {
 
     let now = Instant::now();
 
-    let world = generate_world(seed, 200, vec!(&nords, &khajit), &regions);
+    let world = generate_world(seed, 200, vec!(nords, khajit), &regions);
 
     let elapsed = now.elapsed();
 
@@ -445,7 +451,12 @@ fn main() {
                     }
                 },
                 Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name())),
-                Event::SettlementFounded(year, settlement, person) => anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name)),
+                Event::SettlementFounded(year, settlement, person) => {
+                    let settlement = world.nodes.get(settlement).unwrap();
+                    if let WorldGraphNode::SettlementNode(settlement) = settlement {
+                            anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name))
+                    }
+                },
                 Event::Marriage(year, person_a, person_b) => {
                     anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name(), world.people.get(person_b).unwrap().birth_name()))
                 },
@@ -463,24 +474,34 @@ fn main() {
     }
 }
 
-fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab>, regions: &'a Vec<RegionPrefab>) -> WorldGraph<'a> {
+fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regions: &Vec<RegionPrefab>) -> WorldGraph {
     let mut year: u32 = 1;
     let mut world_graph = WorldGraph {
-        nodes: vec!(),
+        cultures: HashMap::new(),
+        nodes: HashMap::new(),
         people: HashMap::new(),
         events: vec!()
     };
+
+    let mut culture_id = Id(0);
+    for culture in cultures.iter() {
+        let mut culture = culture.clone();
+        culture.id = culture_id.next();
+        world_graph.cultures.insert(culture.id, culture);
+    }
+
     let world_map = generate_world_map(seed, regions);
 
     let mut rng = Rng::new(seed);
 
-    let mut id = PersonId(0);
+    let mut person_id = Id(0);
+    let mut sett_id = Id(0);
 
     // Generate starter people
     for _ in 0..10 {
-        let id = id.next();
+        let id = person_id.next();
         let seed = seed * id.0 as u32;
-        let culture = cultures[rng.randu_range(0, cultures.len())];
+        let culture = world_graph.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
         let mut rng = Rng::new(seed);
         let sex;
         if rng.rand_chance(0.5) {
@@ -488,7 +509,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
         } else {
             sex = PersonSex::Female;
         }
-        let person = generate_person(seed, Importance::Important, id, year, sex, culture, None);
+        let person = generate_person(seed, Importance::Important, id, year, sex, &culture, None);
         world_graph.events.push(Event::PersonBorn(year, person.id));
         world_graph.people.insert(person.id, person);
     }
@@ -542,11 +563,12 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
             }
 
             if age > 18.0 && person.spouse().is_none() && rng.rand_chance(0.1) {
-                let id = id.next();
+                let id = person_id.next();
                 let seed = seed * id.0 as u32;
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
-                let mut spouse = generate_person(seed, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), person.culture, None);
+                let culture = world_graph.cultures.get(&person.culture_id).unwrap();
+                let mut spouse = generate_person(seed, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, None);
                 spouse.last_name = person.last_name.clone();
                 let mut person = person.clone();
                 spouse.next_of_kin.push(NextOfKin {
@@ -567,7 +589,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
                 let couple_fertility = person.fertility(year) * spouse.fertility(year);
 
                 if rng.rand_chance(couple_fertility * 0.3) {
-                    let id = id.next();
+                    let id = person_id.next();
                     let seed = seed * id.0 as u32;
                     let mut rng = Rng::new(seed);
                     let sex;
@@ -576,7 +598,8 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
                     } else {
                         sex = PersonSex::Female;
                     }
-                    let mut child = generate_person(seed, person.importance.lower(), id, year, sex, person.culture, Some(&person.last_name));
+                    let culture = world_graph.cultures.get(&person.culture_id).unwrap();
+                    let mut child = generate_person(seed, person.importance.lower(), id, year, sex, culture, Some(&person.last_name));
                     child.next_of_kin.push(NextOfKin { 
                         person_id: person.id,
                         relative: Relative::Parent
@@ -594,10 +617,11 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
 
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
 
-                let settlement = generate_settlement(seed, year, person.culture, &world_graph, &world_map, regions);
-                
-                world_graph.events.push(Event::SettlementFounded(year, settlement.clone(), person.id));
-                world_graph.nodes.push(WorldGraphNode::SettlementNode(settlement));
+                let culture = world_graph.cultures.get(&person.culture_id).unwrap();
+                let settlement = generate_settlement(seed, year, culture, &world_graph, &world_map, regions).clone();
+                let id = sett_id.next();
+                world_graph.events.push(Event::SettlementFounded(year, id, person.id));
+                world_graph.nodes.insert(id, WorldGraphNode::SettlementNode(settlement));
 
                 let mut person = person.clone();
                 person.leader = true;
@@ -616,7 +640,7 @@ fn generate_world<'a>(seed: u32, world_age: u32, cultures: Vec<&'a CulturePrefab
     return world_graph
 }
 
-fn generate_person<'a>(seed: u32, importance: Importance, next_id: PersonId, birth_year: u32, sex: PersonSex, culture: &'a CulturePrefab, surname: Option<&str>) -> Person<'a> {
+fn generate_person(seed: u32, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, surname: Option<&str>) -> Person {
     let first_name;
     match sex {
         PersonSex::Male => first_name = culture.first_name_male_model.generate(seed + 13, 4, 15),
@@ -636,7 +660,7 @@ fn generate_person<'a>(seed: u32, importance: Importance, next_id: PersonId, bir
         birth_last_name: last_name.clone(),
         birth: birth_year,
         sex,
-        culture,
+        culture_id: culture.id,
         death: 0,
         next_of_kin: Vec::new(),
         leader: false
@@ -644,13 +668,13 @@ fn generate_person<'a>(seed: u32, importance: Importance, next_id: PersonId, bir
 }
 
 
-fn generate_settlement<'a>(seed: u32, founding_year: u32, culture: &'a CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &'a Vec<RegionPrefab>) -> Settlement<'a> {
+fn generate_settlement(seed: u32, founding_year: u32, culture: &CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
     let seed = seed + founding_year as u32;
     let mut rng = Rng::new(seed);
     let mut xy;
     'candidates: loop {
         xy = Point(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
-        for node in world_graph.nodes.iter() {
+        for node in world_graph.nodes.values() {
             match node {
                 WorldGraphNode::SettlementNode(settlement) => {
                     if settlement.xy.dist_squared(&xy) < 5.0_f32.powi(2) {
@@ -667,7 +691,7 @@ fn generate_settlement<'a>(seed: u32, founding_year: u32, culture: &'a CulturePr
         xy, 
         name: String::from(generate_location_name(seed, culture, region)),
         founding_year: founding_year,
-        culture: culture,
+        culture_id: culture.id,
         region_id,
     };
 }
@@ -755,7 +779,7 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
                 _ => string = String::from("??")
             }
 
-            for node in world_graph.nodes.iter() {
+            for node in world_graph.nodes.values() {
                 match node {
                     WorldGraphNode::SettlementNode(settlement) => {
                         if settlement.xy.0 == x && settlement.xy.1 == y {

@@ -1,12 +1,14 @@
 # Doing
 
-## feat - Better family trees
+## refactor - Better data sctructures for the universe
 
-- ✓ Record who is next-of-kin of who
-- ✓ Better settlement inheritance
-- ✓ Family surnames
-- ✓ Fertility curve
-- ✓ Simulation importance level
+- Everything has IDs in a map
+- Solve unnecessary iteration of dead people
+- Solve mutability of people during simulation
+
+# TODO: 0.0.1 - Basic history generation
+
+# TODO: 0.0.2 - Basic world navigation
 
 # Backlog
 
@@ -16,8 +18,6 @@
 - Conflicts
 
 ## refactor - Load definitions from yaml/toml files
-
-## refactor - Better data sctructures for the universe
 
 ## refactor - Re-implement noise
 
@@ -31,14 +31,13 @@ Too simple to be a dep
 
 # Release 0.0.1
 
-## feat - Simple world map generation
+## feat - Better family trees
 
-- ✓ Simple noise elevation
-- ✓ Simple noise temperature
-- ✓ Map Regions based on those two criteria
-- ✓ Rename Village -> Settlement
-- ✓ On settlement creation, place it on suitable random area and link region accordingly
-- ✓ Simple ASCII map rendering every year
+- ✓ Record who is next-of-kin of who
+- ✓ Better settlement inheritance
+- ✓ Family surnames
+- ✓ Fertility curve
+- ✓ Simulation importance level
 
 ## feat - Better name generation
 
@@ -50,3 +49,12 @@ Too simple to be a dep
 - ✓ Male vs Female names
 - ✓ Capitalization
 - ✓ Increase training-set size
+
+## feat - Simple world map generation
+
+- ✓ Simple noise elevation
+- ✓ Simple noise temperature
+- ✓ Map Regions based on those two criteria
+- ✓ Rename Village -> Settlement
+- ✓ On settlement creation, place it on suitable random area and link region accordingly
+- ✓ Simple ASCII map rendering every year

@@ -18,6 +18,7 @@ fn idx1(i: usize, j: usize) -> usize {
     return (i * SUPPORTED_CHARACTERS) + j
 }
 
+#[derive(Clone)]
 pub struct MarkovChainSingleWordModel {
     model_o1: Vec<f32>,
     model_o2: Option<Vec<f32>>,
