@@ -2,7 +2,7 @@
 
 ## refactor - Better data sctructures for the universe
 
-- Everything has IDs in a map
+- ✓ Everything has IDs in a map
 - Solve unnecessary iteration of dead people
 - Solve mutability of people during simulation
 
