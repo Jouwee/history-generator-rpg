@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::{HashMap, HashSet}, io, vec};
+use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{HashMap, HashSet}, io, vec};
 use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use noise::{NoiseFn, Perlin};
@@ -76,42 +76,59 @@ struct WorldGraph {
 }
 
 struct People {
-    map: HashMap<Id, Person>,
-    alive_ids: HashSet<Id>
+    historic: HashMap<Id, RefCell<Person>>,
+    alive: HashMap<Id, RefCell<Person>>
 }
 
 impl People {
     
     fn new() -> People {
         People {
-            map: HashMap::new(),
-            alive_ids: HashSet::new()
+            historic: HashMap::new(),
+            alive: HashMap::new()
         }
     }
 
-    fn get(&self, id: &Id) -> Option<&Person> {
-        return self.map.get(id)
+    fn get(&self, id: &Id) -> Option<Ref<Person>> {
+        let option = self.alive.get(id).or(self.historic.get(id));
+        match option {
+            None => None,
+            Some(ref_cell) => Some(ref_cell.borrow())
+        }
+    }
+
+    fn get_mut(&self, id: &Id) -> Option<RefMut<Person>> {
+        let option = self.alive.get(id).or(self.historic.get(id));
+        match option {
+            None => None,
+            Some(ref_cell) => Some(ref_cell.borrow_mut())
+        }
     }
 
     fn len(&self) -> usize {
-        return self.map.len();
+        return self.alive.len() + self.historic.len();
     }
 
     fn insert(&mut self, person: Person) {
-        self.alive_ids.insert(person.id.clone());
-        self.map.insert(person.id.clone(), person);
+        if person.simulatable() {
+            self.alive.insert(person.id, RefCell::new(person));
+        } else {
+            self.historic.insert(person.id, RefCell::new(person));
+        }
     }
 
-    fn iter(&self) -> impl Iterator<Item = (&Id, &Person)> {
-        return self.alive_ids.iter()
-            .map(|id| (id, self.map.get(id).unwrap()))
-            .filter(|t| t.1.simulatable())
+    fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<Person>)> {
+        return self.alive.iter()
     }
 
     fn reindex(&mut self) {
-        self.alive_ids.retain(|id| {
-            let person = self.map.get(&id).unwrap();
-            person.simulatable()
+        self.alive.retain(|id, person| {
+            if person.borrow().simulatable() {
+                return true
+            } else {
+                self.historic.insert(id.clone(), person.clone());
+                return false
+            }
         });
     }
 
@@ -584,19 +601,17 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
             break;
         }
 
-        println!("Year {}, {} people to process", year, world_graph.people.alive_ids.len());
+        println!("Year {}, {} people to process", year, world_graph.people.alive.len());
         if year % 10 == 0 {
             print_world_map(&world_graph, &world_map);
         }
 
         let mut new_people: Vec<Person> = Vec::new();
 
-        // TODO: Rethink this. Can't read and modify people at the same time. My current approach doesn't allow two modifications for the same person in the same year
         for (_, person) in world_graph.people.iter() {
-
+            let mut person = person.borrow_mut();
             let age = (year - person.birth) as f32;
             if rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
-                let mut person = person.clone();
                 person.death = year;
                 world_graph.events.push(Event::PersonDeath(year, person.id));
                 if person.leader {
@@ -604,13 +619,12 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                 
                     let mut valid_heir = false;
                     for heir in heirs_by_order {
-                        let mut heir = world_graph.people.get(&heir.person_id).unwrap().clone();
+                        let mut heir = world_graph.people.get_mut(&heir.person_id).unwrap();
                         if heir.death == 0 {
                             // TODO: Leader of what?
                             heir.leader = true;
                             heir.importance = Importance::Important;
                             world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
-                            new_people.push(heir);    
                             valid_heir = true;
                             break
                         }
@@ -630,8 +644,6 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                     }
                 }
 
-                new_people.push(person);
-
                 continue
             }
 
@@ -643,7 +655,6 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
                 let mut spouse = generate_person(seed, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, None);
                 spouse.last_name = person.last_name.clone();
-                let mut person = person.clone();
                 spouse.next_of_kin.push(NextOfKin {
                     person_id: person.id,
                     relative: Relative::Spouse
@@ -653,13 +664,12 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                     relative: Relative::Spouse
                 });
                 world_graph.events.push(Event::Marriage(year, person.id, spouse.id));
-                new_people.push(person);
                 new_people.push(spouse.clone());
                 continue;
             }
 
             if age > 18.0 && person.spouse().is_some() {
-                let spouse = world_graph.people.get(person.spouse().unwrap()).unwrap();
+                let spouse = world_graph.people.get_mut(person.spouse().unwrap()).unwrap();
                 let couple_fertility = person.fertility(year) * spouse.fertility(year);
 
                 if rng.rand_chance(couple_fertility * 0.5) {
@@ -679,13 +689,11 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                         relative: Relative::Parent
                     });
                     world_graph.events.push(Event::PersonBorn(year, child.id));
-                    let mut person = person.clone();
                     person.next_of_kin.push(NextOfKin { 
                         person_id: child.id,
                         relative: Relative::Child
                     });
                     new_people.push(child);
-                    new_people.push(person);
                     continue;
                 }
             }
@@ -697,9 +705,7 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
                 world_graph.nodes.insert(id, WorldGraphNode::SettlementNode(settlement));
-                let mut person = person.clone();
                 person.leader = true;
-                new_people.push(person);
                 continue;
             }
 
