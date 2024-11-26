@@ -1,20 +1,41 @@
 # Doing
 
-## refactor - Better seed derivation
-
-For now I take the seed and sum something. Create a derive method that takes any hashable and creates a new Rand
-
 # TODO: 0.0.1 - Basic history generation
-
-# TODO: 0.0.2 - Basic world navigation
-
-# Backlog
 
 ## feat - Basic settlement and faction simulation
 
 - Factions
-- Population
+  - Name
+  - Relations
+    - Opinion
+    - Towards
+    - How does it change?
+  - Leader: Person
+  - Add one field per type in people
+- Natural resource
+  - Gold/year
+- Region
+  - Chance for resource
+  - Soil fertility range
+- Tile
+  - Natural resources
+  - Soil fertility
+- Settlement Projects
+  - Name
+  - Cost in gold
+  - Resource Buff
+  - E.g:
+    - Aqueduct (+fertility)
+    - Customs House (+gold)
+    - Wall (+defence)
+- Settlement
+  - Political faction
+  - Population (based on soil fertility)
+  - Gold (based on resources)
 - Conflicts
+  - Between factions
+  - Chance for an attack between enemies every hit
+    - Uses gold and population
 
 ## feat - Legends simulation
 
@@ -30,6 +51,14 @@ For now I take the seed and sum something. Create a derive method that takes any
 - People can have personality traits that affect chances, such as:
   - Violent - Increase chance of starting conflict
 
+# TODO: 0.0.2 - Basic world navigation
+
+# TODO: 0.0.3 - Basic chunk generation
+
+# TODO: 0.0.4 - Basic gameplay
+
+# Backlog
+
 ## refactor - Load definitions from yaml/toml files
 
 ## refactor - Re-implement noise
@@ -38,7 +67,7 @@ Package-size, learning
 
 ## refactor - Person builder
 
-Generate person has too any parameters. Create a builder.
+Generate person has too many parameters. Create a builder.
 
 ## bug - Markov Chain doesn't work with order different than 3
 
@@ -48,7 +77,15 @@ Generate person has too any parameters. Create a builder.
 
 Too simple to be a dep
 
+## idea - History simulation of Technology
+
+Start with no tech, chance of someone/some faction learning a tech in a tech tree, that gives buffs. Chance to exchange techs on trades.
+
 # Release 0.0.1
+
+## refactor - Better seed derivation
+
+For now I take the seed and sum something. Create a derive method that takes any hashable and creates a new Rand
 
 ## refactor - Better data sctructures for the universe
 

@@ -46,6 +46,11 @@ impl Rng {
         return next as f32 / (u32::MAX as f32)
     }
 
+    pub fn randf_range(&mut self, start: f32, end: f32) -> f32 {
+        let next = self.randf();
+        return next * (end - start) + start;
+    }
+
     pub fn rand_chance(&mut self, chance: f32) -> bool {
         assert!(chance >= 0.0 && chance <= 1.0, "Chance must be between 0 and 1, was {}", chance);
         return self.randf() < chance

@@ -1,6 +1,6 @@
 [package]
-name = "caves_of_qud"
-version = "0.1.0"
+name = "package"
+version = "0.0.1"
 edition = "2021"
 
 [dependencies]

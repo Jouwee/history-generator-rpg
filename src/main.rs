@@ -1,38 +1,13 @@
 use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap, HashSet}, io, vec};
 use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
+use engine::{Id, Point2D};
 use noise::{NoiseFn, Perlin};
+use world::settlement::{Settlement, SettlementBuilder};
 
+pub mod engine;
 pub mod commons;
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-struct Point(usize, usize);
-
-impl Point {
-
-    pub fn dist_squared(&self, another: &Point) -> f32 {
-        let x = another.0 as f32 - self.0 as f32;
-        let y = another.1 as f32 - self.1 as f32;
-        return x*x + y*y
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd)]
-struct Id(i32);
-
-impl Ord for Id {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl Id {
-    pub fn next(&mut self) -> Id {
-        let clone = self.clone();
-        self.0 = self.0 + 1;
-        clone
-    }
-}
+pub mod world;
 
 #[derive(Clone)]
 struct CulturePrefab {
@@ -53,24 +28,16 @@ struct LanguagePrefab {
 #[derive(Debug)]
 struct RegionPrefab {
     name: String,
+    id: usize,
     elevation: (u8, u8),
     temperature: (u8, u8),
     fauna: Vec<String>,
     flora: Vec<String>,
 }
 
-#[derive(Clone)]
-struct Settlement {
-    xy: Point,
-    name: String,
-    founding_year: u32,
-    culture_id: Id,
-    region_id: usize,
-}
-
 struct WorldGraph {
     cultures: HashMap<Id, CulturePrefab>,
-    nodes: HashMap<Id, WorldGraphNode>,
+    settlements: HashMap<Id, Settlement>,
     people: People,
     events: Vec<Event>
 }
@@ -122,20 +89,26 @@ impl People {
     }
 
     fn reindex(&mut self) {
-        self.alive.retain(|id, person| {
+        let mut historic = HashMap::new();
+        let mut alive = BTreeMap::new();
+        for person in self.alive.values() {
             if person.borrow().simulatable() {
-                return true
+                alive.insert(person.borrow().id, person.clone());
             } else {
-                self.historic.insert(id.clone(), person.clone());
-                return false
+                historic.insert(person.borrow().id, person.clone());
             }
-        });
+        }
+        for person in self.historic.values() {
+            if person.borrow().simulatable() {
+                alive.insert(person.borrow().id, person.clone());
+            } else {
+                historic.insert(person.borrow().id, person.clone());
+            }
+        }
+        self.alive = alive;
+        self.historic = historic;
     }
 
-}
-
-enum WorldGraphNode {
-    SettlementNode(Settlement)
 }
 
 const WORLD_MAP_HEIGHT: usize = 64;
@@ -152,7 +125,7 @@ impl WorldMap {
     pub fn get_world_tile(&self, x: usize, y: usize) -> WorldTileData {
         let i = (y * WORLD_MAP_WIDTH) + x;
         return WorldTileData {
-            xy: Point(x, y),
+            xy: Point2D(x, y),
             elevation: self.elevation[i],
             temperature: self.temperature[i],
             region_id: self.region_id[i],
@@ -162,7 +135,7 @@ impl WorldMap {
 }
 
 struct WorldTileData {
-    xy: Point,
+    xy: Point2D,
     elevation: u8,
     temperature: u8,
     region_id: u8
@@ -410,7 +383,7 @@ fn main() {
     };
 
     let khajit = CulturePrefab {
-        id: Id(0),
+        id: Id(1),
         name: String::from("Khajiit"),
         language: LanguagePrefab {
             dictionary: HashMap::from([
@@ -444,6 +417,7 @@ fn main() {
 
     let regions = vec!(
         RegionPrefab {
+            id: 0,
             name: String::from("Coastal"),
             elevation: (0, 0),
             temperature: (0, 5),
@@ -457,6 +431,7 @@ fn main() {
             ])
         },
         RegionPrefab {
+            id: 1,
             name: String::from("Forest"),
             elevation: (1, 5),
             temperature: (0, 3),
@@ -470,6 +445,7 @@ fn main() {
             ])
         },
         RegionPrefab {
+            id: 2,
             name: String::from("Desert"),
             elevation: (1, 5),
             temperature: (4, 5),
@@ -498,7 +474,7 @@ fn main() {
     println!("");
     println!("World generated in {:.2?}", elapsed);
     println!(" {} people", world.people.len());
-    println!(" {} places", world.nodes.len());
+    println!(" {} settlements", world.settlements.len());
     println!(" {} events", world.events.len());
 
     loop {
@@ -530,10 +506,8 @@ fn main() {
                 },
                 Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name())),
                 Event::SettlementFounded(year, settlement, person) => {
-                    let settlement = world.nodes.get(settlement).unwrap();
-                    if let WorldGraphNode::SettlementNode(settlement) = settlement {
-                            anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name))
-                    }
+                    let settlement = world.settlements.get(settlement).unwrap();
+                    anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name))
                 },
                 Event::Marriage(year, person_a, person_b) => {
                     anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name(), world.people.get(person_b).unwrap().birth_name()))
@@ -557,7 +531,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
     let mut year: u32 = 1;
     let mut world_graph = WorldGraph {
         cultures: HashMap::new(),
-        nodes: HashMap::new(),
+        settlements: HashMap::new(),
         people: People::new(),
         events: vec!()
     };
@@ -599,6 +573,11 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         println!("Year {}, {} people to process", year, world_graph.people.alive.len());
         if year % 10 == 0 {
             print_world_map(&world_graph, &world_map);
+
+            // println!("Year {}, {} people to process", year, world_graph.people.alive.len());
+            // println!("Press anything to continue");
+            // let mut filter = String::new();
+            // let _ = io::stdin().read_line(&mut filter);
         }
 
         let mut new_people: Vec<Person> = Vec::new();
@@ -615,7 +594,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                     let mut valid_heir = false;
                     for heir in heirs_by_order {
                         let mut heir = world_graph.people.get_mut(&heir.person_id).unwrap();
-                        if heir.death == 0 {
+                        if heir.alive() {
                             // TODO: Leader of what?
                             heir.leader = true;
                             heir.importance = Importance::Important;
@@ -699,7 +678,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 let settlement = generate_settlement(&rng, year, culture, &world_graph, &world_map, regions).clone();
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
-                world_graph.nodes.insert(id, WorldGraphNode::SettlementNode(settlement));
+                world_graph.settlements.insert(id, settlement);
                 person.leader = true;
                 continue;
             }
@@ -712,6 +691,31 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         }
         
         world_graph.people.reindex();
+
+        for (_, settlement) in world_graph.settlements.iter_mut() {
+            if settlement.demographics.population <= 0 {
+                continue
+            }
+
+            // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
+            let growth = rng.randf_range(-0.005, 0.03);
+            let child_chance = (settlement.demographics.population as f32) * growth;
+            if child_chance < 0.0 {
+                if child_chance > -1.0 && rng.rand_chance(child_chance.abs()) {
+                    settlement.demographics.change_population(-1);
+                } else {
+                    settlement.demographics.change_population(child_chance as i32);
+                }
+            } else {
+                if child_chance < 1.0 && rng.rand_chance(child_chance) {
+                    settlement.demographics.population = settlement.demographics.population + 1;
+                } else {
+                    settlement.demographics.change_population(child_chance as i32);
+                }
+            }
+
+        }
+
     }
 
     return world_graph
@@ -748,53 +752,21 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
 
 fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
     let mut rng = rng.derive("settlement");
-    let mut xy = Point(0, 0);
+    let mut xy = Point2D(0, 0);
     // TODO: What if there's no more places?
     'candidates: for _ in 1..10 {
-        xy = Point(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
-        for node in world_graph.nodes.values() {
-            match node {
-                WorldGraphNode::SettlementNode(settlement) => {
-                    if settlement.xy.dist_squared(&xy) < 5.0_f32.powi(2) {
-                        continue 'candidates;
-                    }
-                }
+        xy = Point2D(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
+        for settlement in world_graph.settlements.values() {
+            if settlement.xy.dist_squared(&xy) < 5.0_f32.powi(2) {
+                continue 'candidates;
             }
         }
         break;
     }
     let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
     let region = regions.get(region_id).unwrap();
-    return Settlement {
-        xy, 
-        name: String::from(generate_location_name(&rng, culture, region)),
-        founding_year: founding_year,
-        culture_id: culture.id,
-        region_id,
-    };
-}
 
-fn generate_location_name(rng: &Rng, culture: &CulturePrefab, region: &RegionPrefab) -> String {
-    let mut rng = rng.derive("name");
-
-    let mut landmarks = Vec::new();
-    landmarks.extend(&region.fauna);
-    landmarks.extend(&region.flora);
-    if let Some(landmark) = landmarks.get(rng.randu_range(0, landmarks.len())) {
-
-        // TODO: Based on location
-        let place_types = [String::from("fortress"), String::from("port")];
-        if let Some(place_type) = place_types.get(rng.randu_range(0, place_types.len())) {
-
-            // TODO: Fallback to something
-            let landmark_tr = culture.language.dictionary.get(*landmark).unwrap_or(landmark);
-            let placetype_tr = culture.language.dictionary.get(&*place_type).unwrap_or(place_type);
-            return landmark_tr.to_owned() + placetype_tr;
-
-        }
-    }
-    // TODO: Fallback to something
-    return String::from("Settlement")
+    return SettlementBuilder::colony(&rng, xy, founding_year, culture, region).create()
 }
 
 fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
@@ -858,12 +830,17 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
                 _ => string = String::from("??")
             }
 
-            for node in world_graph.nodes.values() {
-                match node {
-                    WorldGraphNode::SettlementNode(settlement) => {
-                        if settlement.xy.0 == x && settlement.xy.1 == y {
-                            string = String::from("@");
-                        }
+            for settlement in world_graph.settlements.values() {
+                if settlement.xy.0 == x && settlement.xy.1 == y {
+                    // 🏛️🛖🏘️🏰🕌⛪️🛕🕍⛺️🎪
+                    if settlement.demographics.population < 50 {
+                        string = String::from("🛖");    
+                    } else if settlement.demographics.population < 150 {
+                        string = String::from("🏘️");    
+                    } else if settlement.demographics.population < 1000 {
+                        string = String::from("🕍");
+                    } else {
+                        string = String::from("🕌");
                     }
                 }
             }
