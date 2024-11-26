@@ -1,3 +1,6 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+#[derive(Clone)]
 pub struct Rng {
     seed: u32
 }
@@ -7,6 +10,29 @@ impl Rng {
         return Rng {
             seed
         }
+    }
+
+    pub fn seeded(seed: impl Hash) -> Rng {
+        let mut hasher = DefaultHasher::new();
+        seed.hash(&mut hasher);
+        return Rng {
+            seed: hasher.finish() as u32
+        }
+    }
+
+    pub fn seed(&self) -> u32 {
+        return self.seed;
+    }
+
+    pub fn derive(&self, deriver: impl Hash) -> Rng {
+        let mut hasher = DefaultHasher::new();
+        deriver.hash(&mut hasher);
+        return Rng::new(self.seed.wrapping_add(hasher.finish() as u32));
+    }
+
+    pub fn next(&mut self) {
+        let next = self.xor_shift(self.seed) as usize;
+        self.seed = next as u32;
     }
 
     pub fn randu_range(&mut self, start_inclusive: usize, end_exclusive: usize) -> usize {

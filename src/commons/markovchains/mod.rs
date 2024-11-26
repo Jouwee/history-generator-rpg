@@ -98,10 +98,9 @@ impl MarkovChainSingleWordModel {
         return model
     }
 
-    pub fn generate(&self, seed: u32, min_length: u8, max_length: u8) -> String {
-        let mut rng = Rng::new(seed);
+    pub fn generate(&self, rng: &Rng, min_length: u8, max_length: u8) -> String {
+        let mut rng = rng.clone();
         let mut string = String::new();
-
         let mut history = [NULL, NULL, START_OF];
 
         for _ in 0..max_length {
@@ -186,7 +185,7 @@ mod tests {
         // assert_eq!(mo2.generate(10, 3, 10), "jon");
 
         let mo3 = MarkovChainSingleWordModel::train(vec!("john", "joe", "joseph", "jonny", "jon", "jonathan", "jasper"), 3);
-        assert_eq!(mo3.generate(0, 3, 10), "jasper");
-        assert_eq!(mo3.generate(10, 3, 10), "jon");
+        assert_eq!(mo3.generate(&Rng::new(0), 3, 10), "jasper");
+        assert_eq!(mo3.generate(&Rng::new(10), 3, 10), "jon");
     }
 }

@@ -1,4 +1,4 @@
-use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{HashMap, HashSet}, io, vec};
+use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap, HashSet}, io, vec};
 use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use noise::{NoiseFn, Perlin};
@@ -77,7 +77,7 @@ struct WorldGraph {
 
 struct People {
     historic: HashMap<Id, RefCell<Person>>,
-    alive: HashMap<Id, RefCell<Person>>
+    alive: BTreeMap<Id, RefCell<Person>>
 }
 
 impl People {
@@ -85,7 +85,7 @@ impl People {
     fn new() -> People {
         People {
             historic: HashMap::new(),
-            alive: HashMap::new()
+            alive: BTreeMap::new()
         }
     }
 
@@ -321,8 +321,6 @@ fn main() {
     use std::time::Instant;
     let now = Instant::now();
 
-
-    let seed: u32 = 123456;
     let nords = CulturePrefab {
         id: Id(0),
         name: String::from("Nords"),
@@ -493,7 +491,7 @@ fn main() {
 
     let now = Instant::now();
 
-    let world = generate_world(seed, 500, vec!(nords, khajit), &regions);
+    let world = generate_world(Rng::seeded("prototype"), 500, vec!(nords, khajit), &regions);
 
     let elapsed = now.elapsed();
 
@@ -555,7 +553,7 @@ fn main() {
     }
 }
 
-fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regions: &Vec<RegionPrefab>) -> WorldGraph {
+fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, regions: &Vec<RegionPrefab>) -> WorldGraph {
     let mut year: u32 = 1;
     let mut world_graph = WorldGraph {
         cultures: HashMap::new(),
@@ -571,26 +569,23 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
         world_graph.cultures.insert(culture.id, culture);
     }
 
-    let world_map = generate_world_map(seed, regions);
-
-    let mut rng = Rng::new(seed);
+    let world_map = generate_world_map(&rng, regions);
 
     let mut person_id = Id(0);
     let mut sett_id = Id(0);
 
     // Generate starter people
     for _ in 0..10 {
+        rng.next();
         let id = person_id.next();
-        let seed = seed * id.0 as u32;
         let culture = world_graph.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
-        let mut rng = Rng::new(seed);
         let sex;
         if rng.rand_chance(0.5) {
             sex = PersonSex::Male;
         } else {
             sex = PersonSex::Female;
         }
-        let person = generate_person(seed, Importance::Important, id, year, sex, &culture, None);
+        let person = generate_person(&rng, Importance::Important, id, year, sex, &culture, None);
         world_graph.events.push(Event::PersonBorn(year, person.id));
         world_graph.people.insert(person);
     }
@@ -637,7 +632,8 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                         } else {
                             sex = PersonSex::Female;
                         }
-                        let mut new_leader = generate_person(seed, Importance::Important, person_id.next(), year, sex, &culture, None);
+                        rng.next();
+                        let mut new_leader = generate_person(&rng, Importance::Important, person_id.next(), year, sex, &culture, None);
                         new_leader.leader = true;
                         world_graph.events.push(Event::RoseToPower(year, new_leader.id));
                         new_people.push(new_leader);
@@ -648,12 +644,12 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
             }
 
             if age > 18.0 && person.spouse().is_none() && rng.rand_chance(0.1) {
+                rng.next();
                 let id = person_id.next();
-                let seed = seed * id.0 as u32;
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let mut spouse = generate_person(seed, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, None);
+                let mut spouse = generate_person(&rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, None);
                 spouse.last_name = person.last_name.clone();
                 spouse.next_of_kin.push(NextOfKin {
                     person_id: person.id,
@@ -674,8 +670,7 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
 
                 if rng.rand_chance(couple_fertility * 0.5) {
                     let id = person_id.next();
-                    let seed = seed * id.0 as u32;
-                    let mut rng = Rng::new(seed);
+                    rng.next();
                     let sex;
                     if rng.rand_chance(0.5) {
                         sex = PersonSex::Male;
@@ -683,7 +678,7 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
                         sex = PersonSex::Female;
                     }
                     let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                    let mut child = generate_person(seed, person.importance.lower(), id, year, sex, culture, Some(&person.last_name));
+                    let mut child = generate_person(&rng, person.importance.lower(), id, year, sex, culture, Some(&person.last_name));
                     child.next_of_kin.push(NextOfKin { 
                         person_id: person.id,
                         relative: Relative::Parent
@@ -699,9 +694,9 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
             }
 
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
-
+                rng.next();
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let settlement = generate_settlement(seed, year, culture, &world_graph, &world_map, regions).clone();
+                let settlement = generate_settlement(&rng, year, culture, &world_graph, &world_map, regions).clone();
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
                 world_graph.nodes.insert(id, WorldGraphNode::SettlementNode(settlement));
@@ -722,17 +717,18 @@ fn generate_world(seed: u32, world_age: u32, cultures: Vec<CulturePrefab>, regio
     return world_graph
 }
 
-fn generate_person(seed: u32, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, surname: Option<&str>) -> Person {
+fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, surname: Option<&str>) -> Person {
+    let mut rng = rng.derive("person");
     let first_name;
     match sex {
-        PersonSex::Male => first_name = culture.first_name_male_model.generate(seed + 13, 4, 15),
-        PersonSex::Female => first_name = culture.first_name_female_model.generate(seed + 17, 4, 15)
+        PersonSex::Male => first_name = culture.first_name_male_model.generate(&rng.derive("first_name"), 4, 15),
+        PersonSex::Female => first_name = culture.first_name_female_model.generate(&rng.derive("first_name"), 4, 15)
     }
     let first_name = Strings::capitalize(&first_name);
     let last_name;
     match surname {
         Some(str) => last_name = String::from(str),
-        None => last_name = Strings::capitalize(&culture.last_name_model.generate(seed, 4, 15))
+        None => last_name = Strings::capitalize(&culture.last_name_model.generate(&rng.derive("last_name"), 4, 15))
     }
     return Person {
         id: next_id,
@@ -750,9 +746,8 @@ fn generate_person(seed: u32, importance: Importance, next_id: Id, birth_year: u
 }
 
 
-fn generate_settlement(seed: u32, founding_year: u32, culture: &CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
-    let seed = seed + founding_year as u32;
-    let mut rng = Rng::new(seed);
+fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
+    let mut rng = rng.derive("settlement");
     let mut xy = Point(0, 0);
     // TODO: What if there's no more places?
     'candidates: for _ in 1..10 {
@@ -772,15 +767,15 @@ fn generate_settlement(seed: u32, founding_year: u32, culture: &CulturePrefab, w
     let region = regions.get(region_id).unwrap();
     return Settlement {
         xy, 
-        name: String::from(generate_location_name(seed, culture, region)),
+        name: String::from(generate_location_name(&rng, culture, region)),
         founding_year: founding_year,
         culture_id: culture.id,
         region_id,
     };
 }
 
-fn generate_location_name(seed: u32, culture: &CulturePrefab, region: &RegionPrefab) -> String {
-    let mut rng = Rng::new(seed);
+fn generate_location_name(rng: &Rng, culture: &CulturePrefab, region: &RegionPrefab) -> String {
+    let mut rng = rng.derive("name");
 
     let mut landmarks = Vec::new();
     landmarks.extend(&region.fauna);
@@ -802,15 +797,16 @@ fn generate_location_name(seed: u32, culture: &CulturePrefab, region: &RegionPre
     return String::from("Settlement")
 }
 
-fn generate_world_map(seed: u32, regions: &Vec<RegionPrefab>) -> WorldMap {
+fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
+    let rng = rng.derive("world_map");
     let mut map = WorldMap {
         elevation: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
         temperature: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
         region_id: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
     };
-    let n_elev = Perlin::new(seed + 37);
-    let n_temp = Perlin::new(seed + 101);
-    let n_reg = Perlin::new(seed + 537);
+    let n_elev = Perlin::new(rng.derive("elevation").seed());
+    let n_temp = Perlin::new(rng.derive("temperature").seed());
+    let n_reg = Perlin::new(rng.derive("region").seed());
     for y in 0..WORLD_MAP_HEIGHT {
         for x in 0..WORLD_MAP_WIDTH {
             let i = (y * WORLD_MAP_WIDTH) + x;
