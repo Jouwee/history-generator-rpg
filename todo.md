@@ -30,7 +30,7 @@
     - Wall (+defence)
 - Settlement
   - Political faction
-  - Population (based on soil fertility)
+  - ✓ Population (growth based on soil fertility and population)
   - Gold (based on resources)
 - Conflicts
   - Between factions

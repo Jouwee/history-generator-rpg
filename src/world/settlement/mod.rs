@@ -1,4 +1,4 @@
-use crate::{commons::rng::Rng, engine::{Id, Point2D}, CulturePrefab, RegionPrefab};
+use crate::{commons::{rng::Rng, strings::Strings}, engine::{Id, Point2D}, CulturePrefab, RegionPrefab};
 
 #[derive(Clone)]
 pub struct Settlement {
@@ -76,7 +76,7 @@ impl<'a> SettlementBuilder<'a> {
             }
         }
         // TODO: Fallback to something
-        return String::from("Settlement")
+        return Strings::capitalize("Settlement")
     }
 
     fn derive_demographics(rng: &Rng, population: u32) -> Demographics {

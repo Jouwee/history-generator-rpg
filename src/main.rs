@@ -31,11 +31,13 @@ struct RegionPrefab {
     id: usize,
     elevation: (u8, u8),
     temperature: (u8, u8),
+    soil_fertility_range: (f32, f32),
     fauna: Vec<String>,
     flora: Vec<String>,
 }
 
 struct WorldGraph {
+    map: WorldMap,
     cultures: HashMap<Id, CulturePrefab>,
     settlements: HashMap<Id, Settlement>,
     people: People,
@@ -117,6 +119,7 @@ const WORLD_MAP_WIDTH: usize = 64;
 struct WorldMap {
     elevation: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
     temperature: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+    soil_ferility: [f32; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
     region_id: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH]
 }
 
@@ -128,16 +131,19 @@ impl WorldMap {
             xy: Point2D(x, y),
             elevation: self.elevation[i],
             temperature: self.temperature[i],
+            soil_ferility: self.soil_ferility[i],
             region_id: self.region_id[i],
         }
     }
 
 }
 
+#[derive(Debug)]
 struct WorldTileData {
     xy: Point2D,
     elevation: u8,
     temperature: u8,
+    soil_ferility: f32,
     region_id: u8
 }
 
@@ -421,6 +427,7 @@ fn main() {
             name: String::from("Coastal"),
             elevation: (0, 0),
             temperature: (0, 5),
+            soil_fertility_range: (0.8, 1.2),
             fauna: Vec::from([
                 String::from("whale"),
                 String::from("fish")
@@ -435,6 +442,7 @@ fn main() {
             name: String::from("Forest"),
             elevation: (1, 5),
             temperature: (0, 3),
+            soil_fertility_range: (1.0, 1.4),
             fauna: Vec::from([
                 String::from("elk"),
                 String::from("boar")
@@ -449,6 +457,7 @@ fn main() {
             name: String::from("Desert"),
             elevation: (1, 5),
             temperature: (4, 5),
+            soil_fertility_range: (0.6, 1.0),
             fauna: Vec::from([
                 String::from("scorpion"),
                 String::from("vulture")
@@ -482,7 +491,7 @@ fn main() {
                 
 
         println!("");
-        println!("Type something to filter");
+        println!("Type something to filter, or tile:x,y");
 
         let mut filter = String::new();
         let _ = io::stdin().read_line(&mut filter);
@@ -518,9 +527,22 @@ fn main() {
             
         }
 
-        for gospel in anals {
-            if filter.len() == 0 || gospel.contains(&filter) {
-                println!("{}", gospel);
+        if filter.starts_with("tile:") {
+            let mut pos = filter.split(":").last().unwrap().split(",");
+            let x: usize = pos.next().unwrap().parse().unwrap();
+            let y: usize = pos.next().unwrap().parse().unwrap();
+            let tile = world.map.get_world_tile(x, y);
+            println!("{:?}", tile)
+        } else {
+
+            for (_, settlement) in world.settlements.iter() {
+                anals.push(format!("The city of {} ({:?}) was founded in {}. It has a population of {}", settlement.name, settlement.xy, settlement.founding_year, settlement.demographics.population));
+            }
+
+            for gospel in anals {
+                if filter.len() == 0 || gospel.contains(&filter) {
+                    println!("{}", gospel);
+                }
             }
         }
 
@@ -529,7 +551,11 @@ fn main() {
 
 fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, regions: &Vec<RegionPrefab>) -> WorldGraph {
     let mut year: u32 = 1;
+
+    let world_map = generate_world_map(&rng, regions);
+
     let mut world_graph = WorldGraph {
+        map: world_map,
         cultures: HashMap::new(),
         settlements: HashMap::new(),
         people: People::new(),
@@ -542,8 +568,6 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         culture.id = culture_id.next();
         world_graph.cultures.insert(culture.id, culture);
     }
-
-    let world_map = generate_world_map(&rng, regions);
 
     let mut person_id = Id(0);
     let mut sett_id = Id(0);
@@ -572,7 +596,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
 
         println!("Year {}, {} people to process", year, world_graph.people.alive.len());
         if year % 10 == 0 {
-            print_world_map(&world_graph, &world_map);
+            print_world_map(&world_graph, &world_graph.map);
 
             // println!("Year {}, {} people to process", year, world_graph.people.alive.len());
             // println!("Press anything to continue");
@@ -675,7 +699,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
                 rng.next();
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let settlement = generate_settlement(&rng, year, culture, &world_graph, &world_map, regions).clone();
+                let settlement = generate_settlement(&rng, year, culture, &world_graph, &world_graph.map, regions).clone();
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
                 world_graph.settlements.insert(id, settlement);
@@ -698,7 +722,8 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             }
 
             // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
-            let growth = rng.randf_range(-0.005, 0.03);
+            let soil_fertility = world_graph.map.get_world_tile(settlement.xy.0, settlement.xy.1).soil_ferility;
+            let growth = rng.randf_range(-0.005, 0.03) + ((soil_fertility - 0.5) * 0.01);
             let child_chance = (settlement.demographics.population as f32) * growth;
             if child_chance < 0.0 {
                 if child_chance > -1.0 && rng.rand_chance(child_chance.abs()) {
@@ -722,7 +747,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
 }
 
 fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, surname: Option<&str>) -> Person {
-    let mut rng = rng.derive("person");
+    let rng = rng.derive("person");
     let first_name;
     match sex {
         PersonSex::Male => first_name = culture.first_name_male_model.generate(&rng.derive("first_name"), 4, 15),
@@ -774,11 +799,13 @@ fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
     let mut map = WorldMap {
         elevation: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
         temperature: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
+        soil_ferility: [0.0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
         region_id: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
     };
     let n_elev = Perlin::new(rng.derive("elevation").seed());
     let n_temp = Perlin::new(rng.derive("temperature").seed());
     let n_reg = Perlin::new(rng.derive("region").seed());
+    let n_fert = Perlin::new(rng.derive("fertility").seed());
     for y in 0..WORLD_MAP_HEIGHT {
         for x in 0..WORLD_MAP_WIDTH {
             let i = (y * WORLD_MAP_WIDTH) + x;
@@ -810,6 +837,12 @@ fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
                     }
                 }
             }
+            {
+                let region_fertility_range = regions[map.region_id[i] as usize].soil_fertility_range;
+                let noise_modif = n_fert.get([xf / 10.0, yf / 10.0]) as f32;
+                let noise_modif = (noise_modif + 1.0) / 2.0;
+                map.soil_ferility[i] = noise_modif * (region_fertility_range.1 - region_fertility_range.0) + region_fertility_range.0;
+            }
         }
     }
     return map;
@@ -817,7 +850,15 @@ fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
 
 fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
     println!("--------------------------------------------------------------------------------------------------------------------------------");
+
+    print!("   ");
+    for x in 0..WORLD_MAP_WIDTH {
+        print!("{x:02}");
+    }
+    println!();
+
     for y in 0..WORLD_MAP_HEIGHT {
+        print!("{y:02} ");
         for x in 0..WORLD_MAP_WIDTH {
             let tile = world_map.get_world_tile(x, y);
             let mut string;
@@ -833,7 +874,9 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
             for settlement in world_graph.settlements.values() {
                 if settlement.xy.0 == x && settlement.xy.1 == y {
                     // 🏛️🛖🏘️🏰🕌⛪️🛕🕍⛺️🎪
-                    if settlement.demographics.population < 50 {
+                    if settlement.demographics.population == 0 {
+                        string = String::from("🏚️");    
+                    } else if settlement.demographics.population < 50 {
                         string = String::from("🛖");    
                     } else if settlement.demographics.population < 150 {
                         string = String::from("🏘️");    
@@ -846,7 +889,7 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
             }
 
             let colored_string;
-            match tile.elevation {
+            match tile.region_id {
                 0 => colored_string = string.blue(),
                 1 => colored_string = string.green(),
                 2 => colored_string = string.yellow(),
