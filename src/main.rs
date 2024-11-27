@@ -3,7 +3,7 @@ use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{Id, Point2D};
 use noise::{NoiseFn, Perlin};
-use world::settlement::{Settlement, SettlementBuilder};
+use world::{faction::{self, Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
 
 pub mod engine;
 pub mod commons;
@@ -39,6 +39,7 @@ struct RegionPrefab {
 struct WorldGraph {
     map: WorldMap,
     cultures: HashMap<Id, CulturePrefab>,
+    factions: HashMap<Id, Faction>,
     settlements: HashMap<Id, Settlement>,
     people: People,
     events: Vec<Event>
@@ -176,6 +177,8 @@ struct Person {
     death: u32,
     culture_id: Id,
     next_of_kin: Vec<NextOfKin>,
+    faction_id: Id,
+    faction_relation: FactionRelation,
     leader: bool
 }
 
@@ -536,7 +539,8 @@ fn main() {
         } else {
 
             for (_, settlement) in world.settlements.iter() {
-                anals.push(format!("The city of {} ({:?}) was founded in {}. It has a population of {}", settlement.name, settlement.xy, settlement.founding_year, settlement.demographics.population));
+                let faction = world.factions.get(&settlement.faction_id).unwrap();
+                anals.push(format!("The city of {} ({:?}) was founded in {}, and it's part of {}. It has a population of {}", settlement.name, settlement.xy, settlement.founding_year, faction.name, settlement.demographics.population));
             }
 
             for gospel in anals {
@@ -557,6 +561,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
     let mut world_graph = WorldGraph {
         map: world_map,
         cultures: HashMap::new(),
+        factions: HashMap::new(),
         settlements: HashMap::new(),
         people: People::new(),
         events: vec!()
@@ -570,6 +575,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
     }
 
     let mut person_id = Id(0);
+    let mut faction_id = Id(0);
     let mut sett_id = Id(0);
 
     // Generate starter people
@@ -583,7 +589,10 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         } else {
             sex = PersonSex::Female;
         }
-        let person = generate_person(&rng, Importance::Important, id, year, sex, &culture, None);
+        let faction = Faction::new(&rng, faction_id.next(), id);
+        world_graph.factions.insert(faction_id, faction);
+        let mut person = generate_person(&rng, Importance::Important, id, year, sex, &culture, &faction_id, None);
+        person.faction_relation = FactionRelation::Leader;
         world_graph.events.push(Event::PersonBorn(year, person.id));
         world_graph.people.insert(person);
     }
@@ -622,7 +631,10 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                             // TODO: Leader of what?
                             heir.leader = true;
                             heir.importance = Importance::Important;
+                            heir.faction_relation = FactionRelation::Leader;
                             world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
+                            let faction = world_graph.factions.get_mut(&heir.faction_id).unwrap();
+                            faction.leader = heir.id;
                             valid_heir = true;
                             break
                         }
@@ -636,7 +648,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                             sex = PersonSex::Female;
                         }
                         rng.next();
-                        let mut new_leader = generate_person(&rng, Importance::Important, person_id.next(), year, sex, &culture, None);
+                        let mut new_leader = generate_person(&rng, Importance::Important, person_id.next(), year, sex, &culture, &person.faction_id, None);
                         new_leader.leader = true;
                         world_graph.events.push(Event::RoseToPower(year, new_leader.id));
                         new_people.push(new_leader);
@@ -652,7 +664,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let mut spouse = generate_person(&rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, None);
+                let mut spouse = generate_person(&rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, &person.faction_id, None);
                 spouse.last_name = person.last_name.clone();
                 spouse.next_of_kin.push(NextOfKin {
                     person_id: person.id,
@@ -681,7 +693,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                         sex = PersonSex::Female;
                     }
                     let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                    let mut child = generate_person(&rng, person.importance.lower(), id, year, sex, culture, Some(&person.last_name));
+                    let mut child = generate_person(&rng, person.importance.lower(), id, year, sex, culture, &person.faction_id, Some(&person.last_name));
                     child.next_of_kin.push(NextOfKin { 
                         person_id: person.id,
                         relative: Relative::Parent
@@ -699,7 +711,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
                 rng.next();
                 let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let settlement = generate_settlement(&rng, year, culture, &world_graph, &world_graph.map, regions).clone();
+                let settlement = generate_settlement(&rng, year, culture, person.faction_id, &world_graph, &world_graph.map, regions).clone();
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
                 world_graph.settlements.insert(id, settlement);
@@ -746,7 +758,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
     return world_graph
 }
 
-fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, surname: Option<&str>) -> Person {
+fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, faction: &Id, surname: Option<&str>) -> Person {
     let rng = rng.derive("person");
     let first_name;
     match sex {
@@ -768,6 +780,8 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
         birth: birth_year,
         sex,
         culture_id: culture.id,
+        faction_id: faction.clone(),
+        faction_relation: FactionRelation::Member,
         death: 0,
         next_of_kin: Vec::new(),
         leader: false
@@ -775,7 +789,7 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
 }
 
 
-fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
+fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
     let mut rng = rng.derive("settlement");
     let mut xy = Point2D(0, 0);
     // TODO: What if there's no more places?
@@ -791,7 +805,7 @@ fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, w
     let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
     let region = regions.get(region_id).unwrap();
 
-    return SettlementBuilder::colony(&rng, xy, founding_year, culture, region).create()
+    return SettlementBuilder::colony(&rng, xy, founding_year, culture, faction, region).create()
 }
 
 fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {

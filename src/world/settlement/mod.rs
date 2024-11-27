@@ -6,6 +6,7 @@ pub struct Settlement {
     pub name: String,
     pub founding_year: u32,
     pub culture_id: Id,
+    pub faction_id: Id,
     pub region_id: usize,
     pub demographics: Demographics
 }
@@ -26,18 +27,20 @@ pub struct SettlementBuilder<'a> {
     xy: Point2D,
     founding_year: u32,
     culture: &'a CulturePrefab,
+    faction_id: Id,
     region: &'a RegionPrefab,
     population: u32,
 }
 
 impl<'a> SettlementBuilder<'a> {
 
-    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, culture: &'a CulturePrefab, region: &'a RegionPrefab) -> SettlementBuilder<'a> {
+    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, culture: &'a CulturePrefab, faction_id: Id, region: &'a RegionPrefab) -> SettlementBuilder<'a> {
         let mut rng = rng.derive("colony");
         let population = rng.randu_range(2, 10) as u32;
         return SettlementBuilder {
             rng,
             founding_year,
+            faction_id,
             xy,
             culture,
             region,
@@ -51,6 +54,7 @@ impl<'a> SettlementBuilder<'a> {
             name: Self::generate_location_name(&self.rng.derive("name"), self.culture, self.region),
             founding_year: self.founding_year,
             culture_id: self.culture.id,
+            faction_id: self.faction_id,
             region_id: self.region.id,
             demographics: Self::derive_demographics(&self.rng.derive("demographics"), self.population)
         }
@@ -71,7 +75,7 @@ impl<'a> SettlementBuilder<'a> {
                 // TODO: Fallback to something
                 let landmark_tr = culture.language.dictionary.get(*landmark).unwrap_or(landmark);
                 let placetype_tr = culture.language.dictionary.get(&*place_type).unwrap_or(place_type);
-                return landmark_tr.to_owned() + placetype_tr;
+                return Strings::capitalize((landmark_tr.to_owned() + placetype_tr).as_str());
 
             }
         }

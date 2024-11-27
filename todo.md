@@ -34,7 +34,7 @@
   - Gold (based on resources)
 - Conflicts
   - Between factions
-  - Chance for an attack between enemies every hit
+  - Chance for an attack between enemies every year
     - Uses gold and population
 
 ## feat - Legends simulation
