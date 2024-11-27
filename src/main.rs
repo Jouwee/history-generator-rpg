@@ -1,4 +1,4 @@
-use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap, HashSet}, io, vec};
+use std::{borrow::Borrow, cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap, HashSet}, io, vec};
 use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{Id, Point2D};
@@ -39,10 +39,48 @@ struct RegionPrefab {
 struct WorldGraph {
     map: WorldMap,
     cultures: HashMap<Id, CulturePrefab>,
-    factions: HashMap<Id, Faction>,
+    factions: IdMap<Faction>,
     settlements: HashMap<Id, Settlement>,
     people: People,
     events: Vec<Event>
+}
+
+#[derive(Debug)]
+struct IdMap<T> {
+    map: BTreeMap<Id, RefCell<T>>
+}
+
+impl<T> IdMap<T> {
+    fn new() -> IdMap<T> {
+        IdMap {
+            map: BTreeMap::new()
+        }
+    }
+
+    fn get(&self, id: &Id) -> Option<Ref<T>> {
+        let option = self.map.get(id);
+        match option {
+            None => None,
+            Some(ref_cell) => Some(ref_cell.borrow())
+        }
+    }
+
+    fn get_mut(&self, id: &Id) -> Option<RefMut<T>> {
+        let option = self.map.get(id);
+        match option {
+            None => None,
+            Some(ref_cell) => Some(ref_cell.borrow_mut())
+        }
+    }
+
+    fn insert(&mut self, id: Id, value: T) {
+        self.map.insert(id, RefCell::new(value));
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<T>)> {
+        self.map.iter()
+    }
+
 }
 
 struct People {
@@ -295,7 +333,17 @@ enum Event {
     Marriage(u32, Id, Id),
     Inheritance(u32, Id, Id),
     RoseToPower(u32, Id),
-    SettlementFounded(u32, Id, Id)
+    SettlementFounded(u32, Id, Id),
+    WarDeclared(u32, Id, Id),
+    PeaceDeclared(u32, Id, Id),
+    Siege(u32, Id, Id, Id, Id, BattleResult),
+}
+
+struct BattleResult {
+    attacker_deaths: u32,
+    defender_deaths: u32,
+    attacker_victor: bool,
+    defender_captured: bool,
 }
 
 fn main() {
@@ -526,6 +574,30 @@ fn main() {
                 },
                 Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_b).unwrap().name(), world.people.get(person_a).unwrap().name())),
                 Event::RoseToPower(year, person) => anals.push(format!("In {}, {} rose to power", year, world.people.get(person).unwrap().name())),
+                Event::WarDeclared(year, faction, faction2) => {
+                    let faction = world.factions.get(faction).unwrap();
+                    let faction2 = world.factions.get(faction2).unwrap();
+                    anals.push(format!("In {}, a war between the {} and the {} started", year, faction.name, faction2.name))
+                }
+                Event::PeaceDeclared(year, faction, faction2) => {
+                    let faction = world.factions.get(faction).unwrap();
+                    let faction2 = world.factions.get(faction2).unwrap();
+                    anals.push(format!("In {}, the war between the {} and the {} ended", year, faction.name, faction2.name))
+                }
+                Event::Siege(year, _, _, settlement_attacker, settlement_defender, battle_result) => {
+                    let settlement_attacker = world.settlements.get(settlement_attacker).unwrap();
+                    let settlement_defender = world.settlements.get(settlement_defender).unwrap();
+                    let mut suffix = "had to retreat";
+                    if battle_result.defender_captured {
+                        suffix = "captured the settlement"
+                    }
+                    let deaths = battle_result.attacker_deaths + battle_result.defender_deaths;
+                    if battle_result.attacker_victor {
+                        anals.push(format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
+                    } else {
+                        anals.push(format!("In {}, {} attempted to sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
+                    }
+                }
             }
             
         }
@@ -561,7 +633,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
     let mut world_graph = WorldGraph {
         map: world_map,
         cultures: HashMap::new(),
-        factions: HashMap::new(),
+        factions: IdMap::new(),
         settlements: HashMap::new(),
         people: People::new(),
         events: vec!()
@@ -590,8 +662,8 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             sex = PersonSex::Female;
         }
         let faction = Faction::new(&rng, faction_id.next(), id);
-        world_graph.factions.insert(faction_id, faction);
-        let mut person = generate_person(&rng, Importance::Important, id, year, sex, &culture, &faction_id, None);
+        let mut person = generate_person(&rng, Importance::Important, id, year, sex, &culture, &faction.id, None);
+        world_graph.factions.insert(faction.id, faction);
         person.faction_relation = FactionRelation::Leader;
         world_graph.events.push(Event::PersonBorn(year, person.id));
         world_graph.people.insert(person);
@@ -631,9 +703,11 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                             // TODO: Leader of what?
                             heir.leader = true;
                             heir.importance = Importance::Important;
-                            heir.faction_relation = FactionRelation::Leader;
+                            if person.faction_relation == FactionRelation::Leader {
+                                heir.faction_relation = FactionRelation::Leader;
+                            }
                             world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
-                            let faction = world_graph.factions.get_mut(&heir.faction_id).unwrap();
+                            let mut faction = world_graph.factions.get_mut(&heir.faction_id).unwrap();
                             faction.leader = heir.id;
                             valid_heir = true;
                             break
@@ -719,6 +793,46 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 continue;
             }
 
+            if person.faction_relation == FactionRelation::Leader {
+                let mut faction = world_graph.factions.get_mut(&person.faction_id).unwrap();
+
+                if faction.id != person.faction_id {
+                    panic!("{:?} {:?}", faction.id, person.faction_id);
+                }
+
+                let current_enemy = faction.relations.iter().find(|kv| *kv.1 < 0.8);
+
+                if let Some(current_enemy) = current_enemy {
+                    let chance_for_peace = 0.01;
+                    if rng.rand_chance(chance_for_peace) {
+                        let mut other_faction = world_graph.factions.get_mut(current_enemy.0).unwrap();
+
+                        faction.relations.insert(other_faction.id, -0.2);
+                        other_faction.relations.insert(faction.id, -0.2);
+
+                        world_graph.events.push(Event::PeaceDeclared(year, faction.id, other_faction.id));
+                    }
+                } else {
+                    for (id, other_faction) in world_graph.factions.iter() {
+                        if *id == faction.id {
+                            continue
+                        }
+                        let opinion = faction.relations.get(id).unwrap_or(&0.0);
+                        let chance_for_war = (*opinion * -1.0).max(0.0) * 0.001 + 0.001;
+                        if rng.rand_chance(chance_for_war) {
+                            let mut other_faction = other_faction.borrow_mut();
+
+                            faction.relations.insert(other_faction.id, -1.0);
+                            other_faction.relations.insert(faction.id, -1.0);
+
+                            world_graph.events.push(Event::WarDeclared(year, faction.id, *id));
+
+                            break
+                        }
+                    }
+                }
+            }
+
         }
 
 
@@ -750,6 +864,16 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                     settlement.demographics.change_population(child_chance as i32);
                 }
             }
+
+            // TODO: Simulate gold
+            // TODO: Recruiting conscripts cost X gold
+            // TODO: Training soldiers cost 3X gold
+            // TODO: If at war, check if can siege another city, chance to siege
+            // TODO: On siege, trained soldiers have a x2 strenght, conscripts have a x1 strenght, defender have a x1.2 bonus
+            // TODO: Simulate battle
+            // TODO: Captures
+
+
 
         }
 

@@ -29,7 +29,7 @@ impl Faction {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FactionRelation {
     Leader,
     Member

@@ -5,13 +5,12 @@
 ## feat - Basic settlement and faction simulation
 
 - Factions
-  - Name
-  - Relations
-    - Opinion
-    - Towards
+  - ✓ Name
+  - ✓ Relations
+    - ✓ Opinion
+    - ✓ Towards
     - How does it change?
-  - Leader: Person
-  - Add one field per type in people
+  - ✓ Leader: Person
 - Natural resource
   - Gold/year
 - Region
@@ -19,7 +18,7 @@
   - Soil fertility range
 - Tile
   - Natural resources
-  - Soil fertility
+  - ✓ Soil fertility
 - Settlement Projects
   - Name
   - Cost in gold
