@@ -8,7 +8,45 @@ pub struct Settlement {
     pub culture_id: Id,
     pub faction_id: Id,
     pub region_id: usize,
+    pub gold: i32,
+    pub military: Military,
     pub demographics: Demographics
+}
+
+impl Settlement {
+    pub fn military_siege_power(&self) -> f32 {
+        return (
+            (self.military.trained_soldiers * 2) + (self.military.conscripts * 1)
+        ) as f32;
+    }
+
+    pub fn military_defence_power(&self) -> f32 {
+        return (
+            (self.military.trained_soldiers * 2) + (self.military.conscripts * 1)
+        ) as f32 * 1.2;
+    }
+
+    pub fn kill_military(&mut self, total_kills: u32, rng: &Rng) {
+        let trained_ratio = rng.derive("kill").randf();
+        let trained_kills = (total_kills as f32 * trained_ratio).floor() as u32;
+        let trained_kills = trained_kills.min(self.military.trained_soldiers);
+        self.military.trained_soldiers = self.military.trained_soldiers - trained_kills;
+        let conscript_kills = total_kills - trained_kills;
+        if conscript_kills > self.military.conscripts {
+            // TODO:
+            // panic!("Tried to kill {total_kills} military, but there's not enough military")
+        } else {
+            self.military.conscripts = self.military.conscripts - conscript_kills;
+        }
+        self.demographics.change_population(-(total_kills as i32));
+    }
+
+}
+
+#[derive(Clone)]
+pub struct Military {
+    pub trained_soldiers: u32,
+    pub conscripts: u32,
 }
 
 #[derive(Clone)]
@@ -56,6 +94,8 @@ impl<'a> SettlementBuilder<'a> {
             culture_id: self.culture.id,
             faction_id: self.faction_id,
             region_id: self.region.id,
+            gold: 0,
+            military: Military { trained_soldiers: 0, conscripts: 0 },
             demographics: Self::derive_demographics(&self.rng.derive("demographics"), self.population)
         }
     }

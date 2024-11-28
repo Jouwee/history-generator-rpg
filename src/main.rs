@@ -1,9 +1,9 @@
-use std::{borrow::Borrow, cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap, HashSet}, io, vec};
+use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, io, vec};
 use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{Id, Point2D};
 use noise::{NoiseFn, Perlin};
-use world::{faction::{self, Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
+use world::{faction::{Faction, FactionRelation}, settlement::{self, Settlement, SettlementBuilder}};
 
 pub mod engine;
 pub mod commons;
@@ -32,6 +32,7 @@ struct RegionPrefab {
     elevation: (u8, u8),
     temperature: (u8, u8),
     soil_fertility_range: (f32, f32),
+    gold_generation_range: (f32, f32),
     fauna: Vec<String>,
     flora: Vec<String>,
 }
@@ -40,7 +41,7 @@ struct WorldGraph {
     map: WorldMap,
     cultures: HashMap<Id, CulturePrefab>,
     factions: IdMap<Faction>,
-    settlements: HashMap<Id, Settlement>,
+    settlements: IdMap<Settlement>,
     people: People,
     events: Vec<Event>
 }
@@ -55,6 +56,10 @@ impl<T> IdMap<T> {
         IdMap {
             map: BTreeMap::new()
         }
+    }
+
+    fn len(&self) -> usize {
+        return self.map.len()
     }
 
     fn get(&self, id: &Id) -> Option<Ref<T>> {
@@ -479,6 +484,7 @@ fn main() {
             elevation: (0, 0),
             temperature: (0, 5),
             soil_fertility_range: (0.8, 1.2),
+            gold_generation_range: (0.8, 1.2),
             fauna: Vec::from([
                 String::from("whale"),
                 String::from("fish")
@@ -494,6 +500,7 @@ fn main() {
             elevation: (1, 5),
             temperature: (0, 3),
             soil_fertility_range: (1.0, 1.4),
+            gold_generation_range: (0.7, 1.1),
             fauna: Vec::from([
                 String::from("elk"),
                 String::from("boar")
@@ -509,6 +516,7 @@ fn main() {
             elevation: (1, 5),
             temperature: (4, 5),
             soil_fertility_range: (0.6, 1.0),
+            gold_generation_range: (0.6, 1.0),
             fauna: Vec::from([
                 String::from("scorpion"),
                 String::from("vulture")
@@ -611,6 +619,7 @@ fn main() {
         } else {
 
             for (_, settlement) in world.settlements.iter() {
+                let settlement = settlement.borrow();
                 let faction = world.factions.get(&settlement.faction_id).unwrap();
                 anals.push(format!("The city of {} ({:?}) was founded in {}, and it's part of {}. It has a population of {}", settlement.name, settlement.xy, settlement.founding_year, faction.name, settlement.demographics.population));
             }
@@ -634,7 +643,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         map: world_map,
         cultures: HashMap::new(),
         factions: IdMap::new(),
-        settlements: HashMap::new(),
+        settlements: IdMap::new(),
         people: People::new(),
         events: vec!()
     };
@@ -724,6 +733,9 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                         rng.next();
                         let mut new_leader = generate_person(&rng, Importance::Important, person_id.next(), year, sex, &culture, &person.faction_id, None);
                         new_leader.leader = true;
+                        if person.faction_relation == FactionRelation::Leader {
+                            new_leader.faction_relation = FactionRelation::Leader;
+                        }
                         world_graph.events.push(Event::RoseToPower(year, new_leader.id));
                         new_people.push(new_leader);
                     }
@@ -789,6 +801,8 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 let id = sett_id.next();
                 world_graph.events.push(Event::SettlementFounded(year, id, person.id));
                 world_graph.settlements.insert(id, settlement);
+                let mut faction = world_graph.factions.get_mut(&person.faction_id).unwrap();
+                faction.settlements.insert(id);
                 person.leader = true;
                 continue;
             }
@@ -800,10 +814,10 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                     panic!("{:?} {:?}", faction.id, person.faction_id);
                 }
 
-                let current_enemy = faction.relations.iter().find(|kv| *kv.1 < 0.8);
+                let current_enemy = faction.relations.iter().find(|kv| *kv.1 < -0.8);
 
                 if let Some(current_enemy) = current_enemy {
-                    let chance_for_peace = 0.01;
+                    let chance_for_peace = 0.05;
                     if rng.rand_chance(chance_for_peace) {
                         let mut other_faction = world_graph.factions.get_mut(current_enemy.0).unwrap();
 
@@ -842,13 +856,16 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         
         world_graph.people.reindex();
 
-        for (_, settlement) in world_graph.settlements.iter_mut() {
+        for (id, settlement) in world_graph.settlements.iter() {
+            let mut settlement = settlement.borrow_mut();
             if settlement.demographics.population <= 0 {
                 continue
             }
 
+            let settlement_tile = world_graph.map.get_world_tile(settlement.xy.0, settlement.xy.1);
+
             // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
-            let soil_fertility = world_graph.map.get_world_tile(settlement.xy.0, settlement.xy.1).soil_ferility;
+            let soil_fertility = settlement_tile.soil_ferility;
             let growth = rng.randf_range(-0.005, 0.03) + ((soil_fertility - 0.5) * 0.01);
             let child_chance = (settlement.demographics.population as f32) * growth;
             if child_chance < 0.0 {
@@ -865,14 +882,80 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 }
             }
 
-            // TODO: Simulate gold
-            // TODO: Recruiting conscripts cost X gold
-            // TODO: Training soldiers cost 3X gold
-            // TODO: If at war, check if can siege another city, chance to siege
-            // TODO: On siege, trained soldiers have a x2 strenght, conscripts have a x1 strenght, defender have a x1.2 bonus
-            // TODO: Simulate battle
-            // TODO: Captures
+            // Keeping an army unit posted costs 100 gold per year, for reference
+            let tile_gold_range = regions.get(settlement_tile.region_id as usize).unwrap().gold_generation_range;
+            let gold_generated = rng.randf_range(tile_gold_range.0, tile_gold_range.1) * settlement.demographics.population as f32;
+            settlement.gold = settlement.gold + gold_generated as i32;
 
+            // Pay current army
+            let army_cost = (settlement.military.trained_soldiers * 100) + (settlement.military.conscripts * 50);
+            settlement.gold = (settlement.gold - army_cost as i32).max(0);
+
+            let army_size = settlement.military.trained_soldiers + settlement.military.conscripts;
+            let army_ratio = army_size as f32 / settlement.demographics.population as f32;
+            if army_ratio < 0.05 {
+                let can_train = settlement.gold / 50;
+                settlement.military.trained_soldiers = settlement.military.trained_soldiers + can_train  as u32;
+                settlement.gold = settlement.gold - (50 * can_train);
+            }
+
+            let mut faction = world_graph.factions.get_mut(&settlement.faction_id).unwrap();
+            let at_war = faction.relations.iter().find(|v| *v.1 <= -0.8);
+            if let Some(enemy) = at_war {
+                if army_ratio < 0.05 {
+                    let can_train = settlement.gold / 15;
+                    settlement.military.conscripts = settlement.military.conscripts + can_train as u32;
+                    settlement.gold = settlement.gold - (15 * can_train);
+                }
+                let siege_power = settlement.military_siege_power();
+                let mut attack = None;
+                if siege_power > 0.0 {
+                    let enemy_faction = world_graph.factions.get(enemy.0).unwrap();
+                    for enemy_settlement_id in enemy_faction.settlements.iter() {
+                        let mut enemy_settlement = world_graph.settlements.get_mut(enemy_settlement_id).unwrap();
+                        let defence_power = enemy_settlement.military_defence_power();
+                        let power_diff = siege_power / (siege_power + defence_power);
+                        let attack_chance = power_diff.powi(2);
+                        if rng.rand_chance(attack_chance) {
+                            attack = Some((enemy_settlement_id.clone(), enemy_settlement));
+                        }
+                    }
+                }
+
+                if let Some(enemy_settlement) = attack {
+                    let battle_modifer = rng.randf();
+                    let (enemy_settlement_id, mut enemy_settlement) = enemy_settlement;
+
+                    let defence_power = enemy_settlement.military_defence_power();
+                    let power_diff = siege_power / (siege_power + defence_power);
+
+                    let battle_closeness = 1.0 - (battle_modifer - power_diff).abs();
+
+                    let battle_result = BattleResult {
+                        attacker_deaths: ((settlement.military.trained_soldiers + settlement.military.conscripts) as f32 * battle_closeness) as u32,
+                        defender_deaths: ((enemy_settlement.military.trained_soldiers + enemy_settlement.military.conscripts) as f32 * battle_closeness) as u32,
+                        attacker_victor: battle_modifer > power_diff,
+                        defender_captured: battle_modifer > power_diff,
+                    };
+
+                    settlement.kill_military(battle_result.attacker_deaths, &rng);
+                    enemy_settlement.kill_military(battle_result.defender_deaths, &rng);
+
+                    let mut enemy_faction = world_graph.factions.get_mut(enemy.0).unwrap();
+
+                    if battle_result.defender_captured {
+                        enemy_settlement.faction_id = settlement.faction_id;
+                        faction.settlements.insert(enemy_settlement_id);
+                        enemy_faction.settlements.remove(&enemy_settlement_id);
+                    }
+
+                    world_graph.events.push(Event::Siege(year, faction.id, enemy_faction.id, id.clone(), enemy_settlement_id.clone(), battle_result));
+                    break
+                }
+
+
+
+            }
 
 
         }
@@ -919,8 +1002,8 @@ fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, f
     // TODO: What if there's no more places?
     'candidates: for _ in 1..10 {
         xy = Point2D(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
-        for settlement in world_graph.settlements.values() {
-            if settlement.xy.dist_squared(&xy) < 5.0_f32.powi(2) {
+        for (_, settlement) in world_graph.settlements.iter() {
+            if settlement.borrow().xy.dist_squared(&xy) < 5.0_f32.powi(2) {
                 continue 'candidates;
             }
         }
@@ -1009,7 +1092,8 @@ fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
                 _ => string = String::from("??")
             }
 
-            for settlement in world_graph.settlements.values() {
+            for (_, settlement) in world_graph.settlements.iter() {
+                let settlement = settlement.borrow();
                 if settlement.xy.0 == x && settlement.xy.1 == y {
                     // 🏛️🛖🏘️🏰🕌⛪️🛕🕍⛺️🎪
                     if settlement.demographics.population == 0 {

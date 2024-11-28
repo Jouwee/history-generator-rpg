@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{commons::rng::Rng, engine::Id};
 
@@ -6,7 +6,7 @@ use crate::{commons::rng::Rng, engine::Id};
 pub struct Faction {
     pub id: Id,
     pub name: String,
-    pub relations: HashMap<Id, f32>,
+    pub relations: BTreeMap<Id, f32>,
     pub leader: Id,
     pub settlements: BTreeSet<Id>,
 }
@@ -22,7 +22,7 @@ impl Faction {
         return Faction { 
             id: id,
             name: String::from(name),
-            relations: HashMap::new(),
+            relations: BTreeMap::new(),
             leader,
             settlements: BTreeSet::new()
         }
