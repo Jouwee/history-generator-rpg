@@ -706,15 +706,22 @@ fn main() {
 
     let now = Instant::now();
 
-    let world = generate_world(Rng::seeded("prototype"), 500, vec!(nords, khajit), &regions);
+    let mut generator = WorldHistoryGenerator::seed_world(WorldGenerationParameters {
+        seed: 9563189,
+        cultures: vec!(nords, khajit),
+        regions
+    });
 
-    let elapsed = now.elapsed();
-
-    println!("");
-    println!("World generated in {:.2?}", elapsed);
-    println!(" {} people", world.people.len());
-    println!(" {} settlements", world.settlements.len());
-    println!(" {} events", world.events.len());
+    // Uncomment this for pre-generation (no rendering). Better for performance benchmmarking
+    // for _ in 0..500 {
+    //     generator.simulate_year();
+    // }
+    // let elapsed = now.elapsed();
+    // println!("");
+    // println!("World generated in {:.2?}", elapsed);
+    // println!(" {} people", generator.world.people.len());
+    // println!(" {} settlements", generator.world.settlements.len());
+    // println!(" {} events", generator.world.events.len());
 
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
@@ -737,11 +744,15 @@ fn main() {
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            app.render(&args, &world, &cursor);
+            app.render(&args, &generator.world, &cursor);
         }
 
         if let Some(args) = e.update_args() {
             app.update(&args);
+
+            if generator.year < 500 {
+                generator.simulate_year();
+            }
         }
 
         if let Some(k) = e.button_args() {
@@ -773,117 +784,100 @@ fn main() {
         }
 
     }
-
-    loop {
-
-        println!("");
-        println!("Type something to filter, or tile:x,y");
-
-        let mut filter = String::new();
-        let _ = io::stdin().read_line(&mut filter);
-
-        filter = filter.trim().to_string();
-
-        println!();
-
-        let mut anals: Vec<String> = Vec::new();
-
-        let biography = BiographyWriter::new(&world);
-
-        for event in world.events.iter() {
-            anals.push(biography.event(event));
-        }
-
-        if filter.starts_with("tile:") {
-            let mut pos = filter.split(":").last().unwrap().split(",");
-            let x: usize = pos.next().unwrap().parse().unwrap();
-            let y: usize = pos.next().unwrap().parse().unwrap();
-            let tile = world.map.get_world_tile(x, y);
-            println!("{:?}", tile)
-        } else {
-
-            for (_, settlement) in world.settlements.iter() {
-                let settlement = settlement.borrow();
-                let faction = world.factions.get(&settlement.faction_id).unwrap();
-                anals.push(format!("The city of {} ({:?}) was founded in {}, and it's part of {}. It has a population of {}", settlement.name, settlement.xy, settlement.founding_year, faction.name, settlement.demographics.population));
-            }
-
-            for gospel in anals {
-                if filter.len() == 0 || gospel.contains(&filter) {
-                    println!("{}", gospel);
-                }
-            }
-        }
-
-    }
 }
 
-fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, regions: &Vec<RegionPrefab>) -> WorldGraph {
-    let mut year: u32 = 1;
+struct WorldGenerationParameters {
+    seed: u32,
+    cultures: Vec<CulturePrefab>,
+    regions: Vec<RegionPrefab>
+}
 
-    let world_map = generate_world_map(&rng, regions);
+struct WorldHistoryGenerator {
+    rng: Rng,
+    year: u32,
+    parameters: WorldGenerationParameters,
+    world: WorldGraph,
+    next_person_id: Id,
+    next_faction_id: Id,
+    next_settlement_id: Id,
+}
 
-    let mut world_graph = WorldGraph {
-        map: world_map,
-        cultures: HashMap::new(),
-        factions: IdMap::new(),
-        settlements: IdMap::new(),
-        people: People::new(),
-        events: vec!()
-    };
+impl WorldHistoryGenerator {
 
-    let mut culture_id = Id(0);
-    for culture in cultures.iter() {
-        let mut culture = culture.clone();
-        culture.id = culture_id.next();
-        world_graph.cultures.insert(culture.id, culture);
-    }
+    pub fn seed_world(parameters: WorldGenerationParameters) -> WorldHistoryGenerator {
+        let mut rng = Rng::seeded(parameters.seed);
+       
+        let world_map = generate_world_map(&rng, &parameters.regions);
 
-    let mut person_id = Id(0);
-    let mut faction_id = Id(0);
-    let mut sett_id = Id(0);
+        let mut world = WorldGraph {
+            map: world_map,
+            cultures: HashMap::new(),
+            factions: IdMap::new(),
+            settlements: IdMap::new(),
+            people: People::new(),
+            events: vec!()
+        };
 
-    // Generate starter people
-    for _ in 0..10 {
-        rng.next();
-        let id = person_id.next();
-        let culture = world_graph.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
-        let sex;
-        if rng.rand_chance(0.5) {
-            sex = PersonSex::Male;
-        } else {
-            sex = PersonSex::Female;
-        }
-        let faction = Faction::new(&rng, faction_id.next(), id);
-        let mut person = generate_person(&rng, Importance::Important, id, year, sex, &culture, &faction.id, None);
-        world_graph.factions.insert(faction.id, faction);
-        person.faction_relation = FactionRelation::Leader;
-        world_graph.events.push(Event::PersonBorn(year, person.id));
-        world_graph.people.insert(person);
-    }
 
-    loop {
-        year = year + 1;
-        if year > world_age {
-            break;
+        let mut culture_id = Id(0);
+        for culture in parameters.cultures.iter() {
+            let mut culture = culture.clone();
+            culture.id = culture_id.next();
+            world.cultures.insert(culture.id, culture);
         }
 
-        println!("Year {}, {} people to process", year, world_graph.people.alive.len());
+        let mut person_id = Id(0);
+        let mut faction_id = Id(0);
+        let mut sett_id = Id(0);
+
+        // Generate starter people
+        for _ in 0..10 {
+            rng.next();
+            let id = person_id.next();
+            let culture = world.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
+            let sex;
+            if rng.rand_chance(0.5) {
+                sex = PersonSex::Male;
+            } else {
+                sex = PersonSex::Female;
+            }
+            let faction = Faction::new(&rng, faction_id.next(), id);
+            let mut person = generate_person(&rng, Importance::Important, id, 1, sex, &culture, &faction.id, None);
+            world.factions.insert(faction.id, faction);
+            person.faction_relation = FactionRelation::Leader;
+            world.events.push(Event::PersonBorn(1, person.id));
+            world.people.insert(person);
+        }
+        return WorldHistoryGenerator {
+            rng,
+            parameters,
+            world,
+            year: 1,
+            next_person_id: person_id,
+            next_settlement_id: sett_id,
+            next_faction_id: faction_id,
+        };
+    }
+
+    pub fn simulate_year(&mut self) {
+        self.year = self.year + 1;
+        let year = self.year;
+        println!("Year {}, {} people to process", self.year, self.world.people.alive.len());
 
         let mut new_people: Vec<Person> = Vec::new();
 
-        for (_, person) in world_graph.people.iter() {
+        for (_, person) in self.world.people.iter() {
             let mut person = person.borrow_mut();
             let age = (year - person.birth) as f32;
-            if rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
+            if self.rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
                 person.death = year;
-                world_graph.events.push(Event::PersonDeath(year, person.id));
+                self.world.events.push(Event::PersonDeath(year, person.id));
                 if person.leader {
                     let heirs_by_order = person.sorted_heirs();
                 
                     let mut valid_heir = false;
                     for heir in heirs_by_order {
-                        let mut heir = world_graph.people.get_mut(&heir.person_id).unwrap();
+                        let mut heir = self.world.people.get_mut(&heir.person_id).unwrap();
                         if heir.alive() {
                             // TODO: Leader of what?
                             heir.leader = true;
@@ -891,28 +885,28 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                             if person.faction_relation == FactionRelation::Leader {
                                 heir.faction_relation = FactionRelation::Leader;
                             }
-                            world_graph.events.push(Event::Inheritance(year, person.id, heir.id));
-                            let mut faction = world_graph.factions.get_mut(&heir.faction_id).unwrap();
+                            self.world.events.push(Event::Inheritance(year, person.id, heir.id));
+                            let mut faction = self.world.factions.get_mut(&heir.faction_id).unwrap();
                             faction.leader = heir.id;
                             valid_heir = true;
                             break
                         }
                     }
                     if !valid_heir {
-                        let culture = world_graph.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
+                        let culture = self.world.cultures.get(&Id(self.rng.randu_range(0, self.world.cultures.len()) as i32)).unwrap();
                         let sex;
-                        if rng.rand_chance(0.5) {
+                        if self.rng.rand_chance(0.5) {
                             sex = PersonSex::Male;
                         } else {
                             sex = PersonSex::Female;
                         }
-                        rng.next();
-                        let mut new_leader = generate_person(&rng, Importance::Important, person_id.next(), year, sex, &culture, &person.faction_id, None);
+                        self.rng.next();
+                        let mut new_leader = generate_person(&self.rng, Importance::Important, self.next_person_id.next(), year, sex, &culture, &person.faction_id, None);
                         new_leader.leader = true;
                         if person.faction_relation == FactionRelation::Leader {
                             new_leader.faction_relation = FactionRelation::Leader;
                         }
-                        world_graph.events.push(Event::RoseToPower(year, new_leader.id));
+                        self.world.events.push(Event::RoseToPower(year, new_leader.id));
                         new_people.push(new_leader);
                     }
                 }
@@ -920,13 +914,13 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 continue
             }
 
-            if age > 18.0 && person.spouse().is_none() && rng.rand_chance(0.1) {
-                rng.next();
-                let id = person_id.next();
-                let spouse_age = rng.randu_range(18, age as usize + 10) as u32;
+            if age > 18.0 && person.spouse().is_none() && self.rng.rand_chance(0.1) {
+                self.rng.next();
+                let id = self.next_person_id.next();
+                let spouse_age = self.rng.randu_range(18, age as usize + 10) as u32;
                 let spouse_birth_year = year - u32::min(spouse_age, year);
-                let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let mut spouse = generate_person(&rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, &person.faction_id, None);
+                let culture = self.world.cultures.get(&person.culture_id).unwrap();
+                let mut spouse = generate_person(&self.rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), culture, &person.faction_id, None);
                 spouse.last_name = person.last_name.clone();
                 spouse.next_of_kin.push(NextOfKin {
                     person_id: person.id,
@@ -936,31 +930,31 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                     person_id: spouse.id,
                     relative: Relative::Spouse
                 });
-                world_graph.events.push(Event::Marriage(year, person.id, spouse.id));
+                self.world.events.push(Event::Marriage(year, person.id, spouse.id));
                 new_people.push(spouse.clone());
                 continue;
             }
 
             if age > 18.0 && person.spouse().is_some() {
-                let spouse = world_graph.people.get_mut(person.spouse().unwrap()).unwrap();
+                let spouse = self.world.people.get_mut(person.spouse().unwrap()).unwrap();
                 let couple_fertility = person.fertility(year) * spouse.fertility(year);
 
-                if rng.rand_chance(couple_fertility * 0.5) {
-                    let id = person_id.next();
-                    rng.next();
+                if self.rng.rand_chance(couple_fertility * 0.5) {
+                    let id = self.next_person_id.next();
+                    self.rng.next();
                     let sex;
-                    if rng.rand_chance(0.5) {
+                    if self.rng.rand_chance(0.5) {
                         sex = PersonSex::Male;
                     } else {
                         sex = PersonSex::Female;
                     }
-                    let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                    let mut child = generate_person(&rng, person.importance.lower(), id, year, sex, culture, &person.faction_id, Some(&person.last_name));
+                    let culture = self.world.cultures.get(&person.culture_id).unwrap();
+                    let mut child = generate_person(&self.rng, person.importance.lower(), id, year, sex, culture, &person.faction_id, Some(&person.last_name));
                     child.next_of_kin.push(NextOfKin { 
                         person_id: person.id,
                         relative: Relative::Parent
                     });
-                    world_graph.events.push(Event::PersonBorn(year, child.id));
+                    self.world.events.push(Event::PersonBorn(year, child.id));
                     person.next_of_kin.push(NextOfKin { 
                         person_id: child.id,
                         relative: Relative::Child
@@ -970,21 +964,21 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 }
             }
 
-            if age > 18.0 && !person.leader && rng.rand_chance(1.0/50.0) {
-                rng.next();
-                let culture = world_graph.cultures.get(&person.culture_id).unwrap();
-                let settlement = generate_settlement(&rng, year, culture, person.faction_id, &world_graph, &world_graph.map, regions).clone();
-                let id = sett_id.next();
-                world_graph.events.push(Event::SettlementFounded(year, id, person.id));
-                world_graph.settlements.insert(id, settlement);
-                let mut faction = world_graph.factions.get_mut(&person.faction_id).unwrap();
+            if age > 18.0 && !person.leader && self.rng.rand_chance(1.0/50.0) {
+                self.rng.next();
+                let culture = self.world.cultures.get(&person.culture_id).unwrap();
+                let settlement = generate_settlement(&self.rng, year, culture, person.faction_id, &self.world, &self.world.map, &self.parameters.regions).clone();
+                let id = self.next_settlement_id.next();
+                self.world.events.push(Event::SettlementFounded(year, id, person.id));
+                self.world.settlements.insert(id, settlement);
+                let mut faction = self.world.factions.get_mut(&person.faction_id).unwrap();
                 faction.settlements.insert(id);
                 person.leader = true;
                 continue;
             }
 
             if person.faction_relation == FactionRelation::Leader {
-                let mut faction = world_graph.factions.get_mut(&person.faction_id).unwrap();
+                let mut faction = self.world.factions.get_mut(&person.faction_id).unwrap();
 
                 if faction.id != person.faction_id {
                     panic!("{:?} {:?}", faction.id, person.faction_id);
@@ -994,28 +988,28 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
 
                 if let Some(current_enemy) = current_enemy {
                     let chance_for_peace = 0.05;
-                    if rng.rand_chance(chance_for_peace) {
-                        let mut other_faction = world_graph.factions.get_mut(current_enemy.0).unwrap();
+                    if self.rng.rand_chance(chance_for_peace) {
+                        let mut other_faction = self.world.factions.get_mut(current_enemy.0).unwrap();
 
                         faction.relations.insert(other_faction.id, -0.2);
                         other_faction.relations.insert(faction.id, -0.2);
 
-                        world_graph.events.push(Event::PeaceDeclared(year, faction.id, other_faction.id));
+                        self.world.events.push(Event::PeaceDeclared(year, faction.id, other_faction.id));
                     }
                 } else {
-                    for (id, other_faction) in world_graph.factions.iter() {
+                    for (id, other_faction) in self.world.factions.iter() {
                         if *id == faction.id {
                             continue
                         }
                         let opinion = faction.relations.get(id).unwrap_or(&0.0);
                         let chance_for_war = (*opinion * -1.0).max(0.0) * 0.001 + 0.001;
-                        if rng.rand_chance(chance_for_war) {
+                        if self.rng.rand_chance(chance_for_war) {
                             let mut other_faction = other_faction.borrow_mut();
 
                             faction.relations.insert(other_faction.id, -1.0);
                             other_faction.relations.insert(faction.id, -1.0);
 
-                            world_graph.events.push(Event::WarDeclared(year, faction.id, *id));
+                            self.world.events.push(Event::WarDeclared(year, faction.id, *id));
 
                             break
                         }
@@ -1027,31 +1021,31 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
 
 
         for new_person in new_people {
-            world_graph.people.insert(new_person);
+            self.world.people.insert(new_person);
         }
         
-        world_graph.people.reindex();
+        self.world.people.reindex();
 
-        for (id, settlement) in world_graph.settlements.iter() {
+        for (id, settlement) in self.world.settlements.iter() {
             let mut settlement = settlement.borrow_mut();
             if settlement.demographics.population <= 0 {
                 continue
             }
 
-            let settlement_tile = world_graph.map.get_world_tile(settlement.xy.0, settlement.xy.1);
+            let settlement_tile = self.world.map.get_world_tile(settlement.xy.0, settlement.xy.1);
 
             // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
             let soil_fertility = settlement_tile.soil_fertility;
-            let growth = rng.randf_range(-0.005, 0.03) + ((soil_fertility - 0.5) * 0.01);
+            let growth = self.rng.randf_range(-0.005, 0.03) + ((soil_fertility - 0.5) * 0.01);
             let child_chance = (settlement.demographics.population as f32) * growth;
             if child_chance < 0.0 {
-                if child_chance > -1.0 && rng.rand_chance(child_chance.abs()) {
+                if child_chance > -1.0 && self.rng.rand_chance(child_chance.abs()) {
                     settlement.demographics.change_population(-1);
                 } else {
                     settlement.demographics.change_population(child_chance as i32);
                 }
             } else {
-                if child_chance < 1.0 && rng.rand_chance(child_chance) {
+                if child_chance < 1.0 && self.rng.rand_chance(child_chance) {
                     settlement.demographics.population = settlement.demographics.population + 1;
                 } else {
                     settlement.demographics.change_population(child_chance as i32);
@@ -1059,8 +1053,8 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             }
 
             // Keeping an army unit posted costs 100 gold per year, for reference
-            let tile_gold_range = regions.get(settlement_tile.region_id as usize).unwrap().gold_generation_range;
-            let gold_generated = rng.randf_range(tile_gold_range.0, tile_gold_range.1) * settlement.demographics.population as f32;
+            let tile_gold_range = self.parameters.regions.get(settlement_tile.region_id as usize).unwrap().gold_generation_range;
+            let gold_generated = self.rng.randf_range(tile_gold_range.0, tile_gold_range.1) * settlement.demographics.population as f32;
             settlement.gold = settlement.gold + gold_generated as i32;
 
             // Pay current army
@@ -1075,7 +1069,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 settlement.gold = settlement.gold - (50 * can_train);
             }
 
-            let mut faction = world_graph.factions.get_mut(&settlement.faction_id).unwrap();
+            let mut faction = self.world.factions.get_mut(&settlement.faction_id).unwrap();
             let at_war = faction.relations.iter().find(|v| *v.1 <= -0.8);
             if let Some(enemy) = at_war {
                 if army_ratio < 0.05 {
@@ -1086,20 +1080,20 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                 let siege_power = settlement.military_siege_power();
                 let mut attack = None;
                 if siege_power > 0.0 {
-                    let enemy_faction = world_graph.factions.get(enemy.0).unwrap();
+                    let enemy_faction = self.world.factions.get(enemy.0).unwrap();
                     for enemy_settlement_id in enemy_faction.settlements.iter() {
-                        let mut enemy_settlement = world_graph.settlements.get_mut(enemy_settlement_id).unwrap();
+                        let mut enemy_settlement = self.world.settlements.get_mut(enemy_settlement_id).unwrap();
                         let defence_power = enemy_settlement.military_defence_power();
                         let power_diff = siege_power / (siege_power + defence_power);
                         let attack_chance = power_diff.powi(2);
-                        if rng.rand_chance(attack_chance) {
+                        if self.rng.rand_chance(attack_chance) {
                             attack = Some((enemy_settlement_id.clone(), enemy_settlement));
                         }
                     }
                 }
 
                 if let Some(enemy_settlement) = attack {
-                    let battle_modifer = rng.randf();
+                    let battle_modifer = self.rng.randf();
                     let (enemy_settlement_id, mut enemy_settlement) = enemy_settlement;
 
                     let defence_power = enemy_settlement.military_defence_power();
@@ -1114,10 +1108,10 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                         defender_captured: battle_modifer > power_diff,
                     };
 
-                    settlement.kill_military(battle_result.attacker_deaths, &rng);
-                    enemy_settlement.kill_military(battle_result.defender_deaths, &rng);
+                    settlement.kill_military(battle_result.attacker_deaths, &self.rng);
+                    enemy_settlement.kill_military(battle_result.defender_deaths, &self.rng);
 
-                    let mut enemy_faction = world_graph.factions.get_mut(enemy.0).unwrap();
+                    let mut enemy_faction = self.world.factions.get_mut(enemy.0).unwrap();
 
                     if battle_result.defender_captured {
                         enemy_settlement.faction_id = settlement.faction_id;
@@ -1125,7 +1119,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                         enemy_faction.settlements.remove(&enemy_settlement_id);
                     }
 
-                    world_graph.events.push(Event::Siege(year, faction.id, enemy_faction.id, id.clone(), enemy_settlement_id.clone(), battle_result));
+                    self.world.events.push(Event::Siege(year, faction.id, enemy_faction.id, id.clone(), enemy_settlement_id.clone(), battle_result));
                 }
 
 
@@ -1134,10 +1128,8 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
 
 
         }
-
     }
 
-    return world_graph
 }
 
 fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, culture: &CulturePrefab, faction: &Id, surname: Option<&str>) -> Person {

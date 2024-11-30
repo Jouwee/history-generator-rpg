@@ -2,13 +2,7 @@
 
 # TODO: 0.0.2 - Basic world navigation
 
-## feat - Settlement sprites
-
-- Different sprites for different sizes
-
 ## feat - Render world while generating
-
-## feat - Key for opening the Gospel
 
 # TODO: 0.0.3 - Basic chunk generation
 
@@ -20,6 +14,7 @@
 
 - Use vectors
 - Id type that is already validated - remove need for unwraps
+- Each struct should not have an Id
 - "Make invalid states unrepresentable"
 
 ## refactor - Load definitions from yaml/toml files
@@ -40,7 +35,11 @@ Generate person has too many parameters. Create a builder.
 
 ## bug - Markov Chain doesn't work with order different than 3
 
-## bug - Settlements can be placed too close to one another
+## feat - Better settlement placement
+
+Settlements can be placed too close to one another
+
+## bug - Settlements can be placed too close to one another (even on top)
 
 ## idea - History simulation of Technology
 
@@ -60,6 +59,8 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - People can have personality traits that affect chances, such as:
   - Violent - Increase chance of starting conflict
 
+## feat - Full history panel
+
 # Release 0.0.2 - Basic world rendering and navigation
 
 ## feat - Render world using Piston
@@ -76,6 +77,10 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - ✓ Panel on the right for inspecting
 - ✓ Text rendering
 - ✓ Description generator
+
+## feat - Settlement sprites
+
+- Different sprites for different sizes
 
 # Release 0.0.1 - Basic history generation
 
