@@ -14,8 +14,6 @@
 
 ## debt - Remove colorize
 
-Too simple to be a dep
-
 # TODO: 0.0.3 - Basic chunk generation
 
 # TODO: 0.0.4 - Basic gameplay
