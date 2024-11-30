@@ -1,11 +1,10 @@
 # Doing
 
-## refactor - Better ID map structure
+## refactor - Better event structure
 
-- Use vectors
-- Id type that is already validated - remove need for unwraps
-- Each struct should not have an Id
-- "Make invalid states unrepresentable"
+- Create struct for every event
+- Event enum has only 2 parameters - Date and event
+- Indexing by person, settlement and faction (faster searches)
 
 # TODO: 0.0.2 - Basic world navigation
 
@@ -20,12 +19,6 @@
 ## refactor - Re-implement noise
 
 Package-size, learning
-
-## refactor - Better event structure
-
-- Create struct for every event
-- Event enum has only 2 parameters - Date and event
-- Indexing by person, settlement and faction (faster searches)
 
 ## refactor - Person builder
 
@@ -81,6 +74,13 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - Different sprites for different sizes
 
 ## feat - Render world while generating
+
+## refactor - Better ID map structure
+
+- Use vectors
+- Id type that is already validated - remove need for unwraps
+- Each struct should not have an Id
+- "Make invalid states unrepresentable"
 
 # Release 0.0.1 - Basic history generation
 

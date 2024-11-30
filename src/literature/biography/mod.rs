@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, world::settlement::{self, Settlement}, Event, Relative, WorldGraph, WorldTileData};
+use crate::{commons::history_vec::Id, Relative, WorldEvent, WorldEventEnum, WorldGraph, WorldTileData};
 
 pub struct BiographyWriter<'a> { 
     world: &'a WorldGraph   
@@ -30,71 +30,60 @@ impl<'a> BiographyWriter<'a> {
             settlement.gold
         );
         description.push_str("\n\nHistory:\n");
-        for event in self.world.events.iter() {
-            match event {
-                Event::SettlementFounded(year, settlement, person) => {
-                    if settlement == id {
-                        description.push_str(&self.event(event));        
-                        description.push_str("\n");
-                    }
-                },
-                // Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_b).unwrap().name(), world.people.get(person_a).unwrap().name())),
-                // Event::RoseToPower(year, person) => anals.push(format!("In {}, {} rose to power", year, world.people.get(person).unwrap().name())),
-                Event::Siege(year, _, _, settlement_attacker, settlement_defender, battle_result) => {
-                    if settlement_attacker == id || settlement_defender == id {
-                        description.push_str(&self.event(event));        
-                        description.push_str("\n");
-                    }
-                }
-                _ => {}
-            }
+        for event in self.world.events.iter_settlement(id) {
+            description.push_str(&self.event(event));        
+            description.push_str("\n");
         }
         return description;
     }
 
-    pub fn event(&self, event: &Event) -> String {
-        match event {
-            Event::PersonBorn(year, person) => {
-                let person = self.world.people.get(person).unwrap();
+    pub fn event(&self, event: &WorldEvent) -> String {
+        let date = &event.date;
+        match &event.event {
+            WorldEventEnum::PersonBorn(event) => {
+                let person = self.world.people.get(&event.person_id).unwrap();
                 if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
                     let parent = self.world.people.get(person_id).unwrap();
-                    return(format!("In {}, {} fathered {}", year, parent.name(), person.name()))
+                    return format!("In {}, {} fathered {}", date, parent.name(), person.name())
                 } else {
-                    return(format!("In {}, {} was born", year, person.name()))
+                    return format!("In {}, {} was born", date, person.name())
                 }
             },
-            Event::PersonDeath(year, person) => return(format!("In {}, {} died", year, self.world.people.get(person).unwrap().name())),
-            Event::SettlementFounded(year, settlement, person) => {
-                let settlement = self.world.settlements.get(settlement);
-                return(format!("In {}, {} found the city of {}", year, self.world.people.get(person).unwrap().name(), settlement.name))
+            WorldEventEnum::PersonDeath(event) => {
+                return format!("In {}, {} died", date, self.world.people.get(&event.person_id).unwrap().name())
             },
-            Event::Marriage(year, person_a, person_b) => {
-                return(format!("In {}, {} and {} married", year, self.world.people.get(person_a).unwrap().name(), self.world.people.get(person_b).unwrap().birth_name()))
+            WorldEventEnum::SettlementFounded(event) => {
+                let settlement = self.world.settlements.get(&event.settlement_id);
+                return format!("In {}, {} found the city of {}", date, self.world.people.get(&event.founder_id).unwrap().name(), settlement.name)
             },
-            Event::Inheritance(year, person_a, person_b) => return(format!("In {}, {} inherited everything from {}", year, self.world.people.get(person_b).unwrap().name(), self.world.people.get(person_a).unwrap().name())),
-            Event::RoseToPower(year, person) => return(format!("In {}, {} rose to power", year, self.world.people.get(person).unwrap().name())),
-            Event::WarDeclared(year, faction, faction2) => {
-                let faction = self.world.factions.get(faction);
-                let faction2 = self.world.factions.get(faction2);
-                return(format!("In {}, a war between the {} and the {} started", year, faction.name, faction2.name))
+            WorldEventEnum::NewSettlementLeader(event) => {
+                return format!("In {}, {} became the new leader of {}", date, self.world.people.get(&event.new_leader_id).unwrap().name(), self.world.people.get(&event.settlement_id).unwrap().birth_name())
+            },
+            WorldEventEnum::Marriage(event) => {
+                return format!("In {}, {} and {} married", date, self.world.people.get(&event.person1_id).unwrap().name(), self.world.people.get(&event.person2_id).unwrap().birth_name())
+            },
+            WorldEventEnum::WarDeclared(event) => {
+                let faction = self.world.factions.get(&event.faction1_id);
+                let faction2 = self.world.factions.get(&event.faction2_id);
+                return format!("In {}, a war between the {} and the {} started", date, faction.name, faction2.name)
             }
-            Event::PeaceDeclared(year, faction, faction2) => {
-                let faction = self.world.factions.get(faction);
-                let faction2 = self.world.factions.get(faction2);
-                return(format!("In {}, the war between the {} and the {} ended", year, faction.name, faction2.name))
+            WorldEventEnum::PeaceDeclared(event) => {
+                let faction = self.world.factions.get(&event.faction1_id);
+                let faction2 = self.world.factions.get(&event.faction2_id);
+                return format!("In {}, the war between the {} and the {} ended", date, faction.name, faction2.name)
             }
-            Event::Siege(year, _, _, settlement_attacker, settlement_defender, battle_result) => {
-                let settlement_attacker = self.world.settlements.get(settlement_attacker);
-                let settlement_defender = self.world.settlements.get(settlement_defender);
+            WorldEventEnum::Siege(event) => {
+                let settlement_attacker = self.world.settlements.get(&event.settlement1_id);
+                let settlement_defender = self.world.settlements.get(&event.settlement2_id);
                 let mut suffix = "had to retreat";
-                if battle_result.defender_captured {
+                if event.battle_result.defender_captured {
                     suffix = "captured the settlement"
                 }
-                let deaths = battle_result.attacker_deaths + battle_result.defender_deaths;
-                if battle_result.attacker_victor {
-                    return(format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
+                let deaths = event.battle_result.attacker_deaths + event.battle_result.defender_deaths;
+                if event.battle_result.attacker_victor {
+                    return format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
                 } else {
-                    return(format!("In {}, {} attempted to sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
+                    return format!("In {}, {} attempted to sieged {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
                 }
             }
         }

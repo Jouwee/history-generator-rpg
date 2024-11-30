@@ -11,7 +11,7 @@ use literature::biography::BiographyWriter;
 use ::image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use graphics::rectangle::{square, Border};
-use world::{faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
+use world::{event::*, faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
@@ -212,7 +212,7 @@ struct WorldGraph {
     factions: HistoryVec<Faction>,
     settlements: HistoryVec<Settlement>,
     people: People,
-    events: Vec<Event>
+    events: WorldEvents
 }
 
 struct People {
@@ -241,10 +241,6 @@ impl People {
             None => None,
             Some(ref_cell) => Some(ref_cell.borrow_mut())
         }
-    }
-
-    fn len(&self) -> usize {
-        return self.inner.len()
     }
 
     fn insert(&mut self, person: Person) {
@@ -322,7 +318,7 @@ struct Person {
     next_of_kin: Vec<NextOfKin>,
     faction_id: Id,
     faction_relation: FactionRelation,
-    leader: bool
+    leader_of_settlement: Option<Id>
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -349,10 +345,7 @@ impl Person {
     }
 
     fn name(&self) -> String {
-        let mut title = "Commoner";
-        if self.leader {
-            title = "Leader";
-        }
+        let title = "Commoner";
         return format!("{} {} ({:?}, {})", self.first_name, self.last_name, self.importance, title)
     }
 
@@ -390,13 +383,6 @@ impl Person {
         return None
     }
 
-    fn remove_next_of_kin(&mut self, person_id: Id) {
-        let i = self.next_of_kin.iter().position(|r: &NextOfKin| r.person_id == person_id);
-        if let Some(i) = i {
-            self.next_of_kin.remove(i);
-        }
-    }
-
     fn sorted_heirs(&self) -> Vec<NextOfKin> {
         let priorities = [
             Relative::Child,
@@ -430,18 +416,6 @@ enum Relative {
     Sibling,
     Parent,
     Child,
-}
-
-enum Event {
-    PersonBorn(u32, Id),
-    PersonDeath(u32, Id),
-    Marriage(u32, Id, Id),
-    Inheritance(u32, Id, Id),
-    RoseToPower(u32, Id),
-    SettlementFounded(u32, Id, Id),
-    WarDeclared(u32, Id, Id),
-    PeaceDeclared(u32, Id, Id),
-    Siege(u32, Id, Id, Id, Id, BattleResult),
 }
 
 struct BattleResult {
@@ -726,7 +700,6 @@ struct WorldHistoryGenerator {
     parameters: WorldGenerationParameters,
     world: WorldGraph,
     next_person_id: Id,
-    next_settlement_id: Id,
 }
 
 impl WorldHistoryGenerator {
@@ -742,7 +715,7 @@ impl WorldHistoryGenerator {
             factions: HistoryVec::new(),
             settlements: HistoryVec::new(),
             people: People::new(),
-            events: vec!()
+            events: WorldEvents::new()
         };
 
 
@@ -754,7 +727,8 @@ impl WorldHistoryGenerator {
         }
 
         let mut person_id = Id(0);
-        let sett_id = Id(0);
+
+        let event_date = WorldEventDate { year: 1 };
 
         // Generate starter people
         for _ in 0..10 {
@@ -771,7 +745,7 @@ impl WorldHistoryGenerator {
             let faction_id = world.factions.insert(faction);
             let mut person = generate_person(&rng, Importance::Important, id, 1, sex, &culture, &faction_id, None);
             person.faction_relation = FactionRelation::Leader;
-            world.events.push(Event::PersonBorn(1, person.id));
+            world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: person.id }));
             world.people.insert(person);
         }
         return WorldHistoryGenerator {
@@ -779,14 +753,14 @@ impl WorldHistoryGenerator {
             parameters,
             world,
             year: 1,
-            next_person_id: person_id,
-            next_settlement_id: sett_id
+            next_person_id: person_id
         };
     }
 
     pub fn simulate_year(&mut self) {
         self.year = self.year + 1;
         let year = self.year;
+        let event_date = WorldEventDate { year };
         println!("Year {}, {} people to process", self.year, self.world.people.inner.len());
 
         let mut new_people: Vec<Person> = Vec::new();
@@ -796,21 +770,20 @@ impl WorldHistoryGenerator {
             let age = (year - person.birth) as f32;
             if self.rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
                 person.death = year;
-                self.world.events.push(Event::PersonDeath(year, person.id));
-                if person.leader {
+                self.world.events.push(event_date, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
+                if let Some(settlement) = person.leader_of_settlement {
                     let heirs_by_order = person.sorted_heirs();
                 
                     let mut valid_heir = false;
                     for heir in heirs_by_order {
                         let mut heir = self.world.people.get_mut(&heir.person_id).unwrap();
                         if heir.alive() {
-                            // TODO: Leader of what?
-                            heir.leader = true;
+                            heir.leader_of_settlement = Some(settlement);
                             heir.importance = Importance::Important;
                             if person.faction_relation == FactionRelation::Leader {
                                 heir.faction_relation = FactionRelation::Leader;
                             }
-                            self.world.events.push(Event::Inheritance(year, person.id, heir.id));
+                            self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: heir.id, settlement_id: settlement }));
                             let mut faction = self.world.factions.get_mut(&heir.faction_id);
                             faction.leader = heir.id;
                             valid_heir = true;
@@ -827,11 +800,11 @@ impl WorldHistoryGenerator {
                         }
                         self.rng.next();
                         let mut new_leader = generate_person(&self.rng, Importance::Important, self.next_person_id.next(), year, sex, &culture, &person.faction_id, None);
-                        new_leader.leader = true;
+                        new_leader.leader_of_settlement = Some(settlement);
                         if person.faction_relation == FactionRelation::Leader {
                             new_leader.faction_relation = FactionRelation::Leader;
                         }
-                        self.world.events.push(Event::RoseToPower(year, new_leader.id));
+                        self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: new_leader.id, settlement_id: settlement }));
                         new_people.push(new_leader);
                     }
                 }
@@ -855,7 +828,7 @@ impl WorldHistoryGenerator {
                     person_id: spouse.id,
                     relative: Relative::Spouse
                 });
-                self.world.events.push(Event::Marriage(year, person.id, spouse.id));
+                self.world.events.push(event_date, WorldEventEnum::Marriage(MarriageEvent { person1_id: person.id, person2_id: spouse.id }));
                 new_people.push(spouse.clone());
                 continue;
             }
@@ -879,7 +852,7 @@ impl WorldHistoryGenerator {
                         person_id: person.id,
                         relative: Relative::Parent
                     });
-                    self.world.events.push(Event::PersonBorn(year, child.id));
+                    self.world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: child.id }));
                     person.next_of_kin.push(NextOfKin { 
                         person_id: child.id,
                         relative: Relative::Child
@@ -889,16 +862,15 @@ impl WorldHistoryGenerator {
                 }
             }
 
-            if age > 18.0 && !person.leader && self.rng.rand_chance(1.0/50.0) {
+            if age > 18.0 && person.leader_of_settlement.is_none() && self.rng.rand_chance(1.0/50.0) {
                 self.rng.next();
                 let culture = self.world.cultures.get(&person.culture_id).unwrap();
                 let settlement = generate_settlement(&self.rng, year, culture, person.faction_id, &self.world, &self.world.map, &self.parameters.regions).clone();
-                let id = self.next_settlement_id.next();
-                self.world.events.push(Event::SettlementFounded(year, id, person.id));
-                self.world.settlements.insert(settlement);
+                let id = self.world.settlements.insert(settlement);
+                self.world.events.push(event_date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: person.id }));
                 let mut faction = self.world.factions.get_mut(&person.faction_id);
                 faction.settlements.insert(id);
-                person.leader = true;
+                person.leader_of_settlement = Some(id);
                 continue;
             }
 
@@ -921,7 +893,7 @@ impl WorldHistoryGenerator {
                         faction.relations.insert(other_faction_id, -0.2);
                         other_faction.relations.insert(faction_id, -0.2);
 
-                        self.world.events.push(Event::PeaceDeclared(year, faction_id, other_faction_id));
+                        self.world.events.push(event_date, WorldEventEnum::PeaceDeclared(PeaceDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
                     }
                 } else {
                     for (other_faction_id, other_faction) in self.world.factions.iter() {
@@ -936,7 +908,7 @@ impl WorldHistoryGenerator {
                             faction.relations.insert(other_faction_id, -1.0);
                             other_faction.relations.insert(faction_id, -1.0);
 
-                            self.world.events.push(Event::WarDeclared(year, faction_id, other_faction_id));
+                            self.world.events.push(event_date, WorldEventEnum::WarDeclared(WarDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
 
                             break
                         }
@@ -1045,7 +1017,7 @@ impl WorldHistoryGenerator {
                         enemy_faction.settlements.remove(&enemy_settlement_id);
                     }
 
-                    self.world.events.push(Event::Siege(year, faction_id, enemy_faction_id, id.clone(), enemy_settlement_id.clone(), battle_result));
+                    self.world.events.push(event_date, WorldEventEnum::Siege(SiegeEvent { faction1_id: faction_id, faction2_id: enemy_faction_id, settlement1_id: id.clone(), settlement2_id: enemy_settlement_id.clone(), battle_result }));
                 }
 
 
@@ -1084,7 +1056,7 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
         faction_relation: FactionRelation::Member,
         death: 0,
         next_of_kin: Vec::new(),
-        leader: false
+        leader_of_settlement: None
     }
 }
 
