@@ -8,11 +8,7 @@
 
 ## feat - Render world while generating
 
-## feat - Cursor for viewing details of a tile
-
 ## feat - Key for opening the Gospel
-
-## debt - Remove colorize
 
 # TODO: 0.0.3 - Basic chunk generation
 
@@ -20,11 +16,23 @@
 
 # Backlog
 
+## refactor - Better ID map structure
+
+- Use vectors
+- Id type that is already validated - remove need for unwraps
+- "Make invalid states unrepresentable"
+
 ## refactor - Load definitions from yaml/toml files
 
 ## refactor - Re-implement noise
 
 Package-size, learning
+
+## refactor - Better event structure
+
+- Create struct for every event
+- Event enum has only 2 parameters - Date and event
+- Indexing by person, settlement and faction (faster searches)
 
 ## refactor - Person builder
 
@@ -59,6 +67,15 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - ✓ Render terrain
 - ✓ Render settlements
 - ✓ Render settlement factions
+
+## debt - Remove colorize
+
+## feat - Cursor for viewing details of a tile
+
+- ✓ Cursor (x,y)
+- ✓ Panel on the right for inspecting
+- ✓ Text rendering
+- ✓ Description generator
 
 # Release 0.0.1 - Basic history generation
 

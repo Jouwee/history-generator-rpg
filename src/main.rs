@@ -7,18 +7,22 @@ extern crate piston;
 use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, io, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{Color, Id, Point2D};
+use literature::biography::BiographyWriter;
 use noise::{NoiseFn, Perlin};
-use graphics::rectangle::{square, Border};
+use graphics::{rectangle::{square, Border}, CharacterCache, Context, Transformed};
 use world::{faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
 
 use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{GlGraphics, OpenGL, Texture, TextureSettings};
+use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
+use piston::input::{Button, ButtonState, Key};
+use piston::{ButtonEvent};
 use piston::window::WindowSettings;
 
 pub mod engine;
 pub mod commons;
+pub mod literature;
 pub mod world;
 
 pub struct App {
@@ -27,7 +31,7 @@ pub struct App {
 }
 
 impl App {
-    fn render(&mut self, args: &RenderArgs, world: &WorldGraph) {
+    fn render(&mut self, args: &RenderArgs, world: &WorldGraph, cursor: &Point2D) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31
@@ -66,7 +70,10 @@ impl App {
         let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
 
         let settlement_text = Texture::from_path("./assets/sprites/settlements.png", &TextureSettings::new()).unwrap();
-        //settlement_text = settlement_text
+        
+        let texture_settings = TextureSettings::new().filter(Filter::Nearest);
+        let ref mut glyphs = GlyphCache::new("assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
+
 
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
@@ -86,6 +93,8 @@ impl App {
                 }   
             }
 
+            let mut hover_settlement = None;
+
             for (id, settlement) in world.settlements.iter() {
                 let settlement = settlement.borrow();
 
@@ -101,14 +110,46 @@ impl App {
 
                 let transform = c.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
                 image(&settlement_text, transform, gl);
+
+                if settlement.xy == *cursor {
+                    hover_settlement = Some(id);
+                }
+
             }
+
+            
+            let mut color = white.f32_arr();
+            color[3] = 0.7;
+            rectangle(color, rectangle::square(cursor.0 as f64 * 16.0, cursor.1 as f64 * 16.0, 16.0), c.transform, gl);
+
+            let tile = world.map.get_world_tile(cursor.0, cursor.1);
+            let biography = BiographyWriter::new(&world);
+
+            let mut text = biography.tile(&tile);
+
+            if let Some(hover_settlement) = hover_settlement {
+                text = format!("{}\n{}", text, biography.settlement(&hover_settlement));
+            }
+            let mut y = 16.0;
+            for line in text.split('\n') {
+                text::Text::new_color(white.f32_arr(), 10)
+                    .draw(
+                        line,
+                        glyphs,
+                        &c.draw_state,
+                        c.transform.trans((WORLD_MAP_WIDTH * 16) as f64 + 16.0, y),
+                        gl,
+                    )
+                    .unwrap();
+                y = y + 16.0;
+            }
+
+            
 
         });
     }
 
     fn update(&mut self, args: &UpdateArgs) {
-        // Rotate 2 radians per second.
-        self.rotation += 2.0 * args.dt;
     }
 }
 
@@ -664,20 +705,49 @@ fn main() {
         rotation: 0.0,
     };
 
+    let mut cursor = Point2D(WORLD_MAP_WIDTH / 2, WORLD_MAP_HEIGHT / 2);
+
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            app.render(&args, &world);
+            app.render(&args, &world, &cursor);
         }
 
         if let Some(args) = e.update_args() {
             app.update(&args);
         }
+
+        if let Some(k) = e.button_args() {
+            if k.state == ButtonState::Press {
+                match k.button {
+                    Button::Keyboard(Key::Up) => {
+                        if cursor.1 > 0 {
+                            cursor.1 -= 1;
+                        }
+                    },
+                    Button::Keyboard(Key::Down) => {
+                        if cursor.1 < WORLD_MAP_HEIGHT-1 {
+                            cursor.1 += 1;
+                        }
+                    },
+                    Button::Keyboard(Key::Left) => {
+                        if cursor.0 > 0 {
+                            cursor.0 -= 1;
+                        }
+                    },
+                    Button::Keyboard(Key::Right) => {
+                        if cursor.0 < WORLD_MAP_WIDTH-1 {
+                            cursor.0 += 1;
+                        }
+                    },
+                    _ => (),
+                }
+            }
+        }
+
     }
 
     loop {
-
-                
 
         println!("");
         println!("Type something to filter, or tile:x,y");
@@ -691,53 +761,10 @@ fn main() {
 
         let mut anals: Vec<String> = Vec::new();
 
+        let biography = BiographyWriter::new(&world);
+
         for event in world.events.iter() {
-            match event {
-                Event::PersonBorn(year, person) => {
-                    let person = world.people.get(person).unwrap();
-                    if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
-                        let parent = world.people.get(person_id).unwrap();
-                        anals.push(format!("In {}, {} fathered {}", year, parent.name(), person.name()))
-                    } else {
-                        anals.push(format!("In {}, {} was born", year, person.name()))
-                    }
-                },
-                Event::PersonDeath(year, person) => anals.push(format!("In {}, {} died", year, world.people.get(person).unwrap().name())),
-                Event::SettlementFounded(year, settlement, person) => {
-                    let settlement = world.settlements.get(settlement).unwrap();
-                    anals.push(format!("In {}, {} found the city of {}", year, world.people.get(person).unwrap().name(), settlement.name))
-                },
-                Event::Marriage(year, person_a, person_b) => {
-                    anals.push(format!("In {}, {} and {} married", year, world.people.get(person_a).unwrap().name(), world.people.get(person_b).unwrap().birth_name()))
-                },
-                Event::Inheritance(year, person_a, person_b) => anals.push(format!("In {}, {} inherited everything from {}", year, world.people.get(person_b).unwrap().name(), world.people.get(person_a).unwrap().name())),
-                Event::RoseToPower(year, person) => anals.push(format!("In {}, {} rose to power", year, world.people.get(person).unwrap().name())),
-                Event::WarDeclared(year, faction, faction2) => {
-                    let faction = world.factions.get(faction).unwrap();
-                    let faction2 = world.factions.get(faction2).unwrap();
-                    anals.push(format!("In {}, a war between the {} and the {} started", year, faction.name, faction2.name))
-                }
-                Event::PeaceDeclared(year, faction, faction2) => {
-                    let faction = world.factions.get(faction).unwrap();
-                    let faction2 = world.factions.get(faction2).unwrap();
-                    anals.push(format!("In {}, the war between the {} and the {} ended", year, faction.name, faction2.name))
-                }
-                Event::Siege(year, _, _, settlement_attacker, settlement_defender, battle_result) => {
-                    let settlement_attacker = world.settlements.get(settlement_attacker).unwrap();
-                    let settlement_defender = world.settlements.get(settlement_defender).unwrap();
-                    let mut suffix = "had to retreat";
-                    if battle_result.defender_captured {
-                        suffix = "captured the settlement"
-                    }
-                    let deaths = battle_result.attacker_deaths + battle_result.defender_deaths;
-                    if battle_result.attacker_victor {
-                        anals.push(format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
-                    } else {
-                        anals.push(format!("In {}, {} attempted to sieged {} and {suffix}. {deaths} people died", year, settlement_attacker.name, settlement_defender.name))
-                    }
-                }
-            }
-            
+            anals.push(biography.event(event));
         }
 
         if filter.starts_with("tile:") {
