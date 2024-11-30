@@ -8,6 +8,8 @@ use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, H
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{Color, Id, Point2D};
 use literature::biography::BiographyWriter;
+use image::{self, DynamicImage, RgbaImage};
+use ::image::{open, ImageReader};
 use noise::{NoiseFn, Perlin};
 use graphics::{rectangle::{square, Border}, CharacterCache, Context, Transformed};
 use world::{faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
@@ -69,11 +71,20 @@ impl App {
 
         let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
 
-        let settlement_text = Texture::from_path("./assets/sprites/settlements.png", &TextureSettings::new()).unwrap();
+        let spritesheet = ImageReader::open("./assets/sprites/settlements.png").unwrap().decode().unwrap();
+
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        let sett_textures = [
+            Texture::from_image(&spritesheet.crop_imm(0*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(1*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(2*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(3*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(4*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(5*16, 0, 16, 16).to_rgba8(), &settings),
+        ];
         
         let texture_settings = TextureSettings::new().filter(Filter::Nearest);
         let ref mut glyphs = GlyphCache::new("assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
-
 
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
@@ -109,7 +120,23 @@ impl App {
                 rectangle.draw(dims, &DrawState::default(), c.transform, gl);
 
                 let transform = c.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
-                image(&settlement_text, transform, gl);
+
+                let texture;
+                if settlement.demographics.population < 10 {
+                    texture = &sett_textures[0];
+                } else if settlement.demographics.population < 25 {
+                    texture = &sett_textures[1];
+                } else if settlement.demographics.population < 50 {
+                    texture = &sett_textures[2];
+                } else if settlement.demographics.population < 100 {
+                    texture = &sett_textures[3];
+                } else if settlement.demographics.population < 250 {
+                    texture = &sett_textures[4];
+                } else {
+                    texture = &sett_textures[5];
+                }
+
+                image(texture, transform, gl);
 
                 if settlement.xy == *cursor {
                     hover_settlement = Some(id);
@@ -319,7 +346,7 @@ impl WorldMap {
             xy: Point2D(x, y),
             elevation: self.elevation[i],
             temperature: self.temperature[i],
-            soil_ferility: self.soil_ferility[i],
+            soil_fertility: self.soil_ferility[i],
             region_id: self.region_id[i],
         }
     }
@@ -331,7 +358,7 @@ struct WorldTileData {
     xy: Point2D,
     elevation: u8,
     temperature: u8,
-    soil_ferility: f32,
+    soil_fertility: f32,
     region_id: u8
 }
 
@@ -1014,7 +1041,7 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
             let settlement_tile = world_graph.map.get_world_tile(settlement.xy.0, settlement.xy.1);
 
             // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
-            let soil_fertility = settlement_tile.soil_ferility;
+            let soil_fertility = settlement_tile.soil_fertility;
             let growth = rng.randf_range(-0.005, 0.03) + ((soil_fertility - 0.5) * 0.01);
             let child_chance = (settlement.demographics.population as f32) * growth;
             if child_chance < 0.0 {
@@ -1099,7 +1126,6 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
                     }
 
                     world_graph.events.push(Event::Siege(year, faction.id, enemy_faction.id, id.clone(), enemy_settlement_id.clone(), battle_result));
-                    break
                 }
 
 

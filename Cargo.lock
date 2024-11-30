@@ -1078,6 +1078,7 @@ dependencies = [
 name = "package"
 version = "0.0.1"
 dependencies = [
+ "image",
  "noise",
  "piston",
  "piston2d-graphics",

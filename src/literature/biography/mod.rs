@@ -13,15 +13,16 @@ impl<'a> BiographyWriter<'a> {
     }
 
     pub fn tile(&self, tile: &WorldTileData) -> String {
-        return format!("{:?}, {}", tile.xy, tile.region_id);
+        return format!("{:?}, {}, growth: {}", tile.xy, tile.region_id, (tile.soil_fertility - 0.5) * 0.01);
     }
 
     pub fn settlement(&self, id: &Id) -> String {
         let settlement = self.world.settlements.get(id).unwrap();
         let faction = self.world.factions.get(&settlement.faction_id).unwrap();
         let mut description = format!(
-            "{}\nPart of the {}\nPopulation: {}\nFounded in: {}\nMilitary: {}\nGold: {}",
+            "{} {:?}\nPart of the {}\nPopulation: {}\nFounded in: {}\nMilitary: {}\nGold: {}",
             settlement.name,
+            id,
             faction.name,
             settlement.demographics.population,
             settlement.founding_year,
