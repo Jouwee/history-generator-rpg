@@ -1,13 +1,116 @@
+extern crate glutin_window;
+extern crate graphics;
+extern crate opengl_graphics;
+extern crate piston;
+
+
 use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, io, vec};
-use colored::Colorize;
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
-use engine::{Id, Point2D};
+use engine::{Color, Id, Point2D};
 use noise::{NoiseFn, Perlin};
-use world::{faction::{Faction, FactionRelation}, settlement::{self, Settlement, SettlementBuilder}};
+use graphics::rectangle::{square, Border};
+use world::{faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
+
+use glutin_window::GlutinWindow as Window;
+use opengl_graphics::{GlGraphics, OpenGL, Texture, TextureSettings};
+use piston::event_loop::{EventSettings, Events};
+use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
+use piston::window::WindowSettings;
 
 pub mod engine;
 pub mod commons;
 pub mod world;
+
+pub struct App {
+    gl: GlGraphics, // OpenGL drawing backend.
+    rotation: f64,  // Rotation for the square.
+}
+
+impl App {
+    fn render(&mut self, args: &RenderArgs, world: &WorldGraph) {
+        use graphics::*;
+
+        // https://lospec.com/palette-list/31
+        let gray = Color::from_hex("636663");
+        let XXX = Color::from_hex("87857c");
+        let XXX = Color::from_hex("bcad9f");
+        let salmon = Color::from_hex("f2b888");
+        let orange = Color::from_hex("eb9661");
+        let red = Color::from_hex("b55945");
+        let XXX = Color::from_hex("734c44");
+        let XXX = Color::from_hex("3d3333");
+        let wine = Color::from_hex("593e47");
+        let XXX = Color::from_hex("7a5859");
+        let XXX: Color = Color::from_hex("a57855");
+        let yellow = Color::from_hex("de9f47");
+        let XXX = Color::from_hex("fdd179");
+        let off_white = Color::from_hex("fee1b8");
+        let XXX = Color::from_hex("d4c692");
+        let XXX = Color::from_hex("a6b04f");
+        let yellow_green = Color::from_hex("819447");
+        let XXX = Color::from_hex("44702d");
+        let dark_green = Color::from_hex("2f4d2f");
+        let XXX = Color::from_hex("546756");
+        let XXX = Color::from_hex("89a477");
+        let XXX = Color::from_hex("a4c5af");
+        let teal = Color::from_hex("cae6d9");
+        let white = Color::from_hex("f1f6f0");
+        let XXX = Color::from_hex("d5d6db");
+        let XXX = Color::from_hex("bbc3d0");
+        let XXX = Color::from_hex("96a9c1");
+        let XXX = Color::from_hex("6c81a1");
+        let blue = Color::from_hex("405273");
+        let XXX = Color::from_hex("303843");
+        let black = Color::from_hex("14233a");
+
+        let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
+
+        let settlement_text = Texture::from_path("./assets/sprites/settlements.png", &TextureSettings::new()).unwrap();
+        //settlement_text = settlement_text
+
+        self.gl.draw(args.viewport(), |c, gl| {
+            // Clear the screen.
+            clear(black.f32_arr(), gl);
+
+            for x in 0..WORLD_MAP_WIDTH {
+                for y in 0..WORLD_MAP_WIDTH {
+                    let tile = world.map.get_world_tile(x, y);
+                    let color;
+                    match tile.region_id {
+                        0 => color = off_white,
+                        1 => color = dark_green,
+                        2 => color = salmon,
+                        _ => color = black
+                    }
+                    rectangle(color.f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), c.transform, gl);
+                }   
+            }
+
+            for (id, settlement) in world.settlements.iter() {
+                let settlement = settlement.borrow();
+
+
+                let color = faction_colors[settlement.faction_id.0 as usize % faction_colors.len()];
+                let mut transparent = color.f32_arr();
+                transparent[3] = 0.4;
+
+                let mut rectangle = Rectangle::new(transparent);
+                rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
+                let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
+                rectangle.draw(dims, &DrawState::default(), c.transform, gl);
+
+                let transform = c.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
+                image(&settlement_text, transform, gl);
+            }
+
+        });
+    }
+
+    fn update(&mut self, args: &UpdateArgs) {
+        // Rotate 2 radians per second.
+        self.rotation += 2.0 * args.dt;
+    }
+}
 
 #[derive(Clone)]
 struct CulturePrefab {
@@ -498,7 +601,7 @@ fn main() {
             id: 1,
             name: String::from("Forest"),
             elevation: (1, 5),
-            temperature: (0, 3),
+            temperature: (0, 2),
             soil_fertility_range: (1.0, 1.4),
             gold_generation_range: (0.7, 1.1),
             fauna: Vec::from([
@@ -514,7 +617,7 @@ fn main() {
             id: 2,
             name: String::from("Desert"),
             elevation: (1, 5),
-            temperature: (4, 5),
+            temperature: (3, 5),
             soil_fertility_range: (0.6, 1.0),
             gold_generation_range: (0.6, 1.0),
             fauna: Vec::from([
@@ -544,6 +647,33 @@ fn main() {
     println!(" {} people", world.people.len());
     println!(" {} settlements", world.settlements.len());
     println!(" {} events", world.events.len());
+
+    // Change this to OpenGL::V2_1 if not working.
+    let opengl = OpenGL::V3_2;
+
+    // Create a Glutin window.
+    let mut window: Window = WindowSettings::new("spinning-square", [200, 200])
+        .graphics_api(opengl)
+        .exit_on_esc(true)
+        .build()
+        .unwrap();
+
+    // Create a new game and run it.
+    let mut app = App {
+        gl: GlGraphics::new(opengl),
+        rotation: 0.0,
+    };
+
+    let mut events = Events::new(EventSettings::new());
+    while let Some(e) = events.next(&mut window) {
+        if let Some(args) = e.render_args() {
+            app.render(&args, &world);
+        }
+
+        if let Some(args) = e.update_args() {
+            app.update(&args);
+        }
+    }
 
     loop {
 
@@ -685,14 +815,6 @@ fn generate_world(mut rng: Rng, world_age: u32, cultures: Vec<CulturePrefab>, re
         }
 
         println!("Year {}, {} people to process", year, world_graph.people.alive.len());
-        if year % 10 == 0 {
-            print_world_map(&world_graph, &world_graph.map);
-
-            // println!("Year {}, {} people to process", year, world_graph.people.alive.len());
-            // println!("Press anything to continue");
-            // let mut filter = String::new();
-            // let _ = io::stdin().read_line(&mut filter);
-        }
 
         let mut new_people: Vec<Person> = Vec::new();
 
@@ -1067,60 +1189,4 @@ fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
         }
     }
     return map;
-}
-
-fn print_world_map(world_graph: &WorldGraph, world_map: &WorldMap) {
-    println!("--------------------------------------------------------------------------------------------------------------------------------");
-
-    print!("   ");
-    for x in 0..WORLD_MAP_WIDTH {
-        print!("{x:02}");
-    }
-    println!();
-
-    for y in 0..WORLD_MAP_HEIGHT {
-        print!("{y:02} ");
-        for x in 0..WORLD_MAP_WIDTH {
-            let tile = world_map.get_world_tile(x, y);
-            let mut string;
-            match tile.elevation {
-                0 => string = String::from(" "),
-                1 => string = String::from(", "),
-                2 => string = String::from("--"),
-                3 => string = String::from("++"),
-                4 => string = String::from("##"),
-                _ => string = String::from("??")
-            }
-
-            for (_, settlement) in world_graph.settlements.iter() {
-                let settlement = settlement.borrow();
-                if settlement.xy.0 == x && settlement.xy.1 == y {
-                    // 🏛️🛖🏘️🏰🕌⛪️🛕🕍⛺️🎪
-                    if settlement.demographics.population == 0 {
-                        string = String::from("🏚️");    
-                    } else if settlement.demographics.population < 50 {
-                        string = String::from("🛖");    
-                    } else if settlement.demographics.population < 150 {
-                        string = String::from("🏘️");    
-                    } else if settlement.demographics.population < 1000 {
-                        string = String::from("🕍");
-                    } else {
-                        string = String::from("🕌");
-                    }
-                }
-            }
-
-            let colored_string;
-            match tile.region_id {
-                0 => colored_string = string.blue(),
-                1 => colored_string = string.green(),
-                2 => colored_string = string.yellow(),
-                3 => colored_string = string.white(),
-                4 => colored_string = string.white(),
-                _ => colored_string = string.white()
-            }
-            print!("{}", colored_string);
-        }
-        println!("")
-    }
 }

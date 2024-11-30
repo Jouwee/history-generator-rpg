@@ -1,56 +1,20 @@
 # Doing
 
-# TODO: 0.0.1 - Basic history generation
-
-## feat - Basic settlement and faction simulation
-
-- Factions
-  - ✓ Name
-  - ✓ Relations
-    - ✓ Opinion
-    - ✓ Towards
-    - How does it change?
-  - ✓ Leader: Person
-- Natural resource
-  - Gold/year
-- Region
-  - Chance for resource
-  - Soil fertility range
-- Tile
-  - Natural resources
-  - ✓ Soil fertility
-- Settlement Projects
-  - Name
-  - Cost in gold
-  - Resource Buff
-  - E.g:
-    - Aqueduct (+fertility)
-    - Customs House (+gold)
-    - Wall (+defence)
-- Settlement
-  - Political faction
-  - ✓ Population (growth based on soil fertility and population)
-  - Gold (based on resources)
-- Conflicts
-  - Between factions
-  - Chance for an attack between enemies every year
-    - Uses gold and population
-
-## feat - Legends simulation
-
-- Some random events that can happen, such as:
-  - Survived a great battle
-  - Slain a great beast
-  - Slept with the whole town
-  - Add titles based on feats
-  - Generate artifacts based on feats
-
-## feat - Trait simulation
-
-- People can have personality traits that affect chances, such as:
-  - Violent - Increase chance of starting conflict
-
 # TODO: 0.0.2 - Basic world navigation
+
+## feat - Settlement sprites
+
+- Different sprites for different sizes
+
+## feat - Render world while generating
+
+## feat - Cursor for viewing details of a tile
+
+## feat - Key for opening the Gospel
+
+## debt - Remove colorize
+
+Too simple to be a dep
 
 # TODO: 0.0.3 - Basic chunk generation
 
@@ -72,15 +36,57 @@ Generate person has too many parameters. Create a builder.
 
 ## bug - Settlements can be placed too close to one another
 
-## debt - Remove colorize
-
-Too simple to be a dep
-
 ## idea - History simulation of Technology
 
 Start with no tech, chance of someone/some faction learning a tech in a tech tree, that gives buffs. Chance to exchange techs on trades.
 
-# Release 0.0.1
+## idea - Legends simulation
+
+- Some random events that can happen, such as:
+  - Survived a great battle
+  - Slain a great beast
+  - Slept with the whole town
+  - Add titles based on feats
+  - Generate artifacts based on feats
+
+## idea - Trait simulation
+
+- People can have personality traits that affect chances, such as:
+  - Violent - Increase chance of starting conflict
+
+# Release 0.0.2 - Basic world rendering and navigation
+
+## feat - Render world using Piston
+
+- ✓ Render terrain
+- ✓ Render settlements
+- ✓ Render settlement factions
+
+# Release 0.0.1 - Basic history generation
+
+## feat - Basic settlement and faction simulation
+
+- ✓ Factions
+  - ✓ Name
+  - ✓ Relations
+    - ✓ Opinion
+    - ✓ Towards
+    - How does it change?
+  - ✓ Leader: Person
+- ✓ Region
+  - Chance for resource
+  - ✓ Soil fertility range
+- ✓ Tile
+  - ✓ Gold/year
+  - ✓ Soil fertility
+- ✓ Settlement
+  - ✓ Political faction
+  - ✓ Population (growth based on soil fertility and population)
+  - ✓ Gold (based on resources)
+- ✓ Conflicts
+  - ✓ Between factions
+  - ✓ Chance for an attack between enemies every year
+    - ✓ Uses gold and population
 
 ## refactor - Better seed derivation
 
