@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Point2D(pub usize, pub usize);
 
@@ -41,22 +39,5 @@ impl Color {
 
     pub fn f32_arr(&self) -> [f32; 4] {
         return [self.r, self.g, self.b, self.a]
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd)]
-pub struct Id(pub i32);
-
-impl Ord for Id {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl Id {
-    pub fn next(&mut self) -> Id {
-        let clone = self.clone();
-        self.0 = self.0 + 1;
-        clone
     }
 }

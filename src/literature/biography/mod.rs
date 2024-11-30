@@ -1,4 +1,4 @@
-use crate::{engine::Id, world::settlement::{self, Settlement}, Event, Relative, WorldGraph, WorldTileData};
+use crate::{commons::history_vec::Id, world::settlement::{self, Settlement}, Event, Relative, WorldGraph, WorldTileData};
 
 pub struct BiographyWriter<'a> { 
     world: &'a WorldGraph   
@@ -17,8 +17,8 @@ impl<'a> BiographyWriter<'a> {
     }
 
     pub fn settlement(&self, id: &Id) -> String {
-        let settlement = self.world.settlements.get(id).unwrap();
-        let faction = self.world.factions.get(&settlement.faction_id).unwrap();
+        let settlement = self.world.settlements.get(id);
+        let faction = self.world.factions.get(&settlement.faction_id);
         let mut description = format!(
             "{} {:?}\nPart of the {}\nPopulation: {}\nFounded in: {}\nMilitary: {}\nGold: {}",
             settlement.name,
@@ -65,7 +65,7 @@ impl<'a> BiographyWriter<'a> {
             },
             Event::PersonDeath(year, person) => return(format!("In {}, {} died", year, self.world.people.get(person).unwrap().name())),
             Event::SettlementFounded(year, settlement, person) => {
-                let settlement = self.world.settlements.get(settlement).unwrap();
+                let settlement = self.world.settlements.get(settlement);
                 return(format!("In {}, {} found the city of {}", year, self.world.people.get(person).unwrap().name(), settlement.name))
             },
             Event::Marriage(year, person_a, person_b) => {
@@ -74,18 +74,18 @@ impl<'a> BiographyWriter<'a> {
             Event::Inheritance(year, person_a, person_b) => return(format!("In {}, {} inherited everything from {}", year, self.world.people.get(person_b).unwrap().name(), self.world.people.get(person_a).unwrap().name())),
             Event::RoseToPower(year, person) => return(format!("In {}, {} rose to power", year, self.world.people.get(person).unwrap().name())),
             Event::WarDeclared(year, faction, faction2) => {
-                let faction = self.world.factions.get(faction).unwrap();
-                let faction2 = self.world.factions.get(faction2).unwrap();
+                let faction = self.world.factions.get(faction);
+                let faction2 = self.world.factions.get(faction2);
                 return(format!("In {}, a war between the {} and the {} started", year, faction.name, faction2.name))
             }
             Event::PeaceDeclared(year, faction, faction2) => {
-                let faction = self.world.factions.get(faction).unwrap();
-                let faction2 = self.world.factions.get(faction2).unwrap();
+                let faction = self.world.factions.get(faction);
+                let faction2 = self.world.factions.get(faction2);
                 return(format!("In {}, the war between the {} and the {} ended", year, faction.name, faction2.name))
             }
             Event::Siege(year, _, _, settlement_attacker, settlement_defender, battle_result) => {
-                let settlement_attacker = self.world.settlements.get(settlement_attacker).unwrap();
-                let settlement_defender = self.world.settlements.get(settlement_defender).unwrap();
+                let settlement_attacker = self.world.settlements.get(settlement_attacker);
+                let settlement_defender = self.world.settlements.get(settlement_defender);
                 let mut suffix = "had to retreat";
                 if battle_result.defender_captured {
                     suffix = "captured the settlement"

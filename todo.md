@@ -1,21 +1,19 @@
 # Doing
 
-# TODO: 0.0.2 - Basic world navigation
-
-## feat - Render world while generating
-
-# TODO: 0.0.3 - Basic chunk generation
-
-# TODO: 0.0.4 - Basic gameplay
-
-# Backlog
-
 ## refactor - Better ID map structure
 
 - Use vectors
 - Id type that is already validated - remove need for unwraps
 - Each struct should not have an Id
 - "Make invalid states unrepresentable"
+
+# TODO: 0.0.2 - Basic world navigation
+
+# TODO: 0.0.3 - Basic chunk generation
+
+# TODO: 0.0.4 - Basic gameplay
+
+# Backlog
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -81,6 +79,8 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 ## feat - Settlement sprites
 
 - Different sprites for different sizes
+
+## feat - Render world while generating
 
 # Release 0.0.1 - Basic history generation
 

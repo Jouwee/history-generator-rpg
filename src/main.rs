@@ -4,14 +4,13 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, io, vec};
-use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
-use engine::{Color, Id, Point2D};
+use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, vec};
+use commons::{history_vec::{HistoryVec, Id}, markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
+use engine::{Color, Point2D};
 use literature::biography::BiographyWriter;
-use image::{self, DynamicImage, RgbaImage};
-use ::image::{open, ImageReader};
+use ::image::ImageReader;
 use noise::{NoiseFn, Perlin};
-use graphics::{rectangle::{square, Border}, CharacterCache, Context, Transformed};
+use graphics::rectangle::{square, Border};
 use world::{faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
 
 use glutin_window::GlutinWindow as Window;
@@ -19,7 +18,7 @@ use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSe
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
-use piston::{ButtonEvent};
+use piston::ButtonEvent;
 use piston::window::WindowSettings;
 
 pub mod engine;
@@ -29,7 +28,6 @@ pub mod world;
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    rotation: f64,  // Rotation for the square.
 }
 
 impl App {
@@ -38,35 +36,35 @@ impl App {
 
         // https://lospec.com/palette-list/31
         let gray = Color::from_hex("636663");
-        let XXX = Color::from_hex("87857c");
-        let XXX = Color::from_hex("bcad9f");
+        // let XXX = Color::from_hex("87857c");
+        // let XXX = Color::from_hex("bcad9f");
         let salmon = Color::from_hex("f2b888");
         let orange = Color::from_hex("eb9661");
         let red = Color::from_hex("b55945");
-        let XXX = Color::from_hex("734c44");
-        let XXX = Color::from_hex("3d3333");
+        // let XXX = Color::from_hex("734c44");
+        // let XXX = Color::from_hex("3d3333");
         let wine = Color::from_hex("593e47");
-        let XXX = Color::from_hex("7a5859");
-        let XXX: Color = Color::from_hex("a57855");
+        // let XXX = Color::from_hex("7a5859");
+        // let XXX: Color = Color::from_hex("a57855");
         let yellow = Color::from_hex("de9f47");
-        let XXX = Color::from_hex("fdd179");
+        // let XXX = Color::from_hex("fdd179");
         let off_white = Color::from_hex("fee1b8");
-        let XXX = Color::from_hex("d4c692");
-        let XXX = Color::from_hex("a6b04f");
+        // let XXX = Color::from_hex("d4c692");
+        // let XXX = Color::from_hex("a6b04f");
         let yellow_green = Color::from_hex("819447");
-        let XXX = Color::from_hex("44702d");
+        // let XXX = Color::from_hex("44702d");
         let dark_green = Color::from_hex("2f4d2f");
-        let XXX = Color::from_hex("546756");
-        let XXX = Color::from_hex("89a477");
-        let XXX = Color::from_hex("a4c5af");
+        // let XXX = Color::from_hex("546756");
+        // let XXX = Color::from_hex("89a477");
+        // let XXX = Color::from_hex("a4c5af");
         let teal = Color::from_hex("cae6d9");
         let white = Color::from_hex("f1f6f0");
-        let XXX = Color::from_hex("d5d6db");
-        let XXX = Color::from_hex("bbc3d0");
-        let XXX = Color::from_hex("96a9c1");
-        let XXX = Color::from_hex("6c81a1");
+        // let XXX = Color::from_hex("d5d6db");
+        // let XXX = Color::from_hex("bbc3d0");
+        // let XXX = Color::from_hex("96a9c1");
+        // let XXX = Color::from_hex("6c81a1");
         let blue = Color::from_hex("405273");
-        let XXX = Color::from_hex("303843");
+        // let XXX = Color::from_hex("303843");
         let black = Color::from_hex("14233a");
 
         let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
@@ -176,7 +174,7 @@ impl App {
         });
     }
 
-    fn update(&mut self, args: &UpdateArgs) {
+    fn update(&mut self, _args: &UpdateArgs) {
     }
 }
 
@@ -211,52 +209,10 @@ struct RegionPrefab {
 struct WorldGraph {
     map: WorldMap,
     cultures: HashMap<Id, CulturePrefab>,
-    factions: IdMap<Faction>,
-    settlements: IdMap<Settlement>,
+    factions: HistoryVec<Faction>,
+    settlements: HistoryVec<Settlement>,
     people: People,
     events: Vec<Event>
-}
-
-#[derive(Debug)]
-struct IdMap<T> {
-    map: BTreeMap<Id, RefCell<T>>
-}
-
-impl<T> IdMap<T> {
-    fn new() -> IdMap<T> {
-        IdMap {
-            map: BTreeMap::new()
-        }
-    }
-
-    fn len(&self) -> usize {
-        return self.map.len()
-    }
-
-    fn get(&self, id: &Id) -> Option<Ref<T>> {
-        let option = self.map.get(id);
-        match option {
-            None => None,
-            Some(ref_cell) => Some(ref_cell.borrow())
-        }
-    }
-
-    fn get_mut(&self, id: &Id) -> Option<RefMut<T>> {
-        let option = self.map.get(id);
-        match option {
-            None => None,
-            Some(ref_cell) => Some(ref_cell.borrow_mut())
-        }
-    }
-
-    fn insert(&mut self, id: Id, value: T) {
-        self.map.insert(id, RefCell::new(value));
-    }
-
-    fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<T>)> {
-        self.map.iter()
-    }
-
 }
 
 struct People {
@@ -712,16 +668,21 @@ fn main() {
         regions
     });
 
+    // World generated in 910.98ms
+    //  17956 people
+    //  1773 settlements
+    //  50762 events
+
     // Uncomment this for pre-generation (no rendering). Better for performance benchmmarking
-    // for _ in 0..500 {
-    //     generator.simulate_year();
-    // }
-    // let elapsed = now.elapsed();
-    // println!("");
-    // println!("World generated in {:.2?}", elapsed);
-    // println!(" {} people", generator.world.people.len());
-    // println!(" {} settlements", generator.world.settlements.len());
-    // println!(" {} events", generator.world.events.len());
+    for _ in 0..500 {
+        generator.simulate_year();
+    }
+    let elapsed = now.elapsed();
+    println!("");
+    println!("World generated in {:.2?}", elapsed);
+    println!(" {} people", generator.world.people.len());
+    println!(" {} settlements", generator.world.settlements.len());
+    println!(" {} events", generator.world.events.len());
 
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
@@ -735,8 +696,7 @@ fn main() {
 
     // Create a new game and run it.
     let mut app = App {
-        gl: GlGraphics::new(opengl),
-        rotation: 0.0,
+        gl: GlGraphics::new(opengl)
     };
 
     let mut cursor = Point2D(WORLD_MAP_WIDTH / 2, WORLD_MAP_HEIGHT / 2);
@@ -798,7 +758,6 @@ struct WorldHistoryGenerator {
     parameters: WorldGenerationParameters,
     world: WorldGraph,
     next_person_id: Id,
-    next_faction_id: Id,
     next_settlement_id: Id,
 }
 
@@ -812,8 +771,8 @@ impl WorldHistoryGenerator {
         let mut world = WorldGraph {
             map: world_map,
             cultures: HashMap::new(),
-            factions: IdMap::new(),
-            settlements: IdMap::new(),
+            factions: HistoryVec::new(),
+            settlements: HistoryVec::new(),
             people: People::new(),
             events: vec!()
         };
@@ -827,8 +786,7 @@ impl WorldHistoryGenerator {
         }
 
         let mut person_id = Id(0);
-        let mut faction_id = Id(0);
-        let mut sett_id = Id(0);
+        let sett_id = Id(0);
 
         // Generate starter people
         for _ in 0..10 {
@@ -841,9 +799,9 @@ impl WorldHistoryGenerator {
             } else {
                 sex = PersonSex::Female;
             }
-            let faction = Faction::new(&rng, faction_id.next(), id);
-            let mut person = generate_person(&rng, Importance::Important, id, 1, sex, &culture, &faction.id, None);
-            world.factions.insert(faction.id, faction);
+            let faction = Faction::new(&rng, id);
+            let faction_id = world.factions.insert(faction);
+            let mut person = generate_person(&rng, Importance::Important, id, 1, sex, &culture, &faction_id, None);
             person.faction_relation = FactionRelation::Leader;
             world.events.push(Event::PersonBorn(1, person.id));
             world.people.insert(person);
@@ -854,8 +812,7 @@ impl WorldHistoryGenerator {
             world,
             year: 1,
             next_person_id: person_id,
-            next_settlement_id: sett_id,
-            next_faction_id: faction_id,
+            next_settlement_id: sett_id
         };
     }
 
@@ -886,7 +843,7 @@ impl WorldHistoryGenerator {
                                 heir.faction_relation = FactionRelation::Leader;
                             }
                             self.world.events.push(Event::Inheritance(year, person.id, heir.id));
-                            let mut faction = self.world.factions.get_mut(&heir.faction_id).unwrap();
+                            let mut faction = self.world.factions.get_mut(&heir.faction_id);
                             faction.leader = heir.id;
                             valid_heir = true;
                             break
@@ -970,18 +927,19 @@ impl WorldHistoryGenerator {
                 let settlement = generate_settlement(&self.rng, year, culture, person.faction_id, &self.world, &self.world.map, &self.parameters.regions).clone();
                 let id = self.next_settlement_id.next();
                 self.world.events.push(Event::SettlementFounded(year, id, person.id));
-                self.world.settlements.insert(id, settlement);
-                let mut faction = self.world.factions.get_mut(&person.faction_id).unwrap();
+                self.world.settlements.insert(settlement);
+                let mut faction = self.world.factions.get_mut(&person.faction_id);
                 faction.settlements.insert(id);
                 person.leader = true;
                 continue;
             }
 
             if person.faction_relation == FactionRelation::Leader {
-                let mut faction = self.world.factions.get_mut(&person.faction_id).unwrap();
+                let faction_id = person.faction_id;
+                let mut faction = self.world.factions.get_mut(&faction_id);
 
-                if faction.id != person.faction_id {
-                    panic!("{:?} {:?}", faction.id, person.faction_id);
+                if faction_id != person.faction_id {
+                    panic!("{:?} {:?}", faction_id, person.faction_id);
                 }
 
                 let current_enemy = faction.relations.iter().find(|kv| *kv.1 < -0.8);
@@ -989,27 +947,28 @@ impl WorldHistoryGenerator {
                 if let Some(current_enemy) = current_enemy {
                     let chance_for_peace = 0.05;
                     if self.rng.rand_chance(chance_for_peace) {
-                        let mut other_faction = self.world.factions.get_mut(current_enemy.0).unwrap();
+                        let other_faction_id = current_enemy.0.clone();
+                        let mut other_faction = self.world.factions.get_mut(&other_faction_id);
 
-                        faction.relations.insert(other_faction.id, -0.2);
-                        other_faction.relations.insert(faction.id, -0.2);
+                        faction.relations.insert(other_faction_id, -0.2);
+                        other_faction.relations.insert(faction_id, -0.2);
 
-                        self.world.events.push(Event::PeaceDeclared(year, faction.id, other_faction.id));
+                        self.world.events.push(Event::PeaceDeclared(year, faction_id, other_faction_id));
                     }
                 } else {
-                    for (id, other_faction) in self.world.factions.iter() {
-                        if *id == faction.id {
+                    for (other_faction_id, other_faction) in self.world.factions.iter() {
+                        if other_faction_id == faction_id {
                             continue
                         }
-                        let opinion = faction.relations.get(id).unwrap_or(&0.0);
+                        let opinion = faction.relations.get(&other_faction_id).unwrap_or(&0.0);
                         let chance_for_war = (*opinion * -1.0).max(0.0) * 0.001 + 0.001;
                         if self.rng.rand_chance(chance_for_war) {
                             let mut other_faction = other_faction.borrow_mut();
 
-                            faction.relations.insert(other_faction.id, -1.0);
-                            other_faction.relations.insert(faction.id, -1.0);
+                            faction.relations.insert(other_faction_id, -1.0);
+                            other_faction.relations.insert(faction_id, -1.0);
 
-                            self.world.events.push(Event::WarDeclared(year, faction.id, *id));
+                            self.world.events.push(Event::WarDeclared(year, faction_id, other_faction_id));
 
                             break
                         }
@@ -1068,8 +1027,8 @@ impl WorldHistoryGenerator {
                 settlement.military.trained_soldiers = settlement.military.trained_soldiers + can_train  as u32;
                 settlement.gold = settlement.gold - (50 * can_train);
             }
-
-            let mut faction = self.world.factions.get_mut(&settlement.faction_id).unwrap();
+            let faction_id = settlement.faction_id;
+            let mut faction = self.world.factions.get_mut(&faction_id);
             let at_war = faction.relations.iter().find(|v| *v.1 <= -0.8);
             if let Some(enemy) = at_war {
                 if army_ratio < 0.05 {
@@ -1080,9 +1039,9 @@ impl WorldHistoryGenerator {
                 let siege_power = settlement.military_siege_power();
                 let mut attack = None;
                 if siege_power > 0.0 {
-                    let enemy_faction = self.world.factions.get(enemy.0).unwrap();
+                    let enemy_faction = self.world.factions.get(enemy.0);
                     for enemy_settlement_id in enemy_faction.settlements.iter() {
-                        let mut enemy_settlement = self.world.settlements.get_mut(enemy_settlement_id).unwrap();
+                        let mut enemy_settlement = self.world.settlements.get_mut(enemy_settlement_id);
                         let defence_power = enemy_settlement.military_defence_power();
                         let power_diff = siege_power / (siege_power + defence_power);
                         let attack_chance = power_diff.powi(2);
@@ -1111,7 +1070,8 @@ impl WorldHistoryGenerator {
                     settlement.kill_military(battle_result.attacker_deaths, &self.rng);
                     enemy_settlement.kill_military(battle_result.defender_deaths, &self.rng);
 
-                    let mut enemy_faction = self.world.factions.get_mut(enemy.0).unwrap();
+                    let enemy_faction_id = *enemy.0;
+                    let mut enemy_faction = self.world.factions.get_mut(&enemy_faction_id);
 
                     if battle_result.defender_captured {
                         enemy_settlement.faction_id = settlement.faction_id;
@@ -1119,7 +1079,7 @@ impl WorldHistoryGenerator {
                         enemy_faction.settlements.remove(&enemy_settlement_id);
                     }
 
-                    self.world.events.push(Event::Siege(year, faction.id, enemy_faction.id, id.clone(), enemy_settlement_id.clone(), battle_result));
+                    self.world.events.push(Event::Siege(year, faction_id, enemy_faction_id, id.clone(), enemy_settlement_id.clone(), battle_result));
                 }
 
 
