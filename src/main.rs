@@ -108,7 +108,7 @@ impl App {
                 let settlement = settlement.borrow();
 
 
-                let color = faction_colors[settlement.faction_id.0 as usize % faction_colors.len()];
+                let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
                 let mut transparent = color.f32_arr();
                 transparent[3] = 0.4;
 
@@ -760,7 +760,7 @@ impl WorldHistoryGenerator {
         for _ in 0..10 {
             rng.next();
             let id = person_id.next();
-            let culture = world.cultures.get(&Id(rng.randu_range(0, culture_id.0 as usize) as i32)).unwrap();
+            let culture = world.cultures.get(&Id(rng.randu_range(0, culture_id.seq()))).unwrap();
             let sex;
             if rng.rand_chance(0.5) {
                 sex = PersonSex::Male;
@@ -818,7 +818,7 @@ impl WorldHistoryGenerator {
                         }
                     }
                     if !valid_heir {
-                        let culture = self.world.cultures.get(&Id(self.rng.randu_range(0, self.world.cultures.len()) as i32)).unwrap();
+                        let culture = self.world.cultures.get(&Id(self.rng.randu_range(0, self.world.cultures.len()))).unwrap();
                         let sex;
                         if self.rng.rand_chance(0.5) {
                             sex = PersonSex::Male;
