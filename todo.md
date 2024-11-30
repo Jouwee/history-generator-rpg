@@ -1,11 +1,5 @@
 # Doing
 
-## refactor - Better event structure
-
-- Create struct for every event
-- Event enum has only 2 parameters - Date and event
-- Indexing by person, settlement and faction (faster searches)
-
 # TODO: 0.0.2 - Basic world navigation
 
 # TODO: 0.0.3 - Basic chunk generation
@@ -26,11 +20,10 @@ Generate person has too many parameters. Create a builder.
 
 ## bug - Markov Chain doesn't work with order different than 3
 
-## feat - Better settlement placement
+## feat - Better settlement simulation
 
 Settlements can be placed too close to one another
-
-## bug - Settlements can be placed too close to one another (even on top)
+Settlements always grow too big, given time
 
 ## idea - History simulation of Technology
 
@@ -81,6 +74,14 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - Id type that is already validated - remove need for unwraps
 - Each struct should not have an Id
 - "Make invalid states unrepresentable"
+
+## refactor - Better event structure
+
+- Create struct for every event
+- Event enum has only 2 parameters - Date and event
+- Indexing by person, settlement and faction (faster searches)
+
+## bug - Settlements can be placed too close to one another (even on top)
 
 # Release 0.0.1 - Basic history generation
 

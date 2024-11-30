@@ -11,7 +11,7 @@ use literature::biography::BiographyWriter;
 use ::image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use graphics::rectangle::{square, Border};
-use world::{event::*, faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
+use world::{event::*, faction::{Faction, FactionRelation}, settlement::{self, Settlement, SettlementBuilder}};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
@@ -79,6 +79,7 @@ impl App {
             Texture::from_image(&spritesheet.crop_imm(3*16, 0, 16, 16).to_rgba8(), &settings),
             Texture::from_image(&spritesheet.crop_imm(4*16, 0, 16, 16).to_rgba8(), &settings),
             Texture::from_image(&spritesheet.crop_imm(5*16, 0, 16, 16).to_rgba8(), &settings),
+            Texture::from_image(&spritesheet.crop_imm(6*16, 0, 16, 16).to_rgba8(), &settings),
         ];
         
         let texture_settings = TextureSettings::new().filter(Filter::Nearest);
@@ -107,20 +108,22 @@ impl App {
             for (id, settlement) in world.settlements.iter() {
                 let settlement = settlement.borrow();
 
+                if settlement.demographics.population > 0 {
+                    let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
+                    let mut transparent = color.f32_arr();
+                    transparent[3] = 0.4;
 
-                let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
-                let mut transparent = color.f32_arr();
-                transparent[3] = 0.4;
-
-                let mut rectangle = Rectangle::new(transparent);
-                rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
-                let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
-                rectangle.draw(dims, &DrawState::default(), c.transform, gl);
-
+                    let mut rectangle = Rectangle::new(transparent);
+                    rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
+                    let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
+                    rectangle.draw(dims, &DrawState::default(), c.transform, gl);
+                }
                 let transform = c.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
 
                 let texture;
-                if settlement.demographics.population < 10 {
+                if settlement.demographics.population == 0 {
+                    texture = &sett_textures[6];
+                } else if settlement.demographics.population < 10 {
                     texture = &sett_textures[0];
                 } else if settlement.demographics.population < 25 {
                     texture = &sett_textures[1];
@@ -589,7 +592,7 @@ fn main() {
             name: String::from("Desert"),
             elevation: (1, 5),
             temperature: (3, 5),
-            soil_fertility_range: (0.6, 1.0),
+            soil_fertility_range: (0.5, 0.9),
             gold_generation_range: (0.6, 1.0),
             fauna: Vec::from([
                 String::from("scorpion"),
@@ -866,12 +869,14 @@ impl WorldHistoryGenerator {
                 self.rng.next();
                 let culture = self.world.cultures.get(&person.culture_id).unwrap();
                 let settlement = generate_settlement(&self.rng, year, culture, person.faction_id, &self.world, &self.world.map, &self.parameters.regions).clone();
-                let id = self.world.settlements.insert(settlement);
-                self.world.events.push(event_date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: person.id }));
-                let mut faction = self.world.factions.get_mut(&person.faction_id);
-                faction.settlements.insert(id);
-                person.leader_of_settlement = Some(id);
-                continue;
+                if let Some(settlement) = settlement {
+                    let id = self.world.settlements.insert(settlement);
+                    self.world.events.push(event_date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: person.id }));
+                    let mut faction = self.world.factions.get_mut(&person.faction_id);
+                    faction.settlements.insert(id);
+                    person.leader_of_settlement = Some(id);
+                    continue;
+                }
             }
 
             if person.faction_relation == FactionRelation::Leader {
@@ -1061,23 +1066,27 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
 }
 
 
-fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Settlement {
+fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Option<Settlement> {
     let mut rng = rng.derive("settlement");
-    let mut xy = Point2D(0, 0);
-    // TODO: What if there's no more places?
+    let mut xy = None;
     'candidates: for _ in 1..10 {
-        xy = Point2D(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
+        let txy = Point2D(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
         for (_, settlement) in world_graph.settlements.iter() {
-            if settlement.borrow().xy.dist_squared(&xy) < 5.0_f32.powi(2) {
+            if settlement.borrow().xy.dist_squared(&txy) < 3.0_f32.powi(2) {
                 continue 'candidates;
             }
         }
+        xy = Some(txy);
         break;
     }
-    let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
-    let region = regions.get(region_id).unwrap();
+    if let Some(xy) = xy {
+        let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
+        let region = regions.get(region_id).unwrap();
 
-    return SettlementBuilder::colony(&rng, xy, founding_year, culture, faction, region).create()
+        return Some(SettlementBuilder::colony(&rng, xy, founding_year, culture, faction, region).create())
+    } else {
+        None
+    }
 }
 
 fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
