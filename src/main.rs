@@ -216,21 +216,19 @@ struct WorldGraph {
 }
 
 struct People {
-    historic: HashMap<Id, RefCell<Person>>,
-    alive: BTreeMap<Id, RefCell<Person>>
+    inner: BTreeMap<Id, RefCell<Person>>
 }
 
 impl People {
     
     fn new() -> People {
         People {
-            historic: HashMap::new(),
-            alive: BTreeMap::new()
+            inner: BTreeMap::new()
         }
     }
 
     fn get(&self, id: &Id) -> Option<Ref<Person>> {
-        let option = self.alive.get(id).or(self.historic.get(id));
+        let option = self.inner.get(id);
         match option {
             None => None,
             Some(ref_cell) => Some(ref_cell.borrow())
@@ -238,7 +236,7 @@ impl People {
     }
 
     fn get_mut(&self, id: &Id) -> Option<RefMut<Person>> {
-        let option = self.alive.get(id).or(self.historic.get(id));
+        let option = self.inner.get(id);
         match option {
             None => None,
             Some(ref_cell) => Some(ref_cell.borrow_mut())
@@ -246,40 +244,15 @@ impl People {
     }
 
     fn len(&self) -> usize {
-        return self.alive.len() + self.historic.len();
+        return self.inner.len()
     }
 
     fn insert(&mut self, person: Person) {
-        if person.simulatable() {
-            self.alive.insert(person.id, RefCell::new(person));
-        } else {
-            self.historic.insert(person.id, RefCell::new(person));
-        }
+        self.inner.insert(person.id, RefCell::new(person));
     }
 
     fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<Person>)> {
-        return self.alive.iter()
-    }
-
-    fn reindex(&mut self) {
-        let mut historic = HashMap::new();
-        let mut alive = BTreeMap::new();
-        for person in self.alive.values() {
-            if person.borrow().simulatable() {
-                alive.insert(person.borrow().id, person.clone());
-            } else {
-                historic.insert(person.borrow().id, person.clone());
-            }
-        }
-        for person in self.historic.values() {
-            if person.borrow().simulatable() {
-                alive.insert(person.borrow().id, person.clone());
-            } else {
-                historic.insert(person.borrow().id, person.clone());
-            }
-        }
-        self.alive = alive;
-        self.historic = historic;
+        return self.inner.iter().filter(|(_id, person)| person.borrow().simulatable())
     }
 
 }
@@ -668,21 +641,16 @@ fn main() {
         regions
     });
 
-    // World generated in 910.98ms
-    //  17956 people
-    //  1773 settlements
-    //  50762 events
-
     // Uncomment this for pre-generation (no rendering). Better for performance benchmmarking
-    for _ in 0..500 {
-        generator.simulate_year();
-    }
-    let elapsed = now.elapsed();
-    println!("");
-    println!("World generated in {:.2?}", elapsed);
-    println!(" {} people", generator.world.people.len());
-    println!(" {} settlements", generator.world.settlements.len());
-    println!(" {} events", generator.world.events.len());
+    // for _ in 0..500 {
+    //     generator.simulate_year();
+    // }
+    // let elapsed = now.elapsed();
+    // println!("");
+    // println!("World generated in {:.2?}", elapsed);
+    // println!(" {} people", generator.world.people.len());
+    // println!(" {} settlements", generator.world.settlements.len());
+    // println!(" {} events", generator.world.events.len());
 
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
@@ -819,7 +787,7 @@ impl WorldHistoryGenerator {
     pub fn simulate_year(&mut self) {
         self.year = self.year + 1;
         let year = self.year;
-        println!("Year {}, {} people to process", self.year, self.world.people.alive.len());
+        println!("Year {}, {} people to process", self.year, self.world.people.inner.len());
 
         let mut new_people: Vec<Person> = Vec::new();
 
@@ -983,8 +951,6 @@ impl WorldHistoryGenerator {
             self.world.people.insert(new_person);
         }
         
-        self.world.people.reindex();
-
         for (id, settlement) in self.world.settlements.iter() {
             let mut settlement = settlement.borrow_mut();
             if settlement.demographics.population <= 0 {
