@@ -1,12 +1,38 @@
 # Doing
 
-# TODO: 0.0.2 - Basic world navigation
+# TODO: 0.0.3 - Basic gameplay
 
-# TODO: 0.0.3 - Basic chunk generation
+## feat - Switch between turn-based and realtime
 
-# TODO: 0.0.4 - Basic gameplay
+a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
+
+## feat - Ability to attack people
+
+## feat - Ability to talk to people
+
+# TODO: 0.0.? - Basic chunk generation
+
+## feat - Generate local chunk following biome
+
+## feat - Place important people on map
+
+## feat - Ability to inspect people
+
+# TODO: 0.0.? - Loading and saving
+
+# TODO: 0.0.? - Better terrain generation
+
+## feat - Ocean biome
+
+## feat - Grasslands biome
+
+## feat - Better elevation generation
+
+## feat - Rivers and lakes
 
 # Backlog
+
+## refactor - Turn world map into a Scene
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -44,6 +70,15 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
   - Violent - Increase chance of starting conflict
 
 ## feat - Full history panel
+
+# Release 0.0.3 - Basic gameplay
+
+## feat - Basic Gameplay
+
+- Swap between world map and local chunk
+- Player character
+- Turns
+- Attack action
 
 # Release 0.0.2 - Basic world rendering and navigation
 

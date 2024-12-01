@@ -6,12 +6,13 @@ extern crate piston;
 
 use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, vec};
 use commons::{history_vec::{HistoryVec, Id}, markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
-use engine::{Color, Point2D};
+use engine::{render::RenderContext, Color, Point2D};
+use game::{GameSceneState, Scene};
 use literature::biography::BiographyWriter;
 use ::image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use graphics::rectangle::{square, Border};
-use world::{event::*, faction::{Faction, FactionRelation}, settlement::{self, Settlement, SettlementBuilder}};
+use world::{event::*, faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
@@ -19,15 +20,23 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
+use piston::MouseCursorEvent;
 use piston::window::WindowSettings;
 
 pub mod engine;
 pub mod commons;
 pub mod literature;
 pub mod world;
+pub mod game;
+
+enum SceneEnum {
+    World,
+    Game(GameSceneState)
+}
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
+    scene: SceneEnum
 }
 
 impl App {
@@ -83,96 +92,99 @@ impl App {
         ];
         
         let texture_settings = TextureSettings::new().filter(Filter::Nearest);
-        let ref mut glyphs = GlyphCache::new("assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
+        let mut glyphs = GlyphCache::new("./assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
 
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
             clear(black.f32_arr(), gl);
-
-            for x in 0..WORLD_MAP_WIDTH {
-                for y in 0..WORLD_MAP_WIDTH {
-                    let tile = world.map.get_world_tile(x, y);
-                    let color;
-                    match tile.region_id {
-                        0 => color = off_white,
-                        1 => color = dark_green,
-                        2 => color = salmon,
-                        _ => color = black
+            let mut context = RenderContext {
+                args,
+                context: c,
+                gl,
+                default_font: &mut glyphs
+            };
+            match &self.scene {
+                SceneEnum::Game(game_state) => {
+                    game_state.render(context);
+                },
+                SceneEnum::World => {
+                    for x in 0..WORLD_MAP_WIDTH {
+                        for y in 0..WORLD_MAP_WIDTH {
+                            let tile = world.map.get_world_tile(x, y);
+                            let color;
+                            match tile.region_id {
+                                0 => color = off_white,
+                                1 => color = dark_green,
+                                2 => color = salmon,
+                                _ => color = black
+                            }
+                            rectangle(color.f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                        }   
                     }
-                    rectangle(color.f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), c.transform, gl);
-                }   
-            }
 
-            let mut hover_settlement = None;
+                    let mut hover_settlement = None;
 
-            for (id, settlement) in world.settlements.iter() {
-                let settlement = settlement.borrow();
+                    for (id, settlement) in world.settlements.iter() {
+                        let settlement = settlement.borrow();
 
-                if settlement.demographics.population > 0 {
-                    let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
-                    let mut transparent = color.f32_arr();
-                    transparent[3] = 0.4;
+                        if settlement.demographics.population > 0 {
+                            let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
+                            let mut transparent = color.f32_arr();
+                            transparent[3] = 0.4;
 
-                    let mut rectangle = Rectangle::new(transparent);
-                    rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
-                    let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
-                    rectangle.draw(dims, &DrawState::default(), c.transform, gl);
+                            let mut rectangle = Rectangle::new(transparent);
+                            rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
+                            let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
+                            rectangle.draw(dims, &DrawState::default(), context.context.transform, context.gl);
+                        }
+                        let transform = context.context.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
+
+                        let texture;
+                        if settlement.demographics.population == 0 {
+                            texture = &sett_textures[6];
+                        } else if settlement.demographics.population < 10 {
+                            texture = &sett_textures[0];
+                        } else if settlement.demographics.population < 25 {
+                            texture = &sett_textures[1];
+                        } else if settlement.demographics.population < 50 {
+                            texture = &sett_textures[2];
+                        } else if settlement.demographics.population < 100 {
+                            texture = &sett_textures[3];
+                        } else if settlement.demographics.population < 250 {
+                            texture = &sett_textures[4];
+                        } else {
+                            texture = &sett_textures[5];
+                        }
+
+                        image(texture, transform, context.gl);
+
+                        if settlement.xy == *cursor {
+                            hover_settlement = Some(id);
+                        }
+
+                    }
+
+                    
+                    let mut color = white.f32_arr();
+                    color[3] = 0.7;
+                    rectangle(color, rectangle::square(cursor.0 as f64 * 16.0, cursor.1 as f64 * 16.0, 16.0), context.context.transform, context.gl);
+
+                    let tile = world.map.get_world_tile(cursor.0, cursor.1);
+                    let biography = BiographyWriter::new(&world);
+
+                    let mut text = biography.tile(&tile);
+
+                    if let Some(hover_settlement) = hover_settlement {
+                        text = format!("{}\n{}", text, biography.settlement(&hover_settlement));
+                    }
+                    let mut y = 16.0;
+                    for line in text.split('\n') {
+                        context.text(line, 10, [(WORLD_MAP_WIDTH * 16) as f64 + 16.0, y], white);
+                        y = y + 16.0;
+                    }
+
                 }
-                let transform = c.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
-
-                let texture;
-                if settlement.demographics.population == 0 {
-                    texture = &sett_textures[6];
-                } else if settlement.demographics.population < 10 {
-                    texture = &sett_textures[0];
-                } else if settlement.demographics.population < 25 {
-                    texture = &sett_textures[1];
-                } else if settlement.demographics.population < 50 {
-                    texture = &sett_textures[2];
-                } else if settlement.demographics.population < 100 {
-                    texture = &sett_textures[3];
-                } else if settlement.demographics.population < 250 {
-                    texture = &sett_textures[4];
-                } else {
-                    texture = &sett_textures[5];
-                }
-
-                image(texture, transform, gl);
-
-                if settlement.xy == *cursor {
-                    hover_settlement = Some(id);
-                }
-
             }
-
-            
-            let mut color = white.f32_arr();
-            color[3] = 0.7;
-            rectangle(color, rectangle::square(cursor.0 as f64 * 16.0, cursor.1 as f64 * 16.0, 16.0), c.transform, gl);
-
-            let tile = world.map.get_world_tile(cursor.0, cursor.1);
-            let biography = BiographyWriter::new(&world);
-
-            let mut text = biography.tile(&tile);
-
-            if let Some(hover_settlement) = hover_settlement {
-                text = format!("{}\n{}", text, biography.settlement(&hover_settlement));
-            }
-            let mut y = 16.0;
-            for line in text.split('\n') {
-                text::Text::new_color(white.f32_arr(), 10)
-                    .draw(
-                        line,
-                        glyphs,
-                        &c.draw_state,
-                        c.transform.trans((WORLD_MAP_WIDTH * 16) as f64 + 16.0, y),
-                        gl,
-                    )
-                    .unwrap();
-                y = y + 16.0;
-            }
-
-            
 
         });
     }
@@ -641,10 +653,13 @@ fn main() {
 
     // Create a new game and run it.
     let mut app = App {
-        gl: GlGraphics::new(opengl)
+        gl: GlGraphics::new(opengl),
+        scene: SceneEnum::World
     };
 
     let mut cursor = Point2D(WORLD_MAP_WIDTH / 2, WORLD_MAP_HEIGHT / 2);
+
+    let mut last_mouse_pos = [0.0, 0.0];
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
@@ -654,36 +669,63 @@ fn main() {
 
         if let Some(args) = e.update_args() {
             app.update(&args);
-
-            if generator.year < 500 {
-                generator.simulate_year();
+            match &mut app.scene {
+                SceneEnum::World => {
+                    if generator.year < 500 {
+                        generator.simulate_year();
+                    }
+                },
+                SceneEnum::Game(game_state) => {
+                    game_state.update();
+                }
             }
+        }
+
+        if let Some(k) = e.mouse_cursor_args() {
+            last_mouse_pos = k;
         }
 
         if let Some(k) = e.button_args() {
             if k.state == ButtonState::Press {
+                match &mut app.scene {
+                    SceneEnum::World => {
+                        match k.button {
+                            Button::Keyboard(Key::Up) => {
+                                if cursor.1 > 0 {
+                                    cursor.1 -= 1;
+                                }
+                            },
+                            Button::Keyboard(Key::Down) => {
+                                if cursor.1 < WORLD_MAP_HEIGHT-1 {
+                                    cursor.1 += 1;
+                                }
+                            },
+                            Button::Keyboard(Key::Left) => {
+                                if cursor.0 > 0 {
+                                    cursor.0 -= 1;
+                                }
+                            },
+                            Button::Keyboard(Key::Right) => {
+                                if cursor.0 < WORLD_MAP_WIDTH-1 {
+                                    cursor.0 += 1;
+                                }
+                            },
+                            Button::Keyboard(Key::Return) => {
+                                app.scene = SceneEnum::Game(GameSceneState::new());
+                            },
+                            _ => (),
+                        }
+                    }
+                    SceneEnum::Game(game_state) => {
+                        game_state.input(&game::InputEvent { mouse_pos: last_mouse_pos, button_args: k });
+                    }
+                    
+                }
                 match k.button {
-                    Button::Keyboard(Key::Up) => {
-                        if cursor.1 > 0 {
-                            cursor.1 -= 1;
-                        }
-                    },
-                    Button::Keyboard(Key::Down) => {
-                        if cursor.1 < WORLD_MAP_HEIGHT-1 {
-                            cursor.1 += 1;
-                        }
-                    },
-                    Button::Keyboard(Key::Left) => {
-                        if cursor.0 > 0 {
-                            cursor.0 -= 1;
-                        }
-                    },
-                    Button::Keyboard(Key::Right) => {
-                        if cursor.0 < WORLD_MAP_WIDTH-1 {
-                            cursor.0 += 1;
-                        }
-                    },
-                    _ => (),
+                    Button::Keyboard(Key::W) => {
+                        app.scene = SceneEnum::World;
+                    }
+                    _ => {}
                 }
             }
         }

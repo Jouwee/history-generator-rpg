@@ -1,3 +1,5 @@
+pub mod render;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Point2D(pub usize, pub usize);
 
