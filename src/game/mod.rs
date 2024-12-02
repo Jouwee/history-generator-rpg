@@ -47,12 +47,13 @@ impl Scene for GameSceneState {
             }
         }
         if self.turn_controller.is_player_turn() {
-            let txt = format!("Player turn ({} / {})", self.player.ap.action_points, self.player.ap.max_action_points);
+            let txt = format!("Player turn | HP: {}/{} | AP: {}/{}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points);
             ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
         } else {
             let txt = format!("Enemy turn {}", self.turn_controller.npc_idx());
             ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
         }
+        ctx.text("a - attack", 10, [10.0, 1024.0], Color::from_hex("ffffff"));
     }
 
     fn update(&mut self) {
@@ -60,13 +61,37 @@ impl Scene for GameSceneState {
             return
         }
         println!("AI Turn: {}", self.turn_controller.npc_idx());
-        let npc = self.npcs.get(self.turn_controller.npc_idx()).unwrap();
+        let npc = self.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         // TODO: Actually remove the NPC
         if npc.hp.health_points == 0.0 {
+            npc.ap.fill();
             self.turn_controller.next_turn(self.npcs.len());
             return
         }
         // TODO: AI
+        if npc.hostile {
+            if npc.xy.dist_squared(&self.player.xy) < 3. {
+                if npc.ap.can_use(40) {
+                    println!("Got attacked!");
+                    npc.ap.consume(40);
+                    self.player.hp.damage(npc.damage.resolve(&self.player.defence));
+                    return
+                }
+            } else if npc.ap.can_use(20) {
+                if npc.xy.0 < self.player.xy.0 {
+                    npc.xy.0 += 1;
+                } else if npc.xy.0 > self.player.xy.0 {
+                    npc.xy.0 -= 1;
+                } else if npc.xy.1 < self.player.xy.1 {
+                    npc.xy.1 += 1;
+                } else {
+                    npc.xy.1 -= 1;
+                }
+                npc.ap.consume(20);
+                return
+            }
+        }
+        npc.ap.fill();
         self.turn_controller.next_turn(self.npcs.len());
     }
 
@@ -116,6 +141,7 @@ impl Scene for GameSceneState {
                         if let Some(target) = target {
                             println!("Attack! {:?}", tile_pos);
                             self.player.ap.consume(40);
+                            target.hostile = true;
                             target.hp.damage(self.player.damage.resolve(&target.defence));
                         } else {
                             println!("No target {:?}", tile_pos);
@@ -159,7 +185,8 @@ pub struct NPC {
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
     pub damage: DamageComponent,
-    pub defence: DefenceComponent
+    pub defence: DefenceComponent,
+    pub hostile: bool
 }
 
 impl NPC {
@@ -168,8 +195,9 @@ impl NPC {
             xy,
             ap: ActionPointsComponent::new(80),
             hp: HealthPointsComponent::new(50.),
-            damage: DamageComponent { slashing: 10.0 },
-            defence: DefenceComponent { slashing: 3.0 }
+            damage: DamageComponent { slashing: 8.0 },
+            defence: DefenceComponent { slashing: 2.0 },
+            hostile: false,
         }
     }
 }

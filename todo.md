@@ -1,14 +1,18 @@
 # Doing
 
+## feat - Enemy AI
+
 # TODO: 0.0.3 - Basic gameplay
 
 ## feat - Switch between turn-based and realtime
 
 a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
 
-## feat - Ability to attack people
-
 ## feat - Ability to talk to people
+
+## refactor - Structure defining actions
+
+## refactor - Remove dead NPCs
 
 # TODO: 0.0.? - Basic chunk generation
 
