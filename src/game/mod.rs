@@ -25,26 +25,32 @@ pub struct GameSceneState {
 
 impl GameSceneState {
     pub fn new() -> GameSceneState {
-        GameSceneState {
+        let mut state = GameSceneState {
             player: Player::new(Point2D(32, 32)),
             npcs: vec!(
-                NPC::new(Point2D(10, 10)),
-                NPC::new(Point2D(50, 50)),
-                NPC::new(Point2D(50, 10)),
-                NPC::new(Point2D(10, 50)),
+                NPC::new(Point2D(25, 25)),
+                NPC::new(Point2D(45, 45)),
+                NPC::new(Point2D(45, 25)),
+                NPC::new(Point2D(25, 45)),
             ),
-            turn_controller: TurnController { turn_idx: 0 }
-        }
+            turn_controller: TurnController::new()
+        };
+        state.turn_controller.roll_initiative(state.npcs.len());
+        return state
     }
+
+    pub fn remove_npc(&mut self, i: usize) {
+        self.npcs.remove(i);
+        self.turn_controller.remove(i);
+    }
+
 }
 
 impl Scene for GameSceneState {
     fn render(&self, mut ctx: RenderContext) {
         self.player.render(&mut ctx);
         for npc in self.npcs.iter() {
-            if npc.hp.health_points > 0.0 {
-                npc.render(&mut ctx);
-            }
+            npc.render(&mut ctx);
         }
         if self.turn_controller.is_player_turn() {
             let txt = format!("Player turn | HP: {}/{} | AP: {}/{}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points);
@@ -62,12 +68,6 @@ impl Scene for GameSceneState {
         }
         println!("AI Turn: {}", self.turn_controller.npc_idx());
         let npc = self.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
-        // TODO: Actually remove the NPC
-        if npc.hp.health_points == 0.0 {
-            npc.ap.fill();
-            self.turn_controller.next_turn(self.npcs.len());
-            return
-        }
         // TODO: AI
         if npc.hostile {
             if npc.xy.dist_squared(&self.player.xy) < 3. {
@@ -92,7 +92,7 @@ impl Scene for GameSceneState {
             }
         }
         npc.ap.fill();
-        self.turn_controller.next_turn(self.npcs.len());
+        self.turn_controller.next_turn();
     }
 
     fn input(&mut self, evt: &InputEvent) {
@@ -107,7 +107,7 @@ impl Scene for GameSceneState {
             match evt.button_args.button {
                 Button::Keyboard(Key::Space) => {
                     println!("End turn");
-                    self.turn_controller.next_turn(self.npcs.len());
+                    self.turn_controller.next_turn();
                     self.player.ap.fill();
                 },
                 Button::Keyboard(Key::Up) => {
@@ -137,12 +137,15 @@ impl Scene for GameSceneState {
                 Button::Keyboard(Key::A) => {
                     let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
                     if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
-                        let target = self.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
-                        if let Some(target) = target {
+                        let target = self.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                        if let Some((i, target)) = target {
                             println!("Attack! {:?}", tile_pos);
                             self.player.ap.consume(40);
                             target.hostile = true;
                             target.hp.damage(self.player.damage.resolve(&target.defence));
+                            if target.hp.health_points == 0. {
+                                self.remove_npc(i);
+                            }
                         } else {
                             println!("No target {:?}", tile_pos);
                         }
@@ -268,21 +271,49 @@ pub struct DefenceComponent {
 }
 
 pub struct TurnController {
-    turn_idx: usize
+    turn_idx: usize,
+    initiative: Vec<usize>
 }
 
 impl TurnController {
 
+    pub fn new() -> TurnController {
+        TurnController {
+            initiative: vec!(),
+            turn_idx: 0
+        }
+    }
+
+    pub fn roll_initiative(&mut self, len: usize) {
+        self.initiative = vec![0; len+1];
+        for i in 0..len+1 {
+            self.initiative[i] = i;
+        }
+    }
+
+    pub fn remove(&mut self, index: usize) {
+        self.initiative.retain_mut(|i| {
+            if *i == index + 1 {
+                return false
+            }
+            if *i > index + 1 {
+                *i = *i -1;
+            }
+            return true
+        });
+        self.turn_idx = self.turn_idx % self.initiative.len();
+    }
+
     pub fn is_player_turn(&self) -> bool {
-        return self.turn_idx == 0
+        return self.initiative[self.turn_idx] == 0
     }
 
     pub fn npc_idx(&self) -> usize {
-        return self.turn_idx - 1
+        return self.initiative[self.turn_idx] - 1
     }
 
-    pub fn next_turn(&mut self, npcs_count: usize) {
-        self.turn_idx = (self.turn_idx + 1) % (npcs_count + 1);
+    pub fn next_turn(&mut self) {
+        self.turn_idx = (self.turn_idx + 1) % self.initiative.len();
     }
 
 }

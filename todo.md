@@ -1,7 +1,5 @@
 # Doing
 
-## feat - Enemy AI
-
 # TODO: 0.0.3 - Basic gameplay
 
 ## feat - Switch between turn-based and realtime
@@ -11,8 +9,6 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 ## feat - Ability to talk to people
 
 ## refactor - Structure defining actions
-
-## refactor - Remove dead NPCs
 
 # TODO: 0.0.? - Basic chunk generation
 
@@ -33,6 +29,14 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 ## feat - Better elevation generation
 
 ## feat - Rivers and lakes
+
+# TODO: 0.0.? - Basic gameplay loop
+
+## feat - World generation screen
+
+## feat - Persist character through scenes
+
+## feat - Death screen
 
 # Backlog
 
@@ -83,6 +87,10 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 - Player character
 - Turns
 - Attack action
+
+## feat - Basic enemy AI
+
+## refactor - Structure defining actions
 
 # Release 0.0.2 - Basic world rendering and navigation
 
