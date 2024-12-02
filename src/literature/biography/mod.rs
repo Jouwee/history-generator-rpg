@@ -83,7 +83,7 @@ impl<'a> BiographyWriter<'a> {
                 if event.battle_result.attacker_victor {
                     return format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
                 } else {
-                    return format!("In {}, {} attempted to sieged {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
+                    return format!("In {}, {} attempted to siege {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
                 }
             }
         }

@@ -1,3 +1,5 @@
+use std::{cell::RefCell, fmt::Display};
+
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
 use crate::engine::{render::RenderContext, Color, Point2D};
@@ -20,7 +22,8 @@ pub struct InputEvent {
 pub struct GameSceneState {
     pub player: Player,
     pub npcs: Vec<NPC>,
-    turn_controller: TurnController
+    turn_controller: TurnController,
+    log: RefCell<Vec<(String, Color)>>
 }
 
 impl GameSceneState {
@@ -33,7 +36,8 @@ impl GameSceneState {
                 NPC::new(Point2D(45, 25)),
                 NPC::new(Point2D(25, 45)),
             ),
-            turn_controller: TurnController::new()
+            turn_controller: TurnController::new(),
+            log: RefCell::new(Vec::new())
         };
         state.turn_controller.roll_initiative(state.npcs.len());
         return state
@@ -42,6 +46,14 @@ impl GameSceneState {
     pub fn remove_npc(&mut self, i: usize) {
         self.npcs.remove(i);
         self.turn_controller.remove(i);
+    }
+
+    pub fn log(&self, text: impl Display, color: Color) {
+        let mut log = self.log.borrow_mut();
+        log.push((text.to_string(), color));
+        if log.len() > 50 {
+            log.pop();
+        }
     }
 
 }
@@ -59,7 +71,13 @@ impl Scene for GameSceneState {
             let txt = format!("Enemy turn {}", self.turn_controller.npc_idx());
             ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
         }
-        ctx.text("a - attack", 10, [10.0, 1024.0], Color::from_hex("ffffff"));
+        ctx.text("a - attack     t - talk    space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
+        let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
+        for (line, color) in self.log.borrow().iter() {
+            ctx.text(line, 10, [1024.0, y], *color);
+            y = y + 16.;
+        }
+        
     }
 
     fn update(&mut self) {
@@ -74,7 +92,9 @@ impl Scene for GameSceneState {
                 if npc.ap.can_use(40) {
                     println!("Got attacked!");
                     npc.ap.consume(40);
-                    self.player.hp.damage(npc.damage.resolve(&self.player.defence));
+                    let damage = npc.damage.resolve(&self.player.defence);
+                    self.log(format!("NPC attacks you for {damage}"), Color::from_hex("eb9661"));
+                    self.player.hp.damage(damage);
                     return
                 }
             } else if npc.ap.can_use(20) {
@@ -142,12 +162,27 @@ impl Scene for GameSceneState {
                             println!("Attack! {:?}", tile_pos);
                             self.player.ap.consume(40);
                             target.hostile = true;
-                            target.hp.damage(self.player.damage.resolve(&target.defence));
-                            if target.hp.health_points == 0. {
+                            let damage = self.player.damage.resolve(&target.defence);
+                            target.hp.damage(damage);
+                            let hp = target.hp.health_points;
+                            self.log(format!("You attack NPC for {damage}"), Color::from_hex("eb9661"));
+                            if hp == 0. {
+                                self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
                                 self.remove_npc(i);
                             }
                         } else {
                             println!("No target {:?}", tile_pos);
+                        }
+                    }
+                },
+                Button::Keyboard(Key::T) => {
+                    let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
+                    if tile_pos.dist_squared(&self.player.xy) < 3. {
+                        let target = self.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                        if let Some((i, target)) = target {
+                            if !target.hostile {
+                                self.log("Hello!", Color::from_hex("cae6d9"));
+                            }
                         }
                     }
                 },
