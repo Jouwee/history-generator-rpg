@@ -8,8 +8,6 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 
 ## refactor - Structure defining actions
 
-## refactor - Asset manager
-
 # TODO: 0.0.? - Basic chunk generation
 
 ## feat - Generate local chunk following biome
@@ -93,6 +91,8 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 ## feat - Ability to talk to people
 
 ## feat - Character sprites
+
+## refactor - Asset manager
 
 # Release 0.0.2 - Basic world rendering and navigation
 

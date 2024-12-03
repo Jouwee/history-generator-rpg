@@ -6,7 +6,7 @@ extern crate piston;
 
 use std::{cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, vec};
 use commons::{history_vec::{HistoryVec, Id}, markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
-use engine::{render::RenderContext, Color, Point2D};
+use engine::{assets::Assets, render::RenderContext, Color, Point2D};
 use game::{GameSceneState, Scene};
 use literature::biography::BiographyWriter;
 use ::image::ImageReader;
@@ -36,7 +36,8 @@ enum SceneEnum {
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    scene: SceneEnum
+    scene: SceneEnum,
+    assets: Assets
 }
 
 impl App {
@@ -101,6 +102,7 @@ impl App {
                 args,
                 context: c,
                 gl,
+                assets: &mut self.assets,
                 default_font: &mut glyphs
             };
             match &self.scene {
@@ -654,7 +656,8 @@ fn main() {
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
-        scene: SceneEnum::World
+        scene: SceneEnum::World,
+        assets: Assets::new()
     };
 
     let mut cursor = Point2D(WORLD_MAP_WIDTH / 2, WORLD_MAP_HEIGHT / 2);

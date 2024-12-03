@@ -3,12 +3,13 @@ use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
 
-use super::Color;
+use super::{assets::Assets, Color};
 
 pub struct RenderContext<'a, 'b> {
     pub args: &'a RenderArgs,
     pub context: Context,
     pub gl: &'a mut GlGraphics,
+    pub assets: &'b mut Assets,
     // TODO: Repo
     pub default_font: &'b mut GlyphCache<'b>
 }
@@ -31,7 +32,8 @@ impl<'a, 'b> RenderContext<'a, 'b> {
             .unwrap();
     }
 
-    pub fn image(&mut self, texture: &Texture, position: [f64; 2]) {
+    pub fn image(&mut self, texture_name: &str, position: [f64; 2]) {
+        let texture = self.assets.texture(texture_name);
         let transform = self.context.transform.trans(position[0], position[1]);
         image(texture, transform, self.gl);
     }

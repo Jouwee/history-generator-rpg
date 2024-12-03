@@ -4,7 +4,7 @@ use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
-use crate::engine::{render::RenderContext, Color, Point2D};
+use crate::engine::{assets::Assets, render::RenderContext, Color, Point2D};
 
 pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext);
@@ -199,29 +199,24 @@ pub struct Player {
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
     pub damage: DamageComponent,
-    pub defence: DefenceComponent,
-    pub texture: Texture
+    pub defence: DefenceComponent
 }
 
 impl Player {
     pub fn new(xy: Point2D) -> Player {
-        let spritesheet = ImageReader::open("./assets/sprites/player.png").unwrap().decode().unwrap();
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let texture = Texture::from_image(&spritesheet.to_rgba8(), &settings);
         Player {
             xy,
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::new(100.),
             damage: DamageComponent { slashing: 10.0 },
-            defence: DefenceComponent { slashing: 3.0 },
-            texture
+            defence: DefenceComponent { slashing: 3.0 }
         }
     }
 }
 
 impl Renderable for Player {
     fn render(&self, ctx: &mut RenderContext) {
-        ctx.image(&self.texture, [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
+        ctx.image("player.png", [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
     }
 }
 
@@ -254,7 +249,7 @@ impl NPC {
 
 impl Renderable for NPC {
     fn render(&self, ctx: &mut RenderContext) {
-        ctx.image(&self.texture, [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
+        ctx.image("character.png", [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
     }
 }
 

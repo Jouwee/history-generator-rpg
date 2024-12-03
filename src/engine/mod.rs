@@ -1,3 +1,4 @@
+pub mod assets;
 pub mod render;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
