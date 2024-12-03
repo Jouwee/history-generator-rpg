@@ -1,5 +1,5 @@
-use graphics::{rectangle, Context, Text};
-use opengl_graphics::{GlGraphics, GlyphCache};
+use graphics::{image, rectangle, Context, Text};
+use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
 
@@ -29,5 +29,10 @@ impl<'a, 'b> RenderContext<'a, 'b> {
                 self.gl,
             )
             .unwrap();
+    }
+
+    pub fn image(&mut self, texture: &Texture, position: [f64; 2]) {
+        let transform = self.context.transform.trans(position[0], position[1]);
+        image(texture, transform, self.gl);
     }
 }

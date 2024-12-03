@@ -1,7 +1,5 @@
 # Doing
 
-## feat - Ability to talk to people
-
 # TODO: 0.0.3 - Basic gameplay
 
 ## feat - Switch between turn-based and realtime
@@ -9,6 +7,8 @@
 a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
 
 ## refactor - Structure defining actions
+
+## refactor - Asset manager
 
 # TODO: 0.0.? - Basic chunk generation
 
@@ -90,7 +90,9 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 
 ## feat - Basic enemy AI
 
-## refactor - Structure defining actions
+## feat - Ability to talk to people
+
+## feat - Character sprites
 
 # Release 0.0.2 - Basic world rendering and navigation
 
