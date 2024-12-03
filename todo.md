@@ -1,20 +1,15 @@
 # Doing
 
-# TODO: 0.0.3 - Basic gameplay
+## feat - Place important people on map
 
-## feat - Switch between turn-based and realtime
-
-a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
-
-## refactor - Structure defining actions
+- ✓ Check who's on the tile
+- ✓ Add NPCs linked to said person
+- ✓ When using the talk action, present theirselves
+- If you kill the NPC, the world person must die
 
 # TODO: 0.0.? - Basic chunk generation
 
 ## feat - Generate local chunk following biome
-
-## feat - Place important people on map
-
-## feat - Ability to inspect people
 
 # TODO: 0.0.? - Loading and saving
 
@@ -76,6 +71,18 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
   - Violent - Increase chance of starting conflict
 
 ## feat - Full history panel
+
+## feat - Switch between turn-based and realtime
+
+a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
+
+## refactor - Structure defining actions
+
+## feat - Ability to inspect people
+
+## bug - Cities go 100's of years without someone rising to power
+
+## bug - A spouse of a king has the same chance of founding a new city than anyone else
 
 # Release 0.0.3 - Basic gameplay
 

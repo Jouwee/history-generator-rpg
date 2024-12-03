@@ -1,10 +1,13 @@
 use std::{cell::RefCell, fmt::Display};
 
+use chunk::Chunk;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
-use crate::engine::{assets::Assets, render::RenderContext, Color, Point2D};
+use crate::{commons::history_vec::Id, engine::{render::RenderContext, Color, Point2D}, Person, WorldGraph};
+
+pub mod chunk;
 
 pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext);
@@ -23,30 +26,31 @@ pub struct InputEvent {
 
 pub struct GameSceneState {
     pub player: Player,
-    pub npcs: Vec<NPC>,
+    pub chunk: Chunk,
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>
 }
 
 impl GameSceneState {
-    pub fn new() -> GameSceneState {
+    pub fn new(chunk: Chunk) -> GameSceneState {
         let mut state = GameSceneState {
             player: Player::new(Point2D(32, 32)),
-            npcs: vec!(
-                NPC::new(Point2D(25, 25)),
-                NPC::new(Point2D(45, 45)),
-                NPC::new(Point2D(45, 25)),
-                NPC::new(Point2D(25, 45)),
-            ),
+            chunk,
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new())
         };
-        state.turn_controller.roll_initiative(state.npcs.len());
+        state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
     }
 
     pub fn remove_npc(&mut self, i: usize) {
-        self.npcs.remove(i);
+        let id;
+        {
+            let npc = self.chunk.npcs.get(i).unwrap();
+            id = npc.person_id;
+        }
+        self.chunk.npcs.remove(i);
+        self.chunk.killed_people.push(id);
         self.turn_controller.remove(i);
     }
 
@@ -63,7 +67,7 @@ impl GameSceneState {
 impl Scene for GameSceneState {
     fn render(&self, mut ctx: RenderContext) {
         self.player.render(&mut ctx);
-        for npc in self.npcs.iter() {
+        for npc in self.chunk.npcs.iter() {
             npc.render(&mut ctx);
         }
         if self.turn_controller.is_player_turn() {
@@ -87,7 +91,7 @@ impl Scene for GameSceneState {
             return
         }
         println!("AI Turn: {}", self.turn_controller.npc_idx());
-        let npc = self.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+        let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         // TODO: AI
         if npc.hostile {
             if npc.xy.dist_squared(&self.player.xy) < 3. {
@@ -159,7 +163,7 @@ impl Scene for GameSceneState {
                 Button::Keyboard(Key::A) => {
                     let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
                     if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
-                        let target = self.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                         if let Some((i, target)) = target {
                             println!("Attack! {:?}", tile_pos);
                             self.player.ap.consume(40);
@@ -180,10 +184,11 @@ impl Scene for GameSceneState {
                 Button::Keyboard(Key::T) => {
                     let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
                     if tile_pos.dist_squared(&self.player.xy) < 3. {
-                        let target = self.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                         if let Some((i, target)) = target {
                             if !target.hostile {
-                                self.log("Hello!", Color::from_hex("cae6d9"));
+                                let txt = format!("Hello! I am {:?}", target.person.name());
+                                self.log(txt, Color::from_hex("cae6d9"));
                             }
                         }
                     }
@@ -227,11 +232,13 @@ pub struct NPC {
     pub damage: DamageComponent,
     pub defence: DefenceComponent,
     pub hostile: bool,
-    pub texture: Texture
+    pub texture: Texture,
+    pub person_id: Id,
+    pub person: Person
 }
 
 impl NPC {
-    pub fn new(xy: Point2D) -> NPC {
+    pub fn new(xy: Point2D, person_id: Id, person: &Person) -> NPC {
         let spritesheet = ImageReader::open("./assets/sprites/character.png").unwrap().decode().unwrap();
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let texture = Texture::from_image(&spritesheet.to_rgba8(), &settings);
@@ -242,7 +249,9 @@ impl NPC {
             damage: DamageComponent { slashing: 8.0 },
             defence: DefenceComponent { slashing: 2.0 },
             hostile: false,
-            texture
+            texture,
+            person_id,
+            person: person.clone()
         }
     }
 }

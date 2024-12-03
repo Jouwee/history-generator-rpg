@@ -1,4 +1,4 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::{hash::{DefaultHasher, Hash, Hasher}, time::Instant};
 
 #[derive(Clone)]
 pub struct Rng {
@@ -6,6 +6,12 @@ pub struct Rng {
 }
 
 impl Rng {
+
+    pub fn rand() -> Rng {
+        let now = Instant::now();
+        return Rng::seeded(now);
+    }
+    
     pub fn new(seed: u32) -> Rng {
         return Rng {
             seed
