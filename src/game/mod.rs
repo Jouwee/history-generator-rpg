@@ -66,6 +66,7 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn render(&self, mut ctx: RenderContext) {
+        self.chunk.render(&mut ctx);
         self.player.render(&mut ctx);
         for npc in self.chunk.npcs.iter() {
             npc.render(&mut ctx);

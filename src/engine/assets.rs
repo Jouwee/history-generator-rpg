@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use image::ImageReader;
-use opengl_graphics::{Filter, GlyphCache, Texture, TextureSettings};
+use opengl_graphics::{Filter, Texture, TextureSettings};
+
+use super::spritesheet::Spritesheet;
 
 pub struct Assets {
     textures: HashMap<String, Asset<Texture>>,
-    fonts: HashMap<String, Asset<GlyphCache<'static>>>
+    spritesheets: HashMap<String, Asset<Spritesheet>>,
 }
 
 impl Assets {
@@ -13,7 +15,7 @@ impl Assets {
     pub fn new() -> Assets {
         Assets {
             textures: HashMap::new(),
-            fonts: HashMap::new()
+            spritesheets: HashMap::new()
         }
     }
 
@@ -28,6 +30,17 @@ impl Assets {
         }
         &self.textures.get(name).expect(format!("Image {name} does not exist").as_str()).value
     }
+
+    pub fn spritesheet(&mut self, name: &str, size: (u32, u32)) -> &Spritesheet {
+        if !self.spritesheets.contains_key(name) {
+            let mut path = String::from("./assets/sprites/");
+            path.push_str(name);
+            let spritesheet = ImageReader::open(path).unwrap().decode().unwrap();
+            self.spritesheets.insert(String::from(name), Asset { value: Spritesheet::new(spritesheet, size) });
+        }
+        &self.spritesheets.get(name).expect(format!("Image {name} does not exist").as_str()).value
+    }
+
 }
 
 pub struct Asset<T> {

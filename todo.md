@@ -1,15 +1,6 @@
 # Doing
 
-## feat - Place important people on map
-
-- ✓ Check who's on the tile
-- ✓ Add NPCs linked to said person
-- ✓ When using the talk action, present theirselves
-- If you kill the NPC, the world person must die
-
-# TODO: 0.0.? - Basic chunk generation
-
-## feat - Generate local chunk following biome
+# TODO: 0.0.4 - Basic chunk generation
 
 # TODO: 0.0.? - Loading and saving
 
@@ -83,6 +74,21 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 ## bug - Cities go 100's of years without someone rising to power
 
 ## bug - A spouse of a king has the same chance of founding a new city than anyone else
+
+## refactor - You need to pass to many parameters to read an asset
+
+Like the size of the spritesheet, not part of the key
+
+# Release 0.0.4 - Connect global and local world
+
+## feat - Place important people on map
+
+- ✓ Check who's on the tile
+- ✓ Add NPCs linked to said person
+- ✓ When using the talk action, present theirselves
+- ✓ If you kill the NPC, the world person must die
+
+## feat - Generate local chunk following biome
 
 # Release 0.0.3 - Basic gameplay
 

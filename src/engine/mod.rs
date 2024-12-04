@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod render;
+pub mod spritesheet;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Point2D(pub usize, pub usize);
