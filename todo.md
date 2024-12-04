@@ -1,18 +1,27 @@
 # Doing
 
-# TODO: 0.0.4 - Basic chunk generation
+## feat - Better elevation generation
 
-# TODO: 0.0.? - Loading and saving
+- ✓ Render elevation in word view
+  - ✓ Shadows on basic view
+  - ✓ Explicit elevation view
+- Plate tectonics simulation
+- Volcanic activity
 
 # TODO: 0.0.? - Better terrain generation
 
-## feat - Ocean biome
+## feat - Better temperature calculations
 
-## feat - Grasslands biome
+- Poles
 
-## feat - Better elevation generation
+## feat - More biomes
 
-## feat - Rivers and lakes
+- Ocean biome
+- Grasslands biome
+
+## feat - Rivers, lakes and erosion
+
+# TODO: 0.0.? - Loading and saving
 
 # TODO: 0.0.? - Basic gameplay loop
 

@@ -24,6 +24,15 @@ pub struct Color {
 
 impl Color {
 
+    pub fn rgb(rgb: [f32; 3]) -> Color {
+        Color {
+            r: rgb[0],
+            g: rgb[1],
+            b: rgb[2],
+            a: 1.0,
+        }
+    }
+
     pub fn from_hex(hex: &str) -> Color {
         assert!(hex.len() == 6 || hex.len() == 8, "A hex color must be 6 or 8 characters long. I got {}", hex);
         let r = u8::from_str_radix(&hex[0..2], 16).expect("Wrong red channel");
@@ -39,6 +48,15 @@ impl Color {
             b: b as f32 / 255.0,
             a: a as f32 / 255.0
         };
+    }
+
+    pub fn alpha(&self, alpha: f32) -> Color {
+        Color {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: alpha
+        }
     }
 
     pub fn f32_arr(&self) -> [f32; 4] {
