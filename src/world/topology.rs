@@ -8,6 +8,7 @@ use super::region::Region;
 pub struct WorldTopology {
     pub size: Size2D,
     pub elevation: Vec<u8>,
+    pub precipitation: Vec<u8>,
     pub temperature: Vec<u8>,
     pub soil_ferility: Vec<f32>,
     pub region_id: Vec<u8>
@@ -20,6 +21,7 @@ impl WorldTopology {
         WorldTopology { 
             size,
             elevation: vec![128; len],
+            precipitation: vec![0; len],
             temperature: vec![0; len],
             soil_ferility: vec![0.0; len],
             region_id: vec![0; len]
@@ -31,6 +33,7 @@ impl WorldTopology {
         return WorldTileData {
             xy: Point2D(x, y),
             elevation: self.elevation[i],
+            precipitation: self.precipitation[i],
             temperature: self.temperature[i],
             soil_fertility: self.soil_ferility[i],
             region_id: self.region_id[i],
@@ -178,6 +181,19 @@ impl WorldTopology {
         }
     }
 
+    pub fn precipitation(&mut self, params: &mut WorldTopologyGenerationParameters) {
+        let idx = MatrixIndex::new((self.size.0, self.size.1));
+        let noise = Perlin::new(params.rng.derive("noise").seed());
+        for y in 0..self.size.y() {
+            for x in 0..self.size.x() {
+                let i = idx.idx(x, y);
+                let noise = noise.get([x as f64 / 50., y as f64 / 50.]);
+                let noise = (noise + 1.) / 2.;
+                self.precipitation[i] = (noise * 256.) as u8;
+            }
+        }
+    }
+
     pub fn noise(&mut self, rng: &Rng, regions: &Vec<Region>) {
         let rng = rng.derive("world_map");
         let n_temp = Perlin::new(rng.derive("temperature").seed());
@@ -231,6 +247,7 @@ pub struct WorldTopologyGenerationParameters {
 pub struct WorldTileData {
     pub xy: Point2D,
     pub elevation: u8,
+    pub precipitation: u8,
     pub temperature: u8,
     pub soil_fertility: f32,
     pub region_id: u8

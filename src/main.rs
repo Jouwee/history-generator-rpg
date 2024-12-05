@@ -36,7 +36,8 @@ enum SceneEnum {
 #[derive(PartialEq)]
 enum WorldViewMode {
     Normal,
-    Elevation
+    Elevation,
+    Precipitation,
 }
 
 pub struct App {
@@ -228,8 +229,20 @@ impl App {
                         for x in 0..world.map.size.x() {
                             for y in 0..world.map.size.y() {
                                 let tile = world.map.tile(x, y);
-                                let opacity = (tile.elevation as f32) / 256.0;
-                                rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
+                                let mut opacity = 0.0;
+                                let mut color = white;
+                                match *view {
+                                    WorldViewMode::Normal => (), // Already checked
+                                    WorldViewMode::Elevation => {
+                                        color = white;
+                                        opacity = (tile.elevation as f32) / 256.0;
+                                    },
+                                    WorldViewMode::Precipitation => {
+                                        color = blue;
+                                        opacity = (tile.precipitation as f32) / 256.0;
+                                    }
+                                }
+                                rectangle(color.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
                             }   
                         }
                     }
@@ -698,10 +711,10 @@ fn main() {
                     SceneEnum::World => {
                         match k.button {
                             Button::Keyboard(Key::V) => {
-                                if view == WorldViewMode::Elevation {
-                                    view = WorldViewMode::Normal;
-                                } else {
-                                    view = WorldViewMode::Elevation;
+                                match view {
+                                    WorldViewMode::Normal => view = WorldViewMode::Elevation,
+                                    WorldViewMode::Elevation => view = WorldViewMode::Precipitation,
+                                    WorldViewMode::Precipitation => view = WorldViewMode::Normal,
                                 }
                             },
                             Button::Keyboard(Key::Up) => {
@@ -785,6 +798,9 @@ impl WorldHistoryGenerator {
         let now = Instant::now();
         world_map.plate_tectonics(&mut params);
         println!("Plate tectonics in {:.2?}", now.elapsed());
+        let now: Instant = Instant::now();
+        world_map.precipitation(&mut params);
+        println!("Precipitation {:.2?}", now.elapsed());
         world_map.noise(&rng, &parameters.regions);
 
         let mut world = WorldGraph {
