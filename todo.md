@@ -2,12 +2,14 @@
 
 ## feat - Better elevation generation
 
-http://procgenesis.com/WorldGen/worldgen.html
+Nice procedural generator: http://procgenesis.com/WorldGen/worldgen.html
+Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 
 - ✓ Render elevation in word view
   - ✓ Shadows on basic view
   - ✓ Explicit elevation view
 - ✓ Plate tectonics simulation
+- Slope
 - Precipitation
 - Erosion
 - Volcanic activity

@@ -1,3 +1,5 @@
+use geometry::{Vec2};
+
 pub mod assets;
 pub mod geometry;
 pub mod render;
@@ -13,6 +15,11 @@ impl Point2D {
         let y = another.1 as f32 - self.1 as f32;
         return x*x + y*y
     }
+
+    pub fn vec_between(&self, another: &Point2D) -> Vec2 {
+        Vec2::xy(self.0 as f32, self.1 as f32) - Vec2::xy(another.0 as f32, another.1 as f32)
+    }
+
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]

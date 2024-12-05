@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, VecDeque}, f32::consts::PI};
 
 use noise::{NoiseFn, Perlin};
-use crate::{commons::{matrix_index::{self, MatrixIndex}, rng::Rng}, engine::{geometry::{Size2D, Vector2}, Point2D}};
+use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vec2, Vector2}, Point2D}};
 
 use super::region::Region;
 
@@ -54,7 +54,7 @@ impl WorldTopology {
         for i in 1..params.num_plate_tectonics+1 {
             let seed = Point2D(params.rng.randu_range(0, self.size.x()), params.rng.randu_range(0, self.size.y()));
             plates.insert(i, PlateTectonics {
-                base_elevation: params.rng.randf_range(-120., 120.) as i8,
+                base_elevation: params.rng.randf_range(-64., 64.) as i8,
                 seed,
                 direction: Vector2::new(params.rng.randf_range(0., 2.*PI), params.rng.randf())
             });
@@ -172,10 +172,14 @@ impl WorldTopology {
         for y in 1..self.size.y() - 1 {
             for x in 1..self.size.x() - 1 {
                 let i: usize = (y * self.size.x()) + x;
-                let low_freq = noise.get([x as f64 / 10., y as f64 / 10.]) as f32;
-                let med_freq = noise.get([x as f64 / 5., y as f64 / 5.]) as f32;
-                let high_freq = noise.get([x as f64 / 1., y as f64 / 1.]) as f32;
-                let noise = ((low_freq * 0.6 + med_freq * 0.5 + high_freq * 0.3) * 8.) as i32;
+                // Domain warping
+                let x = x as f64 + noise.get([x as f64 / 20., y as f64 / 20.]) * 8.;
+                let y = y as f64 + noise.get([x as f64 / 20., y as f64 / 20., 1000.]) * 8.;
+                //
+                let low_freq = noise.get([x / 20., y / 20.]) as f32;
+                let med_freq = noise.get([x / 7., y / 7.]) as f32;
+                let high_freq = noise.get([x / 1., y / 1.]) as f32;
+                let noise = ((low_freq * 0.6 + med_freq * 0.3 + high_freq * 0.1) * 16.) as i32;
                 self.elevation[i] = (self.elevation[i] as i32 + noise).clamp(0, 255) as u8;
             }
         }
@@ -191,6 +195,88 @@ impl WorldTopology {
                 let noise = (noise + 1.) / 2.;
                 self.precipitation[i] = (noise * 256.) as u8;
             }
+        }
+    }
+
+    pub fn erosion(&mut self, params: &mut WorldTopologyGenerationParameters) {
+        let idx = MatrixIndex::new((self.size.0, self.size.1));
+        // Temporary f32 elevation map
+        let mut elevation = vec![0.; self.size.area()];
+        for i in 0..self.size.area() {
+            elevation[i] = self.elevation[i] as f32;
+        }
+
+        for i in 0..100000 {
+            let mut xy = Vec2::xy(params.rng.randf_range(0., self.size.0 as f32), params.rng.randf_range(0., self.size.1 as f32));
+            let mut momentum = Vec2::xy(params.rng.randf_range(-1., 1.), params.rng.randf_range(-1., 1.));
+            let mut carrying = 0.;
+
+            let pickup = 0.5;
+            let drop_off = pickup * 0.1;
+            let max_carry = 5.;
+
+            for _ in 0..100 {
+                let xyp = Point2D(xy.x as usize, xy.y as usize);
+                let neighbours = idx.p2d_neighbours8(xyp);
+
+                // println!("{:?}", xyp);
+
+                if neighbours.len() == 0 {
+                    panic!("{:?} {:?}", xy, xyp);
+                }
+
+                let mut lowest = neighbours[0];
+                for neighbour in neighbours {
+                    if elevation[neighbour] < elevation[lowest] {
+                        lowest = neighbour;
+                    } else if elevation[neighbour] == elevation[lowest] && i % 2 == 0 { // "Randomness" without actual randomness for speed
+                        lowest = neighbour;
+                    }
+                }
+
+                let lowestp = idx.to_p2d(lowest);
+                let slope = Vec2::xy(lowestp.0 as f32, lowestp.1 as f32) - xy;
+                //slope.magnitude = elevation[idx.p2d(xy)] as f32 - elevation[lowest] as f32;
+                momentum = momentum + slope;
+
+                // println!("from: {:?} to: {:?} slope: {:?}", xy, Vec2::xy(lowestp.0 as f32, lowestp.1 as f32), slope);
+
+                // println!("momentum: {:?}, slope: {:?}", momentum, slope);
+                
+                momentum = Vec2::xy(momentum.x * 0.9, momentum.y * 0.9);
+
+                if momentum.magnitude() < 0.01 {
+                    elevation[idx.p2d(xyp)] += carrying * 0.5;
+                    break;
+                }
+
+                let limited = Vec2::xy(momentum.x.clamp(-1., 1.), momentum.y.clamp(-1., 1.));
+
+                let new_xy = xy + limited;
+
+                // carrying += pickup;
+                // elevation[idx.p2d(xyp)] -= pickup;
+
+                let drop = f32::min(drop_off, carrying);
+                carrying -= drop;
+                elevation[idx.p2d(xyp)] += drop;
+                if new_xy.x < 0. || new_xy.y < 0. || new_xy.x >= self.size.x() as f32 || new_xy.y >= self.size.y() as f32 {
+                    break;
+                }
+                // if new_xy != xy {
+                    let pick = f32::min(pickup, max_carry - carrying);
+                    carrying += pick;
+                    elevation[idx.p2d(xyp)] -= pick;
+                // }
+                // if carrying == 0. {
+                //     break;
+                // }
+                xy = new_xy;
+            }
+        }
+        // Saves the f32 vector back
+        for i in 0..self.size.area() {
+            self.elevation[i] = elevation[i] as u8;
         }
     }
 

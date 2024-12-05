@@ -691,7 +691,7 @@ fn main() {
             app.update(&args);
             match &mut app.scene {
                 SceneEnum::World => {
-                    if generator.year < 500 {
+                    if generator.year < 5 {
                         generator.simulate_year();
                     }
                 },
@@ -801,6 +801,9 @@ impl WorldHistoryGenerator {
         let now: Instant = Instant::now();
         world_map.precipitation(&mut params);
         println!("Precipitation {:.2?}", now.elapsed());
+        // let now: Instant = Instant::now();
+        // world_map.erosion(&mut params);
+        // println!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &parameters.regions);
 
         let mut world = WorldGraph {
