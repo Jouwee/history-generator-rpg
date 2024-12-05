@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, Relative, WorldEvent, WorldEventEnum, WorldGraph, WorldTileData};
+use crate::{commons::history_vec::Id, world::topology::WorldTileData, Relative, WorldEvent, WorldEventEnum, WorldGraph};
 
 pub struct BiographyWriter<'a> { 
     world: &'a WorldGraph   
@@ -13,7 +13,7 @@ impl<'a> BiographyWriter<'a> {
     }
 
     pub fn tile(&self, tile: &WorldTileData) -> String {
-        return format!("{:?}, {}, growth: {}", tile.xy, tile.region_id, (tile.soil_fertility - 0.5) * 0.01);
+        return format!("{:?}, el {}, {}, growth: {}", tile.xy, tile.elevation, tile.region_id, (tile.soil_fertility - 0.5) * 0.01);
     }
 
     pub fn settlement(&self, id: &Id) -> String {

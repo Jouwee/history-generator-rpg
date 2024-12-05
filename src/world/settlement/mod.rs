@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, rng::Rng, strings::Strings}, engine::Point2D, CulturePrefab, RegionPrefab};
+use crate::{commons::{history_vec::Id, rng::Rng, strings::Strings}, engine::Point2D, CulturePrefab, Region};
 
 #[derive(Clone)]
 pub struct Settlement {
@@ -66,13 +66,13 @@ pub struct SettlementBuilder<'a> {
     founding_year: u32,
     culture: &'a CulturePrefab,
     faction_id: Id,
-    region: &'a RegionPrefab,
+    region: &'a Region,
     population: u32,
 }
 
 impl<'a> SettlementBuilder<'a> {
 
-    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, culture: &'a CulturePrefab, faction_id: Id, region: &'a RegionPrefab) -> SettlementBuilder<'a> {
+    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, culture: &'a CulturePrefab, faction_id: Id, region: &'a Region) -> SettlementBuilder<'a> {
         let mut rng = rng.derive("colony");
         let population = rng.randu_range(2, 10) as u32;
         return SettlementBuilder {
@@ -100,7 +100,7 @@ impl<'a> SettlementBuilder<'a> {
         }
     }
 
-    fn generate_location_name(rng: &Rng, culture: &CulturePrefab, region: &RegionPrefab) -> String {
+    fn generate_location_name(rng: &Rng, culture: &CulturePrefab, region: &Region) -> String {
         let mut rng = rng.derive("name");
 
         let mut landmarks = Vec::new();

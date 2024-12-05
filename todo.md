@@ -2,10 +2,14 @@
 
 ## feat - Better elevation generation
 
+http://procgenesis.com/WorldGen/worldgen.html
+
 - ✓ Render elevation in word view
   - ✓ Shadows on basic view
   - ✓ Explicit elevation view
-- Plate tectonics simulation
+- ✓ Plate tectonics simulation
+- Precipitation
+- Erosion
 - Volcanic activity
 
 # TODO: 0.0.? - Better terrain generation

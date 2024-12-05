@@ -1,4 +1,5 @@
 pub mod assets;
+pub mod geometry;
 pub mod render;
 pub mod spritesheet;
 

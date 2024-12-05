@@ -4,15 +4,14 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{borrow::BorrowMut, cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, vec};
+use std::{borrow::BorrowMut, cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, time::Instant, vec};
 use commons::{history_vec::{HistoryVec, Id}, markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
-use engine::{assets::Assets, render::RenderContext, Color, Point2D};
+use engine::{assets::Assets, geometry::Size2D, render::RenderContext, Color, Point2D};
 use game::{chunk::Chunk, GameSceneState, Scene};
 use literature::biography::BiographyWriter;
 use ::image::ImageReader;
-use noise::{NoiseFn, Perlin};
 use graphics::rectangle::{square, Border};
-use world::{event::*, faction::{Faction, FactionRelation}, settlement::{Settlement, SettlementBuilder}};
+use world::{event::*, faction::{Faction, FactionRelation}, region::Region, settlement::{Settlement, SettlementBuilder}, topology::{WorldTopology, WorldTopologyGenerationParameters}};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
@@ -116,11 +115,14 @@ impl App {
                     game_state.render(context);
                 },
                 SceneEnum::World => {
+
+                    let ts = 4.;
                     if *view == WorldViewMode::Normal {
 
-                        for x in 0..WORLD_MAP_WIDTH {
-                            for y in 0..WORLD_MAP_HEIGHT {
-                                let tile = world.map.get_world_tile(x, y);
+
+                        for x in 0..world.map.size.x() {
+                            for y in 0..world.map.size.y() {
+                                let tile = world.map.tile(x, y);
 
                                 let color;
                                 match tile.region_id {
@@ -129,33 +131,33 @@ impl App {
                                     2 => color = salmon,
                                     _ => color = black
                                 }
-                                rectangle(color.f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                                rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
 
                                 let mut height_diff = 0.0;
                                 let mut height_count = 0;
                                 if x > 0 {
-                                    height_diff += tile.elevation as f32 - world.map.get_world_tile(x - 1, y).elevation as f32;
+                                    height_diff += tile.elevation as f32 - world.map.tile(x - 1, y).elevation as f32;
                                     height_count += 1;
                                 }
                                 if y > 0 {
-                                    height_diff += tile.elevation as f32 - world.map.get_world_tile(x, y - 1).elevation as f32;
+                                    height_diff += tile.elevation as f32 - world.map.tile(x, y - 1).elevation as f32;
                                     height_count += 1;
                                 }
-                                if x < WORLD_MAP_WIDTH - 1 {
-                                    height_diff += world.map.get_world_tile(x + 1, y).elevation as f32 - tile.elevation as f32;
+                                if x < world.map.size.x() - 1 {
+                                    height_diff += world.map.tile(x + 1, y).elevation as f32 - tile.elevation as f32;
                                     height_count += 1;
                                 }
-                                if y < WORLD_MAP_HEIGHT - 1 {
-                                    height_diff += world.map.get_world_tile(x, y + 1).elevation as f32 - tile.elevation as f32;
+                                if y < world.map.size.y() - 1 {
+                                    height_diff += world.map.tile(x, y + 1).elevation as f32 - tile.elevation as f32;
                                     height_count += 1;
                                 }
-                                height_diff = (height_diff / height_count as f32) / 5.0;
+                                height_diff = (height_diff / height_count as f32) / 256.0;
                                 if height_diff < 0.0 {
                                     let opacity = height_diff.abs();
-                                    rectangle(black.alpha(opacity).f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                                    rectangle(black.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
                                 } else {
                                     let opacity = height_diff;
-                                    rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                                    rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
                                 }
 
                             }   
@@ -173,10 +175,10 @@ impl App {
 
                                 let mut rectangle = Rectangle::new(transparent);
                                 rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
-                                let dims = square(settlement.xy.0 as f64 * 16.0, settlement.xy.1 as f64 * 16.0, 16.0);
+                                let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
                                 rectangle.draw(dims, &DrawState::default(), context.context.transform, context.gl);
                             }
-                            let transform = context.context.transform.trans(settlement.xy.0 as f64*16.0, settlement.xy.1 as f64*16.0);
+                            let transform = context.context.transform.trans(settlement.xy.0 as f64*ts, settlement.xy.1 as f64*ts);
 
                             let texture;
                             if settlement.demographics.population == 0 {
@@ -206,9 +208,9 @@ impl App {
                         
                         let mut color = white.f32_arr();
                         color[3] = 0.7;
-                        rectangle(color, rectangle::square(cursor.0 as f64 * 16.0, cursor.1 as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                        rectangle(color, rectangle::square(cursor.0 as f64 * ts, cursor.1 as f64 * ts, ts), context.context.transform, context.gl);
 
-                        let tile = world.map.get_world_tile(cursor.0, cursor.1);
+                        let tile = world.map.tile(cursor.0, cursor.1);
                         let biography = BiographyWriter::new(&world);
 
                         let mut text = biography.tile(&tile);
@@ -218,16 +220,16 @@ impl App {
                         }
                         let mut y = 16.0;
                         for line in text.split('\n') {
-                            context.text(line, 10, [(WORLD_MAP_WIDTH * 16) as f64 + 16.0, y], white);
+                            context.text(line, 10, [1040., y], white);
                             y = y + 16.0;
                         }
 
                     } else {
-                        for x in 0..WORLD_MAP_WIDTH {
-                            for y in 0..WORLD_MAP_HEIGHT {
-                                let tile = world.map.get_world_tile(x, y);
-                                let opacity = (tile.elevation as f32) / 5.0;
-                                rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * 16.0, y as f64 * 16.0, 16.0), context.context.transform, context.gl);
+                        for x in 0..world.map.size.x() {
+                            for y in 0..world.map.size.y() {
+                                let tile = world.map.tile(x, y);
+                                let opacity = (tile.elevation as f32) / 256.0;
+                                rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
                             }   
                         }
                     }
@@ -256,21 +258,9 @@ struct LanguagePrefab {
     dictionary: HashMap<String, String>
 }
 
-
-#[derive(Debug)]
-struct RegionPrefab {
-    name: String,
-    id: usize,
-    elevation: (u8, u8),
-    temperature: (u8, u8),
-    soil_fertility_range: (f32, f32),
-    gold_generation_range: (f32, f32),
-    fauna: Vec<String>,
-    flora: Vec<String>,
-}
-
 struct WorldGraph {
-    map: WorldMap,
+    // TODO: rename
+    map: WorldTopology,
     cultures: HashMap<Id, CulturePrefab>,
     factions: HistoryVec<Faction>,
     settlements: HistoryVec<Settlement>,
@@ -314,40 +304,6 @@ impl People {
         return self.inner.iter().filter(|(_id, person)| person.borrow().simulatable())
     }
 
-}
-
-const WORLD_MAP_HEIGHT: usize = 64;
-const WORLD_MAP_WIDTH: usize = 64;
-
-struct WorldMap {
-    elevation: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-    temperature: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-    soil_ferility: [f32; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-    region_id: [u8; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH]
-}
-
-impl WorldMap {
-
-    pub fn get_world_tile(&self, x: usize, y: usize) -> WorldTileData {
-        let i = (y * WORLD_MAP_WIDTH) + x;
-        return WorldTileData {
-            xy: Point2D(x, y),
-            elevation: self.elevation[i],
-            temperature: self.temperature[i],
-            soil_fertility: self.soil_ferility[i],
-            region_id: self.region_id[i],
-        }
-    }
-
-}
-
-#[derive(Debug)]
-struct WorldTileData {
-    xy: Point2D,
-    elevation: u8,
-    temperature: u8,
-    soil_fertility: f32,
-    region_id: u8
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -616,10 +572,10 @@ fn main() {
     };
 
     let regions = vec!(
-        RegionPrefab {
+        Region {
             id: 0,
             name: String::from("Coastal"),
-            elevation: (0, 0),
+            elevation: (0, 64),
             temperature: (0, 5),
             soil_fertility_range: (0.8, 1.2),
             gold_generation_range: (0.8, 1.2),
@@ -632,10 +588,10 @@ fn main() {
                 String::from("coral")
             ])
         },
-        RegionPrefab {
+        Region {
             id: 1,
             name: String::from("Forest"),
-            elevation: (1, 5),
+            elevation: (64, 255),
             temperature: (0, 2),
             soil_fertility_range: (1.0, 1.4),
             gold_generation_range: (0.7, 1.1),
@@ -648,10 +604,10 @@ fn main() {
                 String::from("birch")
             ])
         },
-        RegionPrefab {
+        Region {
             id: 2,
             name: String::from("Desert"),
-            elevation: (1, 5),
+            elevation: (64, 255),
             temperature: (3, 5),
             soil_fertility_range: (0.5, 0.9),
             gold_generation_range: (0.6, 1.0),
@@ -707,7 +663,7 @@ fn main() {
         assets: Assets::new()
     };
 
-    let mut cursor = Point2D(WORLD_MAP_WIDTH / 2, WORLD_MAP_HEIGHT / 2);
+    let mut cursor = Point2D(generator.world.map.size.x() / 2, generator.world.map.size.y() / 2);
 
     let mut last_mouse_pos = [0.0, 0.0];
     let mut view = WorldViewMode::Normal;
@@ -754,7 +710,7 @@ fn main() {
                                 }
                             },
                             Button::Keyboard(Key::Down) => {
-                                if cursor.1 < WORLD_MAP_HEIGHT-1 {
+                                if cursor.1 < generator.world.map.size.y()-1 {
                                     cursor.1 += 1;
                                 }
                             },
@@ -764,7 +720,7 @@ fn main() {
                                 }
                             },
                             Button::Keyboard(Key::Right) => {
-                                if cursor.0 < WORLD_MAP_WIDTH-1 {
+                                if cursor.0 < generator.world.map.size.x()-1 {
                                     cursor.0 += 1;
                                 }
                             },
@@ -804,7 +760,7 @@ fn main() {
 struct WorldGenerationParameters {
     seed: u32,
     cultures: Vec<CulturePrefab>,
-    regions: Vec<RegionPrefab>
+    regions: Vec<Region>
 }
 
 struct WorldHistoryGenerator {
@@ -820,7 +776,16 @@ impl WorldHistoryGenerator {
     pub fn seed_world(parameters: WorldGenerationParameters) -> WorldHistoryGenerator {
         let mut rng = Rng::seeded(parameters.seed);
        
-        let world_map = generate_world_map(&rng, &parameters.regions);
+        let mut params = WorldTopologyGenerationParameters {
+            rng: rng.derive("topology"),
+            num_plate_tectonics: 15
+        };
+
+        let mut world_map = WorldTopology::new(Size2D(256, 256));
+        let now = Instant::now();
+        world_map.plate_tectonics(&mut params);
+        println!("Plate tectonics in {:.2?}", now.elapsed());
+        world_map.noise(&rng, &parameters.regions);
 
         let mut world = WorldGraph {
             map: world_map,
@@ -1054,7 +1019,7 @@ impl WorldHistoryGenerator {
                 continue
             }
 
-            let settlement_tile = self.world.map.get_world_tile(settlement.xy.0, settlement.xy.1);
+            let settlement_tile = self.world.map.tile(settlement.xy.0, settlement.xy.1);
 
             // https://en.wikipedia.org/wiki/Estimates_of_historical_world_population
             let soil_fertility = settlement_tile.soil_fertility;
@@ -1187,11 +1152,11 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
 }
 
 
-fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldMap, regions: &Vec<RegionPrefab>) -> Option<Settlement> {
+fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
     let mut rng = rng.derive("settlement");
     let mut xy = None;
     'candidates: for _ in 1..10 {
-        let txy = Point2D(rng.randu_range(0, WORLD_MAP_WIDTH), rng.randu_range(0, WORLD_MAP_HEIGHT));
+        let txy = Point2D(rng.randu_range(0, world_map.size.x()), rng.randu_range(0, world_map.size.y()));
         for (_, settlement) in world_graph.settlements.iter() {
             if settlement.borrow().xy.dist_squared(&txy) < 3.0_f32.powi(2) {
                 continue 'candidates;
@@ -1201,65 +1166,11 @@ fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, f
         break;
     }
     if let Some(xy) = xy {
-        let region_id = world_map.get_world_tile(xy.0, xy.1).region_id as usize;
+        let region_id = world_map.tile(xy.0, xy.1).region_id as usize;
         let region = regions.get(region_id).unwrap();
 
         return Some(SettlementBuilder::colony(&rng, xy, founding_year, culture, faction, region).create())
     } else {
         None
     }
-}
-
-fn generate_world_map(rng: &Rng, regions: &Vec<RegionPrefab>) -> WorldMap {
-    let rng = rng.derive("world_map");
-    let mut map = WorldMap {
-        elevation: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-        temperature: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-        soil_ferility: [0.0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-        region_id: [0; WORLD_MAP_HEIGHT * WORLD_MAP_WIDTH],
-    };
-    let n_elev = Perlin::new(rng.derive("elevation").seed());
-    let n_temp = Perlin::new(rng.derive("temperature").seed());
-    let n_reg = Perlin::new(rng.derive("region").seed());
-    let n_fert = Perlin::new(rng.derive("fertility").seed());
-    for y in 0..WORLD_MAP_HEIGHT {
-        for x in 0..WORLD_MAP_WIDTH {
-            let i = (y * WORLD_MAP_WIDTH) + x;
-            let xf = x as f64;
-            let yf = y as f64;
-            {
-                let low = n_elev.get([xf / 10.0, yf / 10.0]);
-                let med = n_elev.get([xf / 4.0, yf / 4.0]);
-                map.elevation[i] = ((1.0+low+med) / 4.0 * 5.0) as u8;
-            }
-            {
-                let low = n_temp.get([xf / 10.0, yf / 10.0]);
-                // let med = n_temp.get([xf / 4.0, yf / 4.0]);
-                map.temperature[i] = (low * 5.0) as u8;
-            }
-            {
-                let mut region_candidates: Vec<u8> = Vec::new();
-                for (j, region) in regions.iter().enumerate() {
-                    if map.elevation[i] >= region.elevation.0 && map.elevation[i] <= region.elevation.1 && map.temperature[i] >= region.temperature.0 && map.temperature[i] <= region.temperature.1 {
-                        region_candidates.push(j as u8);
-                    }
-                }
-                match region_candidates.len() {
-                    0 => panic!("No region candidate for elevation {} and temperature {}", map.elevation[i], map.temperature[i]),
-                    1 => map.region_id[i] = region_candidates.pop().expect("Already checked"),
-                    _ => {
-                        let noise = n_reg.get([xf / 10.0, yf / 10.0]);
-                        map.region_id[i] = region_candidates[(noise * region_candidates.len() as f64) as usize];
-                    }
-                }
-            }
-            {
-                let region_fertility_range = regions[map.region_id[i] as usize].soil_fertility_range;
-                let noise_modif = n_fert.get([xf / 10.0, yf / 10.0]) as f32;
-                let noise_modif = (noise_modif + 1.0) / 2.0;
-                map.soil_ferility[i] = noise_modif * (region_fertility_range.1 - region_fertility_range.0) + region_fertility_range.0;
-            }
-        }
-    }
-    return map;
 }

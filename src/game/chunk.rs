@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::Point2D, WorldGraph};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::Size2D, Point2D}, WorldGraph};
 use super::{Renderable, NPC};
 
 pub struct Chunk {
-    size: ChunkSize,
+    size: Size2D,
     tiles: Vec<Tile>,
     tile_def: HashMap<u8, TileDef>,
     pub npcs: Vec<NPC>,
@@ -14,7 +14,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(size: ChunkSize) -> Chunk {
+    pub fn new(size: Size2D) -> Chunk {
         let mut tile_def = HashMap::new();
         tile_def.insert(0, TileDef { sprite: (0, 0) }); // Grass
         tile_def.insert(1, TileDef { sprite: (1, 0) }); // Sand
@@ -30,9 +30,9 @@ impl Chunk {
     }
 
     pub fn from_world_tile(world: &WorldGraph, xy: Point2D) -> Chunk {
-        let mut chunk = Self::new(ChunkSize(64, 64));
+        let mut chunk = Self::new(Size2D(64, 64));
         let mut rng = Rng::rand();
-        let tile = world.map.get_world_tile(xy.0, xy.1);
+        let tile = world.map.tile(xy.0, xy.1);
         let noise = Perlin::new(rng.derive("terrain").seed());
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
@@ -87,21 +87,6 @@ impl Renderable for Chunk {
                 ctx.spritesheet("tiles.png", tile.sprite, [x as f64 * 16., y as f64 * 16.]);
             }
         }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct ChunkSize(usize, usize);
-
-impl ChunkSize {
-    pub fn x(&self) -> usize {
-        self.0
-    }
-    pub fn y(&self) -> usize {
-        self.1
-    }
-    pub fn area(&self) -> usize {
-        return self.x() * self.y()
     }
 }
 
