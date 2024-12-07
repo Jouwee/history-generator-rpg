@@ -1,6 +1,3 @@
-use image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
-
 use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, Person};
 
 use super::Renderable;
@@ -13,13 +10,14 @@ pub trait Actor {
     fn damage(&mut self) -> &mut DamageComponent;
     fn defence(&mut self) -> &mut DefenceComponent;
 }
-
 pub struct Player {
     pub xy: Coord2,
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
     pub damage: DamageComponent,
-    pub defence: DefenceComponent
+    pub defence: DefenceComponent,
+    pub xp: u32,
+    pub level: u32,
 }
 
 impl Player {
@@ -29,7 +27,9 @@ impl Player {
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::new(100.),
             damage: DamageComponent { slashing: 10.0 },
-            defence: DefenceComponent { slashing: 3.0 }
+            defence: DefenceComponent { slashing: 3.0 },
+            xp: 0,
+            level: 1,
         }
     }
 }
@@ -61,6 +61,77 @@ impl Renderable for Player {
     }
 }
 
+impl Player {
+
+    pub fn add_xp(&mut self, ammount: u32) {
+        self.xp += ammount;
+        let mut new_level = 1;
+        if self.xp >= 300 {
+            new_level = 2;
+        }
+        if self.xp >= 900 {
+            new_level = 3;
+        }
+        if self.xp >= 2700 {
+            new_level = 4;
+        }
+        if self.xp >= 6500 {
+            new_level = 5;
+        }
+        if self.xp >= 14000 {
+            new_level = 6;
+        }
+        if self.xp >= 23000 {
+            new_level = 7;
+        }
+        if self.xp >= 34000 {
+            new_level = 8;
+        }
+        if self.xp >= 48000 {
+            new_level = 9;
+        }
+        if self.xp >= 64000 {
+            new_level = 10;
+        }
+        if self.xp >= 85000 {
+            new_level = 11;
+        }
+        if self.xp >= 100000 {
+            new_level = 12;
+        }
+        if self.xp >= 120000 {
+            new_level = 13;
+        }
+        if self.xp >= 140000 {
+            new_level = 14;
+        }
+        if self.xp >= 165000 {
+            new_level = 15;
+        }
+        if self.xp >= 195000 {
+            new_level = 16;
+        }
+        if self.xp >= 225000 {
+            new_level = 17;
+        }
+        if self.xp >= 265000 {
+            new_level = 18;
+        }
+        if self.xp >= 305000 {
+            new_level = 19;
+        }
+        if self.xp >= 355000 {
+            new_level = 20;
+        }
+        if new_level > self.level {
+            self.level = new_level;
+            self.damage.slashing += 1.;
+            self.defence.slashing += 0.2;
+        }
+    }
+
+}
+
 pub struct NPC {
     pub xy: Coord2,
     pub ap: ActionPointsComponent,
@@ -68,16 +139,25 @@ pub struct NPC {
     pub damage: DamageComponent,
     pub defence: DefenceComponent,
     pub hostile: bool,
-    pub texture: Texture,
-    pub person_id: Id,
-    pub person: Person
+    pub texture: String,
+    pub person_id: Option<Id>,
+    pub person: Option<Person>
 }
 
 impl NPC {
-    pub fn new(xy: Coord2, person_id: Id, person: &Person) -> NPC {
-        let spritesheet = ImageReader::open("./assets/sprites/character.png").unwrap().decode().unwrap();
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let texture = Texture::from_image(&spritesheet.to_rgba8(), &settings);
+    pub fn new(xy: Coord2, person_id: Option<Id>, person: Option<&Person>) -> NPC {
+        let spritesheet;
+        if let Some(_) = person_id {
+            spritesheet = "character.png";
+        } else {
+            spritesheet = "spider.png";
+        }
+        let person_clone;
+        if let Some(person) = person {
+            person_clone = Some(person.clone());
+        } else {
+            person_clone = None;
+        }
         NPC {
             xy,
             ap: ActionPointsComponent::new(80),
@@ -85,16 +165,16 @@ impl NPC {
             damage: DamageComponent { slashing: 8.0 },
             defence: DefenceComponent { slashing: 2.0 },
             hostile: false,
-            texture,
+            texture: String::from(spritesheet),
             person_id,
-            person: person.clone()
+            person: person_clone
         }
     }
 }
 
 impl Renderable for NPC {
     fn render(&self, ctx: &mut RenderContext) {
-        ctx.image("character.png", [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0]);
+        ctx.image(&self.texture, [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0]);
     }
 }
 

@@ -94,9 +94,22 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                chunk.npcs.push(NPC::new(point, *id, &person.borrow()));
+                chunk.npcs.push(NPC::new(point, Some(*id), Some(&person.borrow())));
             }
         }
+
+        if chunk.npcs.len() == 0 {
+            for _ in 0..rng.randu_range(3, 7) {
+                let point = Coord2::xy(
+                    rng.randu_range(0, chunk.size.x()) as i32,
+                    rng.randu_range(0, chunk.size.y()) as i32
+                );
+                let mut npc = NPC::new(point, None, None);
+                npc.hostile = true;
+                chunk.npcs.push(npc);
+            }
+        }
+
         chunk
     }
 }

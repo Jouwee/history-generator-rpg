@@ -51,7 +51,9 @@ impl GameSceneState {
             id = npc.person_id;
         }
         self.chunk.npcs.remove(i);
-        self.chunk.killed_people.push(id);
+        if let Some(id) = id {
+            self.chunk.killed_people.push(id);
+        }
         self.turn_controller.remove(i);
     }
 
@@ -73,7 +75,7 @@ impl Scene for GameSceneState {
             npc.render(&mut ctx);
         }
         if self.turn_controller.is_player_turn() {
-            let txt = format!("Player turn | HP: {}/{} | AP: {}/{}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points);
+            let txt = format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp);
             ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
         } else {
             let txt = format!("Enemy turn {}", self.turn_controller.npc_idx());
@@ -114,11 +116,11 @@ impl Scene for GameSceneState {
                     }
                 }
                 if npc.xy.y < self.player.xy.y {
-                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveUp, npc) {
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveDown, npc) {
                         return
                     }
                 }
-                if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveDown, npc) {
+                if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveUp, npc) {
                     return
                 }
             }
@@ -167,16 +169,17 @@ impl Scene for GameSceneState {
                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                         if let Some((i, target)) = target {
 
-                            if let Ok(_) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.player, target) {
-                                target.hostile = true;
-                                // TODO: ?????
-                                // if let Some(log) = log {
-                                    // self.log(log.string, log.color);
-                                // }
-                                // self.log(format!("You attack NPC for ???"), Color::from_hex("eb9661"));
+                            if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.player, target) {
                                 if target.hp.health_points == 0. {
+                                    self.player.add_xp(100);
                                     self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
                                     self.remove_npc(i);
+                                } else if let Some(log) = log {
+                                    self.log(log.string, log.color);
+                                }
+                                // Turn everyone hostile
+                                for p in self.chunk.npcs.iter_mut() {
+                                    p.hostile = true;
                                 }
                             }
                         } else {
@@ -190,7 +193,12 @@ impl Scene for GameSceneState {
                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                         if let Some((_, target)) = target {
                             if !target.hostile {
-                                let txt = format!("Hello! I am {:?}", target.person.name());
+                                let txt;
+                                if let Some(person) = &target.person {
+                                    txt = format!("Hello! I am {:?}", person.name());
+                                } else {
+                                    txt = String::from("Hello!");
+                                }
                                 self.log(txt, Color::from_hex("cae6d9"));
                             }
                         }
