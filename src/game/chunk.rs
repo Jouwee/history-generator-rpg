@@ -21,6 +21,8 @@ impl Chunk {
         tile_def.insert(1, TileDef { sprite: (1, 0) }); // Sand
         tile_def.insert(2, TileDef { sprite: (0, 1) }); // Stone
         tile_def.insert(3, TileDef { sprite: (1, 1) }); // Water
+        tile_def.insert(4, TileDef { sprite: (2, 0) }); // Brick
+        tile_def.insert(5, TileDef { sprite: (2, 1) }); // Wall
         Chunk {
             size,
             tiles: vec![Tile { id: 0 }; size.area()],
@@ -65,6 +67,24 @@ impl Chunk {
                         }
                     },
                     _ => ()
+                }
+            }
+        }
+        for (_, settlement) in world.settlements.iter() {
+            let settlement = settlement.borrow();
+            if settlement.xy.0 as i32 == xy.x && settlement.xy.1 as i32 == xy.y {
+                let rect_xy1 = Coord2::xy(rng.randu_range(8, 48) as i32, rng.randu_range(16, 48) as i32);
+                let rect_size = Coord2::xy(rng.randu_range(6, 16) as i32, rng.randu_range(6, 16) as i32);
+                let rect_xy2 = rect_xy1 + rect_size;
+                for x in rect_xy1.x..rect_xy2.x + 1 {
+                    for y in rect_xy1.y..rect_xy2.y + 1 {
+                        let idx = (y * chunk.size.x() as i32) + x;
+                        if x == rect_xy1.x || y == rect_xy1.y || x == rect_xy2.x || y == rect_xy2.y {
+                            chunk.tiles[idx as usize].id = 5; // Wall
+                        } else {
+                            chunk.tiles[idx as usize].id = 4; // Floor
+                        }
+                    }
                 }
             }
         }

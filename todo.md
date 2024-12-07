@@ -29,6 +29,8 @@ Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 
 # TODO: 0.0.? - Better gameplay loop
 
+## feat - Attributes
+
 ## refactor - Actor composition system
 
 ## feat - Death screen
