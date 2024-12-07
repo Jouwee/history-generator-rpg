@@ -1,12 +1,12 @@
-use crate::{commons::history_vec::Id, world::topology::WorldTileData, Relative, WorldEvent, WorldEventEnum, WorldGraph};
+use crate::{commons::history_vec::Id, world::topology::WorldTileData, Relative, WorldEvent, WorldEventEnum, World};
 
 pub struct BiographyWriter<'a> { 
-    world: &'a WorldGraph   
+    world: &'a World   
 }
 
 impl<'a> BiographyWriter<'a> {
 
-    pub fn new(world: &'a WorldGraph) -> BiographyWriter {
+    pub fn new(world: &'a World) -> BiographyWriter {
         return BiographyWriter {
             world
         }

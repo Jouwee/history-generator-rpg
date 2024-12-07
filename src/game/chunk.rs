@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::Size2D, Point2D}, WorldGraph};
-use super::{Renderable, NPC};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, Point2D}, World};
+
+use super::{actor::NPC, Renderable};
 
 pub struct Chunk {
     size: Size2D,
@@ -29,7 +30,7 @@ impl Chunk {
         }
     }
 
-    pub fn from_world_tile(world: &WorldGraph, xy: Point2D) -> Chunk {
+    pub fn from_world_tile(world: &World, xy: Point2D) -> Chunk {
         let mut chunk = Self::new(Size2D(64, 64));
         let mut rng = Rng::rand();
         let tile = world.map.tile(xy.0, xy.1);
@@ -66,9 +67,9 @@ impl Chunk {
         }
         for (id, person) in world.people.iter() {
             if person.borrow().position == xy {
-                let point = Point2D(
-                    rng.randu_range(0, chunk.size.x()),
-                    rng.randu_range(0, chunk.size.y())
+                let point = Coord2::xy(
+                    rng.randu_range(0, chunk.size.x()) as i32,
+                    rng.randu_range(0, chunk.size.y()) as i32
                 );
                 chunk.npcs.push(NPC::new(point, *id, &person.borrow()));
             }

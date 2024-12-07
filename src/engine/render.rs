@@ -1,5 +1,5 @@
 use graphics::{image, rectangle, Context, Text};
-use opengl_graphics::{GlGraphics, GlyphCache, Texture};
+use opengl_graphics::{GlGraphics, GlyphCache};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
 

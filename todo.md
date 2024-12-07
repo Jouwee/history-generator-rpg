@@ -29,9 +29,11 @@ Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 
 # TODO: 0.0.? - Loading and saving
 
-# TODO: 0.0.? - Basic gameplay loop
+# TODO: 0.0.? - Better gameplay loop
 
-## feat - World generation screen
+## refactor - Structure defining actions
+
+## refactor - Actor composition system
 
 ## feat - Persist character through scenes
 
@@ -81,8 +83,6 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 ## feat - Switch between turn-based and realtime
 
 a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
-
-## refactor - Structure defining actions
 
 ## feat - Ability to inspect people
 

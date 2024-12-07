@@ -1,13 +1,16 @@
 use std::{cell::RefCell, fmt::Display};
 
+use action::{ActionEnum, ActionMap};
+use actor::Player;
 use chunk::Chunk;
-use image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
-use crate::{commons::history_vec::Id, engine::{render::RenderContext, Color, Point2D}, Person, WorldGraph};
+use crate::engine::{geometry::Coord2, render::RenderContext, Color};
 
+pub mod action;
+pub mod actor;
 pub mod chunk;
+pub mod log;
 
 pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext);
@@ -28,16 +31,18 @@ pub struct GameSceneState {
     pub player: Player,
     pub chunk: Chunk,
     turn_controller: TurnController,
-    log: RefCell<Vec<(String, Color)>>
+    log: RefCell<Vec<(String, Color)>>,
+    actions: ActionMap
 }
 
 impl GameSceneState {
     pub fn new(chunk: Chunk) -> GameSceneState {
         let mut state = GameSceneState {
-            player: Player::new(Point2D(32, 32)),
+            player: Player::new(Coord2::xy(32, 32)),
             chunk,
             turn_controller: TurnController::new(),
-            log: RefCell::new(Vec::new())
+            log: RefCell::new(Vec::new()),
+            actions: ActionMap::default()
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
@@ -96,28 +101,33 @@ impl Scene for GameSceneState {
         // TODO: AI
         if npc.hostile {
             if npc.xy.dist_squared(&self.player.xy) < 3. {
-                if npc.ap.can_use(40) {
-                    println!("Got attacked!");
-                    npc.ap.consume(40);
-                    let damage = npc.damage.resolve(&self.player.defence);
-                    self.log(format!("NPC attacks you for {damage}"), Color::from_hex("eb9661"));
-                    self.player.hp.damage(damage);
-                    return
+                if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.player) {
+                    if let Some(log) = log {
+                        self.log(log.string, log.color);
+                    }
                 }
             } else if npc.ap.can_use(20) {
-                if npc.xy.0 < self.player.xy.0 {
-                    npc.xy.0 += 1;
-                } else if npc.xy.0 > self.player.xy.0 {
-                    npc.xy.0 -= 1;
-                } else if npc.xy.1 < self.player.xy.1 {
-                    npc.xy.1 += 1;
-                } else {
-                    npc.xy.1 -= 1;
+                if npc.xy.x < self.player.xy.x {
+                     if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveRight, npc) {
+                        return
+                     }
                 }
-                npc.ap.consume(20);
-                return
+                if npc.xy.x > self.player.xy.x {
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveLeft, npc) {
+                        return
+                    }
+                }
+                if npc.xy.y < self.player.xy.y {
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveUp, npc) {
+                        return
+                    }
+                }
+                if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveDown, npc) {
+                    return
+                }
             }
         }
+        let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         npc.ap.fill();
         self.turn_controller.next_turn();
     }
@@ -128,8 +138,6 @@ impl Scene for GameSceneState {
             return
         }
 
-        let movement_ap_cost = 20;
-
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
                 Button::Keyboard(Key::Space) => {
@@ -138,44 +146,42 @@ impl Scene for GameSceneState {
                     self.player.ap.fill();
                 },
                 Button::Keyboard(Key::Up) => {
-                    if self.player.ap.can_use(movement_ap_cost) && self.player.xy.1 > 0 {
-                        self.player.xy.1 -= 1;
-                        self.player.ap.consume(movement_ap_cost);
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveUp, &mut self.player) {
+                        return
                     }
                 },
                 Button::Keyboard(Key::Down) => {
-                    if self.player.ap.can_use(movement_ap_cost) && self.player.xy.1 < 63 {
-                        self.player.xy.1 += 1;
-                        self.player.ap.consume(movement_ap_cost);
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveDown, &mut self.player) {
+                        return
                     }
                 },
                 Button::Keyboard(Key::Left) => {
-                    if self.player.ap.can_use(movement_ap_cost) && self.player.xy.0 > 0 {
-                        self.player.xy.0 -= 1;
-                        self.player.ap.consume(movement_ap_cost);
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveLeft, &mut self.player) {
+                        return
                     }
                 },
                 Button::Keyboard(Key::Right) => {
-                    if self.player.ap.can_use(movement_ap_cost) && self.player.xy.0 < 63 {
-                        self.player.xy.0 += 1;
-                        self.player.ap.consume(movement_ap_cost);
+                    if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveRight, &mut self.player) {
+                        return
                     }
                 },
                 Button::Keyboard(Key::A) => {
-                    let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
+                    let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
                     if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                         if let Some((i, target)) = target {
-                            println!("Attack! {:?}", tile_pos);
-                            self.player.ap.consume(40);
-                            target.hostile = true;
-                            let damage = self.player.damage.resolve(&target.defence);
-                            target.hp.damage(damage);
-                            let hp = target.hp.health_points;
-                            self.log(format!("You attack NPC for {damage}"), Color::from_hex("eb9661"));
-                            if hp == 0. {
-                                self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
-                                self.remove_npc(i);
+
+                            if let Ok(_) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.player, target) {
+                                target.hostile = true;
+                                // TODO: ?????
+                                // if let Some(log) = log {
+                                    // self.log(log.string, log.color);
+                                // }
+                                // self.log(format!("You attack NPC for ???"), Color::from_hex("eb9661"));
+                                if target.hp.health_points == 0. {
+                                    self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
+                                    self.remove_npc(i);
+                                }
                             }
                         } else {
                             println!("No target {:?}", tile_pos);
@@ -183,10 +189,10 @@ impl Scene for GameSceneState {
                     }
                 },
                 Button::Keyboard(Key::T) => {
-                    let tile_pos = Point2D(evt.mouse_pos[0] as usize / 16, evt.mouse_pos[1] as usize / 16);
+                    let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
                     if tile_pos.dist_squared(&self.player.xy) < 3. {
                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
-                        if let Some((i, target)) = target {
+                        if let Some((_, target)) = target {
                             if !target.hostile {
                                 let txt = format!("Hello! I am {:?}", target.person.name());
                                 self.log(txt, Color::from_hex("cae6d9"));
@@ -198,128 +204,6 @@ impl Scene for GameSceneState {
             }
         }
     }
-}
-
-pub struct Player {
-    pub xy: Point2D,
-    pub ap: ActionPointsComponent,
-    pub hp: HealthPointsComponent,
-    pub damage: DamageComponent,
-    pub defence: DefenceComponent
-}
-
-impl Player {
-    pub fn new(xy: Point2D) -> Player {
-        Player {
-            xy,
-            ap: ActionPointsComponent::new(100),
-            hp: HealthPointsComponent::new(100.),
-            damage: DamageComponent { slashing: 10.0 },
-            defence: DefenceComponent { slashing: 3.0 }
-        }
-    }
-}
-
-impl Renderable for Player {
-    fn render(&self, ctx: &mut RenderContext) {
-        ctx.image("player.png", [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
-    }
-}
-
-pub struct NPC {
-    pub xy: Point2D,
-    pub ap: ActionPointsComponent,
-    pub hp: HealthPointsComponent,
-    pub damage: DamageComponent,
-    pub defence: DefenceComponent,
-    pub hostile: bool,
-    pub texture: Texture,
-    pub person_id: Id,
-    pub person: Person
-}
-
-impl NPC {
-    pub fn new(xy: Point2D, person_id: Id, person: &Person) -> NPC {
-        let spritesheet = ImageReader::open("./assets/sprites/character.png").unwrap().decode().unwrap();
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let texture = Texture::from_image(&spritesheet.to_rgba8(), &settings);
-        NPC {
-            xy,
-            ap: ActionPointsComponent::new(80),
-            hp: HealthPointsComponent::new(50.),
-            damage: DamageComponent { slashing: 8.0 },
-            defence: DefenceComponent { slashing: 2.0 },
-            hostile: false,
-            texture,
-            person_id,
-            person: person.clone()
-        }
-    }
-}
-
-impl Renderable for NPC {
-    fn render(&self, ctx: &mut RenderContext) {
-        ctx.image("character.png", [self.xy.0 as f64 * 16.0, self.xy.1 as f64 * 16.0]);
-    }
-}
-
-pub struct ActionPointsComponent {
-    action_points: i32,
-    max_action_points: u16,
-}
-
-impl ActionPointsComponent {
-    fn new(max_ap: u16) -> ActionPointsComponent {
-        ActionPointsComponent {
-            action_points: max_ap as i32,
-            max_action_points: max_ap
-        }
-    }
-
-    pub fn can_use(&self, ap: u16) -> bool {
-        return self.action_points >= ap as i32;
-    }
-
-    pub fn consume(&mut self, ap: u16) {
-        self.action_points -= ap as i32;
-    }
-
-    pub fn fill(&mut self) {
-        self.action_points = self.max_action_points as i32;
-    }
-
-}
-
-pub struct HealthPointsComponent {
-    health_points: f32,
-    max_health_points: u16,
-}
-
-impl HealthPointsComponent {
-    fn new(max_hp: f32) -> HealthPointsComponent {
-        HealthPointsComponent {
-            health_points: max_hp,
-            max_health_points: max_hp as u16
-        }
-    }
-
-    pub fn damage(&mut self, damage: f32) {
-        self.health_points = (self.health_points - damage).max(0.0);
-    }
-}
-
-pub struct DamageComponent {
-    slashing: f32
-}
-
-impl DamageComponent {
-    pub fn resolve(&self, defence: &DefenceComponent) -> f32 {
-        return (self.slashing - defence.slashing).max(0.0)
-    }
-}
-
-pub struct DefenceComponent {
-    slashing: f32
 }
 
 pub struct TurnController {

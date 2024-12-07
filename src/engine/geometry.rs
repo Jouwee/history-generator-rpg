@@ -74,3 +74,45 @@ impl Sub for Vec2 {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Coord2 {
+    pub x: i32,
+    pub y: i32
+}
+
+impl Coord2 {
+
+    pub fn xy(x: i32, y: i32) -> Coord2 {
+        Coord2 { x, y }
+    }
+
+    pub fn dist_squared(&self, another: &Coord2) -> f32 {
+        let x = another.x as f32 - self.x as f32;
+        let y = another.y as f32 - self.y as f32;
+        return x*x + y*y
+    }
+
+}
+
+impl Add for Coord2 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for Coord2 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}

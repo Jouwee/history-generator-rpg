@@ -4,14 +4,15 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{borrow::BorrowMut, cell::{Ref, RefCell, RefMut}, cmp::Ordering, collections::{BTreeMap, HashMap}, time::Instant, vec};
+use std::{collections::HashMap, time::Instant, vec};
 use commons::{history_vec::{HistoryVec, Id}, markovchains::MarkovChainSingleWordModel, rng::Rng, strings::Strings};
 use engine::{assets::Assets, geometry::Size2D, render::RenderContext, Color, Point2D};
 use game::{chunk::Chunk, GameSceneState, Scene};
 use literature::biography::BiographyWriter;
 use ::image::ImageReader;
 use graphics::rectangle::{square, Border};
-use world::{event::*, faction::{Faction, FactionRelation}, region::Region, settlement::{Settlement, SettlementBuilder}, topology::{WorldTopology, WorldTopologyGenerationParameters}};
+use world::{culture::{Culture, LanguagePrefab}, event::*, faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, region::Region, settlement::{Settlement, SettlementBuilder}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::{People, World}};
+use std::borrow::BorrowMut;
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, Texture, TextureSettings};
@@ -47,7 +48,7 @@ pub struct App {
 }
 
 impl App {
-    fn render(&mut self, args: &RenderArgs, world: &WorldGraph, view: &WorldViewMode, cursor: &Point2D) {
+    fn render(&mut self, args: &RenderArgs, world: &World, view: &WorldViewMode, cursor: &Point2D) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31
@@ -229,20 +230,17 @@ impl App {
                         for x in 0..world.map.size.x() {
                             for y in 0..world.map.size.y() {
                                 let tile = world.map.tile(x, y);
-                                let mut opacity = 0.0;
                                 let mut color = white;
                                 match *view {
                                     WorldViewMode::Normal => (), // Already checked
                                     WorldViewMode::Elevation => {
-                                        color = white;
-                                        opacity = (tile.elevation as f32) / 256.0;
+                                        color = white.alpha((tile.elevation as f32) / 256.0);
                                     },
                                     WorldViewMode::Precipitation => {
-                                        color = blue;
-                                        opacity = (tile.precipitation as f32) / 256.0;
+                                        color = blue.alpha((tile.precipitation as f32) / 256.0);
                                     }
                                 }
-                                rectangle(color.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
+                                rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), context.context.transform, context.gl);
                             }   
                         }
                     }
@@ -254,201 +252,6 @@ impl App {
 
     fn update(&mut self, _args: &UpdateArgs) {
     }
-}
-
-#[derive(Clone)]
-struct CulturePrefab {
-    id: Id,
-    name: String,
-    language: LanguagePrefab,
-    first_name_male_model: MarkovChainSingleWordModel,
-    first_name_female_model: MarkovChainSingleWordModel,
-    last_name_model: MarkovChainSingleWordModel,
-}
-
-#[derive(Clone)]
-struct LanguagePrefab {
-    dictionary: HashMap<String, String>
-}
-
-struct WorldGraph {
-    // TODO: rename
-    map: WorldTopology,
-    cultures: HashMap<Id, CulturePrefab>,
-    factions: HistoryVec<Faction>,
-    settlements: HistoryVec<Settlement>,
-    people: People,
-    events: WorldEvents
-}
-
-struct People {
-    inner: BTreeMap<Id, RefCell<Person>>
-}
-
-impl People {
-    
-    fn new() -> People {
-        People {
-            inner: BTreeMap::new()
-        }
-    }
-
-    fn get(&self, id: &Id) -> Option<Ref<Person>> {
-        let option = self.inner.get(id);
-        match option {
-            None => None,
-            Some(ref_cell) => Some(ref_cell.borrow())
-        }
-    }
-
-    fn get_mut(&self, id: &Id) -> Option<RefMut<Person>> {
-        let option = self.inner.get(id);
-        match option {
-            None => None,
-            Some(ref_cell) => Some(ref_cell.borrow_mut())
-        }
-    }
-
-    fn insert(&mut self, person: Person) {
-        self.inner.insert(person.id, RefCell::new(person));
-    }
-
-    fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<Person>)> {
-        return self.inner.iter().filter(|(_id, person)| person.borrow().simulatable())
-    }
-
-}
-
-#[derive(Clone, PartialEq, Debug)]
-enum PersonSex {
-    Male,
-    Female
-}
-
-impl PersonSex {
-
-    fn opposite(&self) -> PersonSex {
-        match self {
-            PersonSex::Male => return PersonSex::Female,
-            PersonSex::Female => return PersonSex::Male,
-        }
-    }
-
-}
-
-#[derive(Clone, Debug)]
-struct Person {
-    id: Id,
-    position: Point2D,
-    first_name: String,
-    last_name: String,
-    birth_last_name: String,
-    importance: Importance,
-    birth: u32,
-    sex: PersonSex,
-    death: u32,
-    culture_id: Id,
-    next_of_kin: Vec<NextOfKin>,
-    faction_id: Id,
-    faction_relation: FactionRelation,
-    leader_of_settlement: Option<Id>
-}
-
-#[derive(Clone, PartialEq, Debug)]
-enum Importance {
-    Important,
-    Unimportant,
-    Unknown
-}
-
-impl Importance {
-    fn lower(&self) -> Importance {
-        match self {
-            Importance::Important => return Importance::Unimportant,
-            Importance::Unimportant => return Importance::Unknown,
-            Importance::Unknown => return Importance::Unknown,
-        }
-    }
-}
-
-impl Person {
-
-    fn birth_name(&self) -> String {
-        return format!("{} {}", self.first_name, self.birth_last_name)
-    }
-
-    fn name(&self) -> String {
-        let title = "Commoner";
-        return format!("{} {} ({:?}, {})", self.first_name, self.last_name, self.importance, title)
-    }
-
-    fn simulatable(&self) -> bool {
-        self.alive() && self.importance != Importance::Unknown
-    }
-
-    fn alive(&self) -> bool {
-        return self.death == 0
-    }
-
-    fn spouse(&self) -> Option<&Id> {
-        let spouse = self.next_of_kin.iter().find(|r| r.relative == Relative::Spouse);
-        if let Some(spouse) = spouse {
-            return Some(&spouse.person_id)
-        };
-        return None
-    }
-
-    fn fertility(&self, year: u32) -> f32 {
-        let age = (year - self.birth) as f32;
-        // https://thefertilityshop.co.uk/wp-content/uploads/2021/12/bfs-monthly-fertility-by-age-1024x569.png
-        if self.sex == PersonSex::Male {
-            return f32::max(0.0, -(age / 60.0).powf(2.0) + 1.0)
-        } else {
-            return f32::max(0.0, -(age / 40.0).powf(6.0) + 1.0)
-        }
-    }
-
-    fn find_next_of_kin(&self, relative: Relative) -> Option<&Id> {
-        let spouse = self.next_of_kin.iter().find(|r| r.relative == relative);
-        if let Some(spouse) = spouse {
-            return Some(&spouse.person_id)
-        };
-        return None
-    }
-
-    fn sorted_heirs(&self) -> Vec<NextOfKin> {
-        let priorities = [
-            Relative::Child,
-            Relative::Spouse,
-            Relative::Sibling,
-        ];
-        
-        let mut sorted = self.next_of_kin.clone();
-        sorted.sort_by(|kin1, kin2| {
-            let priority_1 = priorities.iter().position(|r| *r == kin1.relative);
-            let priority_2 = priorities.iter().position(|r| *r == kin2.relative);
-            if priority_1 != priority_2 {
-                return priority_1.cmp(&priority_2);
-            }
-            return Ordering::Equal;
-        });
-        return sorted
-    }
-
-}
-
-#[derive(Clone, Debug)]
-struct NextOfKin {
-    person_id: Id,
-    relative: Relative
-}
-
-#[derive(Clone, PartialEq, Debug)]
-enum Relative {
-    Spouse,
-    Sibling,
-    Parent,
-    Child,
 }
 
 struct BattleResult {
@@ -463,9 +266,8 @@ fn main() {
     use std::time::Instant;
     let now = Instant::now();
 
-    let nords = CulturePrefab {
+    let nords = Culture {
         id: Id(0),
-        name: String::from("Nords"),
         language: LanguagePrefab {
             dictionary: HashMap::from([
                 (String::from("birch"), String::from("borch")),
@@ -551,9 +353,8 @@ fn main() {
         ), 3)
     };
 
-    let khajit = CulturePrefab {
+    let khajit = Culture {
         id: Id(1),
-        name: String::from("Khajiit"),
         language: LanguagePrefab {
             dictionary: HashMap::from([
                 (String::from("birch"), String::from("has")),
@@ -640,7 +441,7 @@ fn main() {
     println!("");
     println!("Models created in {:.2?}", elapsed);
 
-    let now = Instant::now();
+    // let now = Instant::now();
 
     let mut generator = WorldHistoryGenerator::seed_world(WorldGenerationParameters {
         seed: 9563189,
@@ -691,7 +492,7 @@ fn main() {
             app.update(&args);
             match &mut app.scene {
                 SceneEnum::World => {
-                    if generator.year < 5 {
+                    if generator.year < 500 {
                         generator.simulate_year();
                     }
                 },
@@ -772,7 +573,7 @@ fn main() {
 
 struct WorldGenerationParameters {
     seed: u32,
-    cultures: Vec<CulturePrefab>,
+    cultures: Vec<Culture>,
     regions: Vec<Region>
 }
 
@@ -780,7 +581,7 @@ struct WorldHistoryGenerator {
     rng: Rng,
     year: u32,
     parameters: WorldGenerationParameters,
-    world: WorldGraph,
+    world: World,
     next_person_id: Id,
 }
 
@@ -806,7 +607,7 @@ impl WorldHistoryGenerator {
         // println!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &parameters.regions);
 
-        let mut world = WorldGraph {
+        let mut world = World {
             map: world_map,
             cultures: HashMap::new(),
             factions: HistoryVec::new(),
@@ -859,7 +660,7 @@ impl WorldHistoryGenerator {
         self.year = self.year + 1;
         let year = self.year;
         let event_date = WorldEventDate { year };
-        println!("Year {}, {} people to process", self.year, self.world.people.inner.len());
+        println!("Year {}, {} people to process", self.year, self.world.people.len());
 
         let mut new_people: Vec<Person> = Vec::new();
 
@@ -1088,7 +889,7 @@ impl WorldHistoryGenerator {
                 if siege_power > 0.0 {
                     let enemy_faction = self.world.factions.get(enemy.0);
                     for enemy_settlement_id in enemy_faction.settlements.iter() {
-                        let mut enemy_settlement = self.world.settlements.get_mut(enemy_settlement_id);
+                        let enemy_settlement = self.world.settlements.get_mut(enemy_settlement_id);
                         let defence_power = enemy_settlement.military_defence_power();
                         let power_diff = siege_power / (siege_power + defence_power);
                         let attack_chance = power_diff.powi(2);
@@ -1139,7 +940,7 @@ impl WorldHistoryGenerator {
 
 }
 
-fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, position: Point2D, culture: &CulturePrefab, faction: &Id, surname: Option<&str>) -> Person {
+fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, position: Point2D, culture: &Culture, faction: &Id, surname: Option<&str>) -> Person {
     let rng = rng.derive("person");
     let first_name;
     match sex {
@@ -1171,7 +972,7 @@ fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u
 }
 
 
-fn generate_settlement(rng: &Rng, founding_year: u32, culture: &CulturePrefab, faction: Id, world_graph: &WorldGraph, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
+fn generate_settlement(rng: &Rng, founding_year: u32, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
     let mut rng = rng.derive("settlement");
     let mut xy = None;
     'candidates: for _ in 1..10 {
