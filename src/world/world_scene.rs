@@ -87,9 +87,10 @@ impl Scene for WorldScene {
 
                 let color;
                 match tile.region_id {
-                    0 => color = off_white,
-                    1 => color = dark_green,
-                    2 => color = salmon,
+                    0 => color = blue,
+                    1 => color = off_white,
+                    2 => color = dark_green,
+                    3 => color = salmon,
                     _ => color = black
                 }
                 rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);

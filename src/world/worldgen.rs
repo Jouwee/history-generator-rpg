@@ -1,8 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 
-use ::image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
 use graphics::rectangle::{square, Border};
+use piston::{Button, Key};
 
 use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::Size2D, render::RenderContext, scene::Scene, Color, Point2D}, game::InputEvent, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, BattleResult, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SiegeEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
@@ -65,19 +64,6 @@ impl Scene for WorldGenScene {
 
         let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
 
-        let spritesheet = ImageReader::open("./assets/sprites/settlements.png").unwrap().decode().unwrap();
-
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let sett_textures = [
-            Texture::from_image(&spritesheet.crop_imm(0*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(1*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(2*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(3*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(4*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(5*16, 0, 16, 16).to_rgba8(), &settings),
-            Texture::from_image(&spritesheet.crop_imm(6*16, 0, 16, 16).to_rgba8(), &settings),
-        ];
-        
         let world = &self.generator.world;
 
         let ts = 4.;
@@ -90,9 +76,10 @@ impl Scene for WorldGenScene {
 
                     let color;
                     match tile.region_id {
-                        0 => color = off_white,
-                        1 => color = dark_green,
-                        2 => color = salmon,
+                        0 => color = blue,
+                        1 => color = off_white,
+                        2 => color = dark_green,
+                        3 => color = salmon,
                         _ => color = black
                     }
                     rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
@@ -140,26 +127,6 @@ impl Scene for WorldGenScene {
                     let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
                     rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
                 }
-                let transform = ctx.context.transform.trans(settlement.xy.0 as f64*ts, settlement.xy.1 as f64*ts);
-
-                let texture;
-                if settlement.demographics.population == 0 {
-                    texture = &sett_textures[6];
-                } else if settlement.demographics.population < 10 {
-                    texture = &sett_textures[0];
-                } else if settlement.demographics.population < 25 {
-                    texture = &sett_textures[1];
-                } else if settlement.demographics.population < 50 {
-                    texture = &sett_textures[2];
-                } else if settlement.demographics.population < 100 {
-                    texture = &sett_textures[3];
-                } else if settlement.demographics.population < 250 {
-                    texture = &sett_textures[4];
-                } else {
-                    texture = &sett_textures[5];
-                }
-
-                image(texture, transform, ctx.gl);
 
             }
         } else {
@@ -189,8 +156,17 @@ impl Scene for WorldGenScene {
         }
     }
 
-    fn input(&mut self, _evt: &InputEvent) {
-        
+    fn input(&mut self, evt: &InputEvent) {
+        match evt.button_args.button {
+            Button::Keyboard(Key::V) => {
+                match self.view {
+                    WorldViewMode::Normal => self.view = WorldViewMode::Elevation,
+                    WorldViewMode::Elevation => self.view = WorldViewMode::Precipitation,
+                    WorldViewMode::Precipitation => self.view = WorldViewMode::Normal,
+                }
+            }
+            _ => ()
+        }
     }
 }
 
@@ -223,7 +199,7 @@ impl WorldHistoryGenerator {
        
         let mut params = WorldTopologyGenerationParameters {
             rng: rng.derive("topology"),
-            num_plate_tectonics: 15
+            num_plate_tectonics: 25
         };
 
         let mut world_map = WorldTopology::new(Size2D(256, 256));
@@ -608,6 +584,10 @@ fn generate_settlement(rng: &Rng, founding_year: u32, culture: &Culture, faction
     let mut xy = None;
     'candidates: for _ in 1..10 {
         let txy = Point2D(rng.randu_range(0, world_map.size.x()), rng.randu_range(0, world_map.size.y()));
+        let tile = world_graph.map.tile(txy.0, txy.1);
+        if tile.region_id == 0 {// Ocean
+            continue;
+        }
         for (_, settlement) in world_graph.settlements.iter() {
             if settlement.borrow().xy.dist_squared(&txy) < 3.0_f32.powi(2) {
                 continue 'candidates;

@@ -235,7 +235,7 @@ fn main() {
         Region {
             id: 0,
             name: String::from("Coastal"),
-            elevation: (0, 64),
+            elevation: (-2000, 0),
             temperature: (0, 5),
             soil_fertility_range: (0.8, 1.2),
             gold_generation_range: (0.8, 1.2),
@@ -250,8 +250,24 @@ fn main() {
         },
         Region {
             id: 1,
+            name: String::from("Coastal"),
+            elevation: (0, 16),
+            temperature: (0, 5),
+            soil_fertility_range: (0.8, 1.2),
+            gold_generation_range: (0.8, 1.2),
+            fauna: Vec::from([
+                String::from("whale"),
+                String::from("fish")
+            ]),
+            flora: Vec::from([
+                String::from("kelp"),
+                String::from("coral")
+            ])
+        },
+        Region {
+            id: 2,
             name: String::from("Forest"),
-            elevation: (64, 255),
+            elevation: (16, 255),
             temperature: (0, 2),
             soil_fertility_range: (1.0, 1.4),
             gold_generation_range: (0.7, 1.1),
@@ -265,10 +281,10 @@ fn main() {
             ])
         },
         Region {
-            id: 2,
+            id: 3,
             name: String::from("Desert"),
-            elevation: (64, 255),
-            temperature: (3, 5),
+            elevation: (16, 255),
+            temperature: (3, 6),
             soil_fertility_range: (0.5, 0.9),
             gold_generation_range: (0.6, 1.0),
             fauna: Vec::from([
@@ -347,13 +363,13 @@ fn main() {
 
                 if let Button::Keyboard(Key::W) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
-                        let killed_npcs = scene.chunk.killed_people;
-                        for id in killed_npcs {
-                            let mut person = scene.world.people.get_mut(&id).unwrap();
+                        // let killed_npcs = scene.chunk.killed_people;
+                        // for id in killed_npcs {
+                            // let mut person = scene.world.people.get_mut(&id).unwrap();
                             // person.death = scene.year;
                             // scene.world.events.push(WorldEventDate { year: generator.year }, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
                             // TODO: Inheritance
-                        }
+                        // }
                         app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.player));
                         continue
                     }

@@ -27,8 +27,6 @@ Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 
 ## feat - Rivers, lakes and erosion
 
-# TODO: 0.0.? - Loading and saving
-
 # TODO: 0.0.? - Better gameplay loop
 
 ## refactor - Actor composition system
@@ -54,24 +52,6 @@ Generate person has too many parameters. Create a builder.
 Settlements can be placed too close to one another
 Settlements always grow too big, given time
 
-## idea - History simulation of Technology
-
-Start with no tech, chance of someone/some faction learning a tech in a tech tree, that gives buffs. Chance to exchange techs on trades.
-
-## idea - Legends simulation
-
-- Some random events that can happen, such as:
-  - Survived a great battle
-  - Slain a great beast
-  - Slept with the whole town
-  - Add titles based on feats
-  - Generate artifacts based on feats
-
-## idea - Trait simulation
-
-- People can have personality traits that affect chances, such as:
-  - Violent - Increase chance of starting conflict
-
 ## feat - Full history panel
 
 ## feat - Switch between turn-based and realtime
@@ -84,7 +64,7 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 
 ## bug - A spouse of a king has the same chance of founding a new city than anyone else
 
-## refactor - You need to pass to many parameters to read an asset
+## refactor - You need to pass too many parameters to read an asset
 
 Like the size of the spritesheet, not part of the key
 

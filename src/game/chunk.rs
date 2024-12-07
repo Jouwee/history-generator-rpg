@@ -40,21 +40,24 @@ impl Chunk {
                 let idx = (y * chunk.size.x()) + x;
                 let n = noise.get([x as f64 / 10.0, y as f64 / 10.0]);
                 match tile.region_id {
-                    0 => { // Coastal
+                    0 => { // Ocean
+                        chunk.tiles[idx].id = 3; // water
+                    },
+                    1 => { // Coastal
                         if n < -0.5 {
                             chunk.tiles[idx].id = 3; // water
                         } else {
                             chunk.tiles[idx].id = 1; // sand
                         }
                     },
-                    1 => { // Forest - Grass
+                    2 => { // Forest - Grass
                         if n < 0.5 {
                             chunk.tiles[idx].id = 0; // grass
                         } else {
                             chunk.tiles[idx].id = 2; // stone
                         }
                     },
-                    2 => { // Desert - Sand
+                    3 => { // Desert - Sand
                         if n < 0.5 {
                             chunk.tiles[idx].id = 1; // sand
                         } else {

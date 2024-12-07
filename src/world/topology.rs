@@ -7,7 +7,7 @@ use super::region::Region;
 
 pub struct WorldTopology {
     pub size: Size2D,
-    pub elevation: Vec<u8>,
+    pub elevation: Vec<i32>,
     pub precipitation: Vec<u8>,
     pub temperature: Vec<u8>,
     pub soil_ferility: Vec<f32>,
@@ -20,7 +20,7 @@ impl WorldTopology {
         let len = size.area();
         WorldTopology { 
             size,
-            elevation: vec![128; len],
+            elevation: vec![0; len],
             precipitation: vec![0; len],
             temperature: vec![0; len],
             soil_ferility: vec![0.0; len],
@@ -46,15 +46,27 @@ impl WorldTopology {
         let mut plate_map = vec![0; self.size.area()];
         struct PlateTectonics {
             seed: Point2D,
-            base_elevation: i8,
+            base_elevation: i32,
             direction: Vector2
         }
         // Generate plates and origins
         let mut plates = HashMap::new();
         for i in 1..params.num_plate_tectonics+1 {
             let seed = Point2D(params.rng.randu_range(0, self.size.x()), params.rng.randu_range(0, self.size.y()));
+            let dist_to_edge = seed.dist_squared(&Point2D(0, 0))
+                .min(seed.dist_squared(&Point2D(self.size.x(), 0)))
+                .min(seed.dist_squared(&Point2D(0, self.size.y())))
+                .min(seed.dist_squared(&Point2D(self.size.x(), self.size.y())));
+            let dist_to_edge = (dist_to_edge.sqrt() / (self.size.x() / 2) as f32).clamp(0., 1.); // TODO: Use diagonal instead of clamp
+            let oceanic_plate = params.rng.rand_chance(1. - dist_to_edge.powf(3.));
+            let elevation;
+            if oceanic_plate {
+                elevation = params.rng.randf_range(-64., -32.) as i32;
+            } else {
+                elevation = params.rng.randf_range(32., 64.) as i32;
+            }
             plates.insert(i, PlateTectonics {
-                base_elevation: params.rng.randf_range(-64., 64.) as i8,
+                base_elevation: elevation,
                 seed,
                 direction: Vector2::new(params.rng.randf_range(0., 2.*PI), params.rng.randf())
             });
@@ -134,8 +146,8 @@ impl WorldTopology {
             let noise = (noise + 1.) / 2.;
             // let noise = 1.;
             match b.1 {
-                Boundary::Convergent(strength) => self.elevation[i] += (128. * strength * noise) as u8,
-                Boundary::Divergent(strength) => self.elevation[i] -= (128. * strength * noise) as u8,
+                Boundary::Convergent(strength) => self.elevation[i] += (128. * strength * noise) as i32,
+                Boundary::Divergent(strength) => self.elevation[i] -= (128. * strength * noise) as i32,
                 Boundary::Transverse => (),
             }
         }
@@ -144,7 +156,7 @@ impl WorldTopology {
             for x in 0..self.size.x() {
                 let i = (y * self.size.x()) + x;
                 if let Some(plate) = plates.get(&plate_map[i]) {
-                    self.elevation[i] = (self.elevation[i] as i32 + plate.base_elevation as i32).clamp(0, 255) as u8;
+                    self.elevation[i] = self.elevation[i] as i32 + plate.base_elevation as i32;
                 }
             }
         }
@@ -165,7 +177,7 @@ impl WorldTopology {
                     (mask[0] * self.elevation[((y - 1) * self.size.x()) + x + 1] as f32) + 
                     (mask[1]  * self.elevation[((y - 1) * self.size.x()) + x] as f32) +
                     (mask[0] * self.elevation[((y - 1) * self.size.x()) + x - 1] as f32);
-                self.elevation[(y * self.size.x()) + x] = (sum / 9.) as u8;
+                self.elevation[(y * self.size.x()) + x] = (sum / 9.) as i32;
             }
         }
         // Noise pass
@@ -180,7 +192,7 @@ impl WorldTopology {
                 let med_freq = noise.get([x / 7., y / 7.]) as f32;
                 let high_freq = noise.get([x / 1., y / 1.]) as f32;
                 let noise = ((low_freq * 0.6 + med_freq * 0.3 + high_freq * 0.1) * 16.) as i32;
-                self.elevation[i] = (self.elevation[i] as i32 + noise).clamp(0, 255) as u8;
+                self.elevation[i] = self.elevation[i] as i32 + noise;
             }
         }
     }
@@ -276,7 +288,7 @@ impl WorldTopology {
         }
         // Saves the f32 vector back
         for i in 0..self.size.area() {
-            self.elevation[i] = elevation[i] as u8;
+            self.elevation[i] = elevation[i] as i32;
         }
     }
 
@@ -291,9 +303,13 @@ impl WorldTopology {
                 let xf = x as f64;
                 let yf = y as f64;
                 {
-                    let low = n_temp.get([xf / 10.0, yf / 10.0]);
-                    // let med = n_temp.get([xf / 4.0, yf / 4.0]);
-                    self.temperature[i] = (low * 5.0) as u8;
+                    // Domain warping
+                    let x = xf + n_temp.get([xf / 20., yf / 20.]) * 8.;
+                    let y = yf + n_temp.get([xf / 20., yf / 20., 1000.]) * 8.;
+                    let low = n_temp.get([x / 100.0, y / 100.0]);
+                    let med = n_temp.get([x / 10.0, y / 10.0]);
+                    let noise = (low * 0.8) + (med * 0.2);
+                    self.temperature[i] = (noise * 6.0) as u8;
                 }
                 {
                     let mut region_candidates: Vec<u8> = Vec::new();
@@ -332,7 +348,7 @@ pub struct WorldTopologyGenerationParameters {
 #[derive(Debug)]
 pub struct WorldTileData {
     pub xy: Point2D,
-    pub elevation: u8,
+    pub elevation: i32,
     pub precipitation: u8,
     pub temperature: u8,
     pub soil_fertility: f32,
