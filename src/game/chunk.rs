@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, Point2D}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::{Coord2, Size2D}, World};
 
 use super::{actor::NPC, Renderable};
 
@@ -30,10 +30,10 @@ impl Chunk {
         }
     }
 
-    pub fn from_world_tile(world: &World, xy: Point2D) -> Chunk {
+    pub fn from_world_tile(world: &World, xy: Coord2) -> Chunk {
         let mut chunk = Self::new(Size2D(64, 64));
         let mut rng = Rng::rand();
-        let tile = world.map.tile(xy.0, xy.1);
+        let tile = world.map.tile(xy.x as usize, xy.y as usize);
         let noise = Perlin::new(rng.derive("terrain").seed());
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
@@ -66,7 +66,7 @@ impl Chunk {
             }
         }
         for (id, person) in world.people.iter() {
-            if person.borrow().position == xy {
+            if person.borrow().position.0 as i32 == xy.x && person.borrow().position.1 as i32 == xy.y {
                 let point = Coord2::xy(
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32

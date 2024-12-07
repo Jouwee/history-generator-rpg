@@ -6,3 +6,5 @@ pub mod region;
 pub mod settlement;
 pub mod topology;
 pub mod world;
+pub mod worldgen;
+pub mod world_scene;

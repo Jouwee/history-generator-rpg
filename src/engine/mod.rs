@@ -1,9 +1,10 @@
-use geometry::{Vec2};
+use geometry::Vec2;
 
 pub mod assets;
 pub mod geometry;
 pub mod render;
 pub mod spritesheet;
+pub mod scene;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Point2D(pub usize, pub usize);

@@ -5,7 +5,7 @@ use actor::Player;
 use chunk::Chunk;
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
-use crate::engine::{geometry::Coord2, render::RenderContext, Color};
+use crate::{engine::{geometry::Coord2, render::RenderContext, scene::Scene, Color}, world::world::World};
 
 pub mod action;
 pub mod actor;
@@ -16,18 +16,13 @@ pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext);
 }
 
-pub trait Scene {
-    fn render(&self, ctx: RenderContext);
-    fn update(&mut self);
-    fn input(&mut self, evt: &InputEvent);
-}
-
 pub struct InputEvent {
     pub mouse_pos: [f64; 2],
     pub button_args: ButtonArgs,
 }
 
 pub struct GameSceneState {
+    pub world: World,
     pub player: Player,
     pub chunk: Chunk,
     turn_controller: TurnController,
@@ -36,9 +31,10 @@ pub struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub fn new(chunk: Chunk) -> GameSceneState {
+    pub fn new(world: World, player: Player, chunk: Chunk) -> GameSceneState {
         let mut state = GameSceneState {
-            player: Player::new(Coord2::xy(32, 32)),
+            world,
+            player,
             chunk,
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),

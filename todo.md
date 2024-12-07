@@ -31,17 +31,11 @@ Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 
 # TODO: 0.0.? - Better gameplay loop
 
-## refactor - Structure defining actions
-
 ## refactor - Actor composition system
-
-## feat - Persist character through scenes
 
 ## feat - Death screen
 
 # Backlog
-
-## refactor - Turn world map into a Scene
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -93,6 +87,14 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 ## refactor - You need to pass to many parameters to read an asset
 
 Like the size of the spritesheet, not part of the key
+
+# Release 0.0.5 - ???
+
+## refactor - Structure defining actions
+
+## refactor - Turn world map into a Scene
+
+## feat - Persist character through scenes
 
 # Release 0.0.4 - Connect global and local world
 
