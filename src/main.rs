@@ -51,6 +51,7 @@ impl App {
             let context = RenderContext {
                 args,
                 context: c,
+                original_transform: c.transform.clone(),
                 gl,
                 assets: &mut self.assets,
                 default_font: &mut glyphs

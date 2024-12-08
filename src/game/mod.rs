@@ -3,9 +3,10 @@ use std::{cell::RefCell, fmt::Display};
 use action::{ActionEnum, ActionMap};
 use actor::Player;
 use chunk::Chunk;
+use graphics::Transformed;
 use piston::{Button, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{geometry::Coord2, render::RenderContext, scene::Scene, Color}, world::world::World};
+use crate::{engine::{geometry::Coord2, gui::{label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::Scene, Color}, world::world::World};
 
 pub mod action;
 pub mod actor;
@@ -27,7 +28,8 @@ pub struct GameSceneState {
     pub chunk: Chunk,
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
-    actions: ActionMap
+    actions: ActionMap,
+    label: Label
 }
 
 impl GameSceneState {
@@ -38,7 +40,8 @@ impl GameSceneState {
             chunk,
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
-            actions: ActionMap::default()
+            actions: ActionMap::default(),
+            label: Label::new("Hi", Position::Anchored(Anchor::TopLeft, 10.0, 16.0))
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
@@ -69,17 +72,15 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn render(&self, mut ctx: RenderContext) {
+        // Pixel-art scale
+        let ps = 2.;
+        let translate = [self.player.xy.x as f64 * -16.0 + (760./ps), self.player.xy.y as f64 * -16.0 + (540./ps)];
+        ctx.context.transform = ctx.context.transform.scale(ps, ps).trans(translate[0], translate[1]);
+
         self.chunk.render(&mut ctx);
         self.player.render(&mut ctx);
         for npc in self.chunk.npcs.iter() {
             npc.render(&mut ctx);
-        }
-        if self.turn_controller.is_player_turn() {
-            let txt = format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp);
-            ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
-        } else {
-            let txt = format!("Enemy turn {}", self.turn_controller.npc_idx());
-            ctx.text(txt.as_str(), 10, [10.0, 10.0], Color::from_hex("ffffff"));
         }
         ctx.text("a - attack     t - talk    space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
@@ -87,10 +88,19 @@ impl Scene for GameSceneState {
             ctx.text(line, 10, [1024.0, y], *color);
             y = y + 16.;
         }
-        
+
+        // Translates back for GUI
+        ctx.context.transform = ctx.context.transform.scale(ps, ps).trans(-translate[0], -translate[1]);
+        self.label.render(&mut ctx);
     }
 
     fn update(&mut self) {
+        if self.turn_controller.is_player_turn() {
+            self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp));
+        } else {
+            self.label.text(format!("Enemy turn {}", self.turn_controller.npc_idx()));
+        }
+        self.label.update();
         if self.turn_controller.is_player_turn() {
             return
         }

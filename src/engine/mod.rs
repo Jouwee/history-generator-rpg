@@ -2,6 +2,7 @@ use geometry::Vec2;
 
 pub mod assets;
 pub mod geometry;
+pub mod gui;
 pub mod render;
 pub mod spritesheet;
 pub mod scene;
