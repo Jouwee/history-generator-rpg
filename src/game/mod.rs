@@ -4,9 +4,9 @@ use action::{ActionEnum, ActionMap};
 use actor::Player;
 use chunk::Chunk;
 use graphics::Transformed;
-use piston::{Button, ButtonArgs, ButtonState, Key};
+use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{geometry::Coord2, gui::{label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::Scene, Color}, world::world::World};
+use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::Scene, Color}, world::world::World};
 
 pub mod action;
 pub mod actor;
@@ -29,7 +29,10 @@ pub struct GameSceneState {
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
     actions: ActionMap,
-    label: Label
+    label: Label,
+    button_attack: Button,
+    button_talk: Button,
+    selected_targeted_action: Option<ActionEnum>
 }
 
 impl GameSceneState {
@@ -41,7 +44,10 @@ impl GameSceneState {
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
-            label: Label::new("Hi", Position::Anchored(Anchor::TopLeft, 10.0, 16.0))
+            label: Label::new("Hi", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
+            button_attack: Button::new("at", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
+            button_talk: Button::new("tk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
+            selected_targeted_action: None
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
@@ -72,11 +78,6 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn render(&self, mut ctx: RenderContext) {
-        // Pixel-art scale
-        let ps = 2.;
-        let translate = [self.player.xy.x as f64 * -16.0 + (760./ps), self.player.xy.y as f64 * -16.0 + (540./ps)];
-        ctx.context.transform = ctx.context.transform.scale(ps, ps).trans(translate[0], translate[1]);
-
         self.chunk.render(&mut ctx);
         self.player.render(&mut ctx);
         for npc in self.chunk.npcs.iter() {
@@ -89,9 +90,9 @@ impl Scene for GameSceneState {
             y = y + 16.;
         }
 
-        // Translates back for GUI
-        ctx.context.transform = ctx.context.transform.scale(ps, ps).trans(-translate[0], -translate[1]);
         self.label.render(&mut ctx);
+        self.button_attack.render(&mut ctx);
+        self.button_talk.render(&mut ctx);
     }
 
     fn update(&mut self) {
@@ -100,11 +101,9 @@ impl Scene for GameSceneState {
         } else {
             self.label.text(format!("Enemy turn {}", self.turn_controller.npc_idx()));
         }
-        self.label.update();
         if self.turn_controller.is_player_turn() {
             return
         }
-        println!("AI Turn: {}", self.turn_controller.npc_idx());
         let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         // TODO: AI
         if npc.hostile {
@@ -138,86 +137,97 @@ impl Scene for GameSceneState {
         let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         npc.ap.fill();
         self.turn_controller.next_turn();
+        self.label.update();
+        self.button_attack.update();
+        self.button_talk.update();
     }
 
     fn input(&mut self, evt: &InputEvent) {
-        println!("Player turn? {}", self.turn_controller.is_player_turn());
+        if let ButtonEvent::Click = self.button_attack.event(evt) {
+            self.selected_targeted_action = Some(ActionEnum::Attack);
+            return;
+        }
+        if let ButtonEvent::Click = self.button_talk.event(evt) {
+            self.selected_targeted_action = Some(ActionEnum::Talk);
+            return;
+        }
+
         if !self.turn_controller.is_player_turn() {
             return
         }
-
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
-                Button::Keyboard(Key::Space) => {
-                    println!("End turn");
+                Btn::Keyboard(Key::Space) => {
                     self.turn_controller.next_turn();
                     self.player.ap.fill();
                 },
-                Button::Keyboard(Key::Up) => {
+                Btn::Keyboard(Key::Up) => {
                     if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveUp, &mut self.player) {
                         return
                     }
                 },
-                Button::Keyboard(Key::Down) => {
+                Btn::Keyboard(Key::Down) => {
                     if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveDown, &mut self.player) {
                         return
                     }
                 },
-                Button::Keyboard(Key::Left) => {
+                Btn::Keyboard(Key::Left) => {
                     if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveLeft, &mut self.player) {
                         return
                     }
                 },
-                Button::Keyboard(Key::Right) => {
+                Btn::Keyboard(Key::Right) => {
                     if let Ok(_) = self.actions.try_use_on_self(ActionEnum::MoveRight, &mut self.player) {
                         return
                     }
                 },
-                Button::Keyboard(Key::A) => {
-                    let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
-                    if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
-                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
-                        if let Some((i, target)) = target {
+                Btn::Mouse(_any) => {
+                    if let Some(action) = &self.selected_targeted_action {
+                        let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
+                        if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
+                            let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                            if let Some((i, target)) = target {
 
-                            if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.player, target) {
-                                if target.hp.health_points == 0. {
-                                    self.player.add_xp(100);
-                                    self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
-                                    self.remove_npc(i);
-                                } else if let Some(log) = log {
-                                    self.log(log.string, log.color);
+                                match action {
+                                    ActionEnum::Attack => {
+                                        if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.player, target) {
+                                            if target.hp.health_points == 0. {
+                                                self.player.add_xp(100);
+                                                self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
+                                                self.remove_npc(i);
+                                            } else if let Some(log) = log {
+                                                self.log(log.string, log.color);
+                                            }
+                                            // Turn everyone hostile
+                                            for p in self.chunk.npcs.iter_mut() {
+                                                p.hostile = true;
+                                            }
+                                        }
+                                    }
+
+                                    ActionEnum::Talk => {
+                                        if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Talk, &mut self.player, target) {
+                                            if let Some(log) = log {
+                                                self.log(log.string, log.color);
+                                            }
+                                        }
+                                    }
+                                    _ => ()
                                 }
-                                // Turn everyone hostile
-                                for p in self.chunk.npcs.iter_mut() {
-                                    p.hostile = true;
-                                }
-                            }
-                        } else {
-                            println!("No target {:?}", tile_pos);
-                        }
-                    }
-                },
-                Button::Keyboard(Key::T) => {
-                    let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
-                    if tile_pos.dist_squared(&self.player.xy) < 3. {
-                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
-                        if let Some((_, target)) = target {
-                            if !target.hostile {
-                                let txt;
-                                if let Some(person) = &target.person {
-                                    txt = format!("Hello! I am {:?}", person.name());
-                                } else {
-                                    txt = String::from("Hello!");
-                                }
-                                self.log(txt, Color::from_hex("cae6d9"));
+
                             }
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }
     }
+
+    fn cursor_move(&mut self, _pos: [f64; 2]) {
+
+    }
+
 }
 
 pub struct TurnController {

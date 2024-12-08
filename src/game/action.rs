@@ -10,7 +10,8 @@ pub enum ActionEnum {
     MoveRight,
     MoveUp,
     MoveDown,
-    Attack
+    Attack,
+    Talk,
 }
 
 pub struct ActionDefinition {
@@ -26,6 +27,7 @@ impl Default for ActionMap {
     fn default() -> Self {
         let mut map = ActionMap { map: HashMap::new() };
         map.register(ActionEnum::Attack, 40, Box::new(AttackAction {}));
+        map.register(ActionEnum::Talk, 40, Box::new(TalkAction {}));
         map.register(ActionEnum::MoveLeft, 20, Box::new(MoveAction { direction: Coord2::xy(-1, 0) }));
         map.register(ActionEnum::MoveRight, 20, Box::new(MoveAction { direction: Coord2::xy(1, 0) }));
         map.register(ActionEnum::MoveUp, 20, Box::new(MoveAction { direction: Coord2::xy(0, -1) }));
@@ -83,6 +85,16 @@ impl ActionTrait for AttackAction {
         let damage = actor.damage().resolve(&target.defence());
         target.hp().damage(damage);
         Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
+    }
+
+}
+
+pub struct TalkAction {}
+impl ActionTrait for TalkAction {
+
+    fn can_run_on_target(&self, _actor: &dyn Actor, _target: &dyn Actor) -> bool { true }
+    fn run_on_target(&self, _actor: &mut dyn Actor, _target: &mut dyn Actor) -> Option<LogEntry> {
+        Some(LogEntry::new(format!("Hello!"), Color::from_hex("eb9661")))
     }
 
 }
