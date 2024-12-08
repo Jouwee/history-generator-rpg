@@ -4,13 +4,13 @@ use noise::{NoiseFn, Perlin};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::{Coord2, Size2D}, World};
 
-use super::{actor::NPC, Renderable};
+use super::{actor::Actor, Renderable};
 
 pub struct Chunk {
     size: Size2D,
     tiles: Vec<Tile>,
     tile_def: HashMap<u8, TileDef>,
-    pub npcs: Vec<NPC>,
+    pub npcs: Vec<Actor>,
     pub killed_people: Vec<Id>
 }
 
@@ -94,7 +94,7 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                chunk.npcs.push(NPC::new(point, Some(*id), Some(&person.borrow())));
+                chunk.npcs.push(Actor::new(point, super::actor::ActorType::Passive, Some(*id), Some(&person.borrow())));
             }
         }
 
@@ -104,8 +104,7 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                let mut npc = NPC::new(point, None, None);
-                npc.hostile = true;
+                let npc = Actor::new(point, super::actor::ActorType::Hostile, None, None);
                 chunk.npcs.push(npc);
             }
         }

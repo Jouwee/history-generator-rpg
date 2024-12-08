@@ -2,27 +2,45 @@ use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderC
 
 use super::Renderable;
 
-pub trait Actor {
-    fn xy(&self) -> Coord2;
-    fn set_xy(&mut self, xy: Coord2);
-    fn ap(&mut self) -> &mut ActionPointsComponent;
-    fn hp(&mut self) -> &mut HealthPointsComponent;
-    fn damage(&mut self) -> &mut DamageComponent;
-    fn defence(&mut self) -> &mut DefenceComponent;
+pub enum ActorType {
+    Player,
+    Passive,
+    Hostile
 }
-pub struct Player {
+
+pub struct Actor {
     pub xy: Coord2,
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
     pub damage: DamageComponent,
     pub defence: DefenceComponent,
+    pub actor_type: ActorType,
+    pub texture: String,
+    pub person_id: Option<Id>,
+    pub person: Option<Person>,
     pub xp: u32,
     pub level: u32,
 }
 
-impl Player {
-    pub fn new(xy: Coord2) -> Player {
-        Player {
+impl Actor {
+    pub fn new(xy: Coord2, actor_type: ActorType, person_id: Option<Id>, person: Option<&Person>) -> Actor {
+        let texture;
+        if let ActorType::Player = actor_type {
+            texture = "player.png";
+        } else {
+            if let Some(_) = person_id {
+                texture = "character.png";
+            } else {
+                texture = "spider.png";
+            }
+        }
+        let person_clone;
+        if let Some(person) = person {
+            person_clone = Some(person.clone());
+        } else {
+            person_clone = None;
+        }
+        Actor {
             xy,
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::new(100.),
@@ -30,38 +48,12 @@ impl Player {
             defence: DefenceComponent { slashing: 3.0 },
             xp: 0,
             level: 1,
+            person: person_clone,
+            person_id,
+            texture: String::from(texture),
+            actor_type
         }
     }
-}
-
-impl Actor for Player {
-    fn xy(&self) -> Coord2 {
-        self.xy
-    }
-    fn set_xy(&mut self, xy: Coord2) {
-        self.xy = xy
-    }
-    fn hp(&mut self) -> &mut HealthPointsComponent {
-        &mut self.hp
-    }
-    fn ap(&mut self) -> &mut ActionPointsComponent {
-        &mut self.ap
-    }
-    fn damage(&mut self) -> &mut DamageComponent {
-        &mut self.damage
-    }
-    fn defence(&mut self) -> &mut DefenceComponent {
-        &mut self.defence
-    }
-}
-
-impl Renderable for Player {
-    fn render(&self, ctx: &mut RenderContext) {
-        ctx.image("player.png", [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0]);
-    }
-}
-
-impl Player {
 
     pub fn add_xp(&mut self, ammount: u32) {
         self.xp += ammount;
@@ -129,76 +121,13 @@ impl Player {
             self.defence.slashing += 0.2;
         }
     }
-
 }
 
-pub struct NPC {
-    pub xy: Coord2,
-    pub ap: ActionPointsComponent,
-    pub hp: HealthPointsComponent,
-    pub damage: DamageComponent,
-    pub defence: DefenceComponent,
-    pub hostile: bool,
-    pub texture: String,
-    pub person_id: Option<Id>,
-    pub person: Option<Person>
-}
-
-impl NPC {
-    pub fn new(xy: Coord2, person_id: Option<Id>, person: Option<&Person>) -> NPC {
-        let spritesheet;
-        if let Some(_) = person_id {
-            spritesheet = "character.png";
-        } else {
-            spritesheet = "spider.png";
-        }
-        let person_clone;
-        if let Some(person) = person {
-            person_clone = Some(person.clone());
-        } else {
-            person_clone = None;
-        }
-        NPC {
-            xy,
-            ap: ActionPointsComponent::new(80),
-            hp: HealthPointsComponent::new(50.),
-            damage: DamageComponent { slashing: 8.0 },
-            defence: DefenceComponent { slashing: 2.0 },
-            hostile: false,
-            texture: String::from(spritesheet),
-            person_id,
-            person: person_clone
-        }
-    }
-}
-
-impl Renderable for NPC {
+impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext) {
         ctx.image(&self.texture, [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0]);
     }
 }
-
-impl Actor for NPC {
-    fn xy(&self) -> Coord2 {
-        self.xy
-    }
-    fn set_xy(&mut self, xy: Coord2) {
-        self.xy = xy
-    }
-    fn ap(&mut self) -> &mut ActionPointsComponent {
-        &mut self.ap
-    }
-    fn hp(&mut self) -> &mut HealthPointsComponent {
-        &mut self.hp
-    }
-    fn damage(&mut self) -> &mut DamageComponent {
-        &mut self.damage
-    }
-    fn defence(&mut self) -> &mut DefenceComponent {
-        &mut self.defence
-    }
-}
-
 
 pub struct ActionPointsComponent {
     pub action_points: i32,

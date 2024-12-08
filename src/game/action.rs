@@ -45,22 +45,22 @@ impl ActionMap {
         });
     }
 
-    pub fn try_use_on_target(&self, action: ActionEnum, actor: &mut dyn Actor, target: &mut dyn Actor) -> Result<Option<LogEntry>, ()> {
+    pub fn try_use_on_target(&self, action: ActionEnum, actor: &mut Actor, target: &mut Actor) -> Result<Option<LogEntry>, ()> {
         if let Some(action) = self.map.get(&action) {
-            if action.action.can_run_on_target(actor, target) && actor.ap().can_use(action.base_ap_cost) {
+            if action.action.can_run_on_target(actor, target) && actor.ap.can_use(action.base_ap_cost) {
                 let log = action.action.run_on_target(actor, target);
-                actor.ap().consume(action.base_ap_cost);
+                actor.ap.consume(action.base_ap_cost);
                 return Ok(log)
             }
         }
         Err(())
     }
 
-    pub fn try_use_on_self(&self, action: ActionEnum, actor: &mut dyn Actor) -> Result<Option<LogEntry>, ()> {
+    pub fn try_use_on_self(&self, action: ActionEnum, actor: &mut Actor) -> Result<Option<LogEntry>, ()> {
         if let Some(action) = self.map.get(&action) {
-            if action.action.can_run_on_self(actor) && actor.ap().can_use(action.base_ap_cost) {
+            if action.action.can_run_on_self(actor) && actor.ap.can_use(action.base_ap_cost) {
                 let log = action.action.run_on_self(actor);
-                actor.ap().consume(action.base_ap_cost);
+                actor.ap.consume(action.base_ap_cost);
                 return Ok(log)
             }
         }
@@ -71,19 +71,19 @@ impl ActionMap {
 
 pub trait ActionTrait {
     fn final_ap_cost(&self) {}
-    fn can_run_on_self(&self, _actor: &dyn Actor) -> bool { false }
-    fn run_on_self(&self, _actor: &mut dyn Actor) -> Option<LogEntry> { None }
-    fn can_run_on_target(&self, _actor: &dyn Actor, _target: &dyn Actor) -> bool { false }
-    fn run_on_target(&self, _actor: &mut dyn Actor, _target: &mut dyn Actor) -> Option<LogEntry> { None }
+    fn can_run_on_self(&self, _actor: &Actor) -> bool { false }
+    fn run_on_self(&self, _actor: &mut Actor) -> Option<LogEntry> { None }
+    fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { false }
+    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> { None }
 }
 
 pub struct AttackAction {}
 impl ActionTrait for AttackAction {
 
-    fn can_run_on_target(&self, _actor: &dyn Actor, _target: &dyn Actor) -> bool { true }
-    fn run_on_target(&self, actor: &mut dyn Actor, target: &mut dyn Actor) -> Option<LogEntry> {
-        let damage = actor.damage().resolve(&target.defence());
-        target.hp().damage(damage);
+    fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
+    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
+        let damage = actor.damage.resolve(&target.defence);
+        target.hp.damage(damage);
         Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
     }
 
@@ -92,8 +92,8 @@ impl ActionTrait for AttackAction {
 pub struct TalkAction {}
 impl ActionTrait for TalkAction {
 
-    fn can_run_on_target(&self, _actor: &dyn Actor, _target: &dyn Actor) -> bool { true }
-    fn run_on_target(&self, _actor: &mut dyn Actor, _target: &mut dyn Actor) -> Option<LogEntry> {
+    fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
+    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> {
         Some(LogEntry::new(format!("Hello!"), Color::from_hex("eb9661")))
     }
 
@@ -104,9 +104,9 @@ pub struct MoveAction {
 }
 impl ActionTrait for MoveAction {
 
-    fn can_run_on_self(&self, _actor: &dyn Actor) -> bool { true }
-    fn run_on_self(&self, actor: &mut dyn Actor) -> Option<LogEntry> {
-        actor.set_xy(actor.xy() + self.direction);
+    fn can_run_on_self(&self, _actor: &Actor) -> bool { true }
+    fn run_on_self(&self, actor: &mut Actor) -> Option<LogEntry> {
+        actor.xy = actor.xy + self.direction;
         None
     }
 

@@ -3,18 +3,18 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{geometry::Coord2, render::RenderContext, scene::Scene, Color}, game::{actor::Player, InputEvent}, literature::biography::BiographyWriter};
+use crate::{engine::{geometry::Coord2, render::RenderContext, scene::Scene, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter};
 
 use super::world::World;
 
 pub struct WorldScene {
     pub world: World,
-    pub player: Player,
+    pub player: Actor,
     pub cursor: Coord2
 }
 
 impl WorldScene {
-    pub fn new(world: World, player: Player) -> WorldScene {
+    pub fn new(world: World, player: Actor) -> WorldScene {
         let cursor = Coord2::xy(world.map.size.x() as i32 / 2, world.map.size.y() as i32 / 2);
         WorldScene {
             player,

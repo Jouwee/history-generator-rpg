@@ -1,9 +1,8 @@
 use std::{cell::RefCell, fmt::Display};
 
 use action::{ActionEnum, ActionMap};
-use actor::Player;
+use actor::{Actor, ActorType};
 use chunk::Chunk;
-use graphics::Transformed;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
 use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::Scene, Color}, world::world::World};
@@ -24,7 +23,7 @@ pub struct InputEvent {
 
 pub struct GameSceneState {
     pub world: World,
-    pub player: Player,
+    pub player: Actor,
     pub chunk: Chunk,
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
@@ -36,7 +35,7 @@ pub struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub fn new(world: World, player: Player, chunk: Chunk) -> GameSceneState {
+    pub fn new(world: World, player: Actor, chunk: Chunk) -> GameSceneState {
         let mut state = GameSceneState {
             world,
             player,
@@ -106,7 +105,7 @@ impl Scene for GameSceneState {
         }
         let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         // TODO: AI
-        if npc.hostile {
+        if let ActorType::Hostile = npc.actor_type {
             if npc.xy.dist_squared(&self.player.xy) < 3. {
                 if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.player) {
                     if let Some(log) = log {
@@ -200,7 +199,7 @@ impl Scene for GameSceneState {
                                             }
                                             // Turn everyone hostile
                                             for p in self.chunk.npcs.iter_mut() {
-                                                p.hostile = true;
+                                                p.actor_type = ActorType::Hostile;
                                             }
                                         }
                                     }

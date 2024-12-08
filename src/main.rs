@@ -7,7 +7,7 @@ extern crate piston;
 use std::{collections::HashMap, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::Assets, geometry::Coord2, render::RenderContext, scene::Scene, Color};
-use game::{actor::Player, chunk::Chunk, GameSceneState, InputEvent};
+use game::{actor::Actor, chunk::Chunk, GameSceneState, InputEvent};
 use world::{culture::{Culture, LanguagePrefab}, event::*, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::{WorldGenScene, WorldGenerationParameters}};
 
 use glutin_window::GlutinWindow as Window;
@@ -349,7 +349,7 @@ fn main() {
 
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::WorldGen(scene)   = app.scene {
-                        app.scene = SceneEnum::World(WorldScene::new(scene.into_world(), Player::new(Coord2::xy(32, 32))));
+                        app.scene = SceneEnum::World(WorldScene::new(scene.into_world(), Actor::new(Coord2::xy(32, 32), game::actor::ActorType::Player, None, None)));
                         continue
                     }
                 }

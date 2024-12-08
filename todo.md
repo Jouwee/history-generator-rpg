@@ -70,6 +70,10 @@ a turn = 2 seconds. Realtime is just doing turns with delays based on action poi
 
 Like the size of the spritesheet, not part of the key
 
+## feat - Scale up pixel art
+
+Not trivial to sync input, layout & graphics
+
 # Release 0.0.5 - ???
 
 ## refactor - Structure defining actions
