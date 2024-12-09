@@ -3,9 +3,9 @@ use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::Size2D, render::RenderContext, scene::Scene, Color, Point2D}, game::InputEvent, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, BattleResult, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SiegeEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, render::RenderContext, scene::Scene, Color, Point2D}, game::InputEvent, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, BattleResult, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SiegeEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{culture::Culture, region::Region, settlement::{Settlement, SettlementBuilder}, world::World};
+use super::{culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
 pub struct WorldGenScene {
     generator: WorldHistoryGenerator,
@@ -170,7 +170,6 @@ impl Scene for WorldGenScene {
     }
 }
 
-
 #[derive(PartialEq)]
 enum WorldViewMode {
     Normal,
@@ -195,7 +194,7 @@ struct WorldHistoryGenerator {
 impl WorldHistoryGenerator {
 
     pub fn seed_world(parameters: WorldGenerationParameters) -> WorldHistoryGenerator {
-        let mut rng = Rng::seeded(parameters.seed);
+        let rng = Rng::seeded(parameters.seed);
        
         let mut params = WorldTopologyGenerationParameters {
             rng: rng.derive("topology"),
@@ -217,6 +216,7 @@ impl WorldHistoryGenerator {
         let mut world = World {
             map: world_map,
             cultures: HashMap::new(),
+            species: Self::load_species(),
             factions: HistoryVec::new(),
             settlements: HistoryVec::new(),
             people: People::new(),
@@ -235,32 +235,43 @@ impl WorldHistoryGenerator {
 
         let event_date = WorldEventDate { year: 1 };
 
-        // Generate starter people
-        for _ in 0..10 {
-            rng.next();
-            let id = person_id.next();
-            let culture = world.cultures.get(&Id(rng.randu_range(0, culture_id.seq()))).unwrap();
-            let sex;
-            if rng.rand_chance(0.5) {
-                sex = PersonSex::Male;
-            } else {
-                sex = PersonSex::Female;
-            }
-            let faction = Faction::new(&rng, id);
-            let faction_id = world.factions.insert(faction);
-            // TODO: Position
-            let mut person = generate_person(&rng, Importance::Important, id, 1, sex, Point2D(0, 0), &culture, &faction_id, None);
-            person.faction_relation = FactionRelation::Leader;
-            world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: person.id }));
-            world.people.insert(person);
-        }
-        return WorldHistoryGenerator {
+        let mut generator = WorldHistoryGenerator {
             rng,
             parameters,
             world,
             year: 1,
             next_person_id: person_id
         };
+
+        // Generate starter people
+        for _ in 0..10 {
+            generator.rng.next();
+            let id = person_id.next();
+            let culture = generator.world.cultures.get(&Id(generator.rng.randu_range(0, culture_id.seq()))).unwrap();
+            let faction = Faction::new(&generator.rng, id);
+            let faction_id = generator.world.factions.insert(faction);
+            // TODO: Position
+            let species = generator.world.species.get(&Id(0)).unwrap(); // Human
+            let person = Person::new(id, species, Importance::Important, 1, Coord2::xy(0, 0))
+                .civilization(&Some(CivilizedComponent {
+                    culture: culture.id,
+                    faction: faction_id,
+                    faction_relation: FactionRelation::Leader,
+                    leader_of_settlement: None
+                }));
+            let person = generator.name_person(person, &None);
+            generator.world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: person.id }));
+            generator.world.people.insert(person);
+        }
+        generator.next_person_id = person_id;
+        return generator;
+    }
+
+    fn load_species() -> HashMap<Id, Species> {
+        let mut map = HashMap::new();
+        map.insert(Id(0), Species::new(Id(0), "human"));
+        map.insert(Id(1), Species::new(Id(1), "leshen").intelligence(SpeciesIntelligence::Instinctive).lifetime(200).fertility(0.));
+        map
     }
 
     pub fn simulate_year(&mut self) {
@@ -271,49 +282,54 @@ impl WorldHistoryGenerator {
 
         let mut new_people: Vec<Person> = Vec::new();
 
-        for (_, person) in self.world.people.iter() {
+        for (person_id, person) in self.world.people.iter() {
             let mut person = person.borrow_mut();
+            let species = self.world.species.get(&person.species).unwrap();
             let age = (year - person.birth) as f32;
-            if self.rng.rand_chance(f32::min(1.0, (age/120.0).powf(5.0))) {
+            if self.rng.rand_chance(f32::min(1.0, (age / species.lifetime.max_age as f32).powf(5.0))) {
                 person.death = year;
                 self.world.events.push(event_date, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
-                if let Some(settlement_id) = person.leader_of_settlement {
-                    let heirs_by_order = person.sorted_heirs();
-                    let settlement = self.world.settlements.get(&settlement_id);
-                
-                    let mut valid_heir = false;
-                    for heir in heirs_by_order {
-                        let mut heir = self.world.people.get_mut(&heir.person_id).unwrap();
-                        if heir.alive() {
-                            heir.leader_of_settlement = Some(settlement_id);
-                            heir.importance = Importance::Important;
-                            if person.faction_relation == FactionRelation::Leader {
-                                heir.faction_relation = FactionRelation::Leader;
+                if let Some(civ) = &person.civ {
+                    if let Some(settlement_id) = civ.leader_of_settlement {
+                        let heirs_by_order = person.sorted_heirs();
+                        let settlement = self.world.settlements.get(&settlement_id);
+                    
+                        let mut valid_heir = false;
+                        for heir in heirs_by_order {
+                            let mut heir = self.world.people.get_mut(&heir.person_id).unwrap();
+                            if heir.alive() {
+                                if let Some(civ2) = &mut heir.civ {
+                                    civ2.leader_of_settlement = Some(settlement_id);
+                                    if civ.faction_relation == FactionRelation::Leader {
+                                        civ2.faction_relation = FactionRelation::Leader;
+                                    }
+                                    let mut faction = self.world.factions.get_mut(&civ2.faction);
+                                    faction.leader = heir.id;
+                                    valid_heir = true;
+                                }
+                                if valid_heir {
+                                    heir.importance = Importance::Important;
+                                    heir.position = settlement.xy.to_coord();
+                                    self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: heir.id, settlement_id }));
+                                    break;
+                                }
                             }
-                            heir.position = settlement.xy;
-                            self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: heir.id, settlement_id }));
-                            let mut faction = self.world.factions.get_mut(&heir.faction_id);
-                            faction.leader = heir.id;
-                            valid_heir = true;
-                            break
                         }
-                    }
-                    if !valid_heir {
-                        let culture = self.world.cultures.get(&Id(self.rng.randu_range(0, self.world.cultures.len()))).unwrap();
-                        let sex;
-                        if self.rng.rand_chance(0.5) {
-                            sex = PersonSex::Male;
-                        } else {
-                            sex = PersonSex::Female;
+                        if !valid_heir {
+                            self.rng.next();
+                            let species = self.world.species.get(&person.species).unwrap();
+                            let new_leader = Person::new(self.next_person_id.next(), &species, Importance::Important, year, settlement.xy.to_coord())
+                                .civilization(&Some(civ.clone()));
+                            let mut new_leader = self.name_person(new_leader, &None);
+                            if let Some(civ2) = &mut new_leader.civ {
+                                civ2.leader_of_settlement = Some(settlement_id);
+                                if civ.faction_relation == FactionRelation::Leader {
+                                    civ2.faction_relation = FactionRelation::Leader;
+                                }
+                            }
+                            self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: new_leader.id, settlement_id }));
+                            new_people.push(new_leader);
                         }
-                        self.rng.next();
-                        let mut new_leader = generate_person(&self.rng, Importance::Important, self.next_person_id.next(), year, sex, settlement.xy, &culture, &person.faction_id, None);
-                        new_leader.leader_of_settlement = Some(settlement_id);
-                        if person.faction_relation == FactionRelation::Leader {
-                            new_leader.faction_relation = FactionRelation::Leader;
-                        }
-                        self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: new_leader.id, settlement_id }));
-                        new_people.push(new_leader);
                     }
                 }
 
@@ -323,10 +339,10 @@ impl WorldHistoryGenerator {
             if age > 18.0 && person.spouse().is_none() && self.rng.rand_chance(0.1) {
                 self.rng.next();
                 let id = self.next_person_id.next();
-                let spouse_age = self.rng.randu_range(18, age as usize + 10) as u32;
-                let spouse_birth_year = year - u32::min(spouse_age, year);
-                let culture = self.world.cultures.get(&person.culture_id).unwrap();
-                let mut spouse = generate_person(&self.rng, person.importance.lower(), id, spouse_birth_year, person.sex.opposite(), person.position, culture, &person.faction_id, None);
+                let species = self.world.species.get(&person.species).unwrap();
+                let spouse = Person::new(id, &species, person.importance.lower(), year, person.position)
+                    .civilization(&person.civ);
+                let mut spouse = self.name_person(spouse, &None);
                 spouse.last_name = person.last_name.clone();
                 spouse.next_of_kin.push(NextOfKin {
                     person_id: person.id,
@@ -343,23 +359,11 @@ impl WorldHistoryGenerator {
 
             if age > 18.0 && person.spouse().is_some() {
                 let spouse = self.world.people.get_mut(person.spouse().unwrap()).unwrap();
-                let couple_fertility = person.fertility(year) * spouse.fertility(year);
+                let couple_fertility = species.fertility.male_drop.powf(age - 18.) * species.fertility.female_drop.powf(age - 18.);
 
-                if self.rng.rand_chance(couple_fertility * 0.5) {
+                if self.rng.rand_chance(couple_fertility) {
                     let id = self.next_person_id.next();
-                    self.rng.next();
-                    let sex;
-                    if self.rng.rand_chance(0.5) {
-                        sex = PersonSex::Male;
-                    } else {
-                        sex = PersonSex::Female;
-                    }
-                    let culture = self.world.cultures.get(&person.culture_id).unwrap();
-                    let mut child = generate_person(&self.rng, person.importance.lower(), id, year, sex, person.position, culture, &person.faction_id, Some(&person.last_name));
-                    child.next_of_kin.push(NextOfKin { 
-                        person_id: person.id,
-                        relative: Relative::Parent
-                    });
+                    let child = self.create_child(id, year, &person, &spouse);
                     self.world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: child.id }));
                     person.next_of_kin.push(NextOfKin { 
                         person_id: child.id,
@@ -370,64 +374,68 @@ impl WorldHistoryGenerator {
                 }
             }
 
-            if age > 18.0 && person.leader_of_settlement.is_none() && self.rng.rand_chance(1.0/50.0) {
-                self.rng.next();
-                let culture = self.world.cultures.get(&person.culture_id).unwrap();
-                let settlement = generate_settlement(&self.rng, year, culture, person.faction_id, &self.world, &self.world.map, &self.parameters.regions).clone();
-                if let Some(settlement) = settlement {
-                    let position = settlement.xy;
-                    let id = self.world.settlements.insert(settlement);
-                    self.world.events.push(event_date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: person.id }));
-                    let mut faction = self.world.factions.get_mut(&person.faction_id);
-                    faction.settlements.insert(id);
-                    person.leader_of_settlement = Some(id);
-                    if let Some(spouse) = person.spouse() {
-                        let mut spouse = self.world.people.get_mut(spouse).unwrap();
-                        let spouse = spouse.borrow_mut();
-                        (*spouse).position = position;
+            if let Some(civ) = &mut person.civ {
+                if age > 18.0 && civ.leader_of_settlement.is_none() && self.rng.rand_chance(1.0/50.0) {
+                    self.rng.next();
+                    let culture = self.world.cultures.get(&civ.culture).unwrap();
+                    let settlement = generate_settlement(&self.rng, year, culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
+                    if let Some(settlement) = settlement {
+                        let position = settlement.xy;
+                        let id = self.world.settlements.insert(settlement);
+                        self.world.events.push(event_date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: *person_id }));
+                        let mut faction = self.world.factions.get_mut(&civ.faction);
+                        faction.settlements.insert(id);
+                        civ.leader_of_settlement = Some(id);
+                        if let Some(spouse) = person.spouse() {
+                            let mut spouse = self.world.people.get_mut(spouse).unwrap();
+                            let spouse = spouse.borrow_mut();
+                            (*spouse).position = position.to_coord();
+                        }
+                        person.position = position.to_coord();
+                        continue;
                     }
-                    person.position = position;
-                    continue;
                 }
             }
 
-            if person.faction_relation == FactionRelation::Leader {
-                let faction_id = person.faction_id;
-                let mut faction = self.world.factions.get_mut(&faction_id);
+            if let Some(civ) = &person.civ {
+                if civ.faction_relation == FactionRelation::Leader {
+                    let faction_id = civ.faction;
+                    let mut faction = self.world.factions.get_mut(&faction_id);
 
-                if faction_id != person.faction_id {
-                    panic!("{:?} {:?}", faction_id, person.faction_id);
-                }
-
-                let current_enemy = faction.relations.iter().find(|kv| *kv.1 < -0.8);
-
-                if let Some(current_enemy) = current_enemy {
-                    let chance_for_peace = 0.05;
-                    if self.rng.rand_chance(chance_for_peace) {
-                        let other_faction_id = current_enemy.0.clone();
-                        let mut other_faction = self.world.factions.get_mut(&other_faction_id);
-
-                        faction.relations.insert(other_faction_id, -0.2);
-                        other_faction.relations.insert(faction_id, -0.2);
-
-                        self.world.events.push(event_date, WorldEventEnum::PeaceDeclared(PeaceDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
+                    if faction_id != civ.faction {
+                        panic!("{:?} {:?}", faction_id, civ.faction);
                     }
-                } else {
-                    for (other_faction_id, other_faction) in self.world.factions.iter() {
-                        if other_faction_id == faction_id {
-                            continue
+
+                    let current_enemy = faction.relations.iter().find(|kv| *kv.1 < -0.8);
+
+                    if let Some(current_enemy) = current_enemy {
+                        let chance_for_peace = 0.05;
+                        if self.rng.rand_chance(chance_for_peace) {
+                            let other_faction_id = current_enemy.0.clone();
+                            let mut other_faction = self.world.factions.get_mut(&other_faction_id);
+
+                            faction.relations.insert(other_faction_id, -0.2);
+                            other_faction.relations.insert(faction_id, -0.2);
+
+                            self.world.events.push(event_date, WorldEventEnum::PeaceDeclared(PeaceDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
                         }
-                        let opinion = faction.relations.get(&other_faction_id).unwrap_or(&0.0);
-                        let chance_for_war = (*opinion * -1.0).max(0.0) * 0.001 + 0.001;
-                        if self.rng.rand_chance(chance_for_war) {
-                            let mut other_faction = other_faction.borrow_mut();
+                    } else {
+                        for (other_faction_id, other_faction) in self.world.factions.iter() {
+                            if other_faction_id == faction_id {
+                                continue
+                            }
+                            let opinion = faction.relations.get(&other_faction_id).unwrap_or(&0.0);
+                            let chance_for_war = (*opinion * -1.0).max(0.0) * 0.001 + 0.001;
+                            if self.rng.rand_chance(chance_for_war) {
+                                let mut other_faction = other_faction.borrow_mut();
 
-                            faction.relations.insert(other_faction_id, -1.0);
-                            other_faction.relations.insert(faction_id, -1.0);
+                                faction.relations.insert(other_faction_id, -1.0);
+                                other_faction.relations.insert(faction_id, -1.0);
 
-                            self.world.events.push(event_date, WorldEventEnum::WarDeclared(WarDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
+                                self.world.events.push(event_date, WorldEventEnum::WarDeclared(WarDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
 
-                            break
+                                break
+                            }
                         }
                     }
                 }
@@ -545,39 +553,51 @@ impl WorldHistoryGenerator {
         }
     }
 
-}
+    fn create_child(&self, id: Id, birth: u32, father: &Person, mother: &Person) -> Person {
+        let species = self.world.species.get(&father.species).unwrap();
+        let mut figure = Person::new(id, species, father.importance.lower(), birth, mother.position);
+        if let Some(civ) = &father.civ {
+            figure.civ = Some(CivilizedComponent {
+                culture: civ.culture,
+                faction: civ.faction,
+                faction_relation: FactionRelation::Member,
+                leader_of_settlement: None
+            });
+            figure = self.name_person(figure, &father.last_name);
+        }
+        figure.next_of_kin.push(NextOfKin { 
+            person_id: father.id,
+            relative: Relative::Parent
+        });
+        figure.next_of_kin.push(NextOfKin { 
+            person_id: mother.id,
+            relative: Relative::Parent
+        });
+        return figure        
+    }
 
-fn generate_person(rng: &Rng, importance: Importance, next_id: Id, birth_year: u32, sex: PersonSex, position: Point2D, culture: &Culture, faction: &Id, surname: Option<&str>) -> Person {
-    let rng = rng.derive("person");
-    let first_name;
-    match sex {
-        PersonSex::Male => first_name = culture.first_name_male_model.generate(&rng.derive("first_name"), 4, 15),
-        PersonSex::Female => first_name = culture.first_name_female_model.generate(&rng.derive("first_name"), 4, 15)
+    fn name_person(&self, mut figure: Person, surname: &Option<String>) -> Person {
+        if let Some(civ) = &figure.civ {
+            let culture = self.world.cultures.get(&civ.culture).unwrap();
+            let first_name;
+            match figure.sex {
+                PersonSex::Male => first_name = culture.first_name_male_model.generate(&self.rng.derive("first_name"), 4, 15),
+                PersonSex::Female => first_name = culture.first_name_female_model.generate(&self.rng.derive("first_name"), 4, 15)
+            }
+            let first_name = Strings::capitalize(&first_name);
+            let last_name;
+            match surname {
+                Some(str) => last_name = String::from(str),
+                None => last_name = Strings::capitalize(&culture.last_name_model.generate(&self.rng.derive("last_name"), 4, 15))
+            }
+            figure.first_name = Some(first_name);
+            figure.birth_last_name = Some(last_name.clone());
+            figure.last_name = Some(last_name.clone());
+        }
+        return figure
     }
-    let first_name = Strings::capitalize(&first_name);
-    let last_name;
-    match surname {
-        Some(str) => last_name = String::from(str),
-        None => last_name = Strings::capitalize(&culture.last_name_model.generate(&rng.derive("last_name"), 4, 15))
-    }
-    return Person {
-        id: next_id,
-        importance,
-        position,
-        first_name,
-        last_name: last_name.clone(),
-        birth_last_name: last_name.clone(),
-        birth: birth_year,
-        sex,
-        culture_id: culture.id,
-        faction_id: faction.clone(),
-        faction_relation: FactionRelation::Member,
-        death: 0,
-        next_of_kin: Vec::new(),
-        leader_of_settlement: None
-    }
-}
 
+}
 
 fn generate_settlement(rng: &Rng, founding_year: u32, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
     let mut rng = rng.derive("settlement");

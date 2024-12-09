@@ -1,3 +1,39 @@
+What is the minimum I need for the basic gameplay loop?
+
+explored civilized area -> interact with people -> receive info -> investigate -> find artifacts + history
+-> get quests -> do quests -> get more powerful
+
+- D&D / BG / TTRPG bare-bones mechanics
+  - Attributes
+    - STR - Mellee damage
+    - DEX - Dodge chance, AP / movement
+    - CON - Health
+    - INT - ???
+    - WIS - ???
+  - XP/Levels
+    - Attribute increase
+    - Health increase
+- Equipment
+  - Armors
+    - Heavy - 3 tiers
+    - Light - 3 tiers
+  - Weapons
+    - Slashing - 3 tiers
+    - Bashing - 3 tiers
+    - Piercing - 3 tiers
+  - Consumables
+    - Health potion
+- Other mechanics
+  - Resting at cities to recover health
+- World interaction
+  - Artifacts
+    - More powerful versions of weapons generated through History
+    - Ways to obtain those artifacts
+  - People
+    - ??? Talking to them, but why?
+- Organic Questing
+  - People have wants, problems, and riches. Do one in exchange for the other (make this more "mechanified")
+
 ## idea - History simulation of Technology
 
 Start with no tech, chance of someone/some faction learning a tech in a tech tree, that gives buffs. Chance to exchange techs on trades.

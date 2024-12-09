@@ -4,6 +4,7 @@ pub mod faction;
 pub mod person;
 pub mod region;
 pub mod settlement;
+pub mod species;
 pub mod topology;
 pub mod world;
 pub mod worldgen;

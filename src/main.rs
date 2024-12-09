@@ -4,10 +4,11 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{collections::HashMap, vec};
+use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::Assets, geometry::Coord2, render::RenderContext, scene::Scene, Color};
 use game::{actor::Actor, chunk::Chunk, GameSceneState, InputEvent};
+use literature::biography::BiographyWriter;
 use world::{culture::{Culture, LanguagePrefab}, event::*, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::{WorldGenScene, WorldGenerationParameters}};
 
 use glutin_window::GlutinWindow as Window;
@@ -349,7 +350,14 @@ fn main() {
 
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::WorldGen(scene)   = app.scene {
-                        app.scene = SceneEnum::World(WorldScene::new(scene.into_world(), Actor::new(Coord2::xy(32, 32), game::actor::ActorType::Player, None, None)));
+                        let world = scene.into_world();
+                        // Dumps the world history into a file
+                        let mut f = File::create("history.log").unwrap();
+                        let writer = BiographyWriter::new(&world);
+                        for event in world.events.iter() {
+                            writeln!(&mut f, "{}", writer.event(event)).unwrap();
+                        }
+                        app.scene = SceneEnum::World(WorldScene::new(world, Actor::new(Coord2::xy(32, 32), game::actor::ActorType::Player, None, None)));
                         continue
                     }
                 }

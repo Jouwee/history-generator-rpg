@@ -1,5 +1,48 @@
 # Doing
 
+# TODO: 0.0.6 - Artifact generation and investigation
+
+## feat - Great beasts
+
+- Every year, a unnocupied tile can spawn a great beast
+- The great beast can be of a few types: Fiend, Leshen and have a level
+
+## feat - New event - Fought a great beast
+
+- Small chance of someone fighting a nearby great beast
+- Resolve the battle
+
+## feat - Artifact making
+
+- Upon defeating a great beast, an artifact could be created
+- The artifact is now in possession of whoever killed the beast
+- The artifact can be inherited
+- The artifact can be gifted if the person has more than one
+- When a person dies in battle, any artifact the person has is dropped
+
+## feat - Investigating artifacts
+
+- ???
+
+# Backlog
+
+## feat - Better temperature calculations
+
+- Poles
+
+## feat - More biomes
+
+- Ocean biome
+- Grasslands biome
+
+## feat - Rivers, lakes and erosion
+
+## feat - Attributes
+
+## refactor - Actor composition system
+
+## feat - Death screen
+
 ## feat - Better elevation generation
 
 Nice procedural generator: http://procgenesis.com/WorldGen/worldgen.html
@@ -13,29 +56,6 @@ Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
 - Precipitation
 - Erosion
 - Volcanic activity
-
-# TODO: 0.0.? - Better terrain generation
-
-## feat - Better temperature calculations
-
-- Poles
-
-## feat - More biomes
-
-- Ocean biome
-- Grasslands biome
-
-## feat - Rivers, lakes and erosion
-
-# TODO: 0.0.? - Better gameplay loop
-
-## feat - Attributes
-
-## refactor - Actor composition system
-
-## feat - Death screen
-
-# Backlog
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -74,7 +94,7 @@ Like the size of the spritesheet, not part of the key
 
 Not trivial to sync input, layout & graphics
 
-# Release 0.0.5 - ???
+# Release 0.0.5 - Aimless improvements
 
 ## refactor - Structure defining actions
 

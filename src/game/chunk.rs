@@ -89,7 +89,7 @@ impl Chunk {
             }
         }
         for (id, person) in world.people.iter() {
-            if person.borrow().position.0 as i32 == xy.x && person.borrow().position.1 as i32 == xy.y {
+            if person.borrow().position == xy {
                 let point = Coord2::xy(
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32

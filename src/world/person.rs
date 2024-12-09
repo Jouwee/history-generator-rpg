@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
-use crate::{commons::history_vec::Id, engine::Point2D};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::faction::FactionRelation;
+use super::{faction::FactionRelation, species::Species};
 
 
 #[derive(Clone, PartialEq, Debug)]
@@ -25,47 +25,75 @@ impl PersonSex {
 #[derive(Clone, Debug)]
 pub struct Person {
     pub id: Id,
-    pub position: Point2D,
-    pub first_name: String,
-    pub last_name: String,
-    pub birth_last_name: String,
+    pub species: Id,
+    pub position: Coord2,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub birth_last_name: Option<String>,
     pub importance: Importance,
     pub birth: u32,
     pub sex: PersonSex,
     pub death: u32,
-    pub culture_id: Id,
     pub next_of_kin: Vec<NextOfKin>,
-    pub faction_id: Id,
+    pub civ: Option<CivilizedComponent>
+}
+
+#[derive(Clone, Debug)]
+pub struct CivilizedComponent {
+    pub culture: Id,
+    pub faction: Id,
     pub faction_relation: FactionRelation,
     pub leader_of_settlement: Option<Id>
 }
 
-#[derive(Clone, PartialEq, Debug)]
-pub enum Importance {
-    Important,
-    Unimportant,
-    Unknown
-}
-
-impl Importance {
-    pub fn lower(&self) -> Importance {
-        match self {
-            Importance::Important => return Importance::Unimportant,
-            Importance::Unimportant => return Importance::Unknown,
-            Importance::Unknown => return Importance::Unknown,
-        }
-    }
-}
-
 impl Person {
 
+    // TODO: random Age
+    pub fn new(id: Id, species: &Species, importance: Importance, birth: u32, position: Coord2) -> Person {
+        let mut sex = PersonSex::Male;
+        if Rng::seeded(id).rand_chance(0.5) {
+            sex = PersonSex::Female;
+        }
+        Person {
+            id,
+            species: species.id,
+            importance,
+            position,
+            birth,
+            first_name: None,
+            last_name: None,
+            birth_last_name: None,
+            sex,
+            death: 0,
+            next_of_kin: vec!(),
+            civ: None
+        }
+    }
+
+    pub fn civilization(mut self, civilization: &Option<CivilizedComponent>) -> Self {
+        match civilization {
+            Some(civ) => self.civ = Some(civ.clone()),
+            None => self.civ = None
+        }
+        self
+    }
+
     pub fn birth_name(&self) -> String {
-        return format!("{} {}", self.first_name, self.birth_last_name)
+        if let Some(first_name) = &self.first_name {
+            if let Some(birth_last_name) = &self.birth_last_name {
+                return format!("{} {}", first_name, birth_last_name)
+            }
+        }
+        return String::from("Unknown")
     }
 
     pub fn name(&self) -> String {
-        let title = "Commoner";
-        return format!("{} {} ({:?}, {})", self.first_name, self.last_name, self.importance, title)
+        if let Some(first_name) = &self.first_name {
+            if let Some(last_name) = &self.last_name {
+                return format!("{} {}", first_name, last_name)
+            }
+        }
+        return String::from("Unknown")
     }
 
     pub fn simulatable(&self) -> bool {
@@ -82,16 +110,6 @@ impl Person {
             return Some(&spouse.person_id)
         };
         return None
-    }
-
-    pub fn fertility(&self, year: u32) -> f32 {
-        let age = (year - self.birth) as f32;
-        // https://thefertilityshop.co.uk/wp-content/uploads/2021/12/bfs-monthly-fertility-by-age-1024x569.png
-        if self.sex == PersonSex::Male {
-            return f32::max(0.0, -(age / 60.0).powf(2.0) + 1.0)
-        } else {
-            return f32::max(0.0, -(age / 40.0).powf(6.0) + 1.0)
-        }
     }
 
     pub fn find_next_of_kin(&self, relative: Relative) -> Option<&Id> {
@@ -121,6 +139,24 @@ impl Person {
         return sorted
     }
 
+}
+
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum Importance {
+    Important,
+    Unimportant,
+    Unknown
+}
+
+impl Importance {
+    pub fn lower(&self) -> Importance {
+        match self {
+            Importance::Important => return Importance::Unimportant,
+            Importance::Unimportant => return Importance::Unknown,
+            Importance::Unknown => return Importance::Unknown,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

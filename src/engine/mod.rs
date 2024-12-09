@@ -1,4 +1,4 @@
-use geometry::Vec2;
+use geometry::{Coord2, Vec2};
 
 pub mod assets;
 pub mod geometry;
@@ -20,6 +20,10 @@ impl Point2D {
 
     pub fn vec_between(&self, another: &Point2D) -> Vec2 {
         Vec2::xy(self.0 as f32, self.1 as f32) - Vec2::xy(another.0 as f32, another.1 as f32)
+    }
+
+    pub fn to_coord(&self) -> Coord2 {
+        Coord2 { x: self.0 as i32, y: self.1 as i32 }
     }
 
 }
