@@ -5,8 +5,8 @@
 ## feat - Great beasts
 
 - ✓ People must be of several species, and allow for "wild" (uncivilised) people
-- Every year, a unnocupied tile can spawn a great beast
-- The great beast can be of a few types: Fiend, Leshen and have a level
+- ✓ Every year, a unnocupied tile can spawn a great beast
+- ✓ The great beast can be of a few types: Fiend, Leshen and have a level
 
 ## feat - New event - Fought a great beast
 

@@ -2,7 +2,7 @@ use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 
 use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, BattleResult, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SiegeEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
+use super::{attributes::Attributes, culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
 
 pub struct WorldGenerationParameters {
@@ -99,7 +99,16 @@ impl WorldHistoryGenerator {
     fn load_species() -> HashMap<Id, Species> {
         let mut map = HashMap::new();
         map.insert(Id(0), Species::new(Id(0), "human"));
-        map.insert(Id(1), Species::new(Id(1), "leshen").intelligence(SpeciesIntelligence::Instinctive).lifetime(200).fertility(0.));
+        map.insert(Id(1), Species::new(Id(1), "leshen")
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 45 })
+            .lifetime(300)
+            .fertility(0.));
+        map.insert(Id(2), Species::new(Id(2), "fiend")
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 35 })
+            .lifetime(200)
+            .fertility(0.));
         map
     }
 
@@ -433,7 +442,11 @@ impl WorldHistoryGenerator {
     }
 
     fn spawn_great_beast(&mut self, year: u32) {
-        let species = self.world.species.get(&Id(1)).unwrap(); // Leshen
+        let mut species = Id(2); // Fiend
+        if self.rng.rand_chance(0.3) {
+            species = Id(1); // Leshen
+        }
+        let species = self.world.species.get(&species).unwrap();
         let mut suitable_location = None;
         'candidates: for _ in 1..10 {
             let txy = Coord2::xy(self.rng.randu_range(0, self.world.map.size.x()) as i32, self.rng.randu_range(0, self.world.map.size.y()) as i32);

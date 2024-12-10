@@ -1,3 +1,4 @@
+pub mod attributes;
 pub mod culture;
 pub mod event;
 pub mod faction;

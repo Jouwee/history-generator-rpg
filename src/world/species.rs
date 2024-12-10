@@ -1,11 +1,14 @@
 use crate::commons::history_vec::Id;
 
+use super::attributes::Attributes;
+
 pub struct Species {
     pub id: Id,
     pub name: String,
     pub lifetime: SpeciesLifetime,
     pub intelligence: SpeciesIntelligence,
-    pub fertility: SpeciesFertility
+    pub fertility: SpeciesFertility,
+    pub attributes: Attributes
 }
 
 impl Species {
@@ -17,11 +20,17 @@ impl Species {
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime { max_age: 120 },
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
+            attributes: Attributes { strength: 13 }
         }
     }
 
     pub fn intelligence(mut self, intelligence: SpeciesIntelligence) -> Self {
         self.intelligence = intelligence;
+        self
+    }
+
+    pub fn attributes(mut self, attributes: Attributes) -> Self {
+        self.attributes = attributes;
         self
     }
 
