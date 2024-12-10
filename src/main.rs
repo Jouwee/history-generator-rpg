@@ -9,7 +9,7 @@ use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::Assets, geometry::Coord2, render::RenderContext, scene::Scene, Color};
 use game::{actor::Actor, chunk::Chunk, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
-use world::{culture::{Culture, LanguagePrefab}, event::*, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::{WorldGenScene, WorldGenerationParameters}};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -322,6 +322,7 @@ fn main() {
             seed: 1234567,
             cultures: vec!(nords, khajit),
             regions: regions,            
+            great_beasts_yearly_spawn_chance: 0.02
         })),
         assets: Assets::new()
     };

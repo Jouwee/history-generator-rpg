@@ -41,6 +41,7 @@ pub struct SpeciesLifetime {
     pub max_age: u32
 }
 
+#[derive(PartialEq)]
 pub enum SpeciesIntelligence {
     Instinctive,
     Civilized

@@ -4,6 +4,7 @@
 
 ## feat - Great beasts
 
+- ✓ People must be of several species, and allow for "wild" (uncivilised) people
 - Every year, a unnocupied tile can spawn a great beast
 - The great beast can be of a few types: Fiend, Leshen and have a level
 
@@ -93,6 +94,8 @@ Like the size of the spritesheet, not part of the key
 ## feat - Scale up pixel art
 
 Not trivial to sync input, layout & graphics
+
+## bug - Names like Anea00000000000
 
 # Release 0.0.5 - Aimless improvements
 

@@ -78,22 +78,22 @@ impl Person {
         self
     }
 
-    pub fn birth_name(&self) -> String {
+    pub fn birth_name(&self) -> Option<String> {
         if let Some(first_name) = &self.first_name {
             if let Some(birth_last_name) = &self.birth_last_name {
-                return format!("{} {}", first_name, birth_last_name)
+                return Some(format!("{} {}", first_name, birth_last_name))
             }
         }
-        return String::from("Unknown")
+        return None
     }
 
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Option<String> {
         if let Some(first_name) = &self.first_name {
             if let Some(last_name) = &self.last_name {
-                return format!("{} {}", first_name, last_name)
+                return Some(format!("{} {}", first_name, last_name))
             }
         }
-        return String::from("Unknown")
+        return None
     }
 
     pub fn simulatable(&self) -> bool {
