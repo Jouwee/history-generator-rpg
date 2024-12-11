@@ -18,7 +18,7 @@ impl Species {
             id,
             name: String::from(name),
             intelligence: SpeciesIntelligence::Civilized,
-            lifetime: SpeciesLifetime { max_age: 120 },
+            lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
             attributes: Attributes { strength: 13 }
         }
@@ -35,7 +35,7 @@ impl Species {
     }
 
     pub fn lifetime(mut self, max_age: u32) -> Self {
-        self.lifetime = SpeciesLifetime { max_age };
+        self.lifetime = SpeciesLifetime::new(max_age);
         self
     }
 
@@ -47,7 +47,25 @@ impl Species {
 }
 
 pub struct SpeciesLifetime {
-    pub max_age: u32
+    pub max_age: u32,
+    pub adult_age: f32
+}
+
+impl SpeciesLifetime {
+    pub fn new(max_age: u32) -> SpeciesLifetime {
+        SpeciesLifetime {
+            max_age,
+            adult_age: max_age as f32 * 0.15
+        }
+    }
+}
+
+impl SpeciesLifetime {
+
+    pub fn is_adult(&self, age: f32) -> bool {
+        return age > self.adult_age;
+    }
+
 }
 
 #[derive(PartialEq)]

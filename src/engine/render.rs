@@ -1,4 +1,4 @@
-use graphics::{image, rectangle, Context, Text};
+use graphics::{ellipse, image, rectangle, Context, Text};
 use opengl_graphics::{GlGraphics, GlyphCache};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
@@ -18,6 +18,10 @@ pub struct RenderContext<'a, 'b> {
 impl<'a, 'b> RenderContext<'a, 'b> {
     pub fn rectangle_fill(&mut self, rect: [f64; 4], color: Color) {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
+    }
+
+    pub fn circle(&mut self, rect: [f64; 4], color: Color) {
+        ellipse(color.f32_arr(), rect, self.context.transform, self.gl);
     }
 
     //pub fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {

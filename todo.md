@@ -2,15 +2,14 @@
 
 # TODO: 0.0.6 - Artifact generation and investigation
 
-## feat - Great beasts
-
-- ✓ People must be of several species, and allow for "wild" (uncivilised) people
-- ✓ Every year, a unnocupied tile can spawn a great beast
-- ✓ The great beast can be of a few types: Fiend, Leshen and have a level
-
 ## feat - New event - Fought a great beast
 
-- Small chance of someone fighting a nearby great beast
+- ✓ Great beasts will hunt in a territory, maybe hitting towns and lowering their reputation
+  - ✓ Random hunt chance
+  - ✓ Battle resolution
+  - ✓ Battle effects
+  - Relation of great beasts
+- Small chance of someone fighting a nearby great beast they hate
 - Resolve the battle
 
 ## feat - Artifact making
@@ -96,6 +95,14 @@ Like the size of the spritesheet, not part of the key
 Not trivial to sync input, layout & graphics
 
 ## bug - Names like Anea00000000000
+
+# Release 0.0.6 - Great beasts and artifacts
+
+## feat - Great beasts
+
+- ✓ People must be of several species, and allow for "wild" (uncivilised) people
+- ✓ Every year, a unnocupied tile can spawn a great beast
+- ✓ The great beast can be of a few types: Fiend, Leshen and have a level
 
 # Release 0.0.5 - Aimless improvements
 

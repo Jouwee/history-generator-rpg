@@ -322,7 +322,7 @@ fn main() {
             seed: 1234567,
             cultures: vec!(nords, khajit),
             regions: regions,            
-            great_beasts_yearly_spawn_chance: 0.02
+            great_beasts_yearly_spawn_chance: 0.1
         })),
         assets: Assets::new()
     };

@@ -1,4 +1,5 @@
 pub mod attributes;
+pub mod battle_simulator;
 pub mod culture;
 pub mod event;
 pub mod faction;

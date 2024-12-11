@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, world::{person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
 
 pub struct BiographyWriter<'a> { 
     world: &'a World   
@@ -85,6 +85,92 @@ impl<'a> BiographyWriter<'a> {
                 } else {
                     return format!("In {}, {} attempted to siege {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
                 }
+            }
+            WorldEventEnum::Battle(event) => {
+                let (attacker, defender) = &event.battle_result;
+
+                let attacker_name;
+                if let Some(faction) = attacker.belligerent_faction {
+                    let faction = self.world.factions.get(&faction);
+                    attacker_name = faction.name.clone();
+                } else {
+                    if attacker.creature_participants.len() == 1 {
+                        let creature = self.world.people.get(attacker.creature_participants.get(0).unwrap()).unwrap();
+                        attacker_name = self.name(&creature);
+                    } else {
+                        attacker_name = format!("{}", attacker.creature_participants.len()).to_string();
+                    }
+                }
+
+                let defender_name;
+                if let Some(faction) = defender.belligerent_faction {
+                    let faction = self.world.factions.get(&faction);
+                    defender_name = faction.name.clone();
+                } else {
+                    if defender.creature_participants.len() == 1 {
+                        let creature = self.world.people.get(defender.creature_participants.get(0).unwrap()).unwrap();
+                        defender_name = self.name(&creature);
+                    } else {
+                        defender_name = String::from("UNKNOWN");
+                    }
+                }
+
+                let settlement = self.world.settlements.get(&attacker.location_settlement);
+                let location_name = settlement.name.clone();
+
+                let battle_result;
+
+                match (&attacker.result, &defender.result) {
+                    (FinalResult::Defeat, FinalResult::Victory) => battle_result = "but was defeated",
+                    (FinalResult::Flee, FinalResult::Victory) => battle_result = "but had to flee",
+                    (FinalResult::Victory, FinalResult::Flee) => battle_result = "and made them flee",
+                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged vitorious",
+                    _ => battle_result = "and it was a stalemate",
+                }
+
+                let mut attacker_kill_description = String::from("");
+                for creature in attacker.creature_casualties.iter() {
+                    let creature = self.world.people.get(creature).unwrap();
+                    attacker_kill_description.push_str(&self.name(&creature));
+                    attacker_kill_description.push_str("\n");
+                }
+                if attacker.army_casualties > 0 {
+                    attacker_kill_description.push_str(&format!("{} soldiers", attacker.army_casualties));
+                    attacker_kill_description.push_str("\n");
+                }
+                if attacker.civilian_casualties > 0 {
+                    attacker_kill_description.push_str(&format!("{} civilians", attacker.civilian_casualties));
+                    attacker_kill_description.push_str("\n");
+                }
+                if attacker_kill_description.len() == 0 {
+                    attacker_kill_description = "suffered no casualties. ".to_string();
+                } else {
+                    attacker_kill_description = format!("lost: \n{attacker_kill_description}\n\n");
+                }
+
+                let mut defender_kill_description = String::from("");
+                for creature in defender.creature_casualties.iter() {
+                    let creature = self.world.people.get(creature).unwrap();
+                    defender_kill_description.push_str(&self.name(&creature));
+                    defender_kill_description.push_str("\n");
+                }
+                if defender.army_casualties > 0 {
+                    defender_kill_description.push_str(&format!("{} soldiers", defender.army_casualties));
+                    defender_kill_description.push_str("\n");
+                }
+                if defender.civilian_casualties > 0 {
+                    defender_kill_description.push_str(&format!("{} civilians", defender.civilian_casualties));
+                    defender_kill_description.push_str("\n");
+                }
+                if defender_kill_description.len() == 0 {
+                    defender_kill_description = "suffered no casualties. ".to_string();
+                } else {
+                    defender_kill_description = format!("lost: \n{defender_kill_description}\n\n");
+                }
+
+                let kill_description = format!("In the end, the attackers {attacker_kill_description}While the defenders {defender_kill_description}");
+
+                return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}.\n{kill_description}"));
             }
         }
     }

@@ -40,8 +40,15 @@ impl Rng {
         let next = self.xor_shift(self.seed) as usize;
         self.seed = next as u32;
     }
+    
+    pub fn randi_range(&mut self, start_inclusive: i32, end_exclusive: i32) -> i32 {
+        return self.randf_range(start_inclusive as f32, end_exclusive as f32) as i32;
+    }
 
     pub fn randu_range(&mut self, start_inclusive: usize, end_exclusive: usize) -> usize {
+        if start_inclusive == end_exclusive {
+            return end_exclusive
+        }
         let next = self.xor_shift(self.seed) as usize;
         self.seed = next as u32;
         return (next % (end_exclusive - start_inclusive)) + start_inclusive

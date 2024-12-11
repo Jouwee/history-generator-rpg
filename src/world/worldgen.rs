@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{render::RenderContext, scene::Scene, Color}, game::InputEvent};
+use crate::{engine::{render::RenderContext, scene::Scene, Color}, game::InputEvent, world::species::SpeciesIntelligence};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
@@ -28,7 +28,7 @@ impl WorldGenScene {
 }
 
 impl Scene for WorldGenScene {
-    fn render(&self, ctx: RenderContext) {
+    fn render(&self, mut ctx: RenderContext) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31
@@ -131,6 +131,17 @@ impl Scene for WorldGenScene {
                 }
 
             }
+
+            // Render great beasts
+            for (_, person) in world.people.iter() {
+                let person = person.borrow();
+                let species = world.species.get(&person.species).unwrap();
+
+                if species.intelligence == SpeciesIntelligence::Instinctive {
+                    ctx.circle([person.position.x as f64 * ts, person.position.y as f64 * ts, ts, ts], red);
+                }
+            }
+
         } else {
             for x in 0..world.map.size.x() {
                 for y in 0..world.map.size.y() {

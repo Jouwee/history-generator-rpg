@@ -1,6 +1,8 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{commons::history_vec::Id, BattleResult};
+use crate::{commons::history_vec::Id, BattleResult as BattleResult_old};
+
+use super::battle_simulator::BattleResult;
 
 #[derive(Clone, Copy)]
 pub struct WorldEventDate {
@@ -67,6 +69,7 @@ pub enum WorldEventEnum {
     WarDeclared(WarDeclaredEvent),
     PeaceDeclared(PeaceDeclaredEvent),
     Siege(SiegeEvent),
+    Battle(BattleEvent),
 }
 
 impl WorldEventEnum {
@@ -113,5 +116,9 @@ pub struct SiegeEvent {
     pub faction2_id: Id,
     pub settlement1_id: Id,
     pub settlement2_id: Id,
-    pub battle_result: BattleResult,
+    pub battle_result: BattleResult_old,
+}
+
+pub struct BattleEvent {
+    pub battle_result: (BattleResult, BattleResult)
 }

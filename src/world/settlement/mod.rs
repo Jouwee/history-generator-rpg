@@ -7,6 +7,7 @@ pub struct Settlement {
     pub founding_year: u32,
     pub culture_id: Id,
     pub faction_id: Id,
+    pub leader_id: Id,
     pub region_id: usize,
     pub gold: i32,
     pub military: Military,
@@ -41,6 +42,10 @@ impl Settlement {
         self.demographics.change_population(-(total_kills as i32));
     }
 
+    pub fn kill_civilians(&mut self, total_kills: u32) {
+        self.demographics.change_population(-(total_kills as i32));
+    }
+
 }
 
 #[derive(Clone)]
@@ -66,18 +71,20 @@ pub struct SettlementBuilder<'a> {
     founding_year: u32,
     culture: &'a Culture,
     faction_id: Id,
+    leader_id: Id,
     region: &'a Region,
     population: u32,
 }
 
 impl<'a> SettlementBuilder<'a> {
 
-    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, culture: &'a Culture, faction_id: Id, region: &'a Region) -> SettlementBuilder<'a> {
+    pub fn colony(rng: &Rng, xy: Point2D, founding_year: u32, leader_id: Id, culture: &'a Culture, faction_id: Id, region: &'a Region) -> SettlementBuilder<'a> {
         let mut rng = rng.derive("colony");
         let population = rng.randu_range(2, 10) as u32;
         return SettlementBuilder {
             rng,
             founding_year,
+            leader_id,
             faction_id,
             xy,
             culture,
@@ -91,6 +98,7 @@ impl<'a> SettlementBuilder<'a> {
             xy: self.xy,
             name: Self::generate_location_name(&self.rng.derive("name"), self.culture, self.region),
             founding_year: self.founding_year,
+            leader_id: self.leader_id,
             culture_id: self.culture.id,
             faction_id: self.faction_id,
             region_id: self.region.id,
