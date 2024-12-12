@@ -79,7 +79,12 @@ impl Scene for WorldScene {
         
         let world = &self.world;
 
-        let ts = 4.;
+        let ts = 16.;
+
+        let cursor_pos_on_screen = (900., 500.);
+
+        let xoff = (-self.cursor.x as f64 * ts) + cursor_pos_on_screen.0;
+        let yoff = (-self.cursor.y as f64 * ts) + cursor_pos_on_screen.1;
 
         for x in 0..world.map.size.x() {
             for y in 0..world.map.size.y() {
@@ -93,7 +98,7 @@ impl Scene for WorldScene {
                     3 => color = salmon,
                     _ => color = black
                 }
-                rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
+                rectangle(color.f32_arr(), rectangle::square(xoff + (x as f64 * ts), yoff + (y as f64 * ts), ts), ctx.context.transform, ctx.gl);
 
                 let mut height_diff = 0.0;
                 let mut height_count = 0;
@@ -116,10 +121,10 @@ impl Scene for WorldScene {
                 height_diff = (height_diff / height_count as f32) / 256.0;
                 if height_diff < 0.0 {
                     let opacity = height_diff.abs();
-                    rectangle(black.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
+                    rectangle(black.alpha(opacity).f32_arr(), rectangle::square(xoff + (x as f64 * ts), yoff + (y as f64 * ts), ts), ctx.context.transform, ctx.gl);
                 } else {
                     let opacity = height_diff;
-                    rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
+                    rectangle(white.alpha(opacity).f32_arr(), rectangle::square(xoff + (x as f64 * ts), yoff + (y as f64 * ts), ts), ctx.context.transform, ctx.gl);
                 }
 
             }   
@@ -137,10 +142,10 @@ impl Scene for WorldScene {
 
                 let mut rectangle = Rectangle::new(transparent);
                 rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
-                let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
+                let dims = square(xoff + (settlement.xy.0 as f64 * ts), yoff + (settlement.xy.1 as f64 * ts), ts);
                 rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
             }
-            let transform = ctx.context.transform.trans(settlement.xy.0 as f64*ts, settlement.xy.1 as f64*ts);
+            let transform = ctx.context.transform.trans(xoff + (settlement.xy.0 as f64*ts), yoff + (settlement.xy.1 as f64*ts));
 
             let texture;
             if settlement.demographics.population == 0 {
@@ -170,7 +175,7 @@ impl Scene for WorldScene {
 
         let mut color = white.f32_arr();
         color[3] = 0.7;
-        rectangle(color, rectangle::square(self.cursor.x as f64 * ts, self.cursor.y as f64 * ts, ts), ctx.context.transform, ctx.gl);
+        rectangle(color, rectangle::square(cursor_pos_on_screen.0, cursor_pos_on_screen.1, ts), ctx.context.transform, ctx.gl);
 
         let tile = world.map.tile(self.cursor.x as usize, self.cursor.y as usize);
         let biography = BiographyWriter::new(&world);
