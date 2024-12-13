@@ -55,6 +55,11 @@ impl People {
         })
     }
 
+    pub fn ids(&self) -> Vec<Id> {
+        // It's actually faster to borrow and test simulatability than clone the extra IDs
+        return self.iter().map(|(id, _)| id.clone()).collect()
+    }
+
     pub fn len(&self) -> usize {
         return self.inner.len()
     }

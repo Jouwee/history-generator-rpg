@@ -1,16 +1,11 @@
 # Doing
 
-# TODO: 0.0.6 - Artifact generation and investigation
+## refactor - Improve way of handling simulation
 
-## feat - New event - Fought a great beast
-
-- ✓ Great beasts will hunt in a territory, maybe hitting towns and lowering their reputation
-  - ✓ Random hunt chance
-  - ✓ Battle resolution
-  - ✓ Battle effects
-  - Relation of great beasts
-- Small chance of someone fighting a nearby great beast they hate
-- Resolve the battle
+- People
+  - ✓ Create an enum of things that can happen
+  - ✓ Later, apply the action
+  - Apply to every action
 
 ## feat - Artifact making
 
@@ -103,6 +98,15 @@ Not trivial to sync input, layout & graphics
 - ✓ People must be of several species, and allow for "wild" (uncivilised) people
 - ✓ Every year, a unnocupied tile can spawn a great beast
 - ✓ The great beast can be of a few types: Fiend, Leshen and have a level
+
+# TODO: 0.0.6 - Artifact generation and investigation
+
+## feat - New event - Fought a great beast
+
+- ✓ Great beasts will hunt in a territory, maybe hitting towns and lowering their reputation
+  - ✓ Random hunt chance
+  - ✓ Battle resolution
+  - ✓ Battle effects
 
 # Release 0.0.5 - Aimless improvements
 
