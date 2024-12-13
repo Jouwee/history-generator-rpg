@@ -57,4 +57,8 @@ impl<T> HistoryVec<T> {
         self.vector.iter().enumerate().map(|(i, v)| (Id(i), v))
     }
 
+    pub fn ids(&self) -> Vec<Id> {
+        self.vector.iter().enumerate().map(|(i, _v)| Id(i)).collect()
+    }
+
 }

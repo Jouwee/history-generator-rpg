@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{commons::history_vec::Id, BattleResult as BattleResult_old};
+use crate::commons::history_vec::Id;
 
 use super::battle_simulator::BattleResult;
 
@@ -68,7 +68,6 @@ pub enum WorldEventEnum {
     SettlementFounded(SettlementFoundedEvent),
     WarDeclared(WarDeclaredEvent),
     PeaceDeclared(PeaceDeclaredEvent),
-    Siege(SiegeEvent),
     Battle(BattleEvent),
 }
 
@@ -77,7 +76,7 @@ impl WorldEventEnum {
         match self {
             Self::SettlementFounded(evt) => vec!(evt.settlement_id),
             Self::NewSettlementLeader(evt) => vec!(evt.settlement_id),
-            Self::Siege(evt) => vec!(evt.settlement1_id, evt.settlement2_id),
+            Self::Battle(evt) => vec!(evt.battle_result.0.location_settlement),
             _ => vec!()
         }
     }
@@ -109,14 +108,6 @@ pub struct WarDeclaredEvent {
 pub struct PeaceDeclaredEvent {
     pub faction1_id: Id,
     pub faction2_id: Id,
-}
-
-pub struct SiegeEvent {
-    pub faction1_id: Id,
-    pub faction2_id: Id,
-    pub settlement1_id: Id,
-    pub settlement2_id: Id,
-    pub battle_result: BattleResult_old,
 }
 
 pub struct BattleEvent {

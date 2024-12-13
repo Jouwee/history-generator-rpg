@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, BattleResult as BattleResult_old, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SiegeEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::BattleForce, culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
 
 pub struct WorldGenerationParameters {
@@ -173,8 +173,9 @@ impl WorldHistoryGenerator {
             }
         }
         
-        for (id, settlement) in self.world.settlements.iter() {
-            let mut settlement = settlement.borrow_mut();
+        let ids = self.world.settlements.ids();
+        for id in ids {
+            let mut settlement = self.world.settlements.get_mut(&id);
             if settlement.demographics.population <= 0 {
                 continue
             }
@@ -231,6 +232,7 @@ impl WorldHistoryGenerator {
                     }
                 }
             }
+            drop(leader);
 
             let settlement_tile = self.world.map.tile(settlement.xy.0, settlement.xy.1);
 
@@ -269,8 +271,9 @@ impl WorldHistoryGenerator {
                 settlement.gold = settlement.gold - (50 * can_train);
             }
             let faction_id = settlement.faction_id;
-            let mut faction = self.world.factions.get_mut(&faction_id);
+            let faction = self.world.factions.get_mut(&faction_id);
             let at_war = faction.relations.iter().find(|v| *v.1 <= -0.8);
+            let mut battle = None;
             if let Some(enemy) = at_war {
                 if army_ratio < 0.05 {
                     let can_train = settlement.gold / 15;
@@ -292,39 +295,18 @@ impl WorldHistoryGenerator {
                     }
                 }
 
-                if let Some(enemy_settlement) = attack {
-                    let battle_modifer = self.rng.randf();
-                    let (enemy_settlement_id, mut enemy_settlement) = enemy_settlement;
-
-                    let defence_power = enemy_settlement.military_defence_power();
-                    let power_diff = siege_power / (siege_power + defence_power);
-
-                    let battle_closeness = 1.0 - (battle_modifer - power_diff).abs();
-
-                    let battle_result = BattleResult_old {
-                        attacker_deaths: ((settlement.military.trained_soldiers + settlement.military.conscripts) as f32 * battle_closeness) as u32,
-                        defender_deaths: ((enemy_settlement.military.trained_soldiers + enemy_settlement.military.conscripts) as f32 * battle_closeness) as u32,
-                        attacker_victor: battle_modifer > power_diff,
-                        defender_captured: battle_modifer > power_diff,
-                    };
-
-                    settlement.kill_military(battle_result.attacker_deaths, &self.rng);
-                    enemy_settlement.kill_military(battle_result.defender_deaths, &self.rng);
-
-                    let enemy_faction_id = *enemy.0;
-                    let mut enemy_faction = self.world.factions.get_mut(&enemy_faction_id);
-
-                    if battle_result.defender_captured {
-                        enemy_settlement.faction_id = settlement.faction_id;
-                        faction.settlements.insert(enemy_settlement_id);
-                        enemy_faction.settlements.remove(&enemy_settlement_id);
-                    }
-
-                    self.world.events.push(event_date, WorldEventEnum::Siege(SiegeEvent { faction1_id: faction_id, faction2_id: enemy_faction_id, settlement1_id: id.clone(), settlement2_id: enemy_settlement_id.clone(), battle_result }));
+                if let Some((enemy_settlement_id, enemy_settlement)) = attack {
+                    let mut attacker_force = BattleForce::from_attacking_settlement(&self.world, id, &settlement);
+                    let mut defender_force = BattleForce::from_defending_settlement(&self.world, enemy_settlement_id, &enemy_settlement);
+                    let result = attacker_force.battle(&mut defender_force, &mut self.rng.derive("battle"), enemy_settlement.xy.to_coord(), enemy_settlement_id);
+                    battle = Some(result);
                 }
-
             }
-
+            drop(settlement);
+            drop(faction);
+            if let Some(result) = battle {
+                self.apply_battle_result(event_date, result);
+            }
         }
 
 
@@ -465,23 +447,7 @@ impl WorldHistoryGenerator {
         }
         drop(beast);
         if let Some(battle) = result {
-            for id in battle.0.creature_casualties.iter() {
-                self.kill_person(date, *id);
-            }
-            if let Some(settlement_id) = battle.0.belligerent_settlement {
-                let mut settlement = self.world.settlements.get_mut(&settlement_id);
-                settlement.kill_military(battle.0.army_casualties, &self.rng);
-                settlement.kill_civilians(battle.0.civilian_casualties);
-            }
-            for id in battle.1.creature_casualties.iter() {
-                self.kill_person(date, *id);
-            }
-            if let Some(settlement_id) = battle.1.belligerent_settlement {
-                let mut settlement = self.world.settlements.get_mut(&settlement_id);
-                settlement.kill_military(battle.1.army_casualties, &self.rng);
-                settlement.kill_civilians(battle.1.civilian_casualties);
-            }
-            self.world.events.push(date, WorldEventEnum::Battle(crate::BattleEvent { battle_result: battle }));
+            self.apply_battle_result(date, battle);
         }
     }
 
@@ -545,6 +511,26 @@ impl WorldHistoryGenerator {
                 person.position = position.to_coord();
             }
         }
+    }
+
+    fn apply_battle_result(&mut self, date: WorldEventDate, battle: (BattleResult, BattleResult)) {
+        for id in battle.0.creature_casualties.iter() {
+            self.kill_person(date, *id);
+        }
+        if let Some(settlement_id) = battle.0.belligerent_settlement {
+            let mut settlement = self.world.settlements.get_mut(&settlement_id);
+            settlement.kill_military(battle.0.army_casualties, &self.rng);
+            settlement.kill_civilians(battle.0.civilian_casualties);
+        }
+        for id in battle.1.creature_casualties.iter() {
+            self.kill_person(date, *id);
+        }
+        if let Some(settlement_id) = battle.1.belligerent_settlement {
+            let mut settlement = self.world.settlements.get_mut(&settlement_id);
+            settlement.kill_military(battle.1.army_casualties, &self.rng);
+            settlement.kill_civilians(battle.1.civilian_casualties);
+        }
+        self.world.events.push(date, WorldEventEnum::Battle(crate::BattleEvent { battle_result: battle }));
     }
 
 }

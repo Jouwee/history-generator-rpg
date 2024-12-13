@@ -32,11 +32,16 @@ impl Unit {
 
 impl BattleForce {
 
+    pub fn from_attacking_settlement(world: &World, settlement_id: Id, settlement: &Settlement) -> BattleForce {
+        return Self::from_defending_settlement(world, settlement_id, settlement)
+    }
+
     pub fn from_defending_settlement(world: &World, settlement_id: Id, settlement: &Settlement) -> BattleForce {
         let mut units: Vec<Unit> = (0..settlement.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
         for (id, creature) in world.people.iter() {
             let creature = creature.try_borrow();
             if let Ok(creature) = creature {
+                // TODO: Improve performance
                 if creature.position == settlement.xy.to_coord() {
                     let species = world.species.get(&creature.species).unwrap();
                     units.push(Unit::from_creature(id, species));

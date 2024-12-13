@@ -102,13 +102,6 @@ impl App {
     }
 }
 
-struct BattleResult {
-    attacker_deaths: u32,
-    defender_deaths: u32,
-    attacker_victor: bool,
-    defender_captured: bool,
-}
-
 fn main() {
 
     use std::time::Instant;

@@ -1,12 +1,5 @@
 # Doing
 
-## refactor - Improve way of handling simulation
-
-- People
-  - ✓ Create an enum of things that can happen
-  - ✓ Later, apply the action
-  - Apply to every action
-
 ## feat - Artifact making
 
 - Upon defeating a great beast, an artifact could be created
@@ -91,6 +84,15 @@ Not trivial to sync input, layout & graphics
 
 ## bug - Names like Anea00000000000
 
+## bug - Weird battle results
+
+"In 61, Axial Peregrins attacked Green Axis at Borchpør, and emerged vitorious.
+In the end, the attackers suffered no casualties. While the defenders suffered no casualties."
+
+## refactor - Better spatial searches
+
+The majority of the current time spent in history generation is searching who is in a town to simulate battles
+
 # Release 0.0.6 - Great beasts and artifacts
 
 ## feat - Great beasts
@@ -98,6 +100,15 @@ Not trivial to sync input, layout & graphics
 - ✓ People must be of several species, and allow for "wild" (uncivilised) people
 - ✓ Every year, a unnocupied tile can spawn a great beast
 - ✓ The great beast can be of a few types: Fiend, Leshen and have a level
+
+## refactor - Improve way of handling simulation
+
+- ✓ People
+  - ✓ Create an enum of things that can happen
+  - ✓ Later, apply the action
+  - ✓ Apply to every action
+
+## refactor - Apply new battle resolution to conflicts in wars
 
 # TODO: 0.0.6 - Artifact generation and investigation
 

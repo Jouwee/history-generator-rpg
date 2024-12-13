@@ -72,20 +72,6 @@ impl<'a> BiographyWriter<'a> {
                 let faction2 = self.world.factions.get(&event.faction2_id);
                 return format!("In {}, the war between the {} and the {} ended", date, faction.name, faction2.name)
             }
-            WorldEventEnum::Siege(event) => {
-                let settlement_attacker = self.world.settlements.get(&event.settlement1_id);
-                let settlement_defender = self.world.settlements.get(&event.settlement2_id);
-                let mut suffix = "had to retreat";
-                if event.battle_result.defender_captured {
-                    suffix = "captured the settlement"
-                }
-                let deaths = event.battle_result.attacker_deaths + event.battle_result.defender_deaths;
-                if event.battle_result.attacker_victor {
-                    return format!("In {}, {} sucessfully sieged {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
-                } else {
-                    return format!("In {}, {} attempted to siege {} and {suffix}. {deaths} people died", date, settlement_attacker.name, settlement_defender.name)
-                }
-            }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
 
@@ -145,7 +131,7 @@ impl<'a> BiographyWriter<'a> {
                 if attacker_kill_description.len() == 0 {
                     attacker_kill_description = "suffered no casualties. ".to_string();
                 } else {
-                    attacker_kill_description = format!("lost: \n{attacker_kill_description}\n\n");
+                    attacker_kill_description = format!("lost: \n{attacker_kill_description}");
                 }
 
                 let mut defender_kill_description = String::from("");
@@ -165,7 +151,7 @@ impl<'a> BiographyWriter<'a> {
                 if defender_kill_description.len() == 0 {
                     defender_kill_description = "suffered no casualties. ".to_string();
                 } else {
-                    defender_kill_description = format!("lost: \n{defender_kill_description}\n\n");
+                    defender_kill_description = format!("lost: \n{defender_kill_description}");
                 }
 
                 let kill_description = format!("In the end, the attackers {attacker_kill_description}While the defenders {defender_kill_description}");
