@@ -71,20 +71,20 @@ impl BattleForce {
         result_another.belligerent_settlement = another.belligerent_settlement;
         result_another.creature_participants = another.units.iter().filter_map(|unit| unit.person_id).collect();
         loop {
-            if self.morale <= 0.0 {
-                result_self.result = FinalResult::Flee;
-                break
-            }
-            if another.morale <= 0.0 {
-                result_another.result = FinalResult::Flee;
-                break
-            }
             if self.units.len() == 0 {
                 result_self.result = FinalResult::Defeat;
                 break
             }
             if another.units.len() == 0 {
                 result_another.result = FinalResult::Defeat;
+                break
+            }
+            if self.morale <= 0.0 {
+                result_self.result = FinalResult::Flee;
+                break
+            }
+            if another.morale <= 0.0 {
+                result_another.result = FinalResult::Flee;
                 break
             }
             for unit in self.units.iter() {
