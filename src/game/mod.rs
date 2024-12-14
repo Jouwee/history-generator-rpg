@@ -5,7 +5,7 @@ use actor::{Actor, ActorType};
 use chunk::Chunk;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::Scene, Color}, world::world::World};
+use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
 
 pub mod action;
 pub mod actor;
@@ -76,11 +76,11 @@ impl GameSceneState {
 }
 
 impl Scene for GameSceneState {
-    fn render(&self, mut ctx: RenderContext) {
-        self.chunk.render(&mut ctx);
-        self.player.render(&mut ctx);
+    fn render(&self, ctx: &mut RenderContext) {
+        self.chunk.render(ctx);
+        self.player.render(ctx);
         for npc in self.chunk.npcs.iter() {
-            npc.render(&mut ctx);
+            npc.render(ctx);
         }
         ctx.text("a - attack     t - talk    space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
@@ -89,12 +89,12 @@ impl Scene for GameSceneState {
             y = y + 16.;
         }
 
-        self.label.render(&mut ctx);
-        self.button_attack.render(&mut ctx);
-        self.button_talk.render(&mut ctx);
+        self.label.render(ctx);
+        self.button_attack.render(ctx);
+        self.button_talk.render(ctx);
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, _update: &Update) {
         if self.turn_controller.is_player_turn() {
             self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp));
         } else {

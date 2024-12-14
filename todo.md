@@ -7,6 +7,7 @@
 - The artifact can be inherited
 - The artifact can be gifted if the person has more than one
 - When a person dies in battle, any artifact the person has is dropped
+  - How would this happen?
 
 ## feat - Investigating artifacts
 
@@ -101,6 +102,13 @@ The majority of the current time spent in history generation is searching who is
 - ✓ Every year, a unnocupied tile can spawn a great beast
 - ✓ The great beast can be of a few types: Fiend, Leshen and have a level
 
+## feat - New event - Fought a great beast
+
+- ✓ Great beasts will hunt in a territory, maybe hitting towns and lowering their reputation
+  - ✓ Random hunt chance
+  - ✓ Battle resolution
+  - ✓ Battle effects
+
 ## refactor - Improve way of handling simulation
 
 - ✓ People
@@ -110,14 +118,12 @@ The majority of the current time spent in history generation is searching who is
 
 ## refactor - Apply new battle resolution to conflicts in wars
 
-# TODO: 0.0.6 - Artifact generation and investigation
+## feat - FPS counter
 
-## feat - New event - Fought a great beast
-
-- ✓ Great beasts will hunt in a territory, maybe hitting towns and lowering their reputation
-  - ✓ Random hunt chance
-  - ✓ Battle resolution
-  - ✓ Battle effects
+- ✓ F3 to open debugging overlay
+- ✓ Show FPS and TPS at debugger overlay
+- ✓ Limit FPS to 30
+- ✓ Limit TPS to 30
 
 # Release 0.0.5 - Aimless improvements
 

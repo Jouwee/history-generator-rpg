@@ -6,7 +6,7 @@ extern crate piston;
 
 use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
-use engine::{assets::Assets, geometry::Coord2, render::RenderContext, scene::Scene, Color};
+use engine::{assets::Assets, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
@@ -14,7 +14,7 @@ use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::Wor
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
+use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
 use piston::MouseCursorEvent;
@@ -35,7 +35,8 @@ enum SceneEnum {
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     scene: SceneEnum,
-    assets: Assets
+    assets: Assets,
+    debug_overlay: DebugOverlay
 }
 
 impl App {
@@ -49,7 +50,7 @@ impl App {
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
             clear(Color::from_hex("14233a").f32_arr(), gl);
-            let context = RenderContext {
+            let mut context = RenderContext {
                 args,
                 context: c,
                 original_transform: c.transform.clone(),
@@ -57,37 +58,38 @@ impl App {
                 assets: &mut self.assets,
                 default_font: &mut glyphs
             };
-            
             match &self.scene {
                 SceneEnum::WorldGen(game_state) => {
-                    game_state.render(context);
+                    game_state.render(&mut context);
                 },
                 SceneEnum::World(game_state) => {
-                    game_state.render(context);
+                    game_state.render(&mut context);
                 },
                 SceneEnum::Game(game_state) => {
-                    game_state.render(context);
+                    game_state.render(&mut context);
                 },
             }
-
+            self.debug_overlay.render(&mut context);
         });
     }
 
-    fn update(&mut self, _args: &UpdateArgs) {
+    fn update(&mut self, args: &Update) {
+        self.debug_overlay.update(args);
         match &mut self.scene {
             SceneEnum::WorldGen(game_state) => {
-                game_state.update();
+                game_state.update(args);
             },
             SceneEnum::World(game_state) => {
-                game_state.update();
+                game_state.update(args);
             },
             SceneEnum::Game(game_state) => {
-                game_state.update();
+                game_state.update(args);
             },
         }
     }
 
     fn input(&mut self, args: &InputEvent) {
+        self.debug_overlay.input(args);
         match &mut self.scene {
             SceneEnum::WorldGen(game_state) => {
                 game_state.input(args);
@@ -317,20 +319,32 @@ fn main() {
             regions: regions,            
             great_beasts_yearly_spawn_chance: 0.1
         })),
-        assets: Assets::new()
+        assets: Assets::new(),
+        debug_overlay: DebugOverlay::new()
     };
 
 
     let mut last_mouse_pos = [0.0, 0.0];
 
-    let mut events = Events::new(EventSettings::new());
+    let mut event_settings = EventSettings::new();
+    event_settings.max_fps = 30;
+    event_settings.ups = 30;
+
+    let mut update = Update {
+        delta_time: 0.,
+        max_update_time: (1. / event_settings.ups as f64),
+        updates_per_second: event_settings.ups as u32,
+    };
+
+    let mut events = Events::new(event_settings);
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
             app.render(&args);
         }
 
         if let Some(args) = e.update_args() {
-            app.update(&args);
+            update.delta_time = args.dt;
+            app.update(&update);
         }
 
         if let Some(k) = e.mouse_cursor_args() {

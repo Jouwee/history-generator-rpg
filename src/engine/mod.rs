@@ -1,6 +1,7 @@
 use geometry::{Coord2, Vec2};
 
 pub mod assets;
+pub mod debug;
 pub mod geometry;
 pub mod gui;
 pub mod render;

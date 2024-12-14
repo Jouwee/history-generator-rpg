@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{render::RenderContext, scene::Scene, Color}, game::InputEvent, world::species::SpeciesIntelligence};
+use crate::{engine::{render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, world::species::SpeciesIntelligence};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
@@ -28,7 +28,7 @@ impl WorldGenScene {
 }
 
 impl Scene for WorldGenScene {
-    fn render(&self, mut ctx: RenderContext) {
+    fn render(&self, ctx: &mut RenderContext) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31
@@ -163,17 +163,22 @@ impl Scene for WorldGenScene {
 
     }
 
-    fn update(&mut self) {
-        if self.generator.year < 500 {
-            println!("Year {}, {} people to process", self.generator.year, self.generator.world.people.len());
-            let now = Instant::now();
-            self.generator.simulate_year();
-            self.total_time = self.total_time + now.elapsed();
-
-            if self.generator.year % 10 == 0 {
-                println!("Elapsed: {:.2?}", self.total_time)
+    fn update(&mut self, _update: &Update) {
+        let start = Instant::now();
+        loop {
+            if self.generator.year < 500 {
+                println!("Year {}, {} people to process", self.generator.year, self.generator.world.people.len());
+                let now = Instant::now();
+                self.generator.simulate_year();
+                self.total_time = self.total_time + now.elapsed();
+                if self.generator.year % 10 == 0 {
+                    println!("Elapsed: {:.2?}", self.total_time)
+                }
             }
-
+            // Simulate years until reach the max time per iteration, otherwise it takes longer than it needs
+            if start.elapsed().as_secs_f64() >= _update.max_update_time {
+                break;
+            }
         }
     }
 

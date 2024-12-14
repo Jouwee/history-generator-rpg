@@ -3,7 +3,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{geometry::Coord2, render::RenderContext, scene::Scene, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter};
+use crate::{engine::{geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter};
 
 use super::world::World;
 
@@ -26,7 +26,7 @@ impl WorldScene {
 }
 
 impl Scene for WorldScene {
-    fn render(&self, mut ctx: RenderContext) {
+    fn render(&self, ctx: &mut RenderContext) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31
@@ -193,7 +193,7 @@ impl Scene for WorldScene {
         
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, _update: &Update) {
         
     }
 
