@@ -26,7 +26,7 @@ impl WorldScene {
 }
 
 impl Scene for WorldScene {
-    fn render(&self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext) {
         use graphics::*;
 
         // https://lospec.com/palette-list/31

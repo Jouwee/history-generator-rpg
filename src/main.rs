@@ -53,12 +53,13 @@ impl App {
             let mut context = RenderContext {
                 args,
                 context: c,
+                layout_rect: [0., 0., c.get_view_size()[0], c.get_view_size()[1]],
                 original_transform: c.transform.clone(),
                 gl,
                 assets: &mut self.assets,
                 default_font: &mut glyphs
             };
-            match &self.scene {
+            match &mut self.scene {
                 SceneEnum::WorldGen(game_state) => {
                     game_state.render(&mut context);
                 },

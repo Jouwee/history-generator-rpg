@@ -8,7 +8,7 @@ pub struct Update {
 }
 
 pub trait Scene {
-    fn render(&self, ctx: &mut RenderContext);
+    fn render(&mut self, ctx: &mut RenderContext);
     fn update(&mut self, update: &Update);
     fn input(&mut self, evt: &InputEvent);
     fn cursor_move(&mut self, _pos: [f64; 2]) {}

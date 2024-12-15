@@ -11,6 +11,7 @@ pub struct RenderContext<'a, 'b> {
     pub context: Context,
     pub gl: &'a mut GlGraphics,
     pub assets: &'b mut Assets,
+    pub layout_rect: [f64; 4],
     // TODO: Repo
     pub default_font: &'b mut GlyphCache<'b>
 }

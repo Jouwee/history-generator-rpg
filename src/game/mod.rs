@@ -3,6 +3,7 @@ use std::{cell::RefCell, fmt::Display};
 use action::{ActionEnum, ActionMap};
 use actor::{Actor, ActorType};
 use chunk::Chunk;
+use interact::interact_dialog::InteractDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
 use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
@@ -10,6 +11,7 @@ use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, labe
 pub mod action;
 pub mod actor;
 pub mod chunk;
+pub mod interact;
 pub mod log;
 
 pub trait Renderable {
@@ -31,6 +33,7 @@ pub struct GameSceneState {
     label: Label,
     button_attack: Button,
     button_talk: Button,
+    interact_dialog: InteractDialog,
     selected_targeted_action: Option<ActionEnum>
 }
 
@@ -43,9 +46,10 @@ impl GameSceneState {
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
-            label: Label::new("Hi", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
+            label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
             button_attack: Button::new("at", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
             button_talk: Button::new("tk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
+            interact_dialog: InteractDialog::new(),
             selected_targeted_action: None
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
@@ -76,7 +80,7 @@ impl GameSceneState {
 }
 
 impl Scene for GameSceneState {
-    fn render(&self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext) {
         self.chunk.render(ctx);
         self.player.render(ctx);
         for npc in self.chunk.npcs.iter() {
@@ -92,9 +96,15 @@ impl Scene for GameSceneState {
         self.label.render(ctx);
         self.button_attack.render(ctx);
         self.button_talk.render(ctx);
+        self.interact_dialog.render(ctx);
     }
 
     fn update(&mut self, _update: &Update) {
+        self.label.update();
+        self.button_attack.update();
+        self.button_talk.update();
+        self.interact_dialog.update();
+
         if self.turn_controller.is_player_turn() {
             self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp));
         } else {
@@ -136,12 +146,10 @@ impl Scene for GameSceneState {
         let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
         npc.ap.fill();
         self.turn_controller.next_turn();
-        self.label.update();
-        self.button_attack.update();
-        self.button_talk.update();
     }
 
     fn input(&mut self, evt: &InputEvent) {
+        self.interact_dialog.input(evt);
         if let ButtonEvent::Click = self.button_attack.event(evt) {
             self.selected_targeted_action = Some(ActionEnum::Attack);
             return;
@@ -205,10 +213,8 @@ impl Scene for GameSceneState {
                                     }
 
                                     ActionEnum::Talk => {
-                                        if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Talk, &mut self.player, target) {
-                                            if let Some(log) = log {
-                                                self.log(log.string, log.color);
-                                            }
+                                        if let Ok(_) = self.actions.try_use_on_target(ActionEnum::Talk, &mut self.player, target) {
+                                            self.interact_dialog.start_dialog(&self.world, target.person_id.unwrap());
                                         }
                                     }
                                     _ => ()

@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::{self, Attributes}, species::{Species, SpeciesIntelligence}}, Person};
+use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}}, Person};
 
 use super::Renderable;
 

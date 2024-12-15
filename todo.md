@@ -1,13 +1,16 @@
 # Doing
 
-# TODO - 0.0.6
-
 ## feat - Interactions - Rumors
 
 - Important events might become rumors
   - Important events include important people
   - Do I need a struct? From the event I can compute rumor radius and strenght
 - When you talk to people, you can ask what rumor they've heard recently
+  - ✓ Interacting with someone will open a dialog
+  - Option for asking if they heard any rumors
+  - Search backwards for a rumor
+
+# TODO - 0.0.6
 
 ## feat - Knowledge codex
 

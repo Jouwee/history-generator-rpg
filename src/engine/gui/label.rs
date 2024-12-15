@@ -20,11 +20,11 @@ impl Label {
 }
 
 impl GUINode for Label {
-    fn render(&self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext) {
         let transform = ctx.context.transform;
         // Renders on the original transform for pixelated font. Won't work with scaled stuff.
         ctx.context.transform = ctx.original_transform;
-        ctx.text(&self.text, 12, self.compute_position(&self.position), Color::from_hex("ffffff"));
+        ctx.text(&self.text, 12, self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]), Color::from_hex("ffffff"));
         ctx.context.transform = transform;
     }
 }
