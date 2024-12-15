@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::Item, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
 
 pub struct WorldGenerationParameters {
@@ -46,6 +46,8 @@ impl WorldHistoryGenerator {
             map: world_map,
             cultures: HashMap::new(),
             species: Self::load_species(),
+            materials: Self::load_materials(),
+            artifacts: HistoryVec::new(),
             factions: HistoryVec::new(),
             settlements: HistoryVec::new(),
             people: People::new(),
@@ -103,12 +105,27 @@ impl WorldHistoryGenerator {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 45 })
             .lifetime(300)
-            .fertility(0.));
+            .fertility(0.)
+            .drops(vec!((Id(4), 1)))
+        );
         map.insert(Id(2), Species::new(Id(2), "fiend")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 35 })
             .lifetime(200)
-            .fertility(0.));
+            .fertility(0.)
+            .drops(vec!((Id(4), 1)))
+        );
+        map
+    }
+
+    fn load_materials() -> HashMap<Id, Material> {
+        let mut map = HashMap::new();
+        map.insert(Id(0), Material::new_metal("steel"));
+        map.insert(Id(1), Material::new_metal("bronze"));
+        map.insert(Id(2), Material::new_wood("birch"));
+        map.insert(Id(3), Material::new_wood("oak"));
+        map.insert(Id(4), Material::new_bone("leshen bone"));
+        map.insert(Id(5), Material::new_bone("fiend bone"));
         map
     }
 
@@ -360,6 +377,18 @@ impl WorldHistoryGenerator {
         let mut person = self.world.people.get_mut(&id).unwrap();
         person.death = date.year;
         self.world.events.push(date, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: id }));
+        let mut artifact_material = None;
+        {
+            let species = self.world.species.get(&person.species).unwrap();
+            if species.drops.len() > 0 {
+                let (drop_to_use, _) = species.drops.get(self.rng.randu_range(0, species.drops.len())).unwrap();
+                artifact_material = Some(drop_to_use.clone());
+            }
+        }
+        drop(person);
+        if let Some(artifact_material) = artifact_material {
+            self.create_artifact(date, &artifact_material);
+        }
     }
 
     fn create_child(&self, id: Id, birth: u32, father: &Person, mother: &Person) -> Person {
@@ -383,6 +412,55 @@ impl WorldHistoryGenerator {
             relative: Relative::Parent
         });
         return figure        
+    }
+
+    fn create_artifact(&mut self, date: WorldEventDate, material_id: &Id) {
+        let material_id = material_id.clone();
+        let item;
+        match self.rng.randu_range(0, 3) {
+            0 => {
+                let mut sword = Sword {
+                    blade_mat: Id(0),
+                    guard_mat: Id(1),
+                    handle_mat: Id(3),
+                    pomel_mat: Id(1)
+                };
+                match self.rng.randu_range(0, 4) {
+                    1 => sword.blade_mat = material_id,
+                    2 => sword.guard_mat = material_id,
+                    3 => sword.handle_mat = material_id,
+                    _ => sword.pomel_mat = material_id,
+                }
+                item = Item::Sword(sword)
+            },
+            1 => {
+                let mut mace = Mace {
+                    head_mat: Id(0),
+                    handle_mat: Id(3),
+                    pomel_mat: Id(1)
+                };
+                match self.rng.randu_range(0, 3) {
+                    1 => mace.head_mat = material_id,
+                    2 => mace.handle_mat = material_id,
+                    _ => mace.pomel_mat = material_id,
+                }
+                item = Item::Mace(mace)
+            },
+            _ => {
+                let mut lance = Lance {
+                    tip_mat: Id(0),
+                    handle_mat: Id(3),
+                };
+                match self.rng.randu_range(0, 2) {
+                    1 => lance.tip_mat = material_id,
+                    _ => lance.handle_mat = material_id,
+                }
+                item = Item::Lance(lance)
+            }
+        }
+        println!("{:?}", item);
+        let id = self.world.artifacts.insert(item);
+        self.world.events.push(date, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
     }
 
     fn name_person(&self, mut figure: Person, surname: &Option<String>) -> Person {

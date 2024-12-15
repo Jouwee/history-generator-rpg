@@ -30,7 +30,7 @@ explored civilized area -> interact with people -> receive info -> investigate -
     - More powerful versions of weapons generated through History
     - Ways to obtain those artifacts
   - People
-    - ??? Talking to them, but why?
+    - Interacting with people to get information about other people, artifacts, etc
 - Organic Questing
   - People have wants, problems, and riches. Do one in exchange for the other (make this more "mechanified")
 

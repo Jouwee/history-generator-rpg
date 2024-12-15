@@ -2,14 +2,16 @@ use std::{cell::{Ref, RefCell, RefMut}, collections::{BTreeMap, HashMap}};
 
 use crate::{commons::history_vec::{HistoryVec, Id}, WorldEvents};
 
-use super::{culture::Culture, faction::Faction, person::Person, settlement::Settlement, species::Species, topology::WorldTopology};
+use super::{culture::Culture, faction::Faction, item::Item, material::Material, person::Person, settlement::Settlement, species::Species, topology::WorldTopology};
 
 pub struct World {
     pub map: WorldTopology,
     pub species: HashMap<Id, Species>,
     pub cultures: HashMap<Id, Culture>,
+    pub materials: HashMap<Id, Material>,
     pub factions: HistoryVec<Faction>,
     pub settlements: HistoryVec<Settlement>,
+    pub artifacts: HistoryVec<Item>,
     pub people: People,
     pub events: WorldEvents
 }

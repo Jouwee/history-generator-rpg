@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, ArtifactEvent, Relative, World, WorldEvent, WorldEventEnum};
 
 pub struct BiographyWriter<'a> { 
     world: &'a World   
@@ -71,6 +71,10 @@ impl<'a> BiographyWriter<'a> {
                 let faction = self.world.factions.get(&event.faction1_id);
                 let faction2 = self.world.factions.get(&event.faction2_id);
                 return format!("In {}, the war between the {} and the {} ended", date, faction.name, faction2.name)
+            }
+            WorldEventEnum::ArtifactCreated(event) => {
+                let artifact = self.world.artifacts.get(&event.item);
+                return format!("In {}, artifact {:?}", date, artifact)
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;

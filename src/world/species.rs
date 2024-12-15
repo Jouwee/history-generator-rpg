@@ -8,7 +8,8 @@ pub struct Species {
     pub lifetime: SpeciesLifetime,
     pub intelligence: SpeciesIntelligence,
     pub fertility: SpeciesFertility,
-    pub attributes: Attributes
+    pub attributes: Attributes,
+    pub drops: Vec<(Id, usize)>
 }
 
 impl Species {
@@ -20,7 +21,8 @@ impl Species {
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
-            attributes: Attributes { strength: 13 }
+            attributes: Attributes { strength: 13 },
+            drops: Vec::new()
         }
     }
 
@@ -41,6 +43,11 @@ impl Species {
 
     pub fn fertility(mut self, fertility: f32) -> Self {
         self.fertility = SpeciesFertility { male_drop: fertility, female_drop: fertility };
+        self
+    }
+
+    pub fn drops(mut self, drops: Vec<(Id, usize)>) -> Self {
+        self.drops = drops;
         self
     }
 
