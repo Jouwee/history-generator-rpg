@@ -1,15 +1,6 @@
 # Doing
 
-## feat - Artifact making
-
-- ✓ Materials and items
-- ✓ Creature drops
-- ✓ Upon defeating a great beast, an artifact could be created
-- ✓ Track who killed who
-- ✓ The artifact is now in possession of whoever killed the beast
-- The artifact can be inherited
-- When a person dies in battle, any artifact the person has is dropped
-  - How would this happen?
+## bug - Immortal people
 
 ## feat - Investigating artifacts
 
@@ -126,6 +117,15 @@ The majority of the current time spent in history generation is searching who is
 - ✓ Show FPS and TPS at debugger overlay
 - ✓ Limit FPS to 30
 - ✓ Limit TPS to 30
+
+## feat - Artifact making
+
+- ✓ Materials and items
+- ✓ Creature drops
+- ✓ Upon defeating a great beast, an artifact could be created
+- ✓ Track who killed who
+- ✓ The artifact is now in possession of whoever killed the beast
+- ✓ The artifact can be inherited
 
 # Release 0.0.5 - Aimless improvements
 

@@ -159,6 +159,23 @@ impl Importance {
             Importance::Unknown => return Importance::Unknown,
         }
     }
+
+    pub fn at_least(&self, at_least: &Importance) -> Importance {
+        if self.to_numeric() > at_least.to_numeric() {
+            self.clone()
+        } else {
+            at_least.clone()
+        }
+    }
+
+    fn to_numeric(&self) -> u8 {
+        match self {
+            Importance::Important => 2,
+            Importance::Unimportant => 1,
+            Importance::Unknown => 0,
+        }
+    }
+
 }
 
 #[derive(Clone, Debug)]

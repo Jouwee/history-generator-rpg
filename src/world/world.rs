@@ -51,7 +51,7 @@ impl People {
     pub fn iter(&self) -> impl Iterator<Item = (&Id, &RefCell<Person>)> {
         return self.inner.iter().filter(|(_id, person)| {
             if let Ok(person) = person.try_borrow() {
-                return person.simulatable()
+                return person.alive()
             }
             return false
         })

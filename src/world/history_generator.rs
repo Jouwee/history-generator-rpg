@@ -335,7 +335,7 @@ impl WorldHistoryGenerator {
     fn choose_person_action(&self, id: Id, date: WorldEventDate) -> ActionToSimulate {
         let person = self.world.people.get(&id).unwrap();
 
-        if !person.simulatable() {
+        if !person.alive() {
             return ActionToSimulate::None
         }
 
@@ -346,6 +346,10 @@ impl WorldHistoryGenerator {
         // Random death chance
         if rng.rand_chance(f32::min(1.0, (age / species.lifetime.max_age as f32).powf(5.0))) {
             return ActionToSimulate::Death(id)
+        }
+        // Don't track anything else besides death for people that aren't remarkable
+        if person.importance == Importance::Unknown {
+            return ActionToSimulate::None
         }
 
         if species.lifetime.is_adult(age) {
@@ -395,6 +399,7 @@ impl WorldHistoryGenerator {
                 for (i, item) in person.possesions.iter().enumerate() {
                     let heir = heirs.get_mut(i % heir_count).unwrap();
                     heir.possesions.push(*item);
+                    heir.importance = heir.importance.at_least(&Importance::Unimportant);
                     self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: *item, person: heir.id }))
                 }
                 person.possesions.clear();
@@ -611,6 +616,7 @@ impl WorldHistoryGenerator {
                 if let Some(killer_id) = killer {
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
+                    killer.importance = killer.importance.at_least(&Importance::Unimportant);
                     self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
                     // Else, who would get the artifact?
                 }
@@ -628,6 +634,7 @@ impl WorldHistoryGenerator {
                 if let Some(killer_id) = killer {
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
+                    killer.importance = killer.importance.at_least(&Importance::Unimportant);
                     self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
                     // Else, who would get the artifact?
                 }
