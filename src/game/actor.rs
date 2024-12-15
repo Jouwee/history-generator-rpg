@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, Person};
+use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::{self, Attributes}, species::{Species, SpeciesIntelligence}}, Person};
 
 use super::Renderable;
 
@@ -23,34 +23,59 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(xy: Coord2, actor_type: ActorType, person_id: Option<Id>, person: Option<&Person>) -> Actor {
-        let texture;
-        if let ActorType::Player = actor_type {
-            texture = "player.png";
-        } else {
-            if let Some(_) = person_id {
-                texture = "character.png";
-            } else {
-                texture = "spider.png";
-            }
+
+    pub fn player(xy: Coord2, species: &Species) -> Actor {
+        Actor {
+            xy,
+            ap: ActionPointsComponent::new(100),
+            hp: HealthPointsComponent::from_attributes(&species.attributes),
+            damage: DamageComponent::from_attributes(&species.attributes),
+            defence: DefenceComponent { slashing: 0.0 },
+            xp: 0,
+            level: 1,
+            person: None,
+            person_id: None,
+            texture: String::from("player.png"),
+            actor_type: ActorType::Player
         }
-        let person_clone;
-        if let Some(person) = person {
-            person_clone = Some(person.clone());
-        } else {
-            person_clone = None;
+    }
+
+    pub fn from_species(xy: Coord2, species: &Species) -> Actor {
+        let mut actor_type = ActorType::Passive;
+        if species.intelligence == SpeciesIntelligence::Instinctive {
+            actor_type = ActorType::Hostile;
         }
         Actor {
             xy,
             ap: ActionPointsComponent::new(100),
-            hp: HealthPointsComponent::new(100.),
-            damage: DamageComponent { slashing: 10.0 },
+            hp: HealthPointsComponent::from_attributes(&species.attributes),
+            damage: DamageComponent::from_attributes(&species.attributes),
+            defence: DefenceComponent { slashing: 0.0 },
+            xp: 0,
+            level: 1,
+            person: None,
+            person_id: None,
+            texture: species.texture.clone(),
+            actor_type
+        }
+    }
+
+    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species: &Species) -> Actor {
+        let mut actor_type = ActorType::Passive;
+        if species.intelligence == SpeciesIntelligence::Instinctive {
+            actor_type = ActorType::Hostile;
+        }
+        Actor {
+            xy,
+            ap: ActionPointsComponent::new(100),
+            hp: HealthPointsComponent::from_attributes(&species.attributes),
+            damage: DamageComponent::from_attributes(&species.attributes),
             defence: DefenceComponent { slashing: 3.0 },
             xp: 0,
             level: 1,
-            person: person_clone,
-            person_id,
-            texture: String::from(texture),
+            person: Some(person.clone()),
+            person_id: Some(person_id),
+            texture: species.texture.clone(),
             actor_type
         }
     }
@@ -169,6 +194,10 @@ impl HealthPointsComponent {
         }
     }
 
+    fn from_attributes(attributes: &Attributes) -> HealthPointsComponent {
+        Self::new(attributes.simplified_health())
+    }
+
     pub fn damage(&mut self, damage: f32) {
         self.health_points = (self.health_points - damage).max(0.0);
     }
@@ -179,6 +208,13 @@ pub struct DamageComponent {
 }
 
 impl DamageComponent {
+
+    fn from_attributes(attributes: &Attributes) -> DamageComponent {
+        DamageComponent {
+            slashing: attributes.strength as f32 / 2.
+        }
+    }
+
     pub fn resolve(&self, defence: &DefenceComponent) -> f32 {
         return (self.slashing - defence.slashing).max(0.0)
     }

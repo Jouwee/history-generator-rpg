@@ -89,12 +89,14 @@ impl Chunk {
             }
         }
         for (id, person) in world.people.iter() {
-            if person.borrow().position == xy {
+            let person = person.borrow();
+            if person.position == xy {
                 let point = Coord2::xy(
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                chunk.npcs.push(Actor::new(point, super::actor::ActorType::Passive, Some(*id), Some(&person.borrow())));
+                let species = world.species.get(&person.species).unwrap();
+                chunk.npcs.push(Actor::from_person(point, *id, &person, &species));
             }
         }
 
@@ -104,7 +106,8 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                let npc = Actor::new(point, super::actor::ActorType::Hostile, None, None);
+                let species = world.species.get(&Id(3) /* spider */).unwrap();
+                let npc = Actor::from_species(point, species);
                 chunk.npcs.push(npc);
             }
         }

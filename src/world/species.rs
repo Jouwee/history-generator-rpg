@@ -5,6 +5,7 @@ use super::attributes::Attributes;
 pub struct Species {
     pub id: Id,
     pub name: String,
+    pub texture: String,
     pub lifetime: SpeciesLifetime,
     pub intelligence: SpeciesIntelligence,
     pub fertility: SpeciesFertility,
@@ -14,10 +15,11 @@ pub struct Species {
 
 impl Species {
 
-    pub fn new(id: Id, name: &str) -> Species {
+    pub fn new(id: Id, name: &str, texture: &str) -> Species {
         Species {
             id,
             name: String::from(name),
+            texture: String::from(texture),
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },

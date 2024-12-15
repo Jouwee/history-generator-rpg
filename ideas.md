@@ -27,7 +27,7 @@ explored civilized area -> interact with people -> receive info -> investigate -
   - Resting at cities to recover health
 - World interaction
   - Artifacts
-    - More powerful versions of weapons generated through History
+    - ✓ More powerful versions of weapons generated through History
     - Ways to obtain those artifacts
   - People
     - Interacting with people to get information about other people, artifacts, etc
@@ -51,3 +51,38 @@ Start with no tech, chance of someone/some faction learning a tech in a tech tre
 
 - People can have personality traits that affect chances, such as:
   - Violent - Increase chance of starting conflict
+
+## inspect people
+
+use a perception-like skill to see information about them
+
+## caravans
+
+caravans are group of people that move between places.
+
+want to fund a settlement? you have to move there.
+want to attack an enemy? you have to move there.
+
+## city improvements
+
+settlements always grow too big, given time.
+
+having to collect say, gold, in order to build infrastructure (granaries, aqueducts, etc) to support bigger population will make only certain tiles thrive.
+
+## settlement events
+
+plagues, droughts, etc
+
+## Better elevation generation
+
+Nice procedural generator: http://procgenesis.com/WorldGen/worldgen.html
+Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
+
+- ✓ Render elevation in word view
+  - ✓ Shadows on basic view
+  - ✓ Explicit elevation view
+- ✓ Plate tectonics simulation
+- Slope
+- Precipitation
+- Erosion
+- Volcanic activity

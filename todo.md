@@ -1,68 +1,43 @@
 # Doing
 
-## bug - Immortal people
+# TODO - 0.0.6
 
-## feat - Investigating artifacts
+## feat - Interactions - Rumors
 
-- ???
+- Important events might become rumors
+  - Important events include important people
+  - Do I need a struct? From the event I can compute rumor radius and strenght
+- When you talk to people, you can ask what rumor they've heard recently
+
+## feat - Knowledge codex
+
+Creation of a "knowledge codex" - stuff you know and can ask about
+Dialog for navigating
+
+## feat - Interactions - Ask about
+
+- Option to ask people about something
+  - Dialog option "Ask about..." - Select something
+  - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
+- Rumors and knowledge must be deterministic, hopefully not needing to store it.
 
 # Backlog
 
-## feat - Better temperature calculations
-
-- Poles
-
-## feat - More biomes
-
-- Ocean biome
-- Grasslands biome
-
-## feat - Rivers, lakes and erosion
-
-## feat - Attributes
-
 ## refactor - Actor composition system
 
-## feat - Death screen
-
-## feat - Better elevation generation
-
-Nice procedural generator: http://procgenesis.com/WorldGen/worldgen.html
-Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
-
-- ✓ Render elevation in word view
-  - ✓ Shadows on basic view
-  - ✓ Explicit elevation view
-- ✓ Plate tectonics simulation
-- Slope
-- Precipitation
-- Erosion
-- Volcanic activity
-
 ## refactor - Load definitions from yaml/toml files
+
+- stuff like materials and biomes need a "string-key" to be referenced by other configs
 
 ## refactor - Re-implement noise
 
 Package-size, learning
 
-## refactor - Person builder
-
-Generate person has too many parameters. Create a builder.
-
 ## bug - Markov Chain doesn't work with order different than 3
-
-## feat - Better settlement simulation
-
-Settlements can be placed too close to one another
-Settlements always grow too big, given time
-
-## feat - Full history panel
 
 ## feat - Switch between turn-based and realtime
 
 a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
-
-## feat - Ability to inspect people
 
 ## bug - Cities go 100's of years without someone rising to power
 
@@ -82,6 +57,8 @@ Not trivial to sync input, layout & graphics
 
 "In 61, Axial Peregrins attacked Green Axis at Borchpør, and emerged vitorious.
 In the end, the attackers suffered no casualties. While the defenders suffered no casualties."
+
+## bug - History generation is not deterministic
 
 ## refactor - Better spatial searches
 
@@ -126,6 +103,16 @@ The majority of the current time spent in history generation is searching who is
 - ✓ Track who killed who
 - ✓ The artifact is now in possession of whoever killed the beast
 - ✓ The artifact can be inherited
+
+## bug - Immortal non-remarkable people
+
+## feat - Spawn great beasts
+
+- ✓ Show them in the map as covens
+- ✓ Sprite - Fiend
+- ✓ Sprite - Leshen
+- ✓ Hostility and sprite based on species
+- ✓ Damage and health based on attributes
 
 # Release 0.0.5 - Aimless improvements
 

@@ -100,20 +100,24 @@ impl WorldHistoryGenerator {
 
     fn load_species() -> HashMap<Id, Species> {
         let mut map = HashMap::new();
-        map.insert(Id(0), Species::new(Id(0), "human"));
-        map.insert(Id(1), Species::new(Id(1), "leshen")
+        map.insert(Id(0), Species::new(Id(0), "human", "character.png"));
+        map.insert(Id(1), Species::new(Id(1), "leshen", "leshen.png")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 45 })
             .lifetime(300)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
         );
-        map.insert(Id(2), Species::new(Id(2), "fiend")
+        map.insert(Id(2), Species::new(Id(2), "fiend", "fiend.png")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 35 })
             .lifetime(200)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
+        );
+        map.insert(Id(3), Species::new(Id(3), "spider", "spider.png")
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 5 })
         );
         map
     }

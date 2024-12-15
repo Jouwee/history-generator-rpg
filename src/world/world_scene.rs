@@ -3,7 +3,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter};
+use crate::{engine::{geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter, world::species::SpeciesIntelligence};
 
 use super::world::World;
 
@@ -170,6 +170,16 @@ impl Scene for WorldScene {
                 hover_settlement = Some(id);
             }
 
+        }
+
+        // Render great beasts covens
+        for (_, person) in world.people.iter() {
+            let person = person.borrow();
+            let species = world.species.get(&person.species).unwrap();
+
+            if species.intelligence == SpeciesIntelligence::Instinctive {
+                ctx.image("coven.png", [xoff + (person.position.x as f64 * ts), yoff + (person.position.y as f64 * ts)]);
+            }
         }
 
 

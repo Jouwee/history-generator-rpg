@@ -365,7 +365,9 @@ fn main() {
                         for event in world.events.iter() {
                             writeln!(&mut f, "{}", writer.event(event)).unwrap();
                         }
-                        app.scene = SceneEnum::World(WorldScene::new(world, Actor::new(Coord2::xy(32, 32), game::actor::ActorType::Player, None, None)));
+                        let species = world.species.get(&Id(0)).unwrap();
+                        let player = Actor::player(Coord2::xy(32, 32), species);
+                        app.scene = SceneEnum::World(WorldScene::new(world, player));
                         continue
                     }
                 }
