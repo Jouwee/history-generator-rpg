@@ -5,10 +5,9 @@
 - ✓ Materials and items
 - ✓ Creature drops
 - ✓ Upon defeating a great beast, an artifact could be created
-- Track who killed who
-- The artifact is now in possession of whoever killed the beast
+- ✓ Track who killed who
+- ✓ The artifact is now in possession of whoever killed the beast
 - The artifact can be inherited
-- The artifact can be gifted if the person has more than one
 - When a person dies in battle, any artifact the person has is dropped
   - How would this happen?
 

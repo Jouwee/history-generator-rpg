@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Material {
-    name: String,
-    material_type: MaterialType
+    pub name: String,
+    pub material_type: MaterialType
 }
 
 impl Material {

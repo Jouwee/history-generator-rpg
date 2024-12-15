@@ -166,7 +166,7 @@ impl Scene for WorldGenScene {
     fn update(&mut self, _update: &Update) {
         let start = Instant::now();
         loop {
-            if self.generator.year < 500 {
+            if self.generator.year < 750 {
                 println!("Year {}, {} people to process", self.generator.year, self.generator.world.people.len());
                 let now = Instant::now();
                 self.generator.simulate_year();

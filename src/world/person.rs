@@ -35,7 +35,8 @@ pub struct Person {
     pub sex: PersonSex,
     pub death: u32,
     pub next_of_kin: Vec<NextOfKin>,
-    pub civ: Option<CivilizedComponent>
+    pub civ: Option<CivilizedComponent>,
+    pub possesions: Vec<Id>
 }
 
 #[derive(Clone, Debug)]
@@ -66,7 +67,8 @@ impl Person {
             sex,
             death: 0,
             next_of_kin: vec!(),
-            civ: None
+            civ: None,
+            possesions: Vec::new()
         }
     }
 

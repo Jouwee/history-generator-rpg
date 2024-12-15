@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, ArtifactEvent, Relative, World, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
 
 pub struct BiographyWriter<'a> { 
     world: &'a World   
@@ -74,7 +74,7 @@ impl<'a> BiographyWriter<'a> {
             }
             WorldEventEnum::ArtifactCreated(event) => {
                 let artifact = self.world.artifacts.get(&event.item);
-                return format!("In {}, artifact {:?}", date, artifact)
+                return format!("In {}, an artifact was made. {}", date, artifact.description(self.world))
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
@@ -119,7 +119,7 @@ impl<'a> BiographyWriter<'a> {
                 }
 
                 let mut attacker_kill_description = String::from("");
-                for creature in attacker.creature_casualties.iter() {
+                for (creature, _) in attacker.creature_casualties.iter() {
                     let creature = self.world.people.get(creature).unwrap();
                     attacker_kill_description.push_str(&self.name(&creature));
                     attacker_kill_description.push_str("\n");
@@ -139,7 +139,7 @@ impl<'a> BiographyWriter<'a> {
                 }
 
                 let mut defender_kill_description = String::from("");
-                for creature in defender.creature_casualties.iter() {
+                for (creature, _) in defender.creature_casualties.iter() {
                     let creature = self.world.people.get(creature).unwrap();
                     defender_kill_description.push_str(&self.name(&creature));
                     defender_kill_description.push_str("\n");
@@ -161,6 +161,11 @@ impl<'a> BiographyWriter<'a> {
                 let kill_description = format!("In the end, the attackers {attacker_kill_description}While the defenders {defender_kill_description}");
 
                 return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}.\n{kill_description}"));
+            }
+            WorldEventEnum::ArtifactPossession(evt) => {
+                let person = self.world.people.get(&evt.person).unwrap();
+                let artifact = self.world.artifacts.get(&evt.item);
+                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))
             }
         }
     }

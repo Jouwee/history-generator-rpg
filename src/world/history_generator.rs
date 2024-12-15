@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
 use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::Item, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
@@ -141,7 +141,7 @@ impl WorldHistoryGenerator {
             let action = self.choose_person_action(id, event_date);
             match action {
                 ActionToSimulate::None => {},
-                ActionToSimulate::Death(id) => self.kill_person(event_date, id),
+                ActionToSimulate::Death(id) => { let _ = self.kill_person(event_date, id); },
                 ActionToSimulate::GreatBeastHunt(id) => self.beast_hunt_nearby(event_date, &id),
                 ActionToSimulate::MarryRandomPerson(id) => self.marry_random_person(event_date, &id),
                 ActionToSimulate::HaveChildWith(id_father, id_mother) => self.have_child_with(event_date, id_father, id_mother),
@@ -373,7 +373,7 @@ impl WorldHistoryGenerator {
         return ActionToSimulate::None
     }
 
-    fn kill_person(&mut self, date: WorldEventDate, id: Id) {
+    fn kill_person(&mut self, date: WorldEventDate, id: Id) -> Option<Id> {
         let mut person = self.world.people.get_mut(&id).unwrap();
         person.death = date.year;
         self.world.events.push(date, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: id }));
@@ -385,10 +385,7 @@ impl WorldHistoryGenerator {
                 artifact_material = Some(drop_to_use.clone());
             }
         }
-        drop(person);
-        if let Some(artifact_material) = artifact_material {
-            self.create_artifact(date, &artifact_material);
-        }
+        return artifact_material
     }
 
     fn create_child(&self, id: Id, birth: u32, father: &Person, mother: &Person) -> Person {
@@ -414,7 +411,7 @@ impl WorldHistoryGenerator {
         return figure        
     }
 
-    fn create_artifact(&mut self, date: WorldEventDate, material_id: &Id) {
+    fn create_artifact(&mut self, date: WorldEventDate, material_id: &Id) -> Id {
         let material_id = material_id.clone();
         let item;
         match self.rng.randu_range(0, 3) {
@@ -423,13 +420,13 @@ impl WorldHistoryGenerator {
                     blade_mat: Id(0),
                     guard_mat: Id(1),
                     handle_mat: Id(3),
-                    pomel_mat: Id(1)
+                    pommel_mat: Id(1)
                 };
                 match self.rng.randu_range(0, 4) {
                     1 => sword.blade_mat = material_id,
                     2 => sword.guard_mat = material_id,
                     3 => sword.handle_mat = material_id,
-                    _ => sword.pomel_mat = material_id,
+                    _ => sword.pommel_mat = material_id,
                 }
                 item = Item::Sword(sword)
             },
@@ -437,12 +434,12 @@ impl WorldHistoryGenerator {
                 let mut mace = Mace {
                     head_mat: Id(0),
                     handle_mat: Id(3),
-                    pomel_mat: Id(1)
+                    pommel_mat: Id(1)
                 };
                 match self.rng.randu_range(0, 3) {
                     1 => mace.head_mat = material_id,
                     2 => mace.handle_mat = material_id,
-                    _ => mace.pomel_mat = material_id,
+                    _ => mace.pommel_mat = material_id,
                 }
                 item = Item::Mace(mace)
             },
@@ -458,9 +455,9 @@ impl WorldHistoryGenerator {
                 item = Item::Lance(lance)
             }
         }
-        println!("{:?}", item);
         let id = self.world.artifacts.insert(item);
         self.world.events.push(date, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
+        return id
     }
 
     fn name_person(&self, mut figure: Person, surname: &Option<String>) -> Person {
@@ -592,16 +589,34 @@ impl WorldHistoryGenerator {
     }
 
     fn apply_battle_result(&mut self, date: WorldEventDate, battle: (BattleResult, BattleResult)) {
-        for id in battle.0.creature_casualties.iter() {
-            self.kill_person(date, *id);
+        for (killed, killer) in battle.0.creature_casualties.iter() {
+            let artifact_material = self.kill_person(date, *killed);
+            if let Some(artifact_material) = artifact_material {
+                let artifact_id = self.create_artifact(date, &artifact_material);
+                if let Some(killer_id) = killer {
+                    let mut killer = self.world.people.get_mut(killer_id).unwrap();
+                    killer.possesions.push(artifact_id);
+                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
+                    // Else, who would get the artifact?
+                }
+            }
         }
         if let Some(settlement_id) = battle.0.belligerent_settlement {
             let mut settlement = self.world.settlements.get_mut(&settlement_id);
             settlement.kill_military(battle.0.army_casualties, &self.rng);
             settlement.kill_civilians(battle.0.civilian_casualties);
         }
-        for id in battle.1.creature_casualties.iter() {
-            self.kill_person(date, *id);
+        for (killed, killer) in battle.1.creature_casualties.iter() {
+            let artifact_material = self.kill_person(date, *killed);
+            if let Some(artifact_material) = artifact_material {
+                let artifact_id = self.create_artifact(date, &artifact_material);
+                if let Some(killer_id) = killer {
+                    let mut killer = self.world.people.get_mut(killer_id).unwrap();
+                    killer.possesions.push(artifact_id);
+                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
+                    // Else, who would get the artifact?
+                }
+            }
         }
         if let Some(settlement_id) = battle.1.belligerent_settlement {
             let mut settlement = self.world.settlements.get_mut(&settlement_id);

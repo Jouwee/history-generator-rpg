@@ -108,7 +108,7 @@ impl BattleForce {
                         another.units.remove(target_i);
                         another.morale -= target.combat_power / another.total_combat_force;
                         if let Some(id) = target.person_id {
-                            result_another.creature_casualties.push(id.clone());
+                            result_another.creature_casualties.push((id.clone(), unit.person_id));
                         } else {
                             result_another.army_casualties += 1;
                         }
@@ -133,7 +133,7 @@ impl BattleForce {
                         self.units.remove(target_i);
                         self.morale -= target.combat_power / self.total_combat_force;
                         if let Some(id) = target.person_id {
-                            result_self.creature_casualties.push(id.clone());
+                            result_self.creature_casualties.push((id.clone(), unit.person_id));
                         } else {
                             result_self.army_casualties += 1;
                         }
@@ -173,7 +173,8 @@ pub struct BattleResult {
     pub location_settlement: Id,
     pub result: FinalResult,
     pub creature_participants: Vec<Id>,
-    pub creature_casualties: Vec<Id>,
+    // ID of creature killed, ID of killer (might be a generic person)
+    pub creature_casualties: Vec<(Id, Option<Id>)>,
     pub army_casualties: u32,
     pub civilian_casualties: u32,
 }

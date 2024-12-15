@@ -70,6 +70,7 @@ pub enum WorldEventEnum {
     PeaceDeclared(PeaceDeclaredEvent),
     Battle(BattleEvent),
     ArtifactCreated(ArtifactEvent),
+    ArtifactPossession(ArtifactPossesionEvent),
 }
 
 impl WorldEventEnum {
@@ -117,4 +118,9 @@ pub struct BattleEvent {
 
 pub struct ArtifactEvent {
     pub item: Id
+}
+
+pub struct ArtifactPossesionEvent {
+    pub item: Id,
+    pub person: Id
 }
