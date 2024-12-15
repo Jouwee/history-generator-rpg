@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, collections::HashMap, time::Instant};
+use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
 use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
@@ -383,6 +383,21 @@ impl WorldHistoryGenerator {
             if species.drops.len() > 0 {
                 let (drop_to_use, _) = species.drops.get(self.rng.randu_range(0, species.drops.len())).unwrap();
                 artifact_material = Some(drop_to_use.clone());
+            }
+        }
+        if person.possesions.len() > 0 {
+            let mut heirs: Vec<RefMut<Person>> = person.sorted_heirs().iter()
+                .map(|n| self.world.people.get_mut(&n.person_id).unwrap())
+                .filter(|p| p.alive())
+                .collect();
+            let heir_count = heirs.len();
+            if heir_count > 0 {
+                for (i, item) in person.possesions.iter().enumerate() {
+                    let heir = heirs.get_mut(i % heir_count).unwrap();
+                    heir.possesions.push(*item);
+                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: *item, person: heir.id }))
+                }
+                person.possesions.clear();
             }
         }
         return artifact_material
