@@ -5,6 +5,7 @@ pub mod button;
 pub mod container;
 pub mod dialog;
 pub mod label;
+pub mod vlist;
 
 pub trait GUINode {
     fn render(&mut self, _ctx: &mut RenderContext) {}
@@ -14,6 +15,7 @@ pub trait GUINode {
 
     fn compute_position(&self, position: &Position, parent_rect: [f64; 4], size: [f64; 2]) -> [f64; 2] {
         match position {
+            Position::Auto => [parent_rect[0], parent_rect[1]],
             Position::Anchored(Anchor::TopLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + *y],
             Position::Anchored(Anchor::BottomLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomRight, x, y) => [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
@@ -28,6 +30,7 @@ pub trait GUINode {
 }
 
 pub enum Position {
+    Auto,
     Anchored(Anchor, f64, f64),
     Centered
 }

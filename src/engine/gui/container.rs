@@ -2,10 +2,10 @@ use std::{any::Any, collections::HashMap};
 
 use crate::engine::render::RenderContext;
 
-use super::{button::Button, dialog::Dialog, label::Label, GUINode};
+use super::{button::Button, dialog::Dialog, label::Label, vlist::VList, GUINode};
 
 pub struct InnerContainer {
-    children: HashMap<String, Box<dyn Any>>,
+    pub children: HashMap<String, Box<dyn Any>>,
     next_key: usize
 }
 
@@ -38,6 +38,10 @@ pub trait Container {
         self.container_mut().children.insert(key.to_string(), boxed);
     }
 
+    fn clear(&mut self) {
+        self.container_mut().children.clear();
+    }
+
     fn get_mut<T>(&mut self, key: &str) -> Option<&mut T> where T: GUINode + 'static {
         let child = self.container_mut().children.get_mut(key)?;
         child.downcast_mut::<T>()
@@ -47,18 +51,28 @@ pub trait Container {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
         for child in self.container_mut().children.values_mut() {
-            // TODO: Find a way of not having these
-            if let Some(child) = child.downcast_mut::<Label>() {
-                child.render(ctx);
-            }
-            if let Some(child) = child.downcast_mut::<Button>() {
-                child.render(ctx);
-            }
-            if let Some(child) = child.downcast_mut::<Dialog>() {
-                child.render(ctx);
+            if let Some(gui_node) = Self::to_gui_node(child) {
+                gui_node.render(ctx);
             }
         }
         ctx.layout_rect = layout_rect;
+    }
+
+    fn to_gui_node<'a>(unknown: &'a mut Box<dyn Any>) -> Option<&'a mut dyn GUINode> {
+        // TODO: Find a way of not having these
+        if unknown.is::<Label>() {
+            return Some(unknown.downcast_mut::<Label>().unwrap())
+        }
+        if unknown.is::<Button>() {
+            return Some(unknown.downcast_mut::<Button>().unwrap())
+        }
+        if unknown.is::<Dialog>() {
+            return Some(unknown.downcast_mut::<Dialog>().unwrap())
+        }
+        if unknown.is::<VList>() {
+            return Some(unknown.downcast_mut::<VList>().unwrap())
+        }
+        return None
     }
 
 }

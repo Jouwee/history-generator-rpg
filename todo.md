@@ -18,8 +18,8 @@ Creation of a "knowledge codex" - stuff you know and can ask about
   - ✓ People & Creatures
   - Places
   - Artifacts
-  - V-List
-  - Clear V-List
+  - ✓ V-List
+  - ✓ Clear V-List
 - Writing
   - Description based on knowledge
   - Events
