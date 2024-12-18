@@ -133,7 +133,7 @@ pub enum WorldEventEnum {
 }
 
 impl WorldEventEnum {
-    fn get_settlements(&self) -> Vec<Id> {
+    pub fn get_settlements(&self) -> Vec<Id> {
         match self {
             Self::SettlementFounded(evt) => vec!(evt.settlement_id),
             Self::NewSettlementLeader(evt) => vec!(evt.settlement_id),
@@ -149,7 +149,14 @@ impl WorldEventEnum {
             Self::ArtifactPossession(evt) => vec!(evt.person),
             Self::Marriage(evt) => vec!(evt.person1_id, evt.person2_id),
             Self::NewSettlementLeader(evt) => vec!(evt.new_leader_id),
-            //Self::PersonBorn(evt) => vec!(evt.person_id),
+            _ => vec!()
+        }
+    }
+
+    pub fn get_artifacts(&self) -> Vec<Id> {
+        match self {
+            Self::ArtifactCreated(evt) => vec!(evt.item),
+            Self::ArtifactPossession(evt) => vec!(evt.item),
             _ => vec!()
         }
     }

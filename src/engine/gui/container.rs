@@ -1,11 +1,11 @@
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::BTreeMap};
 
 use crate::engine::render::RenderContext;
 
 use super::{button::Button, dialog::Dialog, label::Label, vlist::VList, GUINode};
 
 pub struct InnerContainer {
-    pub children: HashMap<String, Box<dyn Any>>,
+    pub children: BTreeMap<String, Box<dyn Any>>,
     next_key: usize
 }
 
@@ -13,7 +13,7 @@ impl InnerContainer {
 
     pub fn new() -> InnerContainer {
         InnerContainer { 
-            children: HashMap::new(),
+            children: BTreeMap::new(),
             next_key: 0,
         }
     }

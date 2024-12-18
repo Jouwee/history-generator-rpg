@@ -8,20 +8,23 @@ Creation of a "knowledge codex" - stuff you know and can ask about
 
 - ✓ Data structure
   - ✓ People & Creatures
-  - Places
-  - Artifacts
+  - ✓ Places
+  - ✓ Artifacts
 - ✓ Add information to codex
   - ✓ When talking to someone
   - ✓ When hearing rumors
-  - When visiting a place
+  - ✓ When visiting a place
 - ✓ Dialog
   - ✓ People & Creatures
-  - Places
-  - Artifacts
+  - ✓ Places
+  - ✓ Artifacts
   - ✓ V-List
   - ✓ Clear V-List
 - Writing
   - Description based on knowledge
+    - Creature
+    - Place
+    - ✓ Artifact
   - Events
 
 ## feat - Interactions - Ask about
