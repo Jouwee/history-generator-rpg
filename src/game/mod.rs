@@ -94,7 +94,7 @@ impl Scene for GameSceneState {
         for npc in self.chunk.npcs.iter() {
             npc.render(ctx);
         }
-        ctx.text("a - attack     t - talk    space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
+        ctx.text("space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
         for (line, color) in self.log.borrow().iter() {
             ctx.text(line, 10, [1024.0, y], *color);

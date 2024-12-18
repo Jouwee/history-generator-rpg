@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use graphics::CharacterCache;
+
 use crate::engine::{render::RenderContext, Color};
 
 use super::{GUINode, Position};
@@ -26,5 +28,14 @@ impl GUINode for Label {
         ctx.context.transform = ctx.original_transform;
         ctx.text(&self.text, 12, self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]), Color::from_hex("ffffff"));
         ctx.context.transform = transform;
+    }
+
+    fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
+        let width = ctx.default_font.width(12, &self.text);
+        if let Ok(width) = width {
+            return [width, 16.]
+        } else {
+            return [16., 16.]
+        }
     }
 }

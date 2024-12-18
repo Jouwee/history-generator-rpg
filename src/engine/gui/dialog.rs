@@ -1,7 +1,7 @@
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::engine::{render::RenderContext, spritesheet::Spritesheet, Color};
+use crate::engine::{render::RenderContext, spritesheet::Spritesheet};
 
 use super::{container::{Container, InnerContainer}, GUINode, Position};
 

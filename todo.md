@@ -2,11 +2,6 @@
 
 # TODO - 0.0.6
 
-## Fix button UI
-
-- Background
-- Size
-
 # Backlog
 
 ## refactor - Actor composition system
@@ -139,6 +134,11 @@ Creation of a "knowledge codex" - stuff you know and can ask about
   - ✓ Artifacts
   - ✓ V-List
   - ✓ Clear V-List
+
+## Fix button UI
+
+- ✓ Background
+- ✓ Size
 
 # Release 0.0.5 - Aimless improvements
 

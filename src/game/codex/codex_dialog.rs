@@ -18,7 +18,7 @@ impl CodexDialog {
     pub fn start_dialog(&mut self) {
         let mut dialog = Dialog::new();
         dialog.add_key("btn_creatures", Button::new("People & Creatures", Position::Anchored(Anchor::TopLeft, 10., 10.)));
-        dialog.add_key("btn_places", Button::new("Places", Position::Anchored(Anchor::TopLeft, 160., 10.)));
+        dialog.add_key("btn_places", Button::new("Places", Position::Anchored(Anchor::TopLeft, 180., 10.)));
         dialog.add_key("btn_artifacts", Button::new("Artifacts", Position::Anchored(Anchor::TopLeft, 260., 10.)));
         dialog.add_key("btn_close", Button::new("Close", Position::Anchored(Anchor::BottomRight, 128., 34.)));
         dialog.add_key("entry_list", VList::new(Position::Anchored(Anchor::TopLeft, 10., 44.)));

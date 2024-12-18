@@ -27,6 +27,10 @@ pub trait GUINode {
         ctx.layout_rect
     }
 
+    fn min_size(&self, _ctx: &mut RenderContext) -> [f64; 2] {
+        [0., 0.]
+    }
+
 }
 
 pub enum Position {

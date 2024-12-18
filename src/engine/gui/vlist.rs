@@ -32,8 +32,7 @@ impl Container for VList {
         for child in self.container_mut().children.values_mut() {
             if let Some(gui_node) = Self::to_gui_node(child) {
                 gui_node.render(ctx);
-                // TODO: Size
-                ctx.layout_rect[1] += 24.;
+                ctx.layout_rect[1] += gui_node.min_size(ctx)[1];
             }
         }
         ctx.layout_rect = layout_rect;
