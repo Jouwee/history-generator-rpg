@@ -3,21 +3,23 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use graphics::rectangle::{square, Border};
 use piston::{Button, Key};
 
-use crate::{engine::{geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, InputEvent}, literature::biography::BiographyWriter, world::species::SpeciesIntelligence};
+use crate::{engine::{geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, codex::knowledge_codex::KnowledgeCodex, InputEvent}, literature::biography::BiographyWriter, world::species::SpeciesIntelligence};
 
 use super::world::World;
 
 pub struct WorldScene {
     pub world: World,
     pub player: Actor,
+    pub codex: KnowledgeCodex,
     pub cursor: Coord2
 }
 
 impl WorldScene {
-    pub fn new(world: World, player: Actor) -> WorldScene {
+    pub fn new(world: World, player: Actor, codex: KnowledgeCodex) -> WorldScene {
         let cursor = Coord2::xy(world.map.size.x() as i32 / 2, world.map.size.y() as i32 / 2);
         WorldScene {
             player,
+            codex,
             world,
             cursor
         }

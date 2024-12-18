@@ -7,7 +7,7 @@ extern crate piston;
 use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::Assets, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::Actor, chunk::Chunk, GameSceneState, InputEvent};
+use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
@@ -368,7 +368,8 @@ fn main() {
                         }
                         let species = world.species.get(&Id(0)).unwrap();
                         let player = Actor::player(Coord2::xy(32, 32), species);
-                        app.scene = SceneEnum::World(WorldScene::new(world, player));
+                        let codex = KnowledgeCodex::new();
+                        app.scene = SceneEnum::World(WorldScene::new(world, player, codex));
                         continue
                     }
                 }
@@ -376,13 +377,14 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
                         let chunk = Chunk::from_world_tile(&scene.world, scene.cursor);
-                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.player, chunk));
+                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.player, scene.codex, chunk));
                         continue
                     }
                 }
 
                 if let Button::Keyboard(Key::W) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
+                        // TODO:
                         // let killed_npcs = scene.chunk.killed_people;
                         // for id in killed_npcs {
                             // let mut person = scene.world.people.get_mut(&id).unwrap();
@@ -390,7 +392,7 @@ fn main() {
                             // scene.world.events.push(WorldEventDate { year: generator.year }, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
                             // TODO: Inheritance
                         // }
-                        app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.player));
+                        app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.player, scene.codex));
                         continue
                     }
                 }

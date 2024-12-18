@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, world::{person::Person, world::World}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, world::{person::Person, world::World}};
 
 pub struct InteractDialog {
     interact_dialog: Option<Dialog>,
@@ -41,7 +41,7 @@ impl InteractDialog {
         self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
     }
 
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World) {
+    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, codex: &mut KnowledgeCodex) {
         if let Some(dialog) = &mut self.interact_dialog {
             if let Some(person) = &self.person {
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
@@ -50,7 +50,8 @@ impl InteractDialog {
                 }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_rumor").unwrap().event(evt) {
                     let rumor = world.events.find_rumor(&Rng::seeded(person.id), &world,  crate::WorldEventDate { year: 500 }, person.position);
-                    if let Some(rumor) = rumor {
+                    if let Some((id, rumor)) = rumor {
+                        codex.add_event(id, rumor);
                         self.add_dialog_line(BiographyWriter::new(world).rumor(rumor).as_str());
                     } else {
                         self.add_dialog_line("Sorry, I haven't heard anything.");
@@ -58,6 +59,7 @@ impl InteractDialog {
                     return
                 }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
+                    codex.add_creature_fact(&person.id, CreatureFact::Name);
                     self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
                 }
             }

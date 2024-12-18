@@ -114,7 +114,7 @@ impl<'a> BiographyWriter<'a> {
                     (FinalResult::Defeat, FinalResult::Victory) => battle_result = "but was defeated",
                     (FinalResult::Flee, FinalResult::Victory) => battle_result = "but had to flee",
                     (FinalResult::Victory, FinalResult::Flee) => battle_result = "and made them flee",
-                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged vitorious",
+                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged victorious",
                     _ => battle_result = "and it was a stalemate",
                 }
 
@@ -205,7 +205,7 @@ impl<'a> BiographyWriter<'a> {
                     (FinalResult::Defeat, FinalResult::Victory) => battle_result = "but was defeated",
                     (FinalResult::Flee, FinalResult::Victory) => battle_result = "but had to flee",
                     (FinalResult::Victory, FinalResult::Flee) => battle_result = "and made them flee",
-                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged vitorious",
+                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged victorious",
                     _ => battle_result = "and it was a stalemate",
                 }
 

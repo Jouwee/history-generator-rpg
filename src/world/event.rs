@@ -57,9 +57,13 @@ impl WorldEvents {
         vec.iter().map(|i| self.base.get(*i).unwrap())
     }
 
-    pub fn find_rumor(&self, rng: &Rng, world: &World, date: WorldEventDate, position: Coord2) -> Option<&WorldEvent> {
+    pub fn get(&self, i: usize) -> Option<&WorldEvent> {
+        self.base.get(i)
+    }
+
+    pub fn find_rumor(&self, rng: &Rng, world: &World, date: WorldEventDate, position: Coord2) -> Option<(usize, &WorldEvent)> {
         let mut rng = rng.derive("rumor");
-        for event in self.base.iter().rev() {
+        for (i, event) in self.base.iter().enumerate().rev() {
             let dist = event.location.dist_squared(&position).sqrt();
             let evt_date = event.date;
             let age = (date.year - evt_date.year) as f32;
@@ -71,7 +75,7 @@ impl WorldEvents {
             let importance = event.importance_factor(world);
             let chance_to_have_heard = importance * dist_factor * age_factor;
             if rng.rand_chance(chance_to_have_heard) {
-                return Some(event)
+                return Some((i, event))
             }
         }
         return None
@@ -134,6 +138,18 @@ impl WorldEventEnum {
             Self::SettlementFounded(evt) => vec!(evt.settlement_id),
             Self::NewSettlementLeader(evt) => vec!(evt.settlement_id),
             Self::Battle(evt) => vec!(evt.battle_result.0.location_settlement),
+            _ => vec!()
+        }
+    }
+
+    pub fn get_creatures(&self) -> Vec<Id> {
+        match self {
+            Self::PersonBorn(evt) => vec!(evt.person_id),
+            Self::PersonDeath(evt) => vec!(evt.person_id),
+            Self::ArtifactPossession(evt) => vec!(evt.person),
+            Self::Marriage(evt) => vec!(evt.person1_id, evt.person2_id),
+            Self::NewSettlementLeader(evt) => vec!(evt.new_leader_id),
+            //Self::PersonBorn(evt) => vec!(evt.person_id),
             _ => vec!()
         }
     }

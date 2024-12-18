@@ -1,21 +1,28 @@
 # Doing
 
-## feat - Interactions - Rumors
-
-- ✓ Important events might become rumors
-  - ✓ Important events include important people
-  - ✓ Do I need a struct? From the event I can compute rumor radius and strenght
-- ✓ When you talk to people, you can ask what rumor they've heard recently
-  - ✓ Interacting with someone will open a dialog
-  - ✓ Option for asking if they heard any rumors
-  - ✓ Search backwards for a rumor
-
 # TODO - 0.0.6
 
 ## feat - Knowledge codex
 
 Creation of a "knowledge codex" - stuff you know and can ask about
-Dialog for navigating
+
+- ✓ Data structure
+  - ✓ People & Creatures
+  - Places
+  - Artifacts
+- ✓ Add information to codex
+  - ✓ When talking to someone
+  - ✓ When hearing rumors
+  - When visiting a place
+- ✓ Dialog
+  - ✓ People & Creatures
+  - Places
+  - Artifacts
+  - V-List
+  - Clear V-List
+- Writing
+  - Description based on knowledge
+  - Events
 
 ## feat - Interactions - Ask about
 
@@ -23,6 +30,15 @@ Dialog for navigating
   - Dialog option "Ask about..." - Select something
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
+
+## Fix button UI
+
+- Background
+- Size
+
+## Fix dialog UI
+
+- Background
 
 # Backlog
 
@@ -109,13 +125,23 @@ The majority of the current time spent in history generation is searching who is
 
 ## bug - Immortal non-remarkable people
 
-## feat - Spawn great beasts
+## feat - Spawn great beasts on local map
 
 - ✓ Show them in the map as covens
 - ✓ Sprite - Fiend
 - ✓ Sprite - Leshen
 - ✓ Hostility and sprite based on species
 - ✓ Damage and health based on attributes
+
+## feat - Interactions - Rumors
+
+- ✓ Important events might become rumors
+  - ✓ Important events include important people
+  - ✓ Do I need a struct? From the event I can compute rumor radius and strenght
+- ✓ When you talk to people, you can ask what rumor they've heard recently
+  - ✓ Interacting with someone will open a dialog
+  - ✓ Option for asking if they heard any rumors
+  - ✓ Search backwards for a rumor
 
 # Release 0.0.5 - Aimless improvements
 
