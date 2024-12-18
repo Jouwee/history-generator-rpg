@@ -149,7 +149,7 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent) {
-        self.interact_dialog.input(evt);
+        self.interact_dialog.input_state(evt, &self.world);
         if let ButtonEvent::Click = self.button_attack.event(evt) {
             self.selected_targeted_action = Some(ActionEnum::Attack);
             return;

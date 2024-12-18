@@ -82,8 +82,9 @@ impl WorldHistoryGenerator {
             let faction = Faction::new(&generator.rng, id);
             let faction_id = generator.world.factions.insert(faction);
             // TODO: Position
+            let position = Coord2::xy(0, 0);
             let species = generator.world.species.get(&Id(0)).unwrap(); // Human
-            let person = Person::new(id, species, Importance::Important, 1, Coord2::xy(0, 0))
+            let person = Person::new(id, species, Importance::Important, 1, position)
                 .civilization(&Some(CivilizedComponent {
                     culture: culture.id,
                     faction: faction_id,
@@ -91,7 +92,7 @@ impl WorldHistoryGenerator {
                     leader_of_settlement: None
                 }));
             let person = generator.name_person(person, &None);
-            generator.world.events.push(event_date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: person.id }));
+            generator.world.events.push(event_date, position, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: person.id }));
             generator.world.people.insert(person);
         }
         generator.next_person_id = person_id;
@@ -170,8 +171,8 @@ impl WorldHistoryGenerator {
 
                     faction.relations.insert(other_faction_id, -0.2);
                     other_faction.relations.insert(faction_id, -0.2);
-
-                    self.world.events.push(event_date, WorldEventEnum::PeaceDeclared(PeaceDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
+                    // TODO: Location
+                    self.world.events.push(event_date, Coord2::xy(-64, -64), WorldEventEnum::PeaceDeclared(PeaceDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
                 }
             } else {
                 for (other_faction_id, other_faction) in self.world.factions.iter() {
@@ -185,8 +186,8 @@ impl WorldHistoryGenerator {
 
                         faction.relations.insert(other_faction_id, -1.0);
                         other_faction.relations.insert(faction_id, -1.0);
-
-                        self.world.events.push(event_date, WorldEventEnum::WarDeclared(WarDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
+                        // TODO: Location
+                        self.world.events.push(event_date, Coord2::xy(-64, -64), WorldEventEnum::WarDeclared(WarDeclaredEvent { faction1_id: faction_id, faction2_id: other_faction_id }));
 
                         break
                     }
@@ -227,7 +228,7 @@ impl WorldHistoryGenerator {
                                     heir.importance = Importance::Important;
                                     heir.position = settlement.xy.to_coord();
                                     settlement.leader_id = heir.id;
-                                    self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: heir.id, settlement_id: id }));
+                                    self.world.events.push(event_date, settlement.xy.to_coord(), WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: heir.id, settlement_id: id }));
                                     break;
                                 }
                             }
@@ -248,7 +249,7 @@ impl WorldHistoryGenerator {
                             // }
                         }
                         settlement.leader_id = new_leader.id;
-                        self.world.events.push(event_date, WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: new_leader.id, settlement_id: id }));
+                        self.world.events.push(event_date, settlement.xy.to_coord(), WorldEventEnum::NewSettlementLeader(NewSettlementLeaderEvent { new_leader_id: new_leader.id, settlement_id: id }));
                         new_people.push(new_leader);
                     }
                 }
@@ -384,7 +385,7 @@ impl WorldHistoryGenerator {
     fn kill_person(&mut self, date: WorldEventDate, id: Id) -> Option<Id> {
         let mut person = self.world.people.get_mut(&id).unwrap();
         person.death = date.year;
-        self.world.events.push(date, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: id }));
+        self.world.events.push(date, person.position, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: id }));
         let mut artifact_material = None;
         {
             let species = self.world.species.get(&person.species).unwrap();
@@ -404,7 +405,7 @@ impl WorldHistoryGenerator {
                     let heir = heirs.get_mut(i % heir_count).unwrap();
                     heir.possesions.push(*item);
                     heir.importance = heir.importance.at_least(&Importance::Unimportant);
-                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: *item, person: heir.id }))
+                    self.world.events.push(date, heir.position, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: *item, person: heir.id }))
                 }
                 person.possesions.clear();
             }
@@ -435,7 +436,7 @@ impl WorldHistoryGenerator {
         return figure        
     }
 
-    fn create_artifact(&mut self, date: WorldEventDate, material_id: &Id) -> Id {
+    fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &Id) -> Id {
         let material_id = material_id.clone();
         let item;
         match self.rng.randu_range(0, 3) {
@@ -480,7 +481,7 @@ impl WorldHistoryGenerator {
             }
         }
         let id = self.world.artifacts.insert(item);
-        self.world.events.push(date, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
+        self.world.events.push(date, location, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
         return id
     }
 
@@ -529,7 +530,7 @@ impl WorldHistoryGenerator {
         if let Some(xy) = suitable_location {
             let id = self.next_person_id.next();
             self.world.people.insert(Person::new(id, species, Importance::Important, year, xy));
-            self.world.events.push(WorldEventDate { year }, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: id }))
+            self.world.events.push(WorldEventDate { year }, xy, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: id }))
         }
     }
 
@@ -567,7 +568,7 @@ impl WorldHistoryGenerator {
             relative: Relative::Spouse
         });
         drop(person);
-        self.world.events.push(date, WorldEventEnum::Marriage(MarriageEvent { person1_id: *person_id, person2_id: spouse.id }));
+        self.world.events.push(date, spouse.position, WorldEventEnum::Marriage(MarriageEvent { person1_id: *person_id, person2_id: spouse.id }));
         self.world.people.insert(spouse);
     }
 
@@ -576,7 +577,7 @@ impl WorldHistoryGenerator {
         let mut mother = self.world.people.get_mut(&mother_id).unwrap();
         let id = self.next_person_id.next();
         let child = self.create_child(id, date.year, &father, &mother);
-        self.world.events.push(date, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: child.id }));
+        self.world.events.push(date, child.position, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: child.id }));
         father.next_of_kin.push(NextOfKin { 
             person_id: child.id,
             relative: Relative::Child
@@ -598,7 +599,7 @@ impl WorldHistoryGenerator {
             if let Some(settlement) = settlement {
                 let position = settlement.xy;
                 let id = self.world.settlements.insert(settlement);
-                self.world.events.push(date, WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: id }));
+                self.world.events.push(date, position.to_coord(), WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: id }));
                 let mut faction = self.world.factions.get_mut(&civ.faction);
                 faction.settlements.insert(id);
                 civ.leader_of_settlement = Some(id);
@@ -616,12 +617,12 @@ impl WorldHistoryGenerator {
         for (killed, killer) in battle.0.creature_casualties.iter() {
             let artifact_material = self.kill_person(date, *killed);
             if let Some(artifact_material) = artifact_material {
-                let artifact_id = self.create_artifact(date, &artifact_material);
+                let artifact_id = self.create_artifact(date, battle.0.location, &artifact_material);
                 if let Some(killer_id) = killer {
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
                     killer.importance = killer.importance.at_least(&Importance::Unimportant);
-                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
+                    self.world.events.push(date, battle.0.location, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
                     // Else, who would get the artifact?
                 }
             }
@@ -634,12 +635,12 @@ impl WorldHistoryGenerator {
         for (killed, killer) in battle.1.creature_casualties.iter() {
             let artifact_material = self.kill_person(date, *killed);
             if let Some(artifact_material) = artifact_material {
-                let artifact_id = self.create_artifact(date, &artifact_material);
+                let artifact_id = self.create_artifact(date, battle.1.location, &artifact_material);
                 if let Some(killer_id) = killer {
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
                     killer.importance = killer.importance.at_least(&Importance::Unimportant);
-                    self.world.events.push(date, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
+                    self.world.events.push(date, battle.1.location, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
                     // Else, who would get the artifact?
                 }
             }
@@ -649,7 +650,7 @@ impl WorldHistoryGenerator {
             settlement.kill_military(battle.1.army_casualties, &self.rng);
             settlement.kill_civilians(battle.1.civilian_casualties);
         }
-        self.world.events.push(date, WorldEventEnum::Battle(crate::BattleEvent { battle_result: battle }));
+        self.world.events.push(date, battle.0.location, WorldEventEnum::Battle(crate::BattleEvent { battle_result: battle }));
     }
 
 }

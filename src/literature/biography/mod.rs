@@ -37,6 +37,97 @@ impl<'a> BiographyWriter<'a> {
         return description;
     }
 
+    pub fn rumor(&self, event: &WorldEvent) -> String {
+        let date = &event.date;
+        match &event.event {
+            WorldEventEnum::PersonBorn(event) => {
+                let person = self.world.people.get(&event.person_id).unwrap();
+                if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
+                    let parent = self.world.people.get(person_id).unwrap();
+                    return format!("In {}, {} fathered {}", date, self.name_with_title(&parent), self.name_with_title(&person))
+                } else {
+                    return format!("In {}, {} was born", date, self.name_with_title(&person))
+                }
+            },
+            WorldEventEnum::PersonDeath(event) => {
+                return format!("In {}, {} died", date, self.name_with_title(&self.world.people.get(&event.person_id).unwrap()))
+            },
+            WorldEventEnum::SettlementFounded(event) => {
+                let settlement = self.world.settlements.get(&event.settlement_id);
+                return format!("In {}, {} found the city of {}", date, self.name_with_title(&self.world.people.get(&event.founder_id).unwrap()), settlement.name)
+            },
+            WorldEventEnum::NewSettlementLeader(event) => {
+                return format!("In {}, {} became the new leader of {}", date, self.name_with_title(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name)
+            },
+            WorldEventEnum::Marriage(event) => {
+                return format!("In {}, {} and {} married", date, self.name_with_title(&self.world.people.get(&event.person1_id).unwrap()), self.birth_name(&self.world.people.get(&event.person2_id).unwrap()))
+            },
+            WorldEventEnum::WarDeclared(event) => {
+                let faction = self.world.factions.get(&event.faction1_id);
+                let faction2 = self.world.factions.get(&event.faction2_id);
+                return format!("In {}, a war between the {} and the {} started", date, faction.name, faction2.name)
+            }
+            WorldEventEnum::PeaceDeclared(event) => {
+                let faction = self.world.factions.get(&event.faction1_id);
+                let faction2 = self.world.factions.get(&event.faction2_id);
+                return format!("In {}, the war between the {} and the {} ended", date, faction.name, faction2.name)
+            }
+            WorldEventEnum::ArtifactCreated(event) => {
+                let artifact = self.world.artifacts.get(&event.item);
+                return format!("In {}, an artifact was made. {}", date, artifact.description(self.world))
+            }
+            WorldEventEnum::Battle(event) => {
+                let (attacker, defender) = &event.battle_result;
+
+                let attacker_name;
+                if let Some(faction) = attacker.belligerent_faction {
+                    let faction = self.world.factions.get(&faction);
+                    attacker_name = faction.name.clone();
+                } else {
+                    if attacker.creature_participants.len() == 1 {
+                        let creature = self.world.people.get(attacker.creature_participants.get(0).unwrap()).unwrap();
+                        attacker_name = self.name_with_title(&creature);
+                    } else {
+                        attacker_name = format!("{}", attacker.creature_participants.len()).to_string();
+                    }
+                }
+
+                let defender_name;
+                if let Some(faction) = defender.belligerent_faction {
+                    let faction = self.world.factions.get(&faction);
+                    defender_name = faction.name.clone();
+                } else {
+                    if defender.creature_participants.len() == 1 {
+                        let creature = self.world.people.get(defender.creature_participants.get(0).unwrap()).unwrap();
+                        defender_name = self.name_with_title(&creature);
+                    } else {
+                        defender_name = String::from("UNKNOWN");
+                    }
+                }
+
+                let settlement = self.world.settlements.get(&attacker.location_settlement);
+                let location_name = settlement.name.clone();
+
+                let battle_result;
+
+                match (&attacker.result, &defender.result) {
+                    (FinalResult::Defeat, FinalResult::Victory) => battle_result = "but was defeated",
+                    (FinalResult::Flee, FinalResult::Victory) => battle_result = "but had to flee",
+                    (FinalResult::Victory, FinalResult::Flee) => battle_result = "and made them flee",
+                    (FinalResult::Victory, FinalResult::Defeat) => battle_result = "and emerged vitorious",
+                    _ => battle_result = "and it was a stalemate",
+                }
+
+                return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}."));
+            }
+            WorldEventEnum::ArtifactPossession(evt) => {
+                let person = self.world.people.get(&evt.person).unwrap();
+                let artifact = self.world.artifacts.get(&evt.item);
+                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))
+            }
+        }
+    }
+
     pub fn event(&self, event: &WorldEvent) -> String {
         let date = &event.date;
         match &event.event {
@@ -170,6 +261,17 @@ impl<'a> BiographyWriter<'a> {
         }
     }
 
+    pub fn name_with_title(&self, figure: &Person) -> String {
+        let name = self.name(figure);
+        if let Some(civ) = &figure.civ {
+            if let Some(settlement) = civ.leader_of_settlement {
+                let settlement = self.world.settlements.get(&settlement);
+                return format!("{name}, leader of {}", settlement.name)
+            }
+        }
+        return name
+    }
+
     pub fn name(&self, figure: &Person) -> String {
         match figure.name() {
             Some(name) => format!("{} ({})", name, figure.id.0),
@@ -190,4 +292,3 @@ impl<'a> BiographyWriter<'a> {
     }
 
 }
-

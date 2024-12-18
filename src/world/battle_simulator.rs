@@ -165,7 +165,7 @@ impl BattleForce {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BattleResult {
     pub belligerent_faction: Option<Id>,
     pub belligerent_settlement: Option<Id>,
@@ -195,7 +195,7 @@ impl BattleResult {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FinalResult {
     Flee,
     Defeat,

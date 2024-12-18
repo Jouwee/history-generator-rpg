@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, world::{person::Person, world::World}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, world::{person::Person, world::World}};
 
 pub struct InteractDialog {
     interact_dialog: Option<Dialog>,
@@ -11,7 +11,7 @@ impl InteractDialog {
         InteractDialog {
             interact_dialog: None,
             dialog_y: 0.,
-            person: None
+            person: None,
         }
     }
 
@@ -41,6 +41,29 @@ impl InteractDialog {
         self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
     }
 
+    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World) {
+        if let Some(dialog) = &mut self.interact_dialog {
+            if let Some(person) = &self.person {
+                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
+                    self.interact_dialog = None;
+                    return
+                }
+                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_rumor").unwrap().event(evt) {
+                    let rumor = world.events.find_rumor(&Rng::seeded(person.id), &world,  crate::WorldEventDate { year: 500 }, person.position);
+                    if let Some(rumor) = rumor {
+                        self.add_dialog_line(BiographyWriter::new(world).rumor(rumor).as_str());
+                    } else {
+                        self.add_dialog_line("Sorry, I haven't heard anything.");
+                    }
+                    return
+                }
+                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
+                    self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
+                }
+            }
+        }
+    }
+
 }
 
 impl GUINode for InteractDialog {
@@ -48,20 +71,6 @@ impl GUINode for InteractDialog {
     fn render(&mut self, ctx: &mut RenderContext) {
         if let Some(interact_dialog) = &mut self.interact_dialog {
             interact_dialog.render(ctx);
-        }
-    }
-
-    fn input(&mut self, evt: &crate::game::InputEvent) {
-        if let Some(dialog) = &mut self.interact_dialog {
-            if let Some(person) = &self.person {
-                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
-                    self.interact_dialog = None;
-                    return
-                }
-                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
-                    self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
-                }
-            }
         }
     }
 
