@@ -1,5 +1,5 @@
 use graphics::{ellipse, image, rectangle, Context, Text};
-use opengl_graphics::{GlGraphics, GlyphCache};
+use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
 
@@ -42,6 +42,11 @@ impl<'a, 'b> RenderContext<'a, 'b> {
 
     pub fn image(&mut self, texture_name: &str, position: [f64; 2]) {
         let texture = self.assets.texture(texture_name);
+        let transform = self.context.transform.trans(position[0], position[1]);
+        image(texture, transform, self.gl);
+    }
+
+    pub fn texture(&mut self, texture: &Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         image(texture, transform, self.gl);
     }

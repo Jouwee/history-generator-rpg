@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use image::{DynamicImage};
+use image::DynamicImage;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
 pub struct Spritesheet {

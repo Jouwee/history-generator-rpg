@@ -2,46 +2,10 @@
 
 # TODO - 0.0.6
 
-## feat - Knowledge codex
-
-Creation of a "knowledge codex" - stuff you know and can ask about
-
-- ✓ Data structure
-  - ✓ People & Creatures
-  - ✓ Places
-  - ✓ Artifacts
-- ✓ Add information to codex
-  - ✓ When talking to someone
-  - ✓ When hearing rumors
-  - ✓ When visiting a place
-- ✓ Dialog
-  - ✓ People & Creatures
-  - ✓ Places
-  - ✓ Artifacts
-  - ✓ V-List
-  - ✓ Clear V-List
-- Writing
-  - Description based on knowledge
-    - Creature
-    - Place
-    - ✓ Artifact
-  - Events
-
-## feat - Interactions - Ask about
-
-- Option to ask people about something
-  - Dialog option "Ask about..." - Select something
-  - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
-- Rumors and knowledge must be deterministic, hopefully not needing to store it.
-
 ## Fix button UI
 
 - Background
 - Size
-
-## Fix dialog UI
-
-- Background
 
 # Backlog
 
@@ -85,6 +49,17 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 ## refactor - Better spatial searches
 
 The majority of the current time spent in history generation is searching who is in a town to simulate battles
+
+## feat - Interactions - Ask about
+
+- Option to ask people about something
+  - Dialog option "Ask about..." - Select something
+  - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
+- Rumors and knowledge must be deterministic, hopefully not needing to store it.
+
+## Fix dialog UI
+
+- ✓ Background
 
 # Release 0.0.6 - Great beasts and artifacts
 
@@ -145,6 +120,25 @@ The majority of the current time spent in history generation is searching who is
   - ✓ Interacting with someone will open a dialog
   - ✓ Option for asking if they heard any rumors
   - ✓ Search backwards for a rumor
+
+## feat - Knowledge codex
+
+Creation of a "knowledge codex" - stuff you know and can ask about
+
+- ✓ Data structure
+  - ✓ People & Creatures
+  - ✓ Places
+  - ✓ Artifacts
+- ✓ Add information to codex
+  - ✓ When talking to someone
+  - ✓ When hearing rumors
+  - ✓ When visiting a place
+- ✓ Dialog
+  - ✓ People & Creatures
+  - ✓ Places
+  - ✓ Artifacts
+  - ✓ V-List
+  - ✓ Clear V-List
 
 # Release 0.0.5 - Aimless improvements
 
