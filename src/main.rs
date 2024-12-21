@@ -9,7 +9,7 @@ use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::Assets, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Lance, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -367,7 +367,11 @@ fn main() {
                             writeln!(&mut f, "{}", writer.event(event)).unwrap();
                         }
                         let species = world.species.get(&Id(0)).unwrap();
-                        let player = Actor::player(Coord2::xy(32, 32), species);
+                        let mut player = Actor::player(Coord2::xy(32, 32), species);
+
+                        player.inventory.add(Item::Sword(Sword::new(Id(3), Id(0), Id(1), Id(1), &world)));
+                        player.inventory.add(Item::Mace(Mace::new(Id(3), Id(0), Id(1), &world)));
+                        player.inventory.add(Item::Lance(Lance::new(Id(3), Id(0), &world)));
                         let codex = KnowledgeCodex::new();
                         app.scene = SceneEnum::World(WorldScene::new(world, player, codex));
                         continue

@@ -1,6 +1,51 @@
 # Doing
 
-# TODO - 0.0.6
+## feat - Basic Inventory
+
+- ✓ Player will have a inventory structure to hold items
+- ✓ Inventory dialog
+  - ✓ Grid of items
+  - ✓ Switch equiped item
+- ✓ Attack with equipped
+  - ✓ Compute item stats
+  - ✓ Adapt attack action to use equipped item
+  - ✓ Unequipped must do a unarmed attack
+
+# TODO - 0.0.7 - All about weapons
+
+## feat - Obtaining loot
+
+- Items on the ground
+  - Data structure in chunk
+  - Render
+  - Pick-up action to add to inventory
+- When the player enters an open tile, there's a chance of spawning giant spiders (now it always spawns)
+  - Also spawns an item on the ground to be picked up
+
+## feat - Artifact loot
+
+- If an artifact is in a tile, spawn it on the ground
+- If you kill someone wielding an artifact, they drop it
+- Other actors can use their posessions
+
+# TODO - 0.0.7 - All about attributes
+
+## feat - New attributes
+
+- STR
+  - Affect damage of mellee weapons
+- AGI
+  - Increases AP
+- CON
+  - Increases HP
+
+## feat - Level up
+
+- On level up, you can choose to increase 1 attribute
+
+## feat - Character dialog
+
+- Improve the inventory dialog to show your character values and attributes
 
 # Backlog
 

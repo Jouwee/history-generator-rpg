@@ -82,7 +82,11 @@ impl ActionTrait for AttackAction {
 
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
     fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
-        let damage = actor.damage.resolve(&target.defence);
+        let mut damage_model = actor.damage;
+        if let Some(item) = actor.inventory.equipped() {
+            damage_model = damage_model + item.damage_model();
+        }
+        let damage = damage_model.resolve(&target.defence);
         target.hp.damage(damage);
         Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
     }

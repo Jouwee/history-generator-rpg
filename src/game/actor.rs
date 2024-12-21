@@ -1,6 +1,6 @@
-use crate::{commons::history_vec::Id, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}}, Person};
+use crate::{commons::{damage_model::{DamageComponent, DefenceComponent}, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}}, Person};
 
-use super::Renderable;
+use super::{inventory::inventory::Inventory, Renderable};
 
 pub enum ActorType {
     Player,
@@ -20,6 +20,7 @@ pub struct Actor {
     pub person: Option<Person>,
     pub xp: u32,
     pub level: u32,
+    pub inventory: Inventory
 }
 
 impl Actor {
@@ -30,13 +31,14 @@ impl Actor {
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::from_attributes(&species.attributes),
             damage: DamageComponent::from_attributes(&species.attributes),
-            defence: DefenceComponent { slashing: 0.0 },
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             person: None,
             person_id: None,
             texture: String::from("player.png"),
-            actor_type: ActorType::Player
+            actor_type: ActorType::Player,
+            inventory: Inventory::new()
         }
     }
 
@@ -50,13 +52,14 @@ impl Actor {
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::from_attributes(&species.attributes),
             damage: DamageComponent::from_attributes(&species.attributes),
-            defence: DefenceComponent { slashing: 0.0 },
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             person: None,
             person_id: None,
             texture: species.texture.clone(),
-            actor_type
+            actor_type,
+            inventory: Inventory::new()
         }
     }
 
@@ -70,13 +73,14 @@ impl Actor {
             ap: ActionPointsComponent::new(100),
             hp: HealthPointsComponent::from_attributes(&species.attributes),
             damage: DamageComponent::from_attributes(&species.attributes),
-            defence: DefenceComponent { slashing: 3.0 },
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             person: Some(person.clone()),
             person_id: Some(person_id),
             texture: species.texture.clone(),
-            actor_type
+            actor_type,
+            inventory: Inventory::new()
         }
     }
 
@@ -142,8 +146,8 @@ impl Actor {
         }
         if new_level > self.level {
             self.level = new_level;
-            self.damage.slashing += 1.;
-            self.defence.slashing += 0.2;
+            self.damage = self.damage + DamageComponent::new(0., 0., 1.);
+            self.defence = self.defence + DefenceComponent::new(0.1, 0.1, 0.1);
         }
     }
 }
@@ -201,25 +205,4 @@ impl HealthPointsComponent {
     pub fn damage(&mut self, damage: f32) {
         self.health_points = (self.health_points - damage).max(0.0);
     }
-}
-
-pub struct DamageComponent {
-    slashing: f32
-}
-
-impl DamageComponent {
-
-    fn from_attributes(attributes: &Attributes) -> DamageComponent {
-        DamageComponent {
-            slashing: attributes.strength as f32 / 2.
-        }
-    }
-
-    pub fn resolve(&self, defence: &DefenceComponent) -> f32 {
-        return (self.slashing - defence.slashing).max(0.0)
-    }
-}
-
-pub struct DefenceComponent {
-    slashing: f32
 }

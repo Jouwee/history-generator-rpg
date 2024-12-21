@@ -1,4 +1,4 @@
-use crate::commons::history_vec::Id;
+use crate::commons::{damage_model::DamageComponent, history_vec::Id};
 
 use super::world::World;
 
@@ -7,27 +7,6 @@ pub enum Item {
     Sword(Sword),
     Mace(Mace),
     Lance(Lance),
-}
-
-#[derive(Debug)]
-pub struct Sword {
-    pub handle_mat: Id,
-    pub blade_mat: Id,
-    pub pommel_mat: Id,
-    pub guard_mat: Id
-}
-
-#[derive(Debug)]
-pub struct Mace {
-    pub handle_mat: Id,
-    pub head_mat: Id,
-    pub pommel_mat: Id,
-}
-
-#[derive(Debug)]
-pub struct Lance {
-    pub handle_mat: Id,
-    pub tip_mat: Id,
 }
 
 impl Item {
@@ -72,5 +51,61 @@ impl Item {
             }
         }
         return str
+    }
+
+    pub fn damage_model(&self) -> DamageComponent {
+        match self {
+            Item::Sword(sword) => sword.damage,
+            Item::Mace(mace) => mace.damage,
+            Item::Lance(lance) => lance.damage
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Sword {
+    pub handle_mat: Id,
+    pub blade_mat: Id,
+    pub pommel_mat: Id,
+    pub guard_mat: Id,
+    pub damage: DamageComponent
+}
+
+impl Sword {
+    pub fn new(handle_mat: Id, blade_mat: Id, pommel_mat: Id, guard_mat: Id, world: &World) -> Sword {
+        let blade = world.materials.get(&blade_mat).unwrap();
+        let damage = DamageComponent::new(blade.sharpness, 0., 0.);
+        Sword { handle_mat, blade_mat, pommel_mat, guard_mat, damage }
+    }
+}
+
+#[derive(Debug)]
+pub struct Mace {
+    pub handle_mat: Id,
+    pub head_mat: Id,
+    pub pommel_mat: Id,
+    pub damage: DamageComponent
+}
+
+impl Mace {
+    pub fn new(handle_mat: Id, head_mat: Id, pommel_mat: Id, world: &World) -> Mace {
+        let head = world.materials.get(&head_mat).unwrap();
+        let damage = DamageComponent::new(0., 0., head.sharpness);
+        Mace { handle_mat, head_mat, pommel_mat, damage }
+    }
+}
+
+#[derive(Debug)]
+pub struct Lance {
+    pub handle_mat: Id,
+    pub tip_mat: Id,
+    pub damage: DamageComponent
+}
+
+impl Lance {
+    pub fn new(handle_mat: Id, tip_mat: Id, world: &World) -> Lance {
+        let tip = world.materials.get(&tip_mat).unwrap();
+        let damage = DamageComponent::new(0., tip.sharpness, 0.);
+        Lance { handle_mat, tip_mat, damage }
     }
 }

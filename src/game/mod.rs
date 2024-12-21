@@ -5,6 +5,7 @@ use actor::{Actor, ActorType};
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use interact::interact_dialog::InteractDialog;
+use inventory::inventory_dialog::InventoryDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
 use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
@@ -14,6 +15,7 @@ pub mod actor;
 pub mod chunk;
 pub mod codex;
 pub mod interact;
+pub mod inventory;
 pub mod log;
 
 pub trait Renderable {
@@ -37,8 +39,10 @@ pub struct GameSceneState {
     button_attack: Button,
     button_talk: Button,
     button_codex: Button,
+    button_inventory: Button,
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
+    inventory_dialog: InventoryDialog,
     selected_targeted_action: Option<ActionEnum>
 }
 
@@ -55,9 +59,11 @@ impl GameSceneState {
             label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
             button_attack: Button::new("at", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
             button_talk: Button::new("tk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
-            button_codex: Button::new("Codex", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),            
+            button_inventory: Button::new("Invent", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
+            button_codex: Button::new("Codex", Position::Anchored(Anchor::TopLeft, 228.0, 32.0)),       
             interact_dialog: InteractDialog::new(),
             codex_dialog: CodexDialog::new(),
+            inventory_dialog: InventoryDialog::new(),
             selected_targeted_action: None
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
@@ -105,8 +111,10 @@ impl Scene for GameSceneState {
         self.button_attack.render(ctx);
         self.button_talk.render(ctx);
         self.button_codex.render(ctx);
+        self.button_inventory.render(ctx);
         self.interact_dialog.render(ctx);
         self.codex_dialog.render(ctx);
+        self.inventory_dialog.render(ctx);        
     }
 
     fn update(&mut self, _update: &Update) {
@@ -114,8 +122,10 @@ impl Scene for GameSceneState {
         self.button_attack.update();
         self.button_talk.update();
         self.button_codex.update();
+        self.button_inventory.update();
         self.interact_dialog.update();
         self.codex_dialog.update();
+        self.inventory_dialog.update();
 
         if self.turn_controller.is_player_turn() {
             self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp));
@@ -163,6 +173,7 @@ impl Scene for GameSceneState {
     fn input(&mut self, evt: &InputEvent) {
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
+        self.inventory_dialog.input_state(evt, &mut self.player.inventory, &self.world);
         if let ButtonEvent::Click = self.button_attack.event(evt) {
             self.selected_targeted_action = Some(ActionEnum::Attack);
             return;
@@ -174,6 +185,11 @@ impl Scene for GameSceneState {
 
         if let ButtonEvent::Click = self.button_codex.event(evt) {
             self.codex_dialog.start_dialog();
+            return;
+        }
+
+        if let ButtonEvent::Click = self.button_inventory.event(evt) {
+            self.inventory_dialog.start_dialog(&self.player.inventory, &self.world);
             return;
         }
 

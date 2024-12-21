@@ -441,43 +441,37 @@ impl WorldHistoryGenerator {
         let item;
         match self.rng.randu_range(0, 3) {
             0 => {
-                let mut sword = Sword {
-                    blade_mat: Id(0),
-                    guard_mat: Id(1),
-                    handle_mat: Id(3),
-                    pommel_mat: Id(1)
-                };
+                let mut blade = Id(0);
+                let mut handle = Id(3);
+                let mut guard = Id(1);
+                let mut pommel = Id(1);
                 match self.rng.randu_range(0, 4) {
-                    1 => sword.blade_mat = material_id,
-                    2 => sword.guard_mat = material_id,
-                    3 => sword.handle_mat = material_id,
-                    _ => sword.pommel_mat = material_id,
+                    1 => blade = material_id,
+                    2 => guard = material_id,
+                    3 => handle = material_id,
+                    _ => pommel = material_id,
                 }
-                item = Item::Sword(sword)
+                item = Item::Sword(Sword::new(handle, blade, pommel, guard, &self.world))
             },
             1 => {
-                let mut mace = Mace {
-                    head_mat: Id(0),
-                    handle_mat: Id(3),
-                    pommel_mat: Id(1)
-                };
+                let mut head = Id(0);
+                let mut handle = Id(3);
+                let mut pommel = Id(1);
                 match self.rng.randu_range(0, 3) {
-                    1 => mace.head_mat = material_id,
-                    2 => mace.handle_mat = material_id,
-                    _ => mace.pommel_mat = material_id,
+                    1 => head = material_id,
+                    2 => handle = material_id,
+                    _ => pommel = material_id,
                 }
-                item = Item::Mace(mace)
+                item = Item::Mace(Mace::new(handle, head, pommel, &self.world))
             },
             _ => {
-                let mut lance = Lance {
-                    tip_mat: Id(0),
-                    handle_mat: Id(3),
-                };
+                let mut tip = Id(0);
+                let mut handle = Id(3);
                 match self.rng.randu_range(0, 2) {
-                    1 => lance.tip_mat = material_id,
-                    _ => lance.handle_mat = material_id,
+                    1 => tip = material_id,
+                    _ => handle = material_id,
                 }
-                item = Item::Lance(lance)
+                item = Item::Lance(Lance::new(handle, tip, &self.world))
             }
         }
         let id = self.world.artifacts.insert(item);
