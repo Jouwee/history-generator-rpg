@@ -38,6 +38,7 @@ pub struct GameSceneState {
     label: Label,
     button_attack: Button,
     button_talk: Button,
+    button_pickup: Button,
     button_codex: Button,
     button_inventory: Button,
     interact_dialog: InteractDialog,
@@ -57,8 +58,9 @@ impl GameSceneState {
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
             label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
-            button_attack: Button::new("at", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
-            button_talk: Button::new("tk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
+            button_attack: Button::new("atk", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
+            button_talk: Button::new("tlk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
+            button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 54.0, 32.0)),            
             button_inventory: Button::new("Invent", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::TopLeft, 228.0, 32.0)),       
             interact_dialog: InteractDialog::new(),
@@ -110,6 +112,7 @@ impl Scene for GameSceneState {
         self.label.render(ctx);
         self.button_attack.render(ctx);
         self.button_talk.render(ctx);
+        self.button_pickup.render(ctx);
         self.button_codex.render(ctx);
         self.button_inventory.render(ctx);
         self.interact_dialog.render(ctx);
@@ -121,6 +124,7 @@ impl Scene for GameSceneState {
         self.label.update();
         self.button_attack.update();
         self.button_talk.update();
+        self.button_pickup.update();
         self.button_codex.update();
         self.button_inventory.update();
         self.interact_dialog.update();
@@ -178,6 +182,10 @@ impl Scene for GameSceneState {
             self.selected_targeted_action = Some(ActionEnum::Attack);
             return;
         }
+        if let ButtonEvent::Click = self.button_pickup.event(evt) {
+            self.selected_targeted_action = Some(ActionEnum::PickUp);
+            return;
+        }
         if let ButtonEvent::Click = self.button_talk.event(evt) {
             self.selected_targeted_action = Some(ActionEnum::Talk);
             return;
@@ -225,7 +233,7 @@ impl Scene for GameSceneState {
                 Btn::Mouse(_any) => {
                     if let Some(action) = &self.selected_targeted_action {
                         let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
-                        if self.player.ap.can_use(40) && tile_pos.dist_squared(&self.player.xy) < 3. {
+                        if tile_pos.dist_squared(&self.player.xy) < 3. {
                             let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                             if let Some((i, target)) = target {
 
@@ -243,12 +251,33 @@ impl Scene for GameSceneState {
                                             for p in self.chunk.npcs.iter_mut() {
                                                 p.actor_type = ActorType::Hostile;
                                             }
+                                            return
                                         }
                                     }
 
                                     ActionEnum::Talk => {
                                         if let Ok(_) = self.actions.try_use_on_target(ActionEnum::Talk, &mut self.player, target) {
                                             self.interact_dialog.start_dialog(&self.world, target.person_id.unwrap());
+                                            return
+                                        }
+                                    }
+                                    _ => ()
+                                }
+
+                            }
+                        }
+                        if tile_pos.dist_squared(&self.player.xy) < 3. {
+                            let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item))| *xy == tile_pos);
+                            if let Some((i, (_xy, item))) = target {
+
+                                match action {
+                                    ActionEnum::PickUp => {
+                                        if let Ok(log) = self.actions.try_use_on_item(ActionEnum::PickUp, &mut self.player, item) {
+                                            if let Some(log) = log {
+                                                self.log(log.string, log.color);
+                                            }
+                                            self.chunk.items_on_ground.remove(i);
+                                            return
                                         }
                                     }
                                     _ => ()

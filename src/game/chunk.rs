@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::{Coord2, Size2D}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, Color}, world::item::{Item, Sword}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -11,7 +11,8 @@ pub struct Chunk {
     tiles: Vec<Tile>,
     tile_def: HashMap<u8, TileDef>,
     pub npcs: Vec<Actor>,
-    pub killed_people: Vec<Id>
+    pub killed_people: Vec<Id>,
+    pub items_on_ground: Vec<(Coord2, Item)>
 }
 
 impl Chunk {
@@ -28,7 +29,8 @@ impl Chunk {
             tiles: vec![Tile { id: 0 }; size.area()],
             npcs: Vec::new(),
             killed_people: Vec::new(),
-            tile_def
+            tile_def,
+            items_on_ground: Vec::new()
         }
     }
 
@@ -70,9 +72,11 @@ impl Chunk {
                 }
             }
         }
+        let mut found_sett = None;
         for (_, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
             if settlement.xy.0 as i32 == xy.x && settlement.xy.1 as i32 == xy.y {
+                found_sett = Some(settlement);
                 let rect_xy1 = Coord2::xy(rng.randu_range(8, 48) as i32, rng.randu_range(16, 48) as i32);
                 let rect_size = Coord2::xy(rng.randu_range(6, 16) as i32, rng.randu_range(6, 16) as i32);
                 let rect_xy2 = rect_xy1 + rect_size;
@@ -100,15 +104,24 @@ impl Chunk {
             }
         }
 
-        if chunk.npcs.len() == 0 {
-            for _ in 0..rng.randu_range(3, 7) {
+        if let Some(settlement) = found_sett {
+            if chunk.npcs.len() == 0 {
+                for _ in 0..rng.randu_range(3, 7) {
+                    let point = Coord2::xy(
+                        rng.randu_range(0, chunk.size.x()) as i32,
+                        rng.randu_range(0, chunk.size.y()) as i32
+                    );
+                    let species = world.species.get(&Id(3) /* spider */).unwrap();
+                    let npc = Actor::from_species(point, species);
+                    chunk.npcs.push(npc);
+                }
+
                 let point = Coord2::xy(
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                let species = world.species.get(&Id(3) /* spider */).unwrap();
-                let npc = Actor::from_species(point, species);
-                chunk.npcs.push(npc);
+                chunk.items_on_ground.push((point, Item::Sword(Sword::new(Id(3), Id(0), Id(1), Id(1), world))));
+
             }
         }
 
@@ -126,6 +139,11 @@ impl Renderable for Chunk {
                 ctx.spritesheet("tiles.png", tile.sprite, [x as f64 * 16., y as f64 * 16.]);
             }
         }
+
+        for (pos, item) in self.items_on_ground.iter() {
+            ctx.circle([pos.x as f64 * 16., pos.y as f64 * 16., 16., 16.], Color::from_hex("ff0000"));
+        }
+
     }
 }
 

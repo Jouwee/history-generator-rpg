@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::engine::{geometry::Coord2, Color};
+use crate::{engine::{geometry::Coord2, Color}, world::item::Item};
 
 use super::{actor::Actor, log::LogEntry};
 
@@ -12,6 +12,7 @@ pub enum ActionEnum {
     MoveDown,
     Attack,
     Talk,
+    PickUp,
 }
 
 pub struct ActionDefinition {
@@ -27,7 +28,8 @@ impl Default for ActionMap {
     fn default() -> Self {
         let mut map = ActionMap { map: HashMap::new() };
         map.register(ActionEnum::Attack, 40, Box::new(AttackAction {}));
-        map.register(ActionEnum::Talk, 40, Box::new(TalkAction {}));
+        map.register(ActionEnum::Talk, 0, Box::new(TalkAction {}));
+        map.register(ActionEnum::PickUp, 20, Box::new(PickUpAction {}));
         map.register(ActionEnum::MoveLeft, 20, Box::new(MoveAction { direction: Coord2::xy(-1, 0) }));
         map.register(ActionEnum::MoveRight, 20, Box::new(MoveAction { direction: Coord2::xy(1, 0) }));
         map.register(ActionEnum::MoveUp, 20, Box::new(MoveAction { direction: Coord2::xy(0, -1) }));
@@ -56,6 +58,17 @@ impl ActionMap {
         Err(())
     }
 
+    pub fn try_use_on_item(&self, action: ActionEnum, actor: &mut Actor, item: &mut Item) -> Result<Option<LogEntry>, ()> {
+        if let Some(action) = self.map.get(&action) {
+            if action.action.can_run_on_item(actor, item) && actor.ap.can_use(action.base_ap_cost) {
+                let log = action.action.run_on_item(actor, item);
+                actor.ap.consume(action.base_ap_cost);
+                return Ok(log)
+            }
+        }
+        Err(())
+    }
+
     pub fn try_use_on_self(&self, action: ActionEnum, actor: &mut Actor) -> Result<Option<LogEntry>, ()> {
         if let Some(action) = self.map.get(&action) {
             if action.action.can_run_on_self(actor) && actor.ap.can_use(action.base_ap_cost) {
@@ -75,6 +88,8 @@ pub trait ActionTrait {
     fn run_on_self(&self, _actor: &mut Actor) -> Option<LogEntry> { None }
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { false }
     fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> { None }
+    fn can_run_on_item(&self, _actor: &Actor, _target: &Item) -> bool { false }
+    fn run_on_item(&self, _actor: &mut Actor, _target: &mut Item) -> Option<LogEntry> { None }
 }
 
 pub struct AttackAction {}
@@ -99,6 +114,17 @@ impl ActionTrait for TalkAction {
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
     fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> {
         Some(LogEntry::new(format!("Hello!"), Color::from_hex("eb9661")))
+    }
+
+}
+
+pub struct PickUpAction {}
+impl ActionTrait for PickUpAction {
+
+    fn can_run_on_item(&self, _actor: &Actor, _item: &Item) -> bool { true }
+    fn run_on_item(&self, actor: &mut Actor, item: &mut Item) -> Option<LogEntry> {
+        actor.inventory.add(item.clone());
+        Some(LogEntry::new(format!("You picked up ..."), Color::from_hex("eb9661")))
     }
 
 }

@@ -2,7 +2,7 @@ use crate::commons::{damage_model::DamageComponent, history_vec::Id};
 
 use super::world::World;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Item {
     Sword(Sword),
     Mace(Mace),
@@ -62,7 +62,7 @@ impl Item {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Sword {
     pub handle_mat: Id,
     pub blade_mat: Id,
@@ -79,7 +79,7 @@ impl Sword {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Mace {
     pub handle_mat: Id,
     pub head_mat: Id,
@@ -95,7 +95,7 @@ impl Mace {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Lance {
     pub handle_mat: Id,
     pub tip_mat: Id,

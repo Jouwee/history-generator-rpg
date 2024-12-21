@@ -1,26 +1,16 @@
 # Doing
 
-## feat - Basic Inventory
-
-- ✓ Player will have a inventory structure to hold items
-- ✓ Inventory dialog
-  - ✓ Grid of items
-  - ✓ Switch equiped item
-- ✓ Attack with equipped
-  - ✓ Compute item stats
-  - ✓ Adapt attack action to use equipped item
-  - ✓ Unequipped must do a unarmed attack
-
 # TODO - 0.0.7 - All about weapons
 
 ## feat - Obtaining loot
 
-- Items on the ground
-  - Data structure in chunk
+- ✓ Items on the ground
+  - ✓ Data structure in chunk
   - Render
-  - Pick-up action to add to inventory
-- When the player enters an open tile, there's a chance of spawning giant spiders (now it always spawns)
-  - Also spawns an item on the ground to be picked up
+    - Sprite based on material
+  - ✓ Pick-up action to add to inventory
+- ✓ When the player enters an abandoned settlement tile, spawn giant spiders
+  - ✓ Also spawns an item on the ground to be picked up
 
 ## feat - Artifact loot
 
@@ -28,7 +18,7 @@
 - If you kill someone wielding an artifact, they drop it
 - Other actors can use their posessions
 
-# TODO - 0.0.7 - All about attributes
+# TODO - 0.0.8 - All about attributes
 
 ## feat - New attributes
 
@@ -100,6 +90,19 @@ The majority of the current time spent in history generation is searching who is
 ## Fix dialog UI
 
 - ✓ Background
+
+# Release 0.0.7 - Inventory and weapons
+
+## feat - Basic Inventory
+
+- ✓ Player will have a inventory structure to hold items
+- ✓ Inventory dialog
+  - ✓ Grid of items
+  - ✓ Switch equiped item
+- ✓ Attack with equipped
+  - ✓ Compute item stats
+  - ✓ Adapt attack action to use equipped item
+  - ✓ Unequipped must do a unarmed attack
 
 # Release 0.0.6 - Great beasts and artifacts
 
