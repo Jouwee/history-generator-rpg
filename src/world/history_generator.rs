@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
 use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::Item, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
@@ -126,11 +126,16 @@ impl WorldHistoryGenerator {
     fn load_materials() -> HashMap<Id, Material> {
         let mut map = HashMap::new();
         map.insert(Id(0), Material::new_metal("steel"));
-        map.insert(Id(1), Material::new_metal("bronze"));
+        let mut bronze = Material::new_metal("bronze");
+        bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
+        map.insert(Id(1), bronze);
         map.insert(Id(2), Material::new_wood("birch"));
         map.insert(Id(3), Material::new_wood("oak"));
         map.insert(Id(4), Material::new_bone("leshen bone"));
         map.insert(Id(5), Material::new_bone("fiend bone"));
+        let mut copper = Material::new_metal("copper");
+        copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
+        map.insert(Id(6), copper);
         map
     }
 

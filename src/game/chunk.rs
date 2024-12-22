@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use noise::{NoiseFn, Perlin};
+use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, Color}, world::item::{Item, Sword}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::{Coord2, Size2D}, world::item::{Item, ItemMaker}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -12,7 +13,7 @@ pub struct Chunk {
     tile_def: HashMap<u8, TileDef>,
     pub npcs: Vec<Actor>,
     pub killed_people: Vec<Id>,
-    pub items_on_ground: Vec<(Coord2, Item)>
+    pub items_on_ground: Vec<(Coord2, Item, Texture)>
 }
 
 impl Chunk {
@@ -104,7 +105,7 @@ impl Chunk {
             }
         }
 
-        if let Some(settlement) = found_sett {
+        if let Some(_settlement) = found_sett {
             if chunk.npcs.len() == 0 {
                 for _ in 0..rng.randu_range(3, 7) {
                     let point = Coord2::xy(
@@ -120,8 +121,9 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                chunk.items_on_ground.push((point, Item::Sword(Sword::new(Id(3), Id(0), Id(1), Id(1), world))));
-
+                let item = ItemMaker::random(&rng, world);
+                let texture = item.make_texture(world);
+                chunk.items_on_ground.push((point, item, texture));
             }
         }
 
@@ -140,8 +142,9 @@ impl Renderable for Chunk {
             }
         }
 
-        for (pos, item) in self.items_on_ground.iter() {
-            ctx.circle([pos.x as f64 * 16., pos.y as f64 * 16., 16., 16.], Color::from_hex("ff0000"));
+        for (pos, _item, texture) in self.items_on_ground.iter() {
+            ctx.texture_ref(texture, [pos.x as f64 * 16., pos.y as f64 * 16.]);
+
         }
 
     }

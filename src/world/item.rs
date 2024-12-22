@@ -1,4 +1,9 @@
-use crate::commons::{damage_model::DamageComponent, history_vec::Id};
+use std::collections::HashMap;
+
+use image::ImageReader;
+use opengl_graphics::Texture;
+
+use crate::{commons::{damage_model::DamageComponent, history_vec::Id, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}};
 
 use super::world::World;
 
@@ -60,6 +65,40 @@ impl Item {
             Item::Lance(lance) => lance.damage
         }
     }
+
+
+    pub fn make_texture(&self, world: &World) -> Texture {
+        match self {
+            Self::Sword(sword) => {
+                let image = ImageReader::open("./assets/sprites/sword.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, world.materials.get(&sword.blade_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Red, world.materials.get(&sword.guard_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Green, world.materials.get(&sword.handle_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Yellow, world.materials.get(&sword.pommel_mat).unwrap().color_pallete);
+                return pallete_sprite.remap(map)
+            },
+            Self::Mace(mace) => {
+                let image = ImageReader::open("./assets/sprites/mace.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, world.materials.get(&mace.head_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Yellow, world.materials.get(&mace.handle_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Green, world.materials.get(&mace.pommel_mat).unwrap().color_pallete);
+                return pallete_sprite.remap(map)
+            },
+            Self::Lance(lance) => {
+                let image = ImageReader::open("./assets/sprites/lance.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, world.materials.get(&lance.tip_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Yellow, world.materials.get(&lance.handle_mat).unwrap().color_pallete);
+                return pallete_sprite.remap(map)
+            }
+        }
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -108,4 +147,28 @@ impl Lance {
         let damage = DamageComponent::new(0., tip.sharpness, 0.);
         Lance { handle_mat, tip_mat, damage }
     }
+}
+
+pub struct ItemMaker {}
+
+impl ItemMaker {
+
+    pub fn random(rng: &Rng, world: &World) -> Item {
+        let mut rng = rng.derive("random_item");
+        let item = rng.randu_range(0, 3);
+
+        let blades = [Id(0), Id(1), Id(6)];
+        let blade = blades[rng.randu_range(0, blades.len())];
+        let handles = [Id(2), Id(3)];
+        let handle = handles[rng.randu_range(0, handles.len())];
+        let extras = [Id(0), Id(1), Id(6)];
+        let extra = extras[rng.randu_range(0, extras.len())];
+
+        match item {
+            0 => Item::Sword(Sword::new(handle, blade, extra, extra, world)),
+            1 => Item::Mace(Mace::new(handle, blade, extra, world)),
+            _ => Item::Lance(Lance::new(handle, blade, world))
+        }
+    }
+
 }

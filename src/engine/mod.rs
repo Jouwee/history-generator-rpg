@@ -1,9 +1,11 @@
 use geometry::{Coord2, Vec2};
+use image::Rgba;
 
 pub mod assets;
 pub mod debug;
 pub mod geometry;
 pub mod gui;
+pub mod pallete_sprite;
 pub mod render;
 pub mod spritesheet;
 pub mod scene;
@@ -77,4 +79,14 @@ impl Color {
     pub fn f32_arr(&self) -> [f32; 4] {
         return [self.r, self.g, self.b, self.a]
     }
+
+    pub fn to_rgba8(&self) -> Rgba<u8> {
+        Rgba::<u8>([
+            (self.r * 255.) as u8,
+            (self.g * 255.) as u8,
+            (self.b * 255.) as u8,
+            (self.a * 255.) as u8,
+        ])
+    }
+
 }

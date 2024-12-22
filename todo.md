@@ -6,8 +6,8 @@
 
 - ✓ Items on the ground
   - ✓ Data structure in chunk
-  - Render
-    - Sprite based on material
+  - ✓ Render
+    - ✓ Sprite based on material
   - ✓ Pick-up action to add to inventory
 - ✓ When the player enters an abandoned settlement tile, spawn giant spiders
   - ✓ Also spawns an item on the ground to be picked up

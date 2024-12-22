@@ -47,31 +47,34 @@ impl App {
         let mut glyphs = GlyphCache::new("./assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
 
 
-        self.gl.draw(args.viewport(), |c, gl| {
-            // Clear the screen.
-            clear(Color::from_hex("14233a").f32_arr(), gl);
-            let mut context = RenderContext {
-                args,
-                context: c,
-                layout_rect: [0., 0., c.get_view_size()[0], c.get_view_size()[1]],
-                original_transform: c.transform.clone(),
-                gl,
-                assets: &mut self.assets,
-                default_font: &mut glyphs
-            };
-            match &mut self.scene {
-                SceneEnum::WorldGen(game_state) => {
-                    game_state.render(&mut context);
-                },
-                SceneEnum::World(game_state) => {
-                    game_state.render(&mut context);
-                },
-                SceneEnum::Game(game_state) => {
-                    game_state.render(&mut context);
-                },
-            }
-            self.debug_overlay.render(&mut context);
-        });
+        let c = self.gl.draw_begin(args.viewport());
+        
+        // Clear the screen.
+        clear(Color::from_hex("14233a").f32_arr(), &mut self.gl);
+        let mut context = RenderContext {
+            args,
+            context: c,
+            layout_rect: [0., 0., c.get_view_size()[0], c.get_view_size()[1]],
+            original_transform: c.transform.clone(),
+            gl: &mut self.gl,
+            assets: &mut self.assets,
+            default_font: &mut glyphs,
+            textures: Vec::new(),
+        };
+        match &mut self.scene {
+            SceneEnum::WorldGen(game_state) => {
+                game_state.render(&mut context);
+            },
+            SceneEnum::World(game_state) => {
+                game_state.render(&mut context);
+            },
+            SceneEnum::Game(game_state) => {
+                game_state.render(&mut context);
+            },
+        }
+        self.debug_overlay.render(&mut context);
+        self.gl.draw_end();
+
     }
 
     fn update(&mut self, args: &Update) {

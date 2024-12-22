@@ -13,7 +13,8 @@ pub struct RenderContext<'a, 'b> {
     pub assets: &'b mut Assets,
     pub layout_rect: [f64; 4],
     // TODO: Repo
-    pub default_font: &'b mut GlyphCache<'b>
+    pub default_font: &'b mut GlyphCache<'b>,
+    pub textures: Vec<Texture>
 }
 
 impl<'a, 'b> RenderContext<'a, 'b> {
@@ -46,7 +47,16 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         image(texture, transform, self.gl);
     }
 
-    pub fn texture(&mut self, texture: &Texture, position: [f64; 2]) {
+    pub fn texture(&mut self, texture: Texture, position: [f64; 2]) {
+        let transform = self.context.transform.trans(position[0], position[1]);
+        // Workaround for a behaviour of piston where it passes a reference of the texture to the backend for async rendering,
+        // but that texture might be dropped before the frame is rendered, resulting in a black square.
+        // So I save the texture in this array, which is dropped after the frame is rendered.
+        self.textures.push(texture);
+        image(self.textures.last().unwrap(), transform, self.gl);
+    }
+
+    pub fn texture_ref(&mut self, texture: &Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         image(texture, transform, self.gl);
     }

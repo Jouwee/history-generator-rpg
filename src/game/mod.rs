@@ -267,8 +267,8 @@ impl Scene for GameSceneState {
                             }
                         }
                         if tile_pos.dist_squared(&self.player.xy) < 3. {
-                            let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item))| *xy == tile_pos);
-                            if let Some((i, (_xy, item))) = target {
+                            let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item, _tex))| *xy == tile_pos);
+                            if let Some((i, (_xy, item, _texture))) = target {
 
                                 match action {
                                     ActionEnum::PickUp => {
