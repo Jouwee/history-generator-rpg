@@ -77,6 +77,9 @@ impl GameSceneState {
         {
             let npc = self.chunk.npcs.get(i).unwrap();
             id = npc.person_id;
+            for (_i, item, _equipped) in npc.inventory.iter() {
+                self.chunk.items_on_ground.push((npc.xy, item.clone(), item.make_texture(&self.world)));
+            }
         }
         self.chunk.npcs.remove(i);
         if let Some(id) = id {

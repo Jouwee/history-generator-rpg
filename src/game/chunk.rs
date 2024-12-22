@@ -101,7 +101,7 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
                 let species = world.species.get(&person.species).unwrap();
-                chunk.npcs.push(Actor::from_person(point, *id, &person, &species));
+                chunk.npcs.push(Actor::from_person(point, *id, &person, &species, world));
             }
         }
 

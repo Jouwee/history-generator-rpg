@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DefenceComponent}, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}}, Person};
+use crate::{commons::{damage_model::{DamageComponent, DefenceComponent}, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}, world::World}, Person};
 
 use super::{inventory::inventory::Inventory, Renderable};
 
@@ -63,10 +63,16 @@ impl Actor {
         }
     }
 
-    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species: &Species) -> Actor {
+    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species: &Species, world: &World) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
+        }
+        let mut inventory = Inventory::new();
+        for id in person.possesions.iter() {
+            let item = world.artifacts.get(id);
+            inventory.add(item.clone());
+            inventory.equip(0);
         }
         Actor {
             xy,
@@ -80,7 +86,7 @@ impl Actor {
             person_id: Some(person_id),
             texture: species.texture.clone(),
             actor_type,
-            inventory: Inventory::new()
+            inventory
         }
     }
 

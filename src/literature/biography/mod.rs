@@ -148,7 +148,7 @@ impl<'a> BiographyWriter<'a> {
                 return format!("In {}, {} found the city of {}", date, self.name(&self.world.people.get(&event.founder_id).unwrap()), settlement.name)
             },
             WorldEventEnum::NewSettlementLeader(event) => {
-                return format!("In {}, {} became the new leader of {}", date, self.name(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name)
+                return format!("In {}, {} became the new leader of {} {:?}", date, self.name(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name, self.world.settlements.get(&event.settlement_id).xy)
             },
             WorldEventEnum::Marriage(event) => {
                 return format!("In {}, {} and {} married", date, self.name(&self.world.people.get(&event.person1_id).unwrap()), self.birth_name(&self.world.people.get(&event.person2_id).unwrap()))

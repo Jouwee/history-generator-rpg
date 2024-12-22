@@ -1,0 +1,5 @@
+- Tests are passing?
+- Is there any warnings?
+- Create a tag
+- Run build.sh
+- Write post and upload in website
