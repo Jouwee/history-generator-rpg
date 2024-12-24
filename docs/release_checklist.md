@@ -1,5 +1,6 @@
 - Tests are passing?
 - Is there any warnings?
+- update cargo.toml
 - Create a tag
 - Run build.sh
 - Write post and upload in website

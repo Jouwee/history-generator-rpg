@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DefenceComponent}, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}, world::World}, Person};
+use crate::{commons::{damage_model::DefenceComponent, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}, world::World}, Person};
 
 use super::{inventory::inventory::Inventory, Renderable};
 
@@ -12,7 +12,7 @@ pub struct Actor {
     pub xy: Coord2,
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
-    pub damage: DamageComponent,
+    pub attributes: Attributes,
     pub defence: DefenceComponent,
     pub actor_type: ActorType,
     pub texture: String,
@@ -28,9 +28,9 @@ impl Actor {
     pub fn player(xy: Coord2, species: &Species) -> Actor {
         Actor {
             xy,
-            ap: ActionPointsComponent::new(100),
-            hp: HealthPointsComponent::from_attributes(&species.attributes),
-            damage: DamageComponent::from_attributes(&species.attributes),
+            ap: ActionPointsComponent::new(&species.attributes),
+            hp: HealthPointsComponent::new(&species.attributes),
+            attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
@@ -49,9 +49,9 @@ impl Actor {
         }
         Actor {
             xy,
-            ap: ActionPointsComponent::new(100),
-            hp: HealthPointsComponent::from_attributes(&species.attributes),
-            damage: DamageComponent::from_attributes(&species.attributes),
+            ap: ActionPointsComponent::new(&species.attributes),
+            hp: HealthPointsComponent::new(&species.attributes),
+            attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
@@ -76,9 +76,9 @@ impl Actor {
         }
         Actor {
             xy,
-            ap: ActionPointsComponent::new(100),
-            hp: HealthPointsComponent::from_attributes(&species.attributes),
-            damage: DamageComponent::from_attributes(&species.attributes),
+            ap: ActionPointsComponent::new(&species.attributes),
+            hp: HealthPointsComponent::new(&species.attributes),
+            attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
@@ -88,6 +88,11 @@ impl Actor {
             actor_type,
             inventory
         }
+    }
+
+    pub fn update(&mut self) {
+        self.hp.update(&self.attributes);
+        self.ap.update(&self.attributes);
     }
 
     pub fn add_xp(&mut self, ammount: u32) {
@@ -152,8 +157,7 @@ impl Actor {
         }
         if new_level > self.level {
             self.level = new_level;
-            self.damage = self.damage + DamageComponent::new(0., 0., 1.);
-            self.defence = self.defence + DefenceComponent::new(0.1, 0.1, 0.1);
+            self.attributes.unallocated += 1;
         }
     }
 }
@@ -170,11 +174,24 @@ pub struct ActionPointsComponent {
 }
 
 impl ActionPointsComponent {
-    fn new(max_ap: u16) -> ActionPointsComponent {
+
+    pub fn new(attributes: &Attributes) -> ActionPointsComponent {
+        let max_ap = Self::max_ap(attributes);
         ActionPointsComponent {
             action_points: max_ap as i32,
             max_action_points: max_ap
         }
+    }
+
+    pub fn update(&mut self, attributes: &Attributes) {
+        self.max_action_points = Self::max_ap(attributes);
+        self.action_points = self.action_points.min(self.max_action_points as i32)
+    }
+
+    fn max_ap(attributes: &Attributes) -> u16 {
+        let ap = 100 + attributes.bonus_ap();
+        let ap = ap.clamp(0, u16::MAX as i32);
+        return ap as u16
     }
 
     pub fn can_use(&self, ap: u16) -> bool {
@@ -197,15 +214,24 @@ pub struct HealthPointsComponent {
 }
 
 impl HealthPointsComponent {
-    fn new(max_hp: f32) -> HealthPointsComponent {
+
+    pub fn new(attributes: &Attributes) -> HealthPointsComponent {
+        let max_hp = Self::max_hp(attributes);
         HealthPointsComponent {
-            health_points: max_hp,
-            max_health_points: max_hp as u16
+            health_points: max_hp as f32,
+            max_health_points: max_hp
         }
     }
 
-    fn from_attributes(attributes: &Attributes) -> HealthPointsComponent {
-        Self::new(attributes.simplified_health())
+    pub fn update(&mut self, attributes: &Attributes) {
+        self.max_health_points = Self::max_hp(attributes);
+        self.health_points = self.health_points.min(self.max_health_points as f32)
+    }
+
+    fn max_hp(attributes: &Attributes) -> u16 {
+        let hp = 100 + attributes.bonus_hp();
+        let hp = hp.clamp(0, u16::MAX as i32);
+        return hp as u16
     }
 
     pub fn damage(&mut self, damage: f32) {

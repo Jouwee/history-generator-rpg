@@ -104,21 +104,21 @@ impl WorldHistoryGenerator {
         map.insert(Id(0), Species::new(Id(0), "human", "character.png"));
         map.insert(Id(1), Species::new(Id(1), "leshen", "leshen.png")
             .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 45 })
+            .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
             .lifetime(300)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
         );
         map.insert(Id(2), Species::new(Id(2), "fiend", "fiend.png")
             .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 35 })
+            .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
             .lifetime(200)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
         );
         map.insert(Id(3), Species::new(Id(3), "spider", "spider.png")
             .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 5 })
+            .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
         );
         map
     }

@@ -134,6 +134,10 @@ impl Scene for GameSceneState {
         self.codex_dialog.update();
         self.inventory_dialog.update();
 
+        for npc in self.chunk.npcs.iter_mut() {
+            npc.update();
+        }
+
         if self.turn_controller.is_player_turn() {
             self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.player.hp.health_points, self.player.hp.max_health_points, self.player.ap.action_points, self.player.ap.max_action_points, self.player.level, self.player.xp));
         } else {

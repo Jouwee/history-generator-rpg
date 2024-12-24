@@ -17,19 +17,19 @@ explored civilized area -> interact with people -> receive info -> investigate -
   - Armors
     - Heavy - 3 tiers
     - Light - 3 tiers
-  - Weapons
-    - Slashing - 3 tiers
-    - Bashing - 3 tiers
-    - Piercing - 3 tiers
+  - ✓ Weapons
+    - ✓ Slashing - 3 tiers
+    - ✓ Bashing - 3 tiers
+    - ✓ Piercing - 3 tiers
   - Consumables
     - Health potion
 - Other mechanics
   - Resting at cities to recover health
-- World interaction
-  - Artifacts
+- ✓ World interaction
+  - ✓ Artifacts
     - ✓ More powerful versions of weapons generated through History
-    - Ways to obtain those artifacts
-  - People
+    - ✓ Ways to obtain those artifacts
+  - ✓ People
     - ✓ Interacting with people to get information about other people, artifacts, etc
 - Organic Questing
   - People have wants, problems, and riches. Do one in exchange for the other (make this more "mechanified")

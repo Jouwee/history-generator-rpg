@@ -27,6 +27,14 @@ impl DamageComponent {
         return (self.slashing - defence.slashing).max(0.0) + (self.piercing - defence.piercing).max(0.0) + (self.bludgeoning - defence.bludgeoning).max(0.0)
     }
 
+    pub fn multiply(&self, mult: f32) -> DamageComponent {
+        DamageComponent {
+            slashing: self.slashing * mult,
+            piercing: self.piercing * mult,
+            bludgeoning: self.bludgeoning * mult
+        }
+    }
+
 }
 
 impl Add for DamageComponent {

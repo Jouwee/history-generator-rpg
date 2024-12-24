@@ -2,15 +2,6 @@
 
 # TODO - 0.0.8 - All about attributes
 
-## feat - New attributes
-
-- STR
-  - Affect damage of mellee weapons
-- AGI
-  - Increases AP
-- CON
-  - Increases HP
-
 ## feat - Level up
 
 - On level up, you can choose to increase 1 attribute
@@ -69,9 +60,16 @@ The majority of the current time spent in history generation is searching who is
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
 
-## Fix dialog UI
+# TODO - 0.0.8 - All about attributes
 
-- ✓ Background
+## feat - New attributes
+
+- ✓ STR
+  - ✓ Affect damage of mellee weapons
+- ✓ AGI
+  - ✓ Increases AP
+- ✓ CON
+  - ✓ Increases HP
 
 # Release 0.0.7 - Inventory and weapons
 
@@ -184,6 +182,10 @@ Creation of a "knowledge codex" - stuff you know and can ask about
 
 - ✓ Background
 - ✓ Size
+
+## Fix dialog UI
+
+- ✓ Background
 
 # Release 0.0.5 - Aimless improvements
 

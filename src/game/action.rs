@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{engine::{geometry::Coord2, Color}, world::item::Item};
+use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, Color}, world::item::Item};
 
 use super::{actor::Actor, log::LogEntry};
 
@@ -97,9 +97,13 @@ impl ActionTrait for AttackAction {
 
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
     fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
-        let mut damage_model = actor.damage;
+        let damage_model;
+        let str_mult = actor.attributes.strength_attack_damage_mult();
         if let Some(item) = actor.inventory.equipped() {
-            damage_model = damage_model + item.damage_model();
+            damage_model = item.damage_model().multiply(str_mult);
+        } else {
+            // TODO: Maybe if the creature bites instead of punching, this should change
+            damage_model = DamageComponent::new(0., 0., 1.).multiply(str_mult);
         }
         let damage = damage_model.resolve(&target.defence);
         target.hp.damage(damage);

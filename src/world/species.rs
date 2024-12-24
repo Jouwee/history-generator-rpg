@@ -23,7 +23,7 @@ impl Species {
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
-            attributes: Attributes { strength: 13 },
+            attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 0 },
             drops: Vec::new()
         }
     }
