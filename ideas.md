@@ -4,10 +4,10 @@ explored civilized area -> interact with people -> receive info -> investigate -
 -> get quests -> do quests -> get more powerful
 
 - D&D / BG / TTRPG bare-bones mechanics
-  - Attributes
-    - STR - Mellee damage
-    - DEX - Dodge chance, AP / movement
-    - CON - Health
+  - ✓ Attributes
+    - ✓ STR - Mellee damage
+    - ✓ DEX - Dodge chance, AP / movement
+    - ✓ CON - Health
     - INT - ???
     - WIS - ???
   - XP/Levels

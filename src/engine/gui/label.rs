@@ -26,7 +26,10 @@ impl GUINode for Label {
         let transform = ctx.context.transform;
         // Renders on the original transform for pixelated font. Won't work with scaled stuff.
         ctx.context.transform = ctx.original_transform;
-        ctx.text(&self.text, 12, self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]), Color::from_hex("ffffff"));
+        let mut position = self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]);
+        // Increments y-position because text is rendered bottom-up, everything else is top-down. This normalizes labels to be top-down
+        position[1] += 14.;
+        ctx.text(&self.text, 12, position, Color::from_hex("ffffff"));
         ctx.context.transform = transform;
     }
 

@@ -5,7 +5,7 @@ use actor::{Actor, ActorType};
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use interact::interact_dialog::InteractDialog;
-use inventory::inventory_dialog::InventoryDialog;
+use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
 use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
@@ -43,7 +43,7 @@ pub struct GameSceneState {
     button_inventory: Button,
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
-    inventory_dialog: InventoryDialog,
+    inventory_dialog: CharacterDialog,
     selected_targeted_action: Option<ActionEnum>
 }
 
@@ -59,13 +59,13 @@ impl GameSceneState {
             actions: ActionMap::default(),
             label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
             button_attack: Button::new("atk", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
-            button_talk: Button::new("tlk", Position::Anchored(Anchor::TopLeft, 32.0, 32.0)),            
-            button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 54.0, 32.0)),            
-            button_inventory: Button::new("Invent", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
+            button_talk: Button::new("tlk", Position::Anchored(Anchor::TopLeft, 36.0, 32.0)),            
+            button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 62.0, 32.0)),            
+            button_inventory: Button::new("Character", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::TopLeft, 228.0, 32.0)),       
             interact_dialog: InteractDialog::new(),
             codex_dialog: CodexDialog::new(),
-            inventory_dialog: InventoryDialog::new(),
+            inventory_dialog: CharacterDialog::new(),
             selected_targeted_action: None
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
@@ -184,7 +184,7 @@ impl Scene for GameSceneState {
     fn input(&mut self, evt: &InputEvent) {
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
-        self.inventory_dialog.input_state(evt, &mut self.player.inventory, &self.world);
+        self.inventory_dialog.input_state(evt, &mut self.player, &self.world);
         if let ButtonEvent::Click = self.button_attack.event(evt) {
             self.selected_targeted_action = Some(ActionEnum::Attack);
             return;
@@ -204,7 +204,7 @@ impl Scene for GameSceneState {
         }
 
         if let ButtonEvent::Click = self.button_inventory.event(evt) {
-            self.inventory_dialog.start_dialog(&self.player.inventory, &self.world);
+            self.inventory_dialog.start_dialog(&self.player, &self.world);
             return;
         }
 

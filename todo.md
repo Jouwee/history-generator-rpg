@@ -2,14 +2,6 @@
 
 # TODO - 0.0.8 - All about attributes
 
-## feat - Level up
-
-- On level up, you can choose to increase 1 attribute
-
-## feat - Character dialog
-
-- Improve the inventory dialog to show your character values and attributes
-
 # Backlog
 
 ## refactor - Actor composition system
@@ -70,6 +62,10 @@ The majority of the current time spent in history generation is searching who is
   - ✓ Increases AP
 - ✓ CON
   - ✓ Increases HP
+
+## feat - Level up
+
+- ✓ On level up, you can choose to increase 1 attribute
 
 # Release 0.0.7 - Inventory and weapons
 

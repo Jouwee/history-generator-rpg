@@ -229,7 +229,7 @@ impl HealthPointsComponent {
     }
 
     fn max_hp(attributes: &Attributes) -> u16 {
-        let hp = 100 + attributes.bonus_hp();
+        let hp = 10 + attributes.bonus_hp();
         let hp = hp.clamp(0, u16::MAX as i32);
         return hp as u16
     }

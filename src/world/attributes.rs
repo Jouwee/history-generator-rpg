@@ -9,11 +9,11 @@ pub struct Attributes {
 impl Attributes {
 
     pub fn simplified_offensive_power(&self) -> f32 {
-        return 5. * self.strength_attack_damage_mult()
+        return 2. * self.strength_attack_damage_mult()
     }
 
     pub fn simplified_health(&self) -> f32 {
-        return 100. + self.bonus_hp() as f32;
+        return 10. + self.bonus_hp() as f32;
     }
 
     pub fn strength_attack_damage_mult(&self) -> f32 {

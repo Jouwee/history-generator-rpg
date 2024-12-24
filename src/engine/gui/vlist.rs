@@ -2,7 +2,8 @@ use super::{container::{Container, InnerContainer}, GUINode, Position};
 
 pub struct VList {
     position: Position,
-    inner: InnerContainer
+    inner: InnerContainer,
+    gap: f64
 }
 
 impl VList {
@@ -10,7 +11,8 @@ impl VList {
     pub fn new(position: Position) -> VList {
         VList {
             position,
-            inner: InnerContainer::new()
+            inner: InnerContainer::new(),
+            gap: 4.
         }
     }
 
@@ -29,10 +31,11 @@ impl Container for VList {
     fn render_children(&mut self, ctx: &mut crate::engine::render::RenderContext, my_rect: [f64; 4]) {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
-        for child in self.container_mut().children.values_mut() {
+        let gap = self.gap;
+        for child in self.container_mut().children.iter_mut() {
             if let Some(gui_node) = Self::to_gui_node(child) {
                 gui_node.render(ctx);
-                ctx.layout_rect[1] += gui_node.min_size(ctx)[1];
+                ctx.layout_rect[1] += gui_node.min_size(ctx)[1] + gap;
             }
         }
         ctx.layout_rect = layout_rect;

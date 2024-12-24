@@ -1,2 +1,2 @@
 pub mod inventory;
-pub mod inventory_dialog;
+pub mod character_dialog;
