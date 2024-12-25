@@ -10,9 +10,8 @@ explored civilized area -> interact with people -> receive info -> investigate -
     - ✓ CON - Health
     - INT - ???
     - WIS - ???
-  - XP/Levels
-    - Attribute increase
-    - Health increase
+  - ✓ XP/Levels
+    - ✓ Attribute increase
 - Equipment
   - Armors
     - Heavy - 3 tiers

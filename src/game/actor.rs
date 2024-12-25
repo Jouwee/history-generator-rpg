@@ -164,7 +164,7 @@ impl Actor {
 
 impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext) {
-        ctx.image(&self.texture, [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0]);
+        ctx.image(&self.texture, [self.xy.x as f64 * 16.0, self.xy.y as f64 * 16.0 - 8.]);
     }
 }
 

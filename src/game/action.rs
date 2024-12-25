@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, Color}, world::item::Item};
 
-use super::{actor::Actor, log::LogEntry};
+use super::{actor::Actor, chunk::ChunkMap, log::LogEntry};
 
 #[derive(Hash, Eq, PartialEq)]
 pub enum ActionEnum {
@@ -79,6 +79,18 @@ impl ActionMap {
         }
         Err(())
     }
+
+    pub fn try_use_on_tile(&self, action: ActionEnum, actor: &mut Actor, chunk: &mut ChunkMap, pos: &Coord2) -> Result<Option<LogEntry>, ()> {
+        if let Some(action) = self.map.get(&action) {
+            if action.action.can_run_on_tile(actor, chunk, pos) && actor.ap.can_use(action.base_ap_cost) {
+                let log = action.action.run_on_tile(actor, chunk, pos);
+                actor.ap.consume(action.base_ap_cost);
+                return Ok(log)
+            }
+        }
+        Err(())
+    }
+
 }
 
 
@@ -90,6 +102,8 @@ pub trait ActionTrait {
     fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> { None }
     fn can_run_on_item(&self, _actor: &Actor, _target: &Item) -> bool { false }
     fn run_on_item(&self, _actor: &mut Actor, _target: &mut Item) -> Option<LogEntry> { None }
+    fn can_run_on_tile(&self, _actor: &Actor, _chunk: &ChunkMap, _pos: &Coord2) -> bool { false }
+    fn run_on_tile(&self, _actor: &mut Actor, _chunk: &mut ChunkMap, _pos: &Coord2) -> Option<LogEntry> { None }
 }
 
 pub struct AttackAction {}
@@ -138,8 +152,11 @@ pub struct MoveAction {
 }
 impl ActionTrait for MoveAction {
 
-    fn can_run_on_self(&self, _actor: &Actor) -> bool { true }
-    fn run_on_self(&self, actor: &mut Actor) -> Option<LogEntry> {
+    fn can_run_on_tile(&self, _actor: &Actor, chunk: &ChunkMap, pos: &Coord2) -> bool {
+        let pos = *pos + self.direction;
+        return !chunk.blocks_movement(pos);
+    }
+    fn run_on_tile(&self, actor: &mut Actor, _chunk: &mut ChunkMap, _pos: &Coord2) -> Option<LogEntry> {
         actor.xy = actor.xy + self.direction;
         None
     }

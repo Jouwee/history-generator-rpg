@@ -1,10 +1,49 @@
 # Doing
 
-# TODO - 0.0.8 - All about attributes
+# TODO - 0.0.9 - More interesting world generation
 
-# Backlog
+## feat - Object layer in local map
 
-## refactor - Actor composition system
+- Different layer above ground tiles
+  - ✓ Walls will generate in this layer
+  - ✓ Tile rendering
+  - ✓ Sprites can exceed the 16x16 grid
+  - ✓ Z-Ordering with actors
+  - ✓ Blocks movement
+  - ✓ Blocks spawning
+
+## feat - Better wilderness generation
+
+- Vegetation tile metric
+- Trees based on vegetation
+- Tall grass based on vegetation
+
+## feat - Better settlement generation
+
+- More buildings, based on settlement size
+- Some furniture
+  - Beds
+  - Tables + chairs
+  - Doors
+- Trees and tall grass
+
+## feat - Beds allow you to rest
+
+- Beds allow you to rest
+
+# TODO - 0.0.10 - Main menu, Saving and loading
+
+## feat - Main menu Scene
+
+- Option to start new game
+- Option to quit game
+- Start new game dialog (options)
+  - Seed
+  - Great beast frequency
+
+## feat - Saving and loading
+
+# TODO - 0.1.0 - Final polish
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -13,6 +52,34 @@
 ## refactor - Re-implement noise
 
 Package-size, learning
+
+## bug - Names like Anea00000000000
+
+## feat - Review worldgen scene
+
+- Show year, enter to interrupt
+
+## feat - Review world scene
+
+- Save current position
+- Better cursor
+- Scale up pixel art
+- Current tile info
+
+## feat - Review game scene
+
+## feat - Death
+
+- Save current position
+- Better cursor
+- Scale up pixel art
+- Current tile info
+
+## bug - History generation is not deterministic
+
+# Backlog
+
+## refactor - Actor composition system
 
 ## bug - Markov Chain doesn't work with order different than 3
 
@@ -32,14 +99,10 @@ Like the size of the spritesheet, not part of the key
 
 Not trivial to sync input, layout & graphics
 
-## bug - Names like Anea00000000000
-
 ## bug - Weird battle results
 
 "In 61, Axial Peregrins attacked Green Axis at Borchpør, and emerged vitorious.
 In the end, the attackers suffered no casualties. While the defenders suffered no casualties."
-
-## bug - History generation is not deterministic
 
 ## refactor - Better spatial searches
 
@@ -52,7 +115,7 @@ The majority of the current time spent in history generation is searching who is
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
 
-# TODO - 0.0.8 - All about attributes
+# Release - 0.0.8 - All about attributes
 
 ## feat - New attributes
 

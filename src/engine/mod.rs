@@ -9,6 +9,7 @@ pub mod pallete_sprite;
 pub mod render;
 pub mod spritesheet;
 pub mod scene;
+pub mod tilemap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Point2D(pub usize, pub usize);

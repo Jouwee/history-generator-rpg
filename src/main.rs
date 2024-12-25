@@ -383,8 +383,8 @@ fn main() {
 
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::from_world_tile(&scene.world, scene.cursor);
-                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.player, scene.codex, chunk));
+                        let chunk = Chunk::from_world_tile(&scene.world, scene.cursor, scene.player);
+                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.codex, chunk));
                         continue
                     }
                 }
@@ -399,7 +399,7 @@ fn main() {
                             // scene.world.events.push(WorldEventDate { year: generator.year }, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
                             // TODO: Inheritance
                         // }
-                        app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.player, scene.codex));
+                        app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.chunk.player, scene.codex));
                         continue
                     }
                 }
