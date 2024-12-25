@@ -45,10 +45,25 @@ impl Vec2 {
         f32::atan2(y,x)
     }
 
+    pub fn normalize(&self, mag: f32) -> Vec2 {
+        let factor = self.magnitude() / mag;
+        Vec2::xy(self.x / factor, self.y / factor)
+    }
+
     pub fn magnitude(&self) -> f32 {
         let x = 0. - self.x;
         let y = 0. - self.y;
         (x * x + y * y).sqrt()
+    }
+
+    pub fn dist(&self, another: &Vec2) -> f32 {
+        return self.dist_squared(another).sqrt();
+    }
+
+    pub fn dist_squared(&self, another: &Vec2) -> f32 {
+        let x = another.x - self.x;
+        let y = another.y - self.y;
+        return x*x + y*y
     }
 
 }
@@ -85,6 +100,10 @@ impl Coord2 {
 
     pub fn xy(x: i32, y: i32) -> Coord2 {
         Coord2 { x, y }
+    }
+
+    pub fn dist(&self, another: &Coord2) -> f32 {
+        return self.dist_squared(another).sqrt();
     }
 
     pub fn dist_squared(&self, another: &Coord2) -> f32 {

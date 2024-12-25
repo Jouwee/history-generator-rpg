@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -15,7 +15,7 @@ pub struct Chunk {
     pub player: Actor,
     pub npcs: Vec<Actor>,
     pub killed_people: Vec<Id>,
-    pub items_on_ground: Vec<(Coord2, Item, Texture)>
+    pub items_on_ground: Vec<(Coord2, Item, Texture)>,
 }
 
 pub struct ChunkMap {
@@ -49,6 +49,12 @@ impl Chunk {
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 32)));
         let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = ImageReader::open("assets/sprites/bed.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = ImageReader::open("assets/sprites/table.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         Chunk {
             size,
@@ -60,7 +66,7 @@ impl Chunk {
             npcs: Vec::new(),
             killed_people: Vec::new(),
             tile_def,
-            items_on_ground: Vec::new()
+            items_on_ground: Vec::new(),
         }
     }
 
@@ -118,22 +124,12 @@ impl Chunk {
         for (_, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
             if settlement.xy.0 as i32 == xy.x && settlement.xy.1 as i32 == xy.y {
-                found_sett = Some(settlement);
-                let rect_xy1 = Coord2::xy(rng.randu_range(8, 48) as i32, rng.randu_range(16, 48) as i32);
-                let rect_size = Coord2::xy(rng.randu_range(6, 16) as i32, rng.randu_range(6, 16) as i32);
-                let rect_xy2 = rect_xy1 + rect_size;
-                for x in rect_xy1.x..rect_xy2.x + 1 {
-                    for y in rect_xy1.y..rect_xy2.y + 1 {
-                        let idx = (y * chunk.size.x() as i32) + x;
-                        if x == rect_xy1.x || y == rect_xy1.y || x == rect_xy2.x || y == rect_xy2.y {
-                            chunk.map.tiles[idx as usize].id = 5; // Wall
-                            chunk.map.object_layer.set_tile(x as usize, y as usize, 1);
-                        } else {
-                            chunk.map.tiles[idx as usize].id = 4; // Floor
-                            chunk.map.object_layer.set_tile(x as usize, y as usize, 0);
-                        }
-                    }
+                let num_builds = (settlement.demographics.population / 20).clamp(1, 9) as usize;
+                let buildings = chunk.prepare_buildings(&mut rng, num_builds, 100);
+                for building in buildings {
+                    chunk.make_building(&mut rng, building);
                 }
+                found_sett = Some(settlement);
             }
         }
         for (id, person) in world.people.iter() {
@@ -182,6 +178,98 @@ impl Chunk {
             );
         }
         return point
+    }
+
+    pub fn prepare_buildings(&self, rng: &mut Rng, num_buildings: usize, tries: u32) -> Vec<(Coord2, Coord2)> {
+        let mut buildings = Vec::new();
+        for _ in 0..num_buildings {
+            let center = Vec2::xy(rng.randf_range(8., 56.), rng.randf_range(16., 56.));
+            let radius = rng.randf_range(3., 8.);
+            buildings.push((center, radius));           
+        }
+        // Separation
+        for i in 0..tries {
+            let mut v = Vec2::xy(0., 0.);
+            let mut neighbor_count = 0;
+            let mut overlapping = false;
+            let mut new_buildings = buildings.clone();
+            for building in new_buildings.iter_mut() {
+                for building_2 in buildings.iter() {
+                    if building == building_2 {
+                        continue
+                    }
+                    if building.0.dist(&building_2.0) < (building.1 + building_2.1) * 1.42 + 1. {
+                        v.x += building_2.0.x - building.0.x;
+                        v.y += building_2.0.y - building.0.y;
+                        neighbor_count += 1;
+                        overlapping = true;
+                    }
+
+                }
+                if neighbor_count == 0 {
+                    continue;
+                }
+                v.x = -v.x / neighbor_count as f32;
+                v.y = -v.y / neighbor_count as f32;
+                v = v.normalize(1.);
+                building.0.x = (building.0.x + v.x).clamp(building.1, self.size.x() as f32 - building.1 - 1.);
+                building.0.y = (building.0.y + v.y).clamp(building.1, self.size.y() as f32 - building.1 - 1.);
+            }
+            if !overlapping {
+                break;
+            }
+            if i == tries - 1 {
+            }
+            buildings = new_buildings;
+        }
+        return buildings.iter().map(|building| {
+            let size = Coord2::xy(
+                rng.randu_range(6, building.1 as usize * 2) as i32,
+                rng.randu_range(6, building.1 as usize * 2) as i32
+            );
+            let mut xy1 = Coord2::xy(building.0.x as i32, building.0.y as i32) - Coord2::xy(building.1 as i32, building.1 as i32);
+            let mut xy2 = xy1 + size;
+            xy1.x = xy1.x.clamp(0, self.size.x() as i32 - 1);
+            xy1.y = xy1.y.clamp(0, self.size.y() as i32 - 1);
+            xy2.x = xy2.x.clamp(0, self.size.x() as i32 - 1);
+            xy2.y = xy2.y.clamp(0, self.size.y() as i32 - 1);
+            return (xy1, xy2)
+        }).collect()
+    }
+
+    pub fn make_building(&mut self, rng: &mut Rng, building: (Coord2, Coord2)) {
+        for x in building.0.x..building.1.x + 1 {
+            for y in building.0.y..building.1.y + 1 {
+                let idx = (y * self.size.x() as i32) + x;
+                self.map.tiles[idx as usize].id = 4; // Floor
+                if x == building.0.x || y == building.0.y || x == building.1.x || y == building.1.y {
+                    // Leaves 1 block out for doors
+                    if y == building.1.y && x == building.0.x + (building.1.x-building.0.x) / 2 {
+                        self.map.object_layer.set_tile(x as usize, y as usize, 0);
+                        continue;
+                    }
+                    self.map.object_layer.set_tile(x as usize, y as usize, 1);
+                } else {
+                    self.map.object_layer.set_tile(x as usize, y as usize, 0);
+                }
+            }
+        }
+
+        // Bed
+        if rng.rand_chance(0.7) {
+            let x = rng.randu_range(building.0.x as usize + 1, building.1.x as usize - 2);
+            self.map.object_layer.set_tile(x, building.0.y as usize + 1, 3);
+        }
+
+        // Table and stools
+        if rng.rand_chance(0.6) {
+            let x = rng.randu_range(building.0.x as usize + 2, building.1.x as usize - 3);
+            let y = rng.randu_range(building.0.y as usize + 2, building.1.y as usize - 2);
+            self.map.object_layer.set_tile(x, y, 4);
+            self.map.object_layer.set_tile(x + 1, y, 5);
+            self.map.object_layer.set_tile(x - 1, y, 5);
+        }
+
     }
 
 }

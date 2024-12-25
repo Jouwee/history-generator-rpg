@@ -2,15 +2,6 @@
 
 # TODO - 0.0.9 - More interesting world generation
 
-## feat - Better settlement generation
-
-- More buildings, based on settlement size
-- Some furniture
-  - Beds
-  - Tables + chairs
-  - Doors
-- Trees and tall grass
-
 ## feat - Beds allow you to rest
 
 - Beds allow you to rest
@@ -115,6 +106,16 @@ The majority of the current time spent in history generation is searching who is
 
 - ✓ Vegetation tile metric
 - ✓ Trees based on vegetation
+
+## feat - Better settlement generation
+
+- ✓ More buildings, based on settlement size
+- ✓ Open space for doors
+- ✓ Some furniture
+  - ✓ Beds
+  - ✓ Tables
+  - ✓ Chairs
+- ✓ Trees and tall grass
 
 # Release 0.0.8 - All about attributes
 
