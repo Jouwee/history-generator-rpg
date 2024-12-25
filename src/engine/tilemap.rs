@@ -36,18 +36,23 @@ impl TileMap {
     }
 
     pub fn render<F>(&self, ctx: &mut RenderContext, z_order_render: F) where F: Fn(&mut RenderContext, usize, usize) -> () {
-        for x in 0..self.width {
-            for y in 0..self.height {
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let idx = (y * self.width) + x;
                 let tile_i = self.tiles[idx];
                 match &self.tileset.tiles[tile_i] {
                     Tile::Empty => (),
-                    Tile::T16Subset(tile) => {
-                        let rect = [
+                    Tile::SingleTile(tile) => {
+                        let pos = [
                             x as f64 * self.cell_width as f64 - (tile.tile_width - self.cell_width) as f64 / 2.,
                             y as f64 * self.cell_height as f64 - (tile.tile_height - self.cell_height) as f64,
-                            self.cell_width as f64,
-                            self.cell_height as f64
+                        ];
+                        ctx.texture_ref(&tile.texture, pos);
+                    },
+                    Tile::T16Subset(tile) => {
+                        let pos = [
+                            x as f64 * self.cell_width as f64 - (tile.tile_width - self.cell_width) as f64 / 2.,
+                            y as f64 * self.cell_height as f64 - (tile.tile_height - self.cell_height) as f64,
                         ];
                         let mut u = false;
                         if y > 0 {
@@ -84,7 +89,7 @@ impl TileMap {
                             (true, true, true, false) => 7,
                             (true, true, true, true) => 6,
                         };
-                        ctx.texture_ref(tile.textures.get(idx).unwrap(), [rect[0], rect[1]]);
+                        ctx.texture_ref(tile.textures.get(idx).unwrap(), pos);
                     }
                 }
                 z_order_render(ctx, x, y);
@@ -112,7 +117,27 @@ impl TileSet {
 
 pub enum Tile {
     Empty,
+    SingleTile(TileSingle),
     T16Subset(Tile16Subset)
+}
+
+pub struct TileSingle {
+    tile_width: usize,
+    tile_height: usize,
+    texture: Texture,
+}
+
+impl TileSingle {
+    pub fn new(image: DynamicImage) -> TileSingle {
+        let width = image.width() as usize;
+        let height = image.height() as usize;
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        TileSingle {
+            tile_width: width,
+            tile_height: height,
+            texture: Texture::from_image(&image.to_rgba8(), &settings)
+        }
+    }
 }
 
 pub struct Tile16Subset {

@@ -2,22 +2,6 @@
 
 # TODO - 0.0.9 - More interesting world generation
 
-## feat - Object layer in local map
-
-- Different layer above ground tiles
-  - ✓ Walls will generate in this layer
-  - ✓ Tile rendering
-  - ✓ Sprites can exceed the 16x16 grid
-  - ✓ Z-Ordering with actors
-  - ✓ Blocks movement
-  - ✓ Blocks spawning
-
-## feat - Better wilderness generation
-
-- Vegetation tile metric
-- Trees based on vegetation
-- Tall grass based on vegetation
-
 ## feat - Better settlement generation
 
 - More buildings, based on settlement size
@@ -115,7 +99,24 @@ The majority of the current time spent in history generation is searching who is
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
 
-# Release - 0.0.8 - All about attributes
+# Release - 0.0.9 - More interesting world generation
+
+## feat - Object layer in local map
+
+- ✓ Different layer above ground tiles
+  - ✓ Walls will generate in this layer
+  - ✓ Tile rendering
+  - ✓ Sprites can exceed the 16x16 grid
+  - ✓ Z-Ordering with actors
+  - ✓ Blocks movement
+  - ✓ Blocks spawning
+
+## feat - Better wilderness generation
+
+- ✓ Vegetation tile metric
+- ✓ Trees based on vegetation
+
+# Release 0.0.8 - All about attributes
 
 ## feat - New attributes
 

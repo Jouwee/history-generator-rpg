@@ -10,6 +10,7 @@ pub struct WorldTopology {
     pub elevation: Vec<i32>,
     pub precipitation: Vec<u8>,
     pub temperature: Vec<u8>,
+    pub vegetation: Vec<f32>,
     pub soil_ferility: Vec<f32>,
     pub region_id: Vec<u8>
 }
@@ -23,6 +24,7 @@ impl WorldTopology {
             elevation: vec![0; len],
             precipitation: vec![0; len],
             temperature: vec![0; len],
+            vegetation: vec![0.0; len],
             soil_ferility: vec![0.0; len],
             region_id: vec![0; len]
         }
@@ -35,6 +37,7 @@ impl WorldTopology {
             elevation: self.elevation[i],
             precipitation: self.precipitation[i],
             temperature: self.temperature[i],
+            vegetation: self.vegetation[i],
             soil_fertility: self.soil_ferility[i],
             region_id: self.region_id[i],
         }
@@ -329,10 +332,13 @@ impl WorldTopology {
                     }
                 }
                 {
-                    let region_fertility_range = regions[self.region_id[i] as usize].soil_fertility_range;
+                    let region = &regions[self.region_id[i] as usize];
+                    let region_fertility_range = region.soil_fertility_range;
+                    let region_vegetation_range = region.vegetation;
                     let noise_modif = n_fert.get([xf / 10.0, yf / 10.0]) as f32;
                     let noise_modif = (noise_modif + 1.0) / 2.0;
                     self.soil_ferility[i] = noise_modif * (region_fertility_range.1 - region_fertility_range.0) + region_fertility_range.0;
+                    self.vegetation[i] = noise_modif * (region_vegetation_range.1 - region_vegetation_range.0) + region_vegetation_range.0;
                 }
             }
         }
@@ -351,6 +357,7 @@ pub struct WorldTileData {
     pub elevation: i32,
     pub precipitation: u8,
     pub temperature: u8,
+    pub vegetation: f32,
     pub soil_fertility: f32,
     pub region_id: u8
 }

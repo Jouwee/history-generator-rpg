@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileMap, TileSet}}, world::item::{Item, ItemMaker}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -47,6 +47,8 @@ impl Chunk {
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/stone_walls.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 32)));
+        let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         Chunk {
             size,
@@ -100,6 +102,18 @@ impl Chunk {
                 }
             }
         }
+
+        let noise = Perlin::new(rng.derive("trees").seed());
+        for x in 0..chunk.size.x() {
+            for y in 0..chunk.size.y() {
+                if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
+                    if rng.rand_chance(0.1) {
+                        chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                    }
+                }
+            }
+        }
+
         let mut found_sett = None;
         for (_, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
@@ -116,6 +130,7 @@ impl Chunk {
                             chunk.map.object_layer.set_tile(x as usize, y as usize, 1);
                         } else {
                             chunk.map.tiles[idx as usize].id = 4; // Floor
+                            chunk.map.object_layer.set_tile(x as usize, y as usize, 0);
                         }
                     }
                 }

@@ -235,9 +235,10 @@ fn main() {
     let regions = vec!(
         Region {
             id: 0,
-            name: String::from("Coastal"),
+            name: String::from("Ocean"),
             elevation: (-2000, 0),
             temperature: (0, 5),
+            vegetation: (0.0, 0.0),
             soil_fertility_range: (0.8, 1.2),
             gold_generation_range: (0.8, 1.2),
             fauna: Vec::from([
@@ -254,6 +255,7 @@ fn main() {
             name: String::from("Coastal"),
             elevation: (0, 16),
             temperature: (0, 5),
+            vegetation: (0.0, 0.1),
             soil_fertility_range: (0.8, 1.2),
             gold_generation_range: (0.8, 1.2),
             fauna: Vec::from([
@@ -270,6 +272,7 @@ fn main() {
             name: String::from("Forest"),
             elevation: (16, 255),
             temperature: (0, 2),
+            vegetation: (0.5, 1.),
             soil_fertility_range: (1.0, 1.4),
             gold_generation_range: (0.7, 1.1),
             fauna: Vec::from([
@@ -286,6 +289,7 @@ fn main() {
             name: String::from("Desert"),
             elevation: (16, 255),
             temperature: (3, 6),
+            vegetation: (0.0, 0.1),
             soil_fertility_range: (0.5, 0.9),
             gold_generation_range: (0.6, 1.0),
             fauna: Vec::from([
