@@ -1,11 +1,5 @@
 # Doing
 
-# TODO - 0.0.9 - More interesting world generation
-
-## feat - Beds allow you to rest
-
-- Beds allow you to rest
-
 # TODO - 0.0.10 - Main menu, Saving and loading
 
 ## feat - Main menu Scene
@@ -125,6 +119,10 @@ The majority of the current time spent in history generation is searching who is
   - ✓ Dirt
   - ✓ Stone
   - ✓ Sand
+
+## feat - Beds allow you to rest
+
+- Beds allow you to rest
 
 # Release 0.0.8 - All about attributes
 
