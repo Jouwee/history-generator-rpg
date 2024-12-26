@@ -5,9 +5,9 @@
 - ✓ Show year, enter to interrupt
 - ✓ New biome - Grassland
 - ✓ Render as Tilemap
-- Pixel art Scale
-- Settlements rendering
-- Size vs window
+- ✓ Pixel art Scale
+- ✓ Settlements rendering
+- ✓ Size vs window
 
 # TODO - 0.1.0 - Final polish
 

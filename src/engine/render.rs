@@ -18,6 +18,13 @@ pub struct RenderContext<'a, 'b> {
 }
 
 impl<'a, 'b> RenderContext<'a, 'b> {
+
+    pub fn scale(&mut self, s: f64) {
+        self.context.transform = self.context.transform.scale(s, s);
+        self.layout_rect[2] = self.layout_rect[2] / s;
+        self.layout_rect[3] = self.layout_rect[3] / s;
+    }
+
     pub fn rectangle_fill(&mut self, rect: [f64; 4], color: Color) {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
     }

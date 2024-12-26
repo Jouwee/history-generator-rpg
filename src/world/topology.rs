@@ -325,7 +325,9 @@ impl WorldTopology {
                         0 => panic!("No region candidate for elevation {} and temperature {}", self.elevation[i], self.temperature[i]),
                         1 => self.region_id[i] = region_candidates.pop().expect("Already checked"),
                         _ => {
-                            let noise = n_reg.get([xf / 10.0, yf / 10.0]);
+                            let low = n_reg.get([xf / 30.0, yf / 30.0]) / 2. + 0.5;
+                            let med = n_reg.get([xf / 10.0, yf / 10.0]) / 2. + 0.5;
+                            let noise = (low * 0.8) + (med * 0.2);
                             // TODO: This crashes without the mod aparently
                             self.region_id[i] = region_candidates[(noise * region_candidates.len() as f64) as usize % region_candidates.len()];
                         }

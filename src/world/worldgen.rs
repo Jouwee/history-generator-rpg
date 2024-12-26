@@ -4,7 +4,7 @@ use graphics::rectangle::{square, Border};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, world::species::SpeciesIntelligence};
+use crate::{engine::{layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
@@ -12,7 +12,8 @@ pub struct WorldGenScene {
     generator: WorldHistoryGenerator,
     total_time: Duration,
     tilemap: LayeredDualgridTilemap,
-    banner_texture: Texture
+    banner_texture: Texture,
+    faction_colors: [(Color, Color); 10]
 }
 
 impl WorldGenScene {
@@ -32,43 +33,6 @@ impl WorldGenScene {
         let image = ImageReader::open("assets/sprites/world_tiles/desert.png").unwrap().decode().unwrap();
         dual_tileset.add(3, image, 4, 4);
 
-        let mut scene = WorldGenScene {
-            generator: WorldHistoryGenerator::seed_world(params),
-            total_time: Duration::new(0, 0),
-            tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 4, 4),
-            banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings)
-        };
-        scene.build_tilemap();
-        return scene
-    }
-
-    pub fn build_tilemap(&mut self) {
-        let map = &self.generator.world.map;
-        for x in 0..map.size.x() {
-            for y in 0..map.size.y() {
-                let tile = map.tile(x, y);
-                match tile.region_id {
-                    0 => self.tilemap.set_tile(x, y, 0),
-                    1 => self.tilemap.set_tile(x, y, 1),
-                    2 => self.tilemap.set_tile(x, y, 2),
-                    3 => self.tilemap.set_tile(x, y, 3),
-                    4 => self.tilemap.set_tile(x, y, 4),
-                    _ => ()
-                }
-            }
-        }
-    }
-
-    pub fn into_world(self) -> World {
-        return self.generator.world
-    }
-}
-
-impl Scene for WorldGenScene {
-    fn render(&mut self, ctx: &mut RenderContext) {
-        use graphics::*;
-
-        // https://lospec.com/palette-list/31
         let gray = Color::from_hex("636663");
         // let XXX = Color::from_hex("87857c");
         // let XXX = Color::from_hex("bcad9f");
@@ -101,40 +65,73 @@ impl Scene for WorldGenScene {
         // let XXX = Color::from_hex("303843");
         let black = Color::from_hex("14233a");
 
-        let faction_colors = [red, black, blue, teal, yellow, yellow_green, wine, white, orange, gray];
+        let mut scene = WorldGenScene {
+            generator: WorldHistoryGenerator::seed_world(params),
+            total_time: Duration::new(0, 0),
+            tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 4, 4),
+            banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
+            faction_colors: [
+                (red, black),
+                (teal, blue),
+                (white, teal),
+                (teal, orange),
+                (yellow, red),
+                (yellow_green, black),
+                (wine, red),
+                (white, black),
+                (orange, white),
+                (gray, blue)
+            ]
+        };
+        scene.build_tilemap();
+        return scene
+    }
 
+    pub fn build_tilemap(&mut self) {
+        let map = &self.generator.world.map;
+        for x in 0..map.size.x() {
+            for y in 0..map.size.y() {
+                let tile = map.tile(x, y);
+                match tile.region_id {
+                    0 => self.tilemap.set_tile(x, y, 0),
+                    1 => self.tilemap.set_tile(x, y, 1),
+                    2 => self.tilemap.set_tile(x, y, 2),
+                    3 => self.tilemap.set_tile(x, y, 3),
+                    4 => self.tilemap.set_tile(x, y, 4),
+                    _ => ()
+                }
+            }
+        }
+    }
+
+    pub fn into_world(self) -> World {
+        return self.generator.world
+    }
+}
+
+impl Scene for WorldGenScene {
+    fn render(&mut self, ctx: &mut RenderContext) {
+        ctx.scale(2.);
+        use graphics::*;
+        let white = Color::rgb([1., 1., 1.]);
         let world = &self.generator.world;
-
         let ts = 4.;
-
         self.tilemap.render(ctx);
-
         for (_, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
 
             if settlement.demographics.population > 0 {
-                let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
-                let mut transparent = color.f32_arr();
+                let (bg, border) = self.faction_colors[settlement.faction_id.seq() % self.faction_colors.len()];
+                let mut transparent = bg.f32_arr();
                 transparent[3] = 0.4;
 
                 let mut rectangle = Rectangle::new(transparent);
-                rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
+                rectangle = rectangle.border(Border { color: border.f32_arr(), radius: 0.5 });
                 let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
                 rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
             }
 
         }
-
-        // Render great beasts
-        for (_, person) in world.people.iter() {
-            let person = person.borrow();
-            let species = world.species.get(&person.species).unwrap();
-
-            if species.intelligence == SpeciesIntelligence::Instinctive {
-                ctx.circle([person.position.x as f64 * ts, person.position.y as f64 * ts, ts, ts], red);
-            }
-        }
-
         // Year banner
         let center = ctx.layout_rect[2] / 2.;
         ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);
@@ -147,9 +144,13 @@ impl Scene for WorldGenScene {
     }
 
     fn update(&mut self, _update: &Update) {
+        let end_year = 500;
+        if self.generator.year >= end_year {
+            return
+        }
         let start = Instant::now();
         loop {
-            if self.generator.year < 750 {
+            if self.generator.year < end_year {
                 println!("Year {}, {} people to process", self.generator.year, self.generator.world.people.len());
                 let now = Instant::now();
                 self.generator.simulate_year();
