@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -20,6 +20,7 @@ pub struct Chunk {
 
 pub struct ChunkMap {
     tiles: Vec<Tile>,
+    ground_layer: LayeredDualgridTilemap,
     object_layer: TileMap,
 }
 
@@ -56,10 +57,23 @@ impl Chunk {
         let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
+        let mut dual_tileset = LayeredDualgridTileset::new();
+        let image = ImageReader::open("assets/sprites/stone.png").unwrap().decode().unwrap();
+        dual_tileset.add(0, image, 16, 16);
+        let image = ImageReader::open("assets/sprites/grass.png").unwrap().decode().unwrap();
+        dual_tileset.add(3, image, 16, 16);
+        let image = ImageReader::open("assets/sprites/sand.png").unwrap().decode().unwrap();
+        dual_tileset.add(1, image, 16, 16);
+        let image = ImageReader::open("assets/sprites/water.png").unwrap().decode().unwrap();
+        dual_tileset.add(2, image, 16, 16);
+        let image = ImageReader::open("assets/sprites/floor.png").unwrap().decode().unwrap();
+        dual_tileset.add(4, image, 16, 16);
+
         Chunk {
             size,
             map: ChunkMap {
                 tiles: vec![Tile { id: 0 }; size.area()],
+                ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 16, 16),
                 object_layer: TileMap::new(tileset, size.x(), size.y(), 16, 16),
             },
             player,
@@ -81,26 +95,33 @@ impl Chunk {
                 let n = noise.get([x as f64 / 10.0, y as f64 / 10.0]);
                 match tile.region_id {
                     0 => { // Ocean
+                        chunk.map.ground_layer.set_tile(x, y, 3);
                         chunk.map.tiles[idx].id = 3; // water
                     },
                     1 => { // Coastal
                         if n < -0.5 {
+                            chunk.map.ground_layer.set_tile(x, y, 3);
                             chunk.map.tiles[idx].id = 3; // water
                         } else {
+                            chunk.map.ground_layer.set_tile(x, y, 2);
                             chunk.map.tiles[idx].id = 1; // sand
                         }
                     },
                     2 => { // Forest - Grass
                         if n < 0.5 {
+                            chunk.map.ground_layer.set_tile(x, y, 1);
                             chunk.map.tiles[idx].id = 0; // grass
                         } else {
+                            chunk.map.ground_layer.set_tile(x, y, 0);
                             chunk.map.tiles[idx].id = 2; // stone
                         }
                     },
                     3 => { // Desert - Sand
                         if n < 0.5 {
+                            chunk.map.ground_layer.set_tile(x, y, 2);
                             chunk.map.tiles[idx].id = 1; // sand
                         } else {
+                            chunk.map.ground_layer.set_tile(x, y, 0);
                             chunk.map.tiles[idx].id = 2; // stone
                         }
                     },
@@ -242,6 +263,7 @@ impl Chunk {
             for y in building.0.y..building.1.y + 1 {
                 let idx = (y * self.size.x() as i32) + x;
                 self.map.tiles[idx as usize].id = 4; // Floor
+                self.map.ground_layer.set_tile(x as usize, y as usize, 4);
                 if x == building.0.x || y == building.0.y || x == building.1.x || y == building.1.y {
                     // Leaves 1 block out for doors
                     if y == building.1.y && x == building.0.x + (building.1.x-building.0.x) / 2 {
@@ -284,6 +306,8 @@ impl Renderable for Chunk {
                 ctx.spritesheet("tiles.png", tile.sprite, [x as f64 * 16., y as f64 * 16.]);
             }
         }
+
+        self.map.ground_layer.render(ctx);
 
         let mut actors_by_position = HashMap::new();
         actors_by_position.insert(&self.player.xy, vec!(&self.player));

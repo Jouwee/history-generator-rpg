@@ -117,6 +117,15 @@ The majority of the current time spent in history generation is searching who is
   - ✓ Chairs
 - ✓ Trees and tall grass
 
+## feat - Layered dual-grid terrain
+
+- ✓ Layered dual grid system
+- ✓ New sprites
+  - ✓ Grass
+  - ✓ Dirt
+  - ✓ Stone
+  - ✓ Sand
+
 # Release 0.0.8 - All about attributes
 
 ## feat - New attributes

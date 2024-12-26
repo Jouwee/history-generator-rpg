@@ -5,6 +5,7 @@ pub mod assets;
 pub mod debug;
 pub mod geometry;
 pub mod gui;
+pub mod layered_dualgrid_tilemap;
 pub mod pallete_sprite;
 pub mod render;
 pub mod spritesheet;
