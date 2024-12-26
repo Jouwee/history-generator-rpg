@@ -223,6 +223,10 @@ impl HealthPointsComponent {
         }
     }
 
+    pub fn refill(&mut self) {
+        self.health_points = self.max_health_points as f32;
+    }
+
     pub fn update(&mut self, attributes: &Attributes) {
         self.max_health_points = Self::max_hp(attributes);
         self.health_points = self.health_points.min(self.max_health_points as f32)

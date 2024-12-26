@@ -33,6 +33,10 @@ impl ChunkMap {
         return true
     }
 
+    pub fn get_object_idx(&self, pos: Coord2) -> usize {
+        return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
+    }
+
 }
 
 impl Chunk {

@@ -4,7 +4,7 @@ use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, C
 
 use super::{actor::Actor, chunk::ChunkMap, log::LogEntry};
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Debug)]
 pub enum ActionEnum {
     MoveLeft,
     MoveRight,
@@ -13,6 +13,7 @@ pub enum ActionEnum {
     Attack,
     Talk,
     PickUp,
+    Sleep
 }
 
 pub struct ActionDefinition {
@@ -34,6 +35,7 @@ impl Default for ActionMap {
         map.register(ActionEnum::MoveRight, 20, Box::new(MoveAction { direction: Coord2::xy(1, 0) }));
         map.register(ActionEnum::MoveUp, 20, Box::new(MoveAction { direction: Coord2::xy(0, -1) }));
         map.register(ActionEnum::MoveDown, 20, Box::new(MoveAction { direction: Coord2::xy(0, 1) }));
+        map.register(ActionEnum::Sleep, 0, Box::new(SleepAction {}));
         return map
     }
 }
@@ -162,3 +164,18 @@ impl ActionTrait for MoveAction {
     }
 
 }
+
+pub struct SleepAction {
+}
+impl ActionTrait for SleepAction {
+
+    fn can_run_on_tile(&self, _actor: &Actor, chunk: &ChunkMap, pos: &Coord2) -> bool {
+        return chunk.get_object_idx(*pos) == 3
+    }
+    fn run_on_tile(&self, actor: &mut Actor, _chunk: &mut ChunkMap, _pos: &Coord2) -> Option<LogEntry> {
+        actor.hp.refill();
+        Some(LogEntry { string: String::from("You rest and recover health"), color: Color::from_hex("44702d") })
+    }
+
+}
+

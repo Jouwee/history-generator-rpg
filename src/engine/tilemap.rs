@@ -35,6 +35,11 @@ impl TileMap {
         &self.tileset.tiles[tile_i]
     }
 
+    pub fn get_tile_idx(&self, x: usize, y: usize) -> usize {
+        let idx = (y * self.width) + x;
+        return self.tiles[idx]
+    }
+
     pub fn render<F>(&self, ctx: &mut RenderContext, z_order_render: F) where F: Fn(&mut RenderContext, usize, usize) -> () {
         for y in 0..self.height {
             for x in 0..self.width {
