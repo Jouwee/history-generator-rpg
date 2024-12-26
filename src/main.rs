@@ -44,7 +44,7 @@ impl App {
         use graphics::*;
 
         let texture_settings = TextureSettings::new().filter(Filter::Nearest);
-        let mut glyphs = GlyphCache::new("./assets/Minecraft.ttf", (), texture_settings).expect("Could not load font");
+        let mut glyphs = GlyphCache::new("./assets/alagard.ttf", (), texture_settings).expect("Could not load font");
 
 
         let c = self.gl.draw_begin(args.viewport());
@@ -54,7 +54,7 @@ impl App {
         let mut context = RenderContext {
             args,
             context: c,
-            layout_rect: [0., 0., c.get_view_size()[0], c.get_view_size()[1]],
+            layout_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
             original_transform: c.transform.clone(),
             gl: &mut self.gl,
             assets: &mut self.assets,
@@ -269,7 +269,7 @@ fn main() {
         },
         Region {
             id: 2,
-            name: String::from("Forest"),
+            name: String::from("Grassland"),
             elevation: (16, 255),
             temperature: (0, 2),
             vegetation: (0.5, 1.),
@@ -286,6 +286,23 @@ fn main() {
         },
         Region {
             id: 3,
+            name: String::from("Forest"),
+            elevation: (16, 255),
+            temperature: (0, 2),
+            vegetation: (0.5, 1.),
+            soil_fertility_range: (1.0, 1.4),
+            gold_generation_range: (0.7, 1.1),
+            fauna: Vec::from([
+                String::from("elk"),
+                String::from("boar")
+            ]),
+            flora: Vec::from([
+                String::from("pine"),
+                String::from("birch")
+            ])
+        },
+        Region {
+            id: 4,
             name: String::from("Desert"),
             elevation: (16, 255),
             temperature: (3, 6),

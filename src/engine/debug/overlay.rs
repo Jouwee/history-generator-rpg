@@ -24,8 +24,8 @@ impl DebugOverlay {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], Color::from_hex("00000080"));
-            context.text(format!("FPS: {:.2}", self.fps.average()).as_str(), 12, [0., 16.], Color::from_hex("ffffff"));
-            context.text(format!("TPS: {:.2}", self.tps.average()).as_str(), 12, [0., 34.], Color::from_hex("ffffff"));
+            context.text(format!("FPS: {:.2}", self.fps.average()).as_str(), 11, [0., 16.], Color::from_hex("ffffff"));
+            context.text(format!("TPS: {:.2}", self.tps.average()).as_str(), 11, [0., 34.], Color::from_hex("ffffff"));
         }
     }
 

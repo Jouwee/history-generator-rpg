@@ -70,7 +70,7 @@ impl GUINode for Button {
         // Somewhat center text
         position[0] += 4.;
         position[1] += 17.;
-        ctx.text(&self.text, 12, position, Color::from_hex("ffffff"));
+        ctx.text(&self.text, 11, position, Color::from_hex("ffffff"));
         ctx.context.transform = original;
     }
 

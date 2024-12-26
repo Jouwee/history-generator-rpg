@@ -1,16 +1,13 @@
 # Doing
 
-# TODO - 0.0.10 - Main menu, Saving and loading
+## feat - Review worldgen scene
 
-## feat - Main menu Scene
-
-- Option to start new game
-- Option to quit game
-- Start new game dialog (options)
-  - Seed
-  - Great beast frequency
-
-## feat - Saving and loading
+- ✓ Show year, enter to interrupt
+- ✓ New biome - Grassland
+- ✓ Render as Tilemap
+- Pixel art Scale
+- Settlements rendering
+- Size vs window
 
 # TODO - 0.1.0 - Final polish
 
@@ -23,10 +20,6 @@
 Package-size, learning
 
 ## bug - Names like Anea00000000000
-
-## feat - Review worldgen scene
-
-- Show year, enter to interrupt
 
 ## feat - Review world scene
 
@@ -45,6 +38,20 @@ Package-size, learning
 - Current tile info
 
 ## bug - History generation is not deterministic
+
+## feat - More interesting worldgen
+
+## feat - Main menu Scene
+
+- Option to start new game
+- Option to quit game
+- Start new game dialog (options)
+  - Seed
+  - Great beast frequency
+
+# TODO - 0.?.? - Main menu, Saving and loading
+
+## feat - Saving and loading
 
 # Backlog
 

@@ -1,24 +1,61 @@
 use std::time::{Duration, Instant};
 
 use graphics::rectangle::{square, Border};
-use piston::{Button, Key};
+use image::ImageReader;
+use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, world::species::SpeciesIntelligence};
+use crate::{engine::{layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, world::species::SpeciesIntelligence};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
 pub struct WorldGenScene {
     generator: WorldHistoryGenerator,
-    view: WorldViewMode,
-    total_time: Duration
+    total_time: Duration,
+    tilemap: LayeredDualgridTilemap,
+    banner_texture: Texture
 }
 
 impl WorldGenScene {
     pub fn new(params: WorldGenerationParameters) -> WorldGenScene {
-        WorldGenScene {
+        let spritesheet = ImageReader::open("assets/sprites/banner.png").unwrap().decode().unwrap();
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+
+        let mut dual_tileset = LayeredDualgridTileset::new();
+        let image = ImageReader::open("assets/sprites/world_tiles/ocean.png").unwrap().decode().unwrap();
+        dual_tileset.add(1, image, 4, 4);
+        let image = ImageReader::open("assets/sprites/world_tiles/coast.png").unwrap().decode().unwrap();
+        dual_tileset.add(0, image, 4, 4);
+        let image = ImageReader::open("assets/sprites/world_tiles/grassland.png").unwrap().decode().unwrap();
+        dual_tileset.add(4, image, 4, 4);
+        let image = ImageReader::open("assets/sprites/world_tiles/forest.png").unwrap().decode().unwrap();
+        dual_tileset.add(5, image, 4, 4);
+        let image = ImageReader::open("assets/sprites/world_tiles/desert.png").unwrap().decode().unwrap();
+        dual_tileset.add(3, image, 4, 4);
+
+        let mut scene = WorldGenScene {
             generator: WorldHistoryGenerator::seed_world(params),
             total_time: Duration::new(0, 0),
-            view: WorldViewMode::Normal
+            tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 4, 4),
+            banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings)
+        };
+        scene.build_tilemap();
+        return scene
+    }
+
+    pub fn build_tilemap(&mut self) {
+        let map = &self.generator.world.map;
+        for x in 0..map.size.x() {
+            for y in 0..map.size.y() {
+                let tile = map.tile(x, y);
+                match tile.region_id {
+                    0 => self.tilemap.set_tile(x, y, 0),
+                    1 => self.tilemap.set_tile(x, y, 1),
+                    2 => self.tilemap.set_tile(x, y, 2),
+                    3 => self.tilemap.set_tile(x, y, 3),
+                    4 => self.tilemap.set_tile(x, y, 4),
+                    _ => ()
+                }
+            }
         }
     }
 
@@ -35,7 +72,7 @@ impl Scene for WorldGenScene {
         let gray = Color::from_hex("636663");
         // let XXX = Color::from_hex("87857c");
         // let XXX = Color::from_hex("bcad9f");
-        let salmon = Color::from_hex("f2b888");
+        // let salmon = Color::from_hex("f2b888");
         let orange = Color::from_hex("eb9661");
         let red = Color::from_hex("b55945");
         // let XXX = Color::from_hex("734c44");
@@ -45,12 +82,12 @@ impl Scene for WorldGenScene {
         // let XXX: Color = Color::from_hex("a57855");
         let yellow = Color::from_hex("de9f47");
         // let XXX = Color::from_hex("fdd179");
-        let off_white = Color::from_hex("fee1b8");
+        // let off_white = Color::from_hex("fee1b8");
         // let XXX = Color::from_hex("d4c692");
         // let XXX = Color::from_hex("a6b04f");
         let yellow_green = Color::from_hex("819447");
         // let XXX = Color::from_hex("44702d");
-        let dark_green = Color::from_hex("2f4d2f");
+        // let dark_green = Color::from_hex("2f4d2f");
         // let XXX = Color::from_hex("546756");
         // let XXX = Color::from_hex("89a477");
         // let XXX = Color::from_hex("a4c5af");
@@ -69,98 +106,44 @@ impl Scene for WorldGenScene {
         let world = &self.generator.world;
 
         let ts = 4.;
-        if self.view == WorldViewMode::Normal {
 
+        self.tilemap.render(ctx);
 
-            for x in 0..world.map.size.x() {
-                for y in 0..world.map.size.y() {
-                    let tile = world.map.tile(x, y);
+        for (_, settlement) in world.settlements.iter() {
+            let settlement = settlement.borrow();
 
-                    let color;
-                    match tile.region_id {
-                        0 => color = blue,
-                        1 => color = off_white,
-                        2 => color = dark_green,
-                        3 => color = salmon,
-                        _ => color = black
-                    }
-                    rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
+            if settlement.demographics.population > 0 {
+                let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
+                let mut transparent = color.f32_arr();
+                transparent[3] = 0.4;
 
-                    let mut height_diff = 0.0;
-                    let mut height_count = 0;
-                    if x > 0 {
-                        height_diff += tile.elevation as f32 - world.map.tile(x - 1, y).elevation as f32;
-                        height_count += 1;
-                    }
-                    if y > 0 {
-                        height_diff += tile.elevation as f32 - world.map.tile(x, y - 1).elevation as f32;
-                        height_count += 1;
-                    }
-                    if x < world.map.size.x() - 1 {
-                        height_diff += world.map.tile(x + 1, y).elevation as f32 - tile.elevation as f32;
-                        height_count += 1;
-                    }
-                    if y < world.map.size.y() - 1 {
-                        height_diff += world.map.tile(x, y + 1).elevation as f32 - tile.elevation as f32;
-                        height_count += 1;
-                    }
-                    height_diff = (height_diff / height_count as f32) / 256.0;
-                    if height_diff < 0.0 {
-                        let opacity = height_diff.abs();
-                        rectangle(black.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
-                    } else {
-                        let opacity = height_diff;
-                        rectangle(white.alpha(opacity).f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
-                    }
-
-                }   
+                let mut rectangle = Rectangle::new(transparent);
+                rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
+                let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
+                rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
             }
 
-            for (_, settlement) in world.settlements.iter() {
-                let settlement = settlement.borrow();
+        }
 
-                if settlement.demographics.population > 0 {
-                    let color = faction_colors[settlement.faction_id.seq() % faction_colors.len()];
-                    let mut transparent = color.f32_arr();
-                    transparent[3] = 0.4;
+        // Render great beasts
+        for (_, person) in world.people.iter() {
+            let person = person.borrow();
+            let species = world.species.get(&person.species).unwrap();
 
-                    let mut rectangle = Rectangle::new(transparent);
-                    rectangle = rectangle.border(Border { color: color.f32_arr(), radius: 1.0 });
-                    let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
-                    rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
-                }
-
-            }
-
-            // Render great beasts
-            for (_, person) in world.people.iter() {
-                let person = person.borrow();
-                let species = world.species.get(&person.species).unwrap();
-
-                if species.intelligence == SpeciesIntelligence::Instinctive {
-                    ctx.circle([person.position.x as f64 * ts, person.position.y as f64 * ts, ts, ts], red);
-                }
-            }
-
-        } else {
-            for x in 0..world.map.size.x() {
-                for y in 0..world.map.size.y() {
-                    let tile = world.map.tile(x, y);
-                    let mut color = white;
-                    match self.view {
-                        WorldViewMode::Normal => (), // Already checked
-                        WorldViewMode::Elevation => {
-                            color = white.alpha((tile.elevation as f32) / 256.0);
-                        },
-                        WorldViewMode::Precipitation => {
-                            color = blue.alpha((tile.precipitation as f32) / 256.0);
-                        }
-                    }
-                    rectangle(color.f32_arr(), rectangle::square(x as f64 * ts, y as f64 * ts, ts), ctx.context.transform, ctx.gl);
-                }   
+            if species.intelligence == SpeciesIntelligence::Instinctive {
+                ctx.circle([person.position.x as f64 * ts, person.position.y as f64 * ts, ts, ts], red);
             }
         }
 
+        // Year banner
+        let center = ctx.layout_rect[2] / 2.;
+        ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);
+        let text = format!("Year {}", &self.generator.year.to_string());
+        let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
+        ctx.text(&text, 11, [(center - text_width / 2.).round(), 16.], white);
+        let text = "Press <enter> to start playing";
+        let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
+        ctx.text(&text, 11, [(center - text_width / 2.).round(), 40.], white);
     }
 
     fn update(&mut self, _update: &Update) {
@@ -182,23 +165,6 @@ impl Scene for WorldGenScene {
         }
     }
 
-    fn input(&mut self, evt: &InputEvent) {
-        match evt.button_args.button {
-            Button::Keyboard(Key::V) => {
-                match self.view {
-                    WorldViewMode::Normal => self.view = WorldViewMode::Elevation,
-                    WorldViewMode::Elevation => self.view = WorldViewMode::Precipitation,
-                    WorldViewMode::Precipitation => self.view = WorldViewMode::Normal,
-                }
-            }
-            _ => ()
-        }
+    fn input(&mut self, _evt: &InputEvent) {
     }
-}
-
-#[derive(PartialEq)]
-enum WorldViewMode {
-    Normal,
-    Elevation,
-    Precipitation,
 }

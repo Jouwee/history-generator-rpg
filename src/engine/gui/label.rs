@@ -29,7 +29,7 @@ impl GUINode for Label {
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]);
         // Increments y-position because text is rendered bottom-up, everything else is top-down. This normalizes labels to be top-down
         position[1] += 14.;
-        ctx.text(&self.text, 12, position, Color::from_hex("ffffff"));
+        ctx.text(&self.text, 11, position, Color::from_hex("ffffff"));
         ctx.context.transform = transform;
     }
 
