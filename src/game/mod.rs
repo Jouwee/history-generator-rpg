@@ -102,7 +102,12 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn render(&mut self, ctx: &mut RenderContext) {
+        ctx.pixel_art(2);
+        let center = self.chunk.player.xy;
+        ctx.push();
+        ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx);
+        let _ = ctx.try_pop();
         ctx.text("space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
         for (line, color) in self.log.borrow().iter() {

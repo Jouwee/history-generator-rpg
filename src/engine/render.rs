@@ -12,12 +12,38 @@ pub struct RenderContext<'a, 'b> {
     pub gl: &'a mut GlGraphics,
     pub assets: &'b mut Assets,
     pub layout_rect: [f64; 4],
+    pub camera_rect: [f64; 4],
+    pub transform_queue: Vec<[[f64; 3]; 2]>,
     // TODO: Repo
     pub default_font: &'b mut GlyphCache<'b>,
     pub textures: Vec<Texture>
 }
 
 impl<'a, 'b> RenderContext<'a, 'b> {
+
+    pub fn pixel_art(&mut self, s: u8) {
+        let s = s as f64;
+        self.context.transform = self.context.transform.scale(s, s);
+        self.layout_rect[2] = self.layout_rect[2] / s;
+        self.layout_rect[3] = self.layout_rect[3] / s;
+        self.camera_rect[2] = self.camera_rect[2] / s;
+        self.camera_rect[3] = self.camera_rect[3] / s;
+    }
+
+    pub fn center_camera_on(&mut self, pos: [f64; 2]) {
+        self.camera_rect[0] = pos[0] - self.camera_rect[2] / 2.;
+        self.camera_rect[1] = pos[1] - self.camera_rect[3] / 2.;
+        self.context.transform = self.context.transform.trans(-self.camera_rect[0], -self.camera_rect[1]);
+    }
+
+    pub fn push(&mut self) {
+        self.transform_queue.push(self.context.transform);
+    }
+
+    pub fn try_pop(&mut self) -> Result<(), ()> {
+        self.context.transform = self.transform_queue.pop().ok_or(())?;
+        return Ok(())
+    }
 
     pub fn scale(&mut self, s: f64) {
         self.context.transform = self.context.transform.scale(s, s);

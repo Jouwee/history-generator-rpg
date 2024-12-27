@@ -14,6 +14,32 @@ Package-size, learning
 
 ## feat - Review game scene
 
+- Game
+  - ✓ Pixel art scale
+    - Click events
+    - ✓ Follow player
+  - 24x24 spritesheets
+    - ✓ Grass
+    - ✓ Stone
+    - Sand
+    - Floor
+    - Water
+  - Review chunk gen
+  - Character sprite
+  - Human sprite
+  - Spider sprite
+  - Leshen sprite
+  - Fiend sprite
+- Better UI
+  - Action bar
+  - Health bar
+  - AP bar
+  - XP bar
+  - Cursor on action
+- Better character dialog
+- Better codex dialog
+- Better interaction dialog
+
 ## feat - Death
 
 - Save current position
@@ -29,18 +55,16 @@ Package-size, learning
 
 ## feat - Main menu Scene
 
+- Title
 - Option to start new game
 - Option to quit game
 - Start new game dialog (options)
   - Seed
   - Great beast frequency
 
-## feat - Think of a name
+## refactor - Better spatial searches
 
-I really like the idea of "tales of..."
-Tales of Qud
-Tales of Armok
-Tales of
+The majority of the current time spent in history generation is searching who is in a town to simulate battles
 
 # TODO - 0.?.? - Main menu, Saving and loading
 
@@ -73,16 +97,16 @@ Not trivial to sync input, layout & graphics
 "In 61, Axial Peregrins attacked Green Axis at Borchpor, and emerged vitorious.
 In the end, the attackers suffered no casualties. While the defenders suffered no casualties."
 
-## refactor - Better spatial searches
-
-The majority of the current time spent in history generation is searching who is in a town to simulate battles
-
 ## feat - Interactions - Ask about
 
 - Option to ask people about something
   - Dialog option "Ask about..." - Select something
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
+
+## refactor - optimize build time with workspaces
+
+https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
 # Release 0.1.0 - Final polish
 
@@ -104,6 +128,17 @@ The majority of the current time spent in history generation is searching who is
 - ✓ Save current position when leaving local tile
 - ✓ Better cursor
 - ✓ Min. 60 fps
+
+## feat - Think of a name
+
+I really like the idea of "tales of...", "legends of ...", "Myths of ...", "Chronicles of ..."
+Tales of Qud
+Tales of Armok
+Tales of Edin x (Tales of Erin, Tales of Eden)
+Myths of Edin
+Tales of Tirus
+Legends of Tesea
+✓ Tales of Kathay
 
 # Release 0.0.9 - More interesting world generation
 

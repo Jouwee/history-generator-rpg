@@ -2,7 +2,7 @@ use ::image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use piston::{Button, Key};
 
-use crate::{commons::history_vec::Id, engine::{geometry::{Coord2, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, codex::knowledge_codex::KnowledgeCodex, InputEvent}};
+use crate::{commons::history_vec::Id, engine::{geometry::Coord2, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, codex::knowledge_codex::KnowledgeCodex, InputEvent}};
 
 use super::world::World;
 
@@ -91,7 +91,7 @@ impl WorldScene {
 
 impl Scene for WorldScene {
     fn render(&mut self, ctx: &mut RenderContext) {
-        ctx.scale(2.);
+        ctx.pixel_art(2);
         use graphics::*;
 
         let white = Color::from_hex("f1f6f0");
@@ -100,19 +100,16 @@ impl Scene for WorldScene {
 
         let ts = 16.;
 
-        let cursor_pos_on_screen = ((ctx.layout_rect[2] / 2.).round(), (ctx.layout_rect[2] / 2.).round());
+        ctx.push();
+        let cursor = [self.cursor.x as f64 * ts, self.cursor.y as f64 * ts];
+        ctx.center_camera_on(cursor);
 
-        let xoff = (-self.cursor.x as f64 * ts) + cursor_pos_on_screen.0;
-        let yoff = (-self.cursor.y as f64 * ts) + cursor_pos_on_screen.1;
-
-
-        self.tilemap.offset = Vec2::xy(self.cursor.x as f32 * ts as f32 - cursor_pos_on_screen.0 as f32, self.cursor.y as f32 * ts as f32 - cursor_pos_on_screen.1 as f32);
         self.tilemap.render(ctx);
 
         let mut hover_settlement = None;
         for (id, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
-            let transform = ctx.context.transform.trans(xoff + (settlement.xy.0 as f64*ts), yoff + (settlement.xy.1 as f64*ts));
+            let transform = ctx.context.transform.trans(settlement.xy.0 as f64*ts, settlement.xy.1 as f64*ts);
             let texture;
             if settlement.demographics.population == 0 {
                 texture = &self.settlement_textures[6];
@@ -138,7 +135,9 @@ impl Scene for WorldScene {
 
         }
 
-        ctx.image("cursor.png", [cursor_pos_on_screen.0, cursor_pos_on_screen.1]);
+        ctx.image("cursor.png", cursor);
+        let _ = ctx.try_pop();
+
         // Location banner
         let center = ctx.layout_rect[2] / 2.;
         ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);

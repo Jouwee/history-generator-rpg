@@ -1075,18 +1075,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "package"
-version = "0.0.9"
-dependencies = [
- "image",
- "noise",
- "piston",
- "piston2d-graphics",
- "piston2d-opengl_graphics",
- "pistoncore-glutin_window",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1631,6 +1619,18 @@ dependencies = [
  "pkg-config",
  "toml",
  "version-compare",
+]
+
+[[package]]
+name = "tales_of_kathay"
+version = "0.0.9"
+dependencies = [
+ "image",
+ "noise",
+ "piston",
+ "piston2d-graphics",
+ "piston2d-opengl_graphics",
+ "pistoncore-glutin_window",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "package"
+name = "tales_of_kathay"
 version = "0.0.9"
 edition = "2021"
 
@@ -10,3 +10,6 @@ piston2d-graphics = "0.44.0"
 pistoncore-glutin_window = "0.72.0"
 piston2d-opengl_graphics = "0.85.0"
 image = "0.25.5"
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.

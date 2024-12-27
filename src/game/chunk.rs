@@ -11,7 +11,6 @@ use super::{actor::Actor, Renderable};
 pub struct Chunk {
     size: Size2D,
     pub map: ChunkMap,
-    tile_def: HashMap<u8, TileDef>,
     pub player: Actor,
     pub npcs: Vec<Actor>,
     pub killed_people: Vec<Id>,
@@ -19,7 +18,6 @@ pub struct Chunk {
 }
 
 pub struct ChunkMap {
-    tiles: Vec<Tile>,
     ground_layer: LayeredDualgridTilemap,
     object_layer: TileMap,
 }
@@ -41,13 +39,6 @@ impl ChunkMap {
 
 impl Chunk {
     pub fn new(size: Size2D, player: Actor) -> Chunk {
-        let mut tile_def = HashMap::new();
-        tile_def.insert(0, TileDef { sprite: (0, 0) }); // Grass
-        tile_def.insert(1, TileDef { sprite: (1, 0) }); // Sand
-        tile_def.insert(2, TileDef { sprite: (0, 1) }); // Stone
-        tile_def.insert(3, TileDef { sprite: (1, 1) }); // Water
-        tile_def.insert(4, TileDef { sprite: (2, 0) }); // Brick
-        tile_def.insert(5, TileDef { sprite: (2, 1) }); // Wall
 
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/stone_walls.png").unwrap().decode().unwrap();
@@ -62,28 +53,26 @@ impl Chunk {
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageReader::open("assets/sprites/stone.png").unwrap().decode().unwrap();
-        dual_tileset.add(0, image, 16, 16);
-        let image = ImageReader::open("assets/sprites/grass.png").unwrap().decode().unwrap();
-        dual_tileset.add(3, image, 16, 16);
+        let image = ImageReader::open("assets/sprites/chunk_tiles/stone.png").unwrap().decode().unwrap();
+        dual_tileset.add(0, image, 24, 24);
+        let image = ImageReader::open("assets/sprites/chunk_tiles/grass.png").unwrap().decode().unwrap();
+        dual_tileset.add(3, image, 24, 24);
         let image = ImageReader::open("assets/sprites/sand.png").unwrap().decode().unwrap();
-        dual_tileset.add(1, image, 16, 16);
+        dual_tileset.add(1, image, 24, 24);
         let image = ImageReader::open("assets/sprites/water.png").unwrap().decode().unwrap();
-        dual_tileset.add(2, image, 16, 16);
+        dual_tileset.add(2, image, 24, 24);
         let image = ImageReader::open("assets/sprites/floor.png").unwrap().decode().unwrap();
-        dual_tileset.add(4, image, 16, 16);
+        dual_tileset.add(4, image, 24, 24);
 
         Chunk {
             size,
             map: ChunkMap {
-                tiles: vec![Tile { id: 0 }; size.area()],
-                ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 16, 16),
-                object_layer: TileMap::new(tileset, size.x(), size.y(), 16, 16),
+                ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
+                object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
             },
             player,
             npcs: Vec::new(),
             killed_people: Vec::new(),
-            tile_def,
             items_on_ground: Vec::new(),
         }
     }
@@ -95,38 +84,37 @@ impl Chunk {
         let noise = Perlin::new(rng.derive("terrain").seed());
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
-                let idx = (y * chunk.size.x()) + x;
                 let n = noise.get([x as f64 / 10.0, y as f64 / 10.0]);
                 match tile.region_id {
                     0 => { // Ocean
                         chunk.map.ground_layer.set_tile(x, y, 3);
-                        chunk.map.tiles[idx].id = 3; // water
+                        // water
                     },
                     1 => { // Coastal
                         if n < -0.5 {
                             chunk.map.ground_layer.set_tile(x, y, 3);
-                            chunk.map.tiles[idx].id = 3; // water
+                            // water
                         } else {
                             chunk.map.ground_layer.set_tile(x, y, 2);
-                            chunk.map.tiles[idx].id = 1; // sand
+                            // sand
                         }
                     },
                     2 => { // Forest - Grass
                         if n < 0.5 {
                             chunk.map.ground_layer.set_tile(x, y, 1);
-                            chunk.map.tiles[idx].id = 0; // grass
+                            // grass
                         } else {
                             chunk.map.ground_layer.set_tile(x, y, 0);
-                            chunk.map.tiles[idx].id = 2; // stone
+                            // stone
                         }
                     },
                     3 => { // Desert - Sand
                         if n < 0.5 {
                             chunk.map.ground_layer.set_tile(x, y, 2);
-                            chunk.map.tiles[idx].id = 1; // sand
+                            // sand
                         } else {
                             chunk.map.ground_layer.set_tile(x, y, 0);
-                            chunk.map.tiles[idx].id = 2; // stone
+                            // stone
                         }
                     },
                     _ => ()
@@ -265,8 +253,7 @@ impl Chunk {
     pub fn make_building(&mut self, rng: &mut Rng, building: (Coord2, Coord2)) {
         for x in building.0.x..building.1.x + 1 {
             for y in building.0.y..building.1.y + 1 {
-                let idx = (y * self.size.x() as i32) + x;
-                self.map.tiles[idx as usize].id = 4; // Floor
+                // Floor
                 self.map.ground_layer.set_tile(x as usize, y as usize, 4);
                 if x == building.0.x || y == building.0.y || x == building.1.x || y == building.1.y {
                     // Leaves 1 block out for doors
@@ -302,15 +289,6 @@ impl Chunk {
 
 impl Renderable for Chunk {
     fn render(&self, ctx: &mut crate::engine::render::RenderContext) {
-        for x in 0..self.size.x() {
-            for y in 0..self.size.y() {
-                let idx = (y * self.size.x()) + x;
-                let tile = self.map.tiles.get(idx).unwrap();
-                let tile = self.tile_def.get(&tile.id).unwrap();
-                ctx.spritesheet("tiles.png", tile.sprite, [x as f64 * 16., y as f64 * 16.]);
-            }
-        }
-
         self.map.ground_layer.render(ctx);
 
         let mut actors_by_position = HashMap::new();
@@ -335,13 +313,4 @@ impl Renderable for Chunk {
         }
 
     }
-}
-
-#[derive(Clone)]
-pub struct Tile {
-    id: u8
-}
-
-pub struct TileDef {
-    sprite: (u32, u32)
 }

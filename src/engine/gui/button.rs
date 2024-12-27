@@ -37,9 +37,6 @@ impl Button {
 
 impl GUINode for Button {
     fn render(&mut self, ctx: &mut RenderContext) {
-        let original = ctx.context.transform;
-        // Renders on the original transform for pixelated font. Won't work with scaled stuff.
-        ctx.context.transform = ctx.original_transform;
         let size = self.min_size(ctx);
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         self.last_layout = [position[0], position[1], size[0], size[1]];
@@ -71,7 +68,6 @@ impl GUINode for Button {
         position[0] += 4.;
         position[1] += 17.;
         ctx.text(&self.text, 11, position, Color::from_hex("ffffff"));
-        ctx.context.transform = original;
     }
 
     fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
