@@ -32,6 +32,9 @@ explored civilized area -> interact with people -> receive info -> investigate -
     - ✓ Interacting with people to get information about other people, artifacts, etc
 - Organic Questing
   - People have wants, problems, and riches. Do one in exchange for the other (make this more "mechanified")
+  - How to make quests?
+    https://www.youtube.com/watch?v=w1mz-TrauFM
+    https://www.youtube.com/watch?v=MxeJh2Asigg&t=316s
 
 ## idea - History simulation of Technology
 

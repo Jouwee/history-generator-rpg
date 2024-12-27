@@ -1,14 +1,5 @@
 # Doing
 
-## feat - Review worldgen scene
-
-- ✓ Show year, enter to interrupt
-- ✓ New biome - Grassland
-- ✓ Render as Tilemap
-- ✓ Pixel art Scale
-- ✓ Settlements rendering
-- ✓ Size vs window
-
 # TODO - 0.1.0 - Final polish
 
 ## refactor - Load definitions from yaml/toml files
@@ -48,6 +39,13 @@ Package-size, learning
 - Start new game dialog (options)
   - Seed
   - Great beast frequency
+
+## feat - Think of a name
+
+I really like the idea of "tales of..."
+Tales of Qud
+Tales of Armok
+Tales of
 
 # TODO - 0.?.? - Main menu, Saving and loading
 
@@ -91,7 +89,18 @@ The majority of the current time spent in history generation is searching who is
   - Check rumors, and chance to know about events of "relatives" (same city, family, etc)
 - Rumors and knowledge must be deterministic, hopefully not needing to store it.
 
-# Release - 0.0.9 - More interesting world generation
+# Release 0.1.0 - Final polish
+
+## feat - Review worldgen scene
+
+- ✓ Show year, enter to interrupt
+- ✓ New biome - Grassland
+- ✓ Render as Tilemap
+- ✓ Pixel art Scale
+- ✓ Settlements rendering
+- ✓ Size vs window
+
+# Release 0.0.9 - More interesting world generation
 
 ## feat - Object layer in local map
 

@@ -75,14 +75,14 @@ impl WorldHistoryGenerator {
         };
 
         // Generate starter people
-        for _ in 0..10 {
+        for _ in 0..16 {
             generator.rng.next();
             let id = person_id.next();
             let culture = generator.world.cultures.get(&Id(generator.rng.randu_range(0, culture_id.seq()))).unwrap();
             let faction = Faction::new(&generator.rng, id);
             let faction_id = generator.world.factions.insert(faction);
             // TODO: Position
-            let position = Coord2::xy(0, 0);
+            let position = Coord2::xy(generator.rng.randu_range(0, generator.world.map.size.x()) as i32, generator.rng.randu_range(0, generator.world.map.size.y()) as i32);
             let species = generator.world.species.get(&Id(0)).unwrap(); // Human
             let person = Person::new(id, species, Importance::Important, 1, position)
                 .civilization(&Some(CivilizedComponent {
@@ -378,7 +378,7 @@ impl WorldHistoryGenerator {
                     }
                 }
                 if let Some(civ) = &person.civ {
-                    if civ.leader_of_settlement.is_none() && rng.rand_chance(1.0/50.0) {
+                    if civ.leader_of_settlement.is_none() && rng.rand_chance(0.02) {
                         return ActionToSimulate::ColonizeNewSettlement(id)
                     }
                 }
@@ -592,9 +592,10 @@ impl WorldHistoryGenerator {
 
     fn colonize_new_settlement(&mut self, date: WorldEventDate, id: Id) {
         let mut person = self.world.people.get_mut(&id).unwrap();
+        let xy = person.position.clone();
         if let Some(civ) = &mut person.civ {
             let culture = self.world.cultures.get(&civ.culture).unwrap();
-            let settlement = generate_settlement(&self.rng, date.year, id.clone(), culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
+            let settlement = generate_settlement(&self.rng, date.year, xy, id.clone(), culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
             if let Some(settlement) = settlement {
                 let position = settlement.xy;
                 let id = self.world.settlements.insert(settlement);
@@ -654,17 +655,20 @@ impl WorldHistoryGenerator {
 
 }
 
-fn generate_settlement(rng: &Rng, founding_year: u32, leader: Id, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
+fn generate_settlement(rng: &Rng, founding_year: u32, seed_pos: Coord2, leader: Id, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
     let mut rng = rng.derive("settlement");
     let mut xy = None;
-    'candidates: for _ in 1..10 {
-        let txy = Point2D(rng.randu_range(0, world_map.size.x()), rng.randu_range(0, world_map.size.y()));
+    let dist = 25;
+    let x = ((seed_pos.x - dist).clamp(0, world_map.size.x() as i32 - 1))..((seed_pos.x + dist).clamp(0, world_map.size.x() as i32 - 1));
+    let y = ((seed_pos.y - dist).clamp(0, world_map.size.y() as i32 - 1))..((seed_pos.y + dist).clamp(0, world_map.size.y() as i32 - 1));
+    'candidates: for _ in 1..20 {
+        let txy = Point2D(rng.randu_range(x.start as usize, x.end as usize), rng.randu_range(y.start as usize, y.end as usize));
         let tile = world_graph.map.tile(txy.0, txy.1);
         if tile.region_id == 0 {// Ocean
             continue;
         }
         for (_, settlement) in world_graph.settlements.iter() {
-            if settlement.borrow().xy.dist_squared(&txy) < 3.0_f32.powi(2) {
+            if settlement.borrow().xy.dist_squared(&txy) <= 2_f32.powi(2) {
                 continue 'candidates;
             }
         }
@@ -674,7 +678,6 @@ fn generate_settlement(rng: &Rng, founding_year: u32, leader: Id, culture: &Cult
     if let Some(xy) = xy {
         let region_id = world_map.tile(xy.0, xy.1).region_id as usize;
         let region = regions.get(region_id).unwrap();
-
         return Some(SettlementBuilder::colony(&rng, xy, founding_year, leader, culture, faction, region).create())
     } else {
         None
