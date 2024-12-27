@@ -123,15 +123,15 @@ fn main() {
                 (String::from("boar"), String::from("vevel")),
                 (String::from("fortress"), String::from("stad")),
                 (String::from("sea"), String::from("so")),
-                (String::from("port"), String::from("pør")),
+                (String::from("port"), String::from("por")),
                 (String::from("fish"), String::from("fisk")),
                 (String::from("whale"), String::from("vale")),
                 (String::from("kelp"), String::from("kjel")),
                 (String::from("coral"), String::from("krall")),
-                (String::from("scorpion"), String::from("skør")),
-                (String::from("vulture"), String::from("vøl")),
+                (String::from("scorpion"), String::from("skor")),
+                (String::from("vulture"), String::from("vol")),
                 (String::from("cactus"), String::from("kak")),
-                (String::from("palm"), String::from("pølm")),
+                (String::from("palm"), String::from("polm")),
             ])
         },
         first_name_male_model: MarkovChainSingleWordModel::train(vec!(
@@ -405,7 +405,7 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
                         let chunk = Chunk::from_world_tile(&scene.world, scene.cursor, scene.player);
-                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.codex, chunk));
+                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk));
                         continue
                     }
                 }
@@ -420,7 +420,9 @@ fn main() {
                             // scene.world.events.push(WorldEventDate { year: generator.year }, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
                             // TODO: Inheritance
                         // }
-                        app.scene = SceneEnum::World(WorldScene::new(scene.world, scene.chunk.player, scene.codex));
+                        let mut new_scene = WorldScene::new(scene.world, scene.chunk.player, scene.codex);
+                        new_scene.cursor = scene.world_pos;
+                        app.scene = SceneEnum::World(new_scene);
                         continue
                     }
                 }

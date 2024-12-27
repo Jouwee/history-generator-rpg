@@ -30,6 +30,7 @@ pub struct InputEvent {
 pub struct GameSceneState {
     pub world: World,
     pub codex: KnowledgeCodex,
+    pub world_pos: Coord2,
     pub chunk: Chunk,
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
@@ -48,11 +49,12 @@ pub struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub fn new(world: World, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
+    pub fn new(world: World, world_pos: Coord2, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
         let mut state = GameSceneState {
             world,
             codex,
             chunk,
+            world_pos,
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),

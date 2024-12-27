@@ -1,7 +1,7 @@
 use image::DynamicImage;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use super::render::RenderContext;
+use super::{geometry::Vec2, render::RenderContext};
 
 const IDX_BL: usize = 0;
 const IDX_TR_BR: usize = 1;
@@ -27,7 +27,8 @@ pub struct LayeredDualgridTilemap {
     width: usize,
     height: usize,
     cell_width: usize,
-    cell_height: usize
+    cell_height: usize,
+    pub offset: Vec2
 }
 
 impl LayeredDualgridTilemap {
@@ -40,7 +41,8 @@ impl LayeredDualgridTilemap {
             width,
             height,
             cell_width,
-            cell_height
+            cell_height,
+            offset: Vec2::xy(0., 0.)
         }
     }
 
@@ -61,17 +63,20 @@ impl LayeredDualgridTilemap {
     pub fn render(&self, ctx: &mut RenderContext) {
         let hw = self.cell_width as f64 / 2.;
         let hh = self.cell_height as f64 / 2.;
-        let cull_limit = [
-            ctx.layout_rect[2] as usize / self.cell_width,
-            ctx.layout_rect[3] as usize / self.cell_height
+        let cull_start = [
+            (self.offset.x / self.cell_width as f32 - 1.).max(0.) as usize,
+            (self.offset.y / self.cell_height as f32 - 1.).max(0.) as usize
         ];
-       
-        let x_range = 0..(self.width.min(cull_limit[0] + 1));
-        let y_range = 0..(self.height.min(cull_limit[1] + 1));
+        let cull_limit = [
+            cull_start[0] + ctx.layout_rect[2] as usize / self.cell_width,
+            cull_start[1] + ctx.layout_rect[3] as usize / self.cell_height
+        ];
+        let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
+        let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
         for y in y_range {
             for x in x_range.clone() {
                 if let Some(tile) = &self.collapsed_tiles[x + y * self.width] {
-                    let pos = [(x * self.cell_width) as f64 + hw, (y * self.cell_height) as f64 + hh];
+                    let pos = [(x * self.cell_width) as f64 + hw - self.offset.x as f64, (y * self.cell_height) as f64 + hh - self.offset.y as f64];
                     for (tileset, tileset_idx) in tile {
                         ctx.texture_ref(&self.tileset.tiles[*tileset].textures[*tileset_idx], pos);
                     }

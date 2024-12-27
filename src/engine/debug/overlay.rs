@@ -60,7 +60,7 @@ impl TrackingBlocks {
     fn count(&mut self) {
         self.blocks[0].1 += 1;
         let current = self.start.elapsed().as_secs_f64();
-        if current - self.blocks[0].0 > 1. {
+        if current - self.blocks[0].0 > 0.2 {
             // Shift-right
             for i in (0..9).rev() {
                 self.blocks[i + 1] = self.blocks[i];

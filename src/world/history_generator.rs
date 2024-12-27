@@ -42,10 +42,16 @@ impl WorldHistoryGenerator {
         // println!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &parameters.regions);
 
+        let mut regions = HashMap::new();
+        for region in parameters.regions.iter() {
+            regions.insert(Id(region.id), region.clone());
+        }
+
         let mut world = World {
             map: world_map,
             cultures: HashMap::new(),
             species: Self::load_species(),
+            regions,
             materials: Self::load_materials(),
             artifacts: HistoryVec::new(),
             factions: HistoryVec::new(),

@@ -89,7 +89,7 @@ impl Chunk {
     }
 
     pub fn from_world_tile(world: &World, xy: Coord2, player: Actor) -> Chunk {
-        let mut chunk = Self::new(Size2D(64, 64), player);
+        let mut chunk = Self::new(Size2D(256, 256), player);
         let mut rng = Rng::rand();
         let tile = world.map.tile(xy.x as usize, xy.y as usize);
         let noise = Perlin::new(rng.derive("terrain").seed());

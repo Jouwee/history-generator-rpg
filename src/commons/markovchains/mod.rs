@@ -35,7 +35,7 @@ impl MarkovChainSingleWordModel {
                 let character = character.to_ascii_lowercase();
                 let index: usize;
                 match character {
-                    'ø' => index = 26,
+                    '_' => index = 26,
                     '\'' => index = 27,
                     '-' => index = 28,
                     _ => {
@@ -152,7 +152,7 @@ impl MarkovChainSingleWordModel {
                 NULL => string.push('0'),
                 START_OF => string.push('^'),
                 END_OF => break,
-                26 => string.push('ø'),
+                26 => string.push('_'),
                 27 => string.push('\''),
                 28 => string.push('-'),
                 _ => string.push(char::from_u32(char as u32 + 97).unwrap())

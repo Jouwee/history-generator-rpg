@@ -12,13 +12,6 @@ Package-size, learning
 
 ## bug - Names like Anea00000000000
 
-## feat - Review world scene
-
-- Save current position
-- Better cursor
-- Scale up pixel art
-- Current tile info
-
 ## feat - Review game scene
 
 ## feat - Death
@@ -30,7 +23,9 @@ Package-size, learning
 
 ## bug - History generation is not deterministic
 
-## feat - More interesting worldgen
+## feat - More interesting worldgen / history
+
+- More settlement names
 
 ## feat - Main menu Scene
 
@@ -75,7 +70,7 @@ Not trivial to sync input, layout & graphics
 
 ## bug - Weird battle results
 
-"In 61, Axial Peregrins attacked Green Axis at Borchpør, and emerged vitorious.
+"In 61, Axial Peregrins attacked Green Axis at Borchpor, and emerged vitorious.
 In the end, the attackers suffered no casualties. While the defenders suffered no casualties."
 
 ## refactor - Better spatial searches
@@ -99,6 +94,16 @@ The majority of the current time spent in history generation is searching who is
 - ✓ Pixel art Scale
 - ✓ Settlements rendering
 - ✓ Size vs window
+
+## feat - Review world scene
+
+- ✓ Scale up pixel art
+- ✓ Terrain tiles
+- ✓ Tooltip for keys (Enter)
+- ✓ Show current city name (banner)
+- ✓ Save current position when leaving local tile
+- ✓ Better cursor
+- ✓ Min. 60 fps
 
 # Release 0.0.9 - More interesting world generation
 
