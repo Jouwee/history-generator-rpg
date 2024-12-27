@@ -16,7 +16,7 @@ Package-size, learning
 
 - Game
   - ✓ Pixel art scale
-    - Click events
+    - ✓ Click events
     - ✓ Follow player
   - 24x24 spritesheets
     - ✓ Grass
@@ -24,6 +24,7 @@ Package-size, learning
     - Sand
     - Floor
     - Water
+  - Tile variations
   - Review chunk gen
   - Character sprite
   - Human sprite

@@ -26,7 +26,7 @@ impl Button {
     pub fn event(&self, evt: &InputEvent) -> ButtonEvent {
         if let Btn::Mouse(_) = evt.button_args.button {
             let position = self.last_layout;
-            if evt.mouse_pos[0] >= position[0] && evt.mouse_pos[1] >= position[1] && evt.mouse_pos[0] <= position[0]+position[2] && evt.mouse_pos[1] <= position[1]+position[3] {
+            if evt.mouse_pos_gui[0] >= position[0] && evt.mouse_pos_gui[1] >= position[1] && evt.mouse_pos_gui[0] <= position[0]+position[2] && evt.mouse_pos_gui[1] <= position[1]+position[3] {
                 return ButtonEvent::Click
             }
         }

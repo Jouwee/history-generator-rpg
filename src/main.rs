@@ -36,7 +36,14 @@ pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     scene: SceneEnum,
     assets: Assets,
-    debug_overlay: DebugOverlay
+    debug_overlay: DebugOverlay,
+    display_context: DisplayContext
+}
+
+pub struct DisplayContext {
+    pub scale: f64,
+    pub camera_rect: [f64; 4],
+    pub gui_rect: [f64; 4],
 }
 
 impl App {
@@ -75,6 +82,9 @@ impl App {
             },
         }
         self.debug_overlay.render(&mut context);
+        // TODO: This is really disconnected
+        self.display_context.camera_rect = context.camera_rect;
+        self.display_context.gui_rect = context.layout_rect;
         self.gl.draw_end();
 
     }
@@ -347,7 +357,12 @@ fn main() {
             great_beasts_yearly_spawn_chance: 0.1
         })),
         assets: Assets::new(),
-        debug_overlay: DebugOverlay::new()
+        debug_overlay: DebugOverlay::new(),
+        display_context: DisplayContext {
+            scale: 2.,
+            camera_rect: [0.; 4],
+            gui_rect: [0.; 4]
+        }
     };
 
 
@@ -380,7 +395,13 @@ fn main() {
 
         if let Some(k) = e.button_args() {
             if k.state == ButtonState::Press {
-                let input_event = InputEvent { mouse_pos: last_mouse_pos, button_args: k };
+                let p = last_mouse_pos;
+                let input_event = InputEvent {
+                    mouse_pos_cam: [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]],
+                    mouse_pos_gui: [p[0] / app.display_context.scale, p[1] / app.display_context.scale],
+                    button_args: k
+                };
+
                 app.input(&input_event);
 
                 if let Button::Keyboard(Key::Return) = k.button {

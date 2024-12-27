@@ -23,7 +23,8 @@ pub trait Renderable {
 }
 
 pub struct InputEvent {
-    pub mouse_pos: [f64; 2],
+    pub mouse_pos_cam: [f64; 2],
+    pub mouse_pos_gui: [f64; 2],
     pub button_args: ButtonArgs,
 }
 
@@ -250,7 +251,7 @@ impl Scene for GameSceneState {
                 },
                 Btn::Mouse(_any) => {
                     if let Some(action) = &self.selected_targeted_action {
-                        let tile_pos = Coord2::xy(evt.mouse_pos[0] as i32 / 16, evt.mouse_pos[1] as i32 / 16);
+                        let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                         if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                             let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                             if let Some((i, target)) = target {
