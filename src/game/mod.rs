@@ -4,6 +4,7 @@ use action::{ActionEnum, ActionMap};
 use actor::ActorType;
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
+use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
@@ -14,6 +15,7 @@ pub mod action;
 pub mod actor;
 pub mod chunk;
 pub mod codex;
+pub mod hotbar;
 pub mod interact;
 pub mod inventory;
 pub mod log;
@@ -43,6 +45,7 @@ pub struct GameSceneState {
     button_sleep: Button,
     button_codex: Button,
     button_inventory: Button,
+    hotbar: Hotbar,
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
     inventory_dialog: CharacterDialog,
@@ -60,6 +63,7 @@ impl GameSceneState {
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
             label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
+            hotbar: Hotbar::new(),
             button_attack: Button::new("atk", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
             button_talk: Button::new("tlk", Position::Anchored(Anchor::TopLeft, 36.0, 32.0)),            
             button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 62.0, 32.0)),            
@@ -116,6 +120,7 @@ impl Scene for GameSceneState {
             y = y + 16.;
         }
 
+        self.hotbar.render(HotbarState::new(&self.chunk.player), ctx);
         self.label.render(ctx);
         self.button_attack.render(ctx);
         self.button_talk.render(ctx);
@@ -128,7 +133,8 @@ impl Scene for GameSceneState {
         self.inventory_dialog.render(ctx);        
     }
 
-    fn update(&mut self, _update: &Update) {
+    fn update(&mut self, update: &Update) {
+        self.hotbar.update(HotbarState::new(&self.chunk.player), update);
         self.label.update();
         self.button_attack.update();
         self.button_talk.update();
@@ -189,6 +195,7 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent) {
+        self.hotbar.input(HotbarState::new(&self.chunk.player), evt);
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
         self.inventory_dialog.input_state(evt, &mut self.chunk.player, &self.world);

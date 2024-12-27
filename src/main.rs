@@ -52,6 +52,7 @@ impl App {
 
         let texture_settings = TextureSettings::new().filter(Filter::Nearest);
         let mut glyphs = GlyphCache::new("./assets/alagard.ttf", (), texture_settings).expect("Could not load font");
+        let mut small_glyphs = GlyphCache::new("./assets/enter-the-gungeon-small.ttf", (), texture_settings).expect("Could not load font");
 
 
         let c = self.gl.draw_begin(args.viewport());
@@ -68,6 +69,7 @@ impl App {
             gl: &mut self.gl,
             assets: &mut self.assets,
             default_font: &mut glyphs,
+            small_font: &mut small_glyphs,
             textures: Vec::new(),
         };
         match &mut self.scene {

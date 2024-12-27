@@ -26,15 +26,15 @@ Package-size, learning
     - Water
   - Tile variations
   - Review chunk gen
-  - Character sprite
+  - Player sprite
   - Human sprite
   - Spider sprite
   - Leshen sprite
   - Fiend sprite
 - Better UI
   - Action bar
-  - Health bar
-  - AP bar
+  - ✓ Health bar
+  - ✓ AP bar
   - XP bar
   - Cursor on action
 - Better character dialog

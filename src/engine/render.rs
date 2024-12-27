@@ -16,6 +16,7 @@ pub struct RenderContext<'a, 'b> {
     pub transform_queue: Vec<[[f64; 3]; 2]>,
     // TODO: Repo
     pub default_font: &'b mut GlyphCache<'b>,
+    pub small_font: &'b mut GlyphCache<'b>,
     pub textures: Vec<Texture>
 }
 
@@ -31,8 +32,8 @@ impl<'a, 'b> RenderContext<'a, 'b> {
     }
 
     pub fn center_camera_on(&mut self, pos: [f64; 2]) {
-        self.camera_rect[0] = pos[0] - self.camera_rect[2] / 2.;
-        self.camera_rect[1] = pos[1] - self.camera_rect[3] / 2.;
+        self.camera_rect[0] = (pos[0] - self.camera_rect[2] / 2.).round();
+        self.camera_rect[1] = (pos[1] - self.camera_rect[3] / 2.).round();
         self.context.transform = self.context.transform.trans(-self.camera_rect[0], -self.camera_rect[1]);
     }
 
@@ -67,6 +68,21 @@ impl<'a, 'b> RenderContext<'a, 'b> {
                 text,
                 [position[0], position[1]],
                 self.default_font,
+                &self.context.draw_state,
+                self.context.transform,
+                self.gl,
+            )
+            .unwrap();
+    }
+
+    //pub fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {
+    pub fn text_small(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
+        Text::new_color(color.f32_arr(), font_size)
+            .round()
+            .draw_pos(
+                text,
+                [position[0], position[1]],
+                self.small_font,
                 &self.context.draw_state,
                 self.context.transform,
                 self.gl,
