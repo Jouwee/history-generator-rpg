@@ -4,16 +4,35 @@ use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, C
 
 use super::{actor::Actor, chunk::ChunkMap, log::LogEntry};
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ActionEnum {
     MoveLeft,
     MoveRight,
     MoveUp,
     MoveDown,
+    UnarmedAttack,
     Attack,
     Talk,
     PickUp,
     Sleep
+}
+
+impl ActionEnum {
+
+    pub fn name(&self) -> &str {
+        match self {
+            Self::MoveLeft => "MoveLeft",
+            Self::MoveRight => "MoveRight",
+            Self::MoveUp => "MoveUp",
+            Self::MoveDown => "MoveDown",
+            Self::UnarmedAttack => "UnarmedAttack",
+            Self::Attack => "Attack",
+            Self::Talk => "Talk",
+            Self::PickUp => "PickUp",
+            Self::Sleep => "Sleep"
+        }
+    }
+
 }
 
 pub struct ActionDefinition {
@@ -28,6 +47,7 @@ pub struct ActionMap {
 impl Default for ActionMap {
     fn default() -> Self {
         let mut map = ActionMap { map: HashMap::new() };
+        map.register(ActionEnum::UnarmedAttack, 40, Box::new(UnarmedAttack {}));
         map.register(ActionEnum::Attack, 40, Box::new(AttackAction {}));
         map.register(ActionEnum::Talk, 0, Box::new(TalkAction {}));
         map.register(ActionEnum::PickUp, 20, Box::new(PickUpAction {}));
@@ -106,6 +126,20 @@ pub trait ActionTrait {
     fn run_on_item(&self, _actor: &mut Actor, _target: &mut Item) -> Option<LogEntry> { None }
     fn can_run_on_tile(&self, _actor: &Actor, _chunk: &ChunkMap, _pos: &Coord2) -> bool { false }
     fn run_on_tile(&self, _actor: &mut Actor, _chunk: &mut ChunkMap, _pos: &Coord2) -> Option<LogEntry> { None }
+}
+
+pub struct UnarmedAttack {}
+impl ActionTrait for UnarmedAttack {
+
+    fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
+    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
+        let str_mult = actor.attributes.strength_attack_damage_mult();
+        let damage_model = DamageComponent::new(0., 0., 1.).multiply(str_mult);
+        let damage = damage_model.resolve(&target.defence);
+        target.hp.damage(damage);
+        Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
+    }
+
 }
 
 pub struct AttackAction {}

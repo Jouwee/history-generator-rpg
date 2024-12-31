@@ -378,6 +378,8 @@ fn main() {
         delta_time: 0.,
         max_update_time: (1. / event_settings.ups as f64),
         updates_per_second: event_settings.ups as u32,
+        mouse_pos_cam: [0., 0.],
+        mouse_pos_gui: [0., 0.],
     };
 
     let mut events = Events::new(event_settings);
@@ -388,6 +390,9 @@ fn main() {
 
         if let Some(args) = e.update_args() {
             update.delta_time = args.dt;
+            let p = last_mouse_pos;
+            update.mouse_pos_cam = [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]];
+            update.mouse_pos_gui = [p[0] / app.display_context.scale, p[1] / app.display_context.scale];
             app.update(&update);
         }
 
@@ -430,6 +435,14 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
                         let chunk = Chunk::from_world_tile(&scene.world, scene.cursor, scene.player);
+                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk));
+                        continue
+                    }
+                }
+
+                if let Button::Keyboard(Key::F4) = k.button {
+                    if let SceneEnum::World(scene) = app.scene {
+                        let chunk = Chunk::playground(&scene.world, scene.player);
                         app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk));
                         continue
                     }

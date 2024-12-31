@@ -35,18 +35,12 @@ Package-size, learning
   - Action bar
   - ✓ Health bar
   - ✓ AP bar
-  - XP bar
   - Cursor on action
 - Better character dialog
 - Better codex dialog
 - Better interaction dialog
 
 ## feat - Death
-
-- Save current position
-- Better cursor
-- Scale up pixel art
-- Current tile info
 
 ## bug - History generation is not deterministic
 
@@ -66,6 +60,8 @@ Package-size, learning
 ## refactor - Better spatial searches
 
 The majority of the current time spent in history generation is searching who is in a town to simulate battles
+
+## feat - Rebalance
 
 # TODO - 0.?.? - Main menu, Saving and loading
 

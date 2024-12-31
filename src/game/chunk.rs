@@ -77,6 +77,21 @@ impl Chunk {
         }
     }
 
+    pub fn playground(world: &World, player: Actor) -> Chunk {
+        let mut chunk = Self::new(Size2D(256, 256), player);
+        for x in 0..chunk.size.x() {
+            for y in 0..chunk.size.y() {
+                chunk.map.ground_layer.set_tile(x, y, 0);
+            }
+        }
+
+        let species = world.species.get(&Id(3) /* spider */).unwrap();
+        let npc = Actor::from_species(Coord2::xy(26, 26), species);
+        chunk.npcs.push(npc);
+
+        return chunk
+    }
+
     pub fn from_world_tile(world: &World, xy: Coord2, player: Actor) -> Chunk {
         let mut chunk = Self::new(Size2D(256, 256), player);
         let mut rng = Rng::rand();

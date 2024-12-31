@@ -9,7 +9,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, label::Label, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
+use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
 
 pub mod action;
 pub mod actor;
@@ -38,9 +38,6 @@ pub struct GameSceneState {
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
     actions: ActionMap,
-    label: Label,
-    button_attack: Button,
-    button_talk: Button,
     button_pickup: Button,
     button_sleep: Button,
     button_codex: Button,
@@ -49,7 +46,7 @@ pub struct GameSceneState {
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
     inventory_dialog: CharacterDialog,
-    selected_targeted_action: Option<ActionEnum>
+    cursor_pos: Coord2
 }
 
 impl GameSceneState {
@@ -62,10 +59,7 @@ impl GameSceneState {
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
-            label: Label::new("Stats", Position::Anchored(Anchor::TopLeft, 10.0, 16.0)),
             hotbar: Hotbar::new(),
-            button_attack: Button::new("atk", Position::Anchored(Anchor::TopLeft, 10.0, 32.0)),
-            button_talk: Button::new("tlk", Position::Anchored(Anchor::TopLeft, 36.0, 32.0)),            
             button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 62.0, 32.0)),            
             button_sleep: Button::new("slp", Position::Anchored(Anchor::TopLeft, 88.0, 32.0)),            
             button_inventory: Button::new("Character", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
@@ -73,7 +67,7 @@ impl GameSceneState {
             interact_dialog: InteractDialog::new(),
             codex_dialog: CodexDialog::new(),
             inventory_dialog: CharacterDialog::new(),
-            selected_targeted_action: None
+            cursor_pos: Coord2::xy(0, 0)
         };
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
@@ -112,6 +106,13 @@ impl Scene for GameSceneState {
         ctx.push();
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx);
+
+        if let Some(_) = self.hotbar.selected_action {
+            println!("{:?}", self.cursor_pos);
+            println!("{:?}", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
+            ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
+        }
+
         let _ = ctx.try_pop();
         ctx.text("space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
@@ -119,11 +120,7 @@ impl Scene for GameSceneState {
             ctx.text(line, 10, [1024.0, y], *color);
             y = y + 16.;
         }
-
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx);
-        self.label.render(ctx);
-        self.button_attack.render(ctx);
-        self.button_talk.render(ctx);
         self.button_pickup.render(ctx);
         self.button_sleep.render(ctx);
         self.button_codex.render(ctx);
@@ -135,9 +132,6 @@ impl Scene for GameSceneState {
 
     fn update(&mut self, update: &Update) {
         self.hotbar.update(HotbarState::new(&self.chunk.player), update);
-        self.label.update();
-        self.button_attack.update();
-        self.button_talk.update();
         self.button_pickup.update();
         self.button_sleep.update();
         self.button_codex.update();
@@ -146,15 +140,12 @@ impl Scene for GameSceneState {
         self.codex_dialog.update();
         self.inventory_dialog.update();
 
+        self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
+
         for npc in self.chunk.npcs.iter_mut() {
             npc.update();
         }
 
-        if self.turn_controller.is_player_turn() {
-            self.label.text(format!("Player turn | HP: {}/{} | AP: {}/{} | Level: {} | XP: {}", self.chunk.player.hp.health_points, self.chunk.player.hp.max_health_points, self.chunk.player.ap.action_points, self.chunk.player.ap.max_action_points, self.chunk.player.level, self.chunk.player.xp));
-        } else {
-            self.label.text(format!("Enemy turn {}", self.turn_controller.npc_idx()));
-        }
         if self.turn_controller.is_player_turn() {
             return
         }
@@ -199,23 +190,14 @@ impl Scene for GameSceneState {
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
         self.inventory_dialog.input_state(evt, &mut self.chunk.player, &self.world);
-        if let ButtonEvent::Click = self.button_attack.event(evt) {
-            self.selected_targeted_action = Some(ActionEnum::Attack);
-            return;
-        }
         if let ButtonEvent::Click = self.button_pickup.event(evt) {
-            self.selected_targeted_action = Some(ActionEnum::PickUp);
+            self.hotbar.selected_action = Some(ActionEnum::PickUp);
             return;
         }
         if let ButtonEvent::Click = self.button_sleep.event(evt) {
-            self.selected_targeted_action = Some(ActionEnum::Sleep);
+            self.hotbar.selected_action = Some(ActionEnum::Sleep);
             return;
         }
-        if let ButtonEvent::Click = self.button_talk.event(evt) {
-            self.selected_targeted_action = Some(ActionEnum::Talk);
-            return;
-        }
-
         if let ButtonEvent::Click = self.button_codex.event(evt) {
             self.codex_dialog.start_dialog();
             return;
@@ -257,14 +239,14 @@ impl Scene for GameSceneState {
                     }
                 },
                 Btn::Mouse(_any) => {
-                    if let Some(action) = &self.selected_targeted_action {
+                    if let Some(action) = &self.hotbar.selected_action {
                         let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                         if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                             let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                             if let Some((i, target)) = target {
 
                                 match action {
-                                    ActionEnum::Attack => {
+                                    ActionEnum::Attack | ActionEnum::UnarmedAttack => {
                                         if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.chunk.player, target) {
                                             if target.hp.health_points == 0. {
                                                 self.chunk.player.add_xp(100);

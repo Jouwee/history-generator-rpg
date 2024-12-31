@@ -1,21 +1,42 @@
+use std::collections::HashSet;
+
 use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::engine::{render::RenderContext, scene::Update, Color};
+use crate::engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, Color};
 
-use super::{actor::Actor, InputEvent};
+use super::{action::ActionEnum, actor::Actor, InputEvent};
 
 pub struct Hotbar {
-    background: Texture
+    background: Texture,
+    available_actions: HashSet<ActionEnum>,
+    pub selected_action: Option<ActionEnum>,
+    action_buttons: HList
 }
 
 impl Hotbar {
     pub fn new() -> Hotbar {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let background = ImageReader::open("assets/sprites/gui/hotbar/background.png").unwrap().decode().unwrap();
-        Hotbar {
-            background: Texture::from_image(&background.to_rgba8(), &settings)
+        let mut available_actions = HashSet::new();
+        available_actions.insert(ActionEnum::UnarmedAttack);
+        available_actions.insert(ActionEnum::Talk);
+        let mut hotbar = Hotbar {
+            background: Texture::from_image(&background.to_rgba8(), &settings),
+            available_actions,
+            selected_action: None,
+            action_buttons: HList::new(Position::Anchored(Anchor::BottomCenter, 0., -24.))
+        };
+        hotbar.update_buttons();
+        return hotbar
+    }
+
+    fn update_buttons(&mut self) {
+        self.action_buttons.clear();
+        self.action_buttons.size = Some([128., 24.]);
+        for (i, action) in self.available_actions.iter().enumerate() {
+            self.action_buttons.add_key(&format!("act_{i}"), Button::new(action.name(), Position::Auto));
         }
     }
 
@@ -50,12 +71,33 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
         let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
         ctx.text_small(&text, 5, [(ap_pos[0] + 31. - text_width / 2.).round(), ap_pos[1] + 5.], Color::from_hex("ffffff"));
 
+        self.action_buttons.render(ctx);
+
     }
-    fn update(&mut self, _state: HotbarState, _update: &Update) {
-        
+
+    fn update(&mut self, state: HotbarState, _update: &Update) {
+        // TODO: How to do this only when it changes?
+        if state.player.inventory.equipped().is_some() {
+            if !self.available_actions.contains(&ActionEnum::Attack) {
+                self.available_actions.insert(ActionEnum::Attack);
+                self.update_buttons();
+            }
+            self.available_actions.insert(ActionEnum::Attack);
+        } else {
+            if self.available_actions.contains(&ActionEnum::Attack) {
+                self.available_actions.remove(&ActionEnum::Attack);
+                self.update_buttons();
+            }
+            self.available_actions.remove(&ActionEnum::Attack);
+        }
     }
-    fn input(&mut self, _state: HotbarState, _evt: &InputEvent) {
-        
+
+    fn input(&mut self, _state: HotbarState, evt: &InputEvent) {
+        for (i, action) in self.available_actions.iter().enumerate() {
+            if let ButtonEvent::Click = self.action_buttons.get_mut::<Button>(&format!("act_{i}")).unwrap().event(evt) {
+                self.selected_action = Some(*action);
+            }
+        }
     }
 }
 

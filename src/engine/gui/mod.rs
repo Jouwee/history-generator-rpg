@@ -4,6 +4,7 @@ use super::render::RenderContext;
 pub mod button;
 pub mod container;
 pub mod dialog;
+pub mod hlist;
 pub mod label;
 pub mod vlist;
 
@@ -19,6 +20,7 @@ pub trait GUINode {
             Position::Anchored(Anchor::TopLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + *y],
             Position::Anchored(Anchor::BottomLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomRight, x, y) => [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
+            Position::Anchored(Anchor::BottomCenter, x, y) => [parent_rect[0] + (parent_rect[2] / 2. - size[0] / 2.) + *x, parent_rect[1] + parent_rect[3] + *y],
             Position::Centered => [parent_rect[0] + parent_rect[2] / 2. - size[0] / 2., parent_rect[1] + parent_rect[3] / 2. - size[1] / 2.]
         }
     }
@@ -42,5 +44,6 @@ pub enum Position {
 pub enum Anchor {
     TopLeft,
     BottomLeft,
-    BottomRight
+    BottomRight,
+    BottomCenter
 }

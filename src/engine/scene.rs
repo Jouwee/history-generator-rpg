@@ -4,7 +4,9 @@ use super::render::RenderContext;
 pub struct Update {
     pub delta_time: f64,
     pub max_update_time: f64,
-    pub updates_per_second: u32
+    pub updates_per_second: u32,
+    pub mouse_pos_cam: [f64; 2],
+    pub mouse_pos_gui: [f64; 2]
 }
 
 pub trait Scene {
