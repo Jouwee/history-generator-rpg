@@ -3,9 +3,9 @@ Spatial scale
 1 chunk = 256 tiles² = 256m²
 World = 256 chunks² = 65536m² = 65km²
 
-1 world tile = ???m
-1 chunk tile = ???m
-1 turn = ???s
+Time scale
+1 turn = 2s
+50 AP ~= 1s
 
 Attributes
 0-10 - Small animals

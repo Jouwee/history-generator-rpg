@@ -15,14 +15,16 @@ pub trait GUINode {
     fn cursor_move(&mut self, _pos: [f64; 2]) {}
 
     fn compute_position(&self, position: &Position, parent_rect: [f64; 4], size: [f64; 2]) -> [f64; 2] {
+        let p;
         match position {
-            Position::Auto => [parent_rect[0], parent_rect[1]],
-            Position::Anchored(Anchor::TopLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + *y],
-            Position::Anchored(Anchor::BottomLeft, x, y) => [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
-            Position::Anchored(Anchor::BottomRight, x, y) => [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
-            Position::Anchored(Anchor::BottomCenter, x, y) => [parent_rect[0] + (parent_rect[2] / 2. - size[0] / 2.) + *x, parent_rect[1] + parent_rect[3] + *y],
-            Position::Centered => [parent_rect[0] + parent_rect[2] / 2. - size[0] / 2., parent_rect[1] + parent_rect[3] / 2. - size[1] / 2.]
+            Position::Auto => p = [parent_rect[0], parent_rect[1]],
+            Position::Anchored(Anchor::TopLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + *y],
+            Position::Anchored(Anchor::BottomLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
+            Position::Anchored(Anchor::BottomRight, x, y) => p = [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
+            Position::Anchored(Anchor::BottomCenter, x, y) => p = [parent_rect[0] + (parent_rect[2] / 2. - size[0] / 2.) + *x, parent_rect[1] + parent_rect[3] + *y],
+            Position::Centered => p = [parent_rect[0] + parent_rect[2] / 2. - size[0] / 2., parent_rect[1] + parent_rect[3] / 2. - size[1] / 2.]
         }
+        return [p[0].round(), p[1].round()]
     }
 
     fn parent_rect(&self, ctx: &RenderContext) -> [f64; 4] {

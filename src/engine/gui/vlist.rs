@@ -46,7 +46,7 @@ impl Container for VList {
 impl GUINode for VList {
     
     fn render(&mut self, ctx: &mut crate::engine::render::RenderContext) {
-        let size = [600., 400.];
+        let size = [600., 300.];
         let position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         let rect = [position[0], position[1], size[0], size[1]];
         self.render_children(ctx, rect);

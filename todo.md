@@ -35,7 +35,12 @@ Package-size, learning
   - Action bar
   - ✓ Health bar
   - ✓ AP bar
-  - Cursor on action
+  - ✓ Cursor on action
+- Simple click for most probable action
+  - Friendly - Talk
+  - Enemy - Attack
+  - Bed - Sleep
+- Right-click for all options
 - Better character dialog
 - Better codex dialog
 - Better interaction dialog
@@ -63,6 +68,13 @@ The majority of the current time spent in history generation is searching who is
 
 ## feat - Rebalance
 
+## feat - Switch between turn-based and realtime
+
+- Realtime mode
+- Swith between modes
+- Enter turn-based mode automatically when there are enemies
+- Enter turn-based mode automatically when you attack
+
 # TODO - 0.?.? - Main menu, Saving and loading
 
 ## feat - Saving and loading
@@ -72,10 +84,6 @@ The majority of the current time spent in history generation is searching who is
 ## refactor - Actor composition system
 
 ## bug - Markov Chain doesn't work with order different than 3
-
-## feat - Switch between turn-based and realtime
-
-a turn = 2 seconds. Realtime is just doing turns with delays based on action points, and the player moves out of turn.
 
 ## bug - Cities go 100's of years without someone rising to power
 
