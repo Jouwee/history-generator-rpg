@@ -21,11 +21,14 @@ Package-size, learning
   - 24x24 spritesheets
     - ✓ Grass
     - ✓ Stone
-    - Sand
-    - Floor
-    - Water
+    - ✓ Sand
+    - ✓ Floor
+    - ✓ Water
+    - Walls
   - Tile variations
   - Review chunk gen
+    - Trees on stone
+    - Trees in Grasslands vs forests
   - Player sprite
   - Human sprite
   - Spider sprite

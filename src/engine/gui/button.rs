@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use graphics::{image, CharacterCache, Transformed};
 use ::image::ImageReader;
+use opengl_graphics::Texture;
 use piston::Button as Btn;
 
 use crate::{engine::{render::RenderContext, spritesheet::Spritesheet, Color}, game::InputEvent};
@@ -10,13 +11,28 @@ use super::{GUINode, Position};
 
 pub struct Button {
     text: String,
+    icon: Option<Texture>,
     position: Position,
     last_layout: [f64; 4]
 }
 
 impl Button {
     pub fn new(text: impl Display, position: Position) -> Button {
-        Button { text: text.to_string(), position, last_layout: [0.; 4] }
+        Button {
+            text: text.to_string(),
+            position,
+            last_layout: [0.; 4],
+            icon: None
+        }
+    }
+
+    pub fn new_icon(icon: Texture, position: Position) -> Button {
+        Button {
+            text: String::new(),
+            position,
+            last_layout: [0.; 4],
+            icon: Some(icon)
+        }
     }
 
     pub fn text(&mut self, text: impl Display) {
@@ -40,8 +56,7 @@ impl GUINode for Button {
         let size = self.min_size(ctx);
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         self.last_layout = [position[0], position[1], size[0], size[1]];
-        // TODO: Better spritesheets, and scaling
-        let spritesheet = ImageReader::open("./assets/sprites/button.png").unwrap().decode().unwrap();
+        let spritesheet = ImageReader::open("./assets/sprites/gui/button.png").unwrap().decode().unwrap();
         let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         // Corners
         let transform = ctx.context.transform.trans(position[0], position[1]);
@@ -64,6 +79,10 @@ impl GUINode for Button {
         // Body
         let transform = ctx.context.transform.trans(position[0] + 8., position[1] + 8.).scale((size[0]-16.) / 8., (size[1]-16.) / 8.);
         image(spritesheet.sprite(1, 1), transform, ctx.gl);
+        if let Some(icon) = &self.icon {
+            let transform = ctx.context.transform.trans(position[0], position[1]);
+            image(icon, transform, ctx.gl);
+        }
         // Somewhat center text
         position[0] += 4.;
         position[1] += 17.;
@@ -71,11 +90,14 @@ impl GUINode for Button {
     }
 
     fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
+        if let Some(_) = &self.icon {
+            return [24., 24.]
+        }
         let width = ctx.small_font.width(5, &self.text);
         if let Ok(width) = width {
             return [width + 8., 24.]
         } else {
-            return [16., 24.]
+            return [24., 24.]
         }
     }
 

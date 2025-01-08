@@ -57,11 +57,11 @@ impl Chunk {
         dual_tileset.add(0, image, 24, 24);
         let image = ImageReader::open("assets/sprites/chunk_tiles/grass.png").unwrap().decode().unwrap();
         dual_tileset.add(3, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/sand.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("assets/sprites/chunk_tiles/sand.png").unwrap().decode().unwrap();
         dual_tileset.add(1, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/water.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("assets/sprites/chunk_tiles/water.png").unwrap().decode().unwrap();
         dual_tileset.add(2, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/floor.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("assets/sprites/chunk_tiles/floor.png").unwrap().decode().unwrap();
         dual_tileset.add(4, image, 24, 24);
 
         Chunk {
@@ -89,6 +89,11 @@ impl Chunk {
         let npc = Actor::from_species(Coord2::xy(26, 26), species);
         chunk.npcs.push(npc);
 
+        let point = Coord2::xy(34, 34);
+        let item = ItemMaker::random(&Rng::seeded("a"), world);
+        let texture = item.make_texture(world);
+        chunk.items_on_ground.push((point, item, texture));
+
         return chunk
     }
 
@@ -114,7 +119,7 @@ impl Chunk {
                             // sand
                         }
                     },
-                    2 => { // Forest - Grass
+                    2 => { // Grassland
                         if n < 0.5 {
                             chunk.map.ground_layer.set_tile(x, y, 1);
                             // grass
@@ -123,7 +128,16 @@ impl Chunk {
                             // stone
                         }
                     },
-                    3 => { // Desert - Sand
+                    3 => { // Forest
+                        if n < 0.5 {
+                            chunk.map.ground_layer.set_tile(x, y, 1);
+                            // grass
+                        } else {
+                            chunk.map.ground_layer.set_tile(x, y, 0);
+                            // stone
+                        }
+                    },
+                    4 => { // Desert - Sand
                         if n < 0.5 {
                             chunk.map.ground_layer.set_tile(x, y, 2);
                             // sand
@@ -324,7 +338,7 @@ impl Renderable for Chunk {
         });
 
         for (pos, _item, texture) in self.items_on_ground.iter() {
-            ctx.texture_ref(texture, [pos.x as f64 * 16., pos.y as f64 * 16.]);
+            ctx.texture_ref(texture, [pos.x as f64 * 24., pos.y as f64 * 24.]);
         }
 
     }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, Color}, world::item::Item};
+use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, sprite::Sprite, Color}, world::item::Item};
 
 use super::{actor::Actor, chunk::ChunkMap, log::LogEntry};
 
@@ -31,6 +31,22 @@ impl ActionEnum {
             Self::PickUp => "PickUp",
             Self::Sleep => "Sleep"
         }
+    }
+
+    pub fn icon(&self) -> Sprite {
+        let path = match self {
+            // Self::MoveLeft => "MoveLeft",
+            // Self::MoveRight => "MoveRight",
+            // Self::MoveUp => "MoveUp",
+            // Self::MoveDown => "MoveDown",
+            Self::UnarmedAttack => "gui/icons/actions/unarmed_attack.png",
+            Self::Attack => "gui/icons/actions/armed_attack.png",
+            Self::Talk => "gui/icons/actions/talk.png",
+            Self::PickUp => "gui/icons/actions/pickup.png",
+            // Self::Sleep => "Sleep",
+            _ => "gui/icons/actions/unarmed_attack.png"
+        };
+        return Sprite::new(path);
     }
 
 }

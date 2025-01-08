@@ -10,6 +10,7 @@ pub mod pallete_sprite;
 pub mod render;
 pub mod spritesheet;
 pub mod scene;
+pub mod sprite;
 pub mod tilemap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]

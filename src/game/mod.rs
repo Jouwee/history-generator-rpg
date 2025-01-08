@@ -38,7 +38,6 @@ pub struct GameSceneState {
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
     actions: ActionMap,
-    button_pickup: Button,
     button_sleep: Button,
     button_codex: Button,
     button_inventory: Button,
@@ -60,7 +59,6 @@ impl GameSceneState {
             log: RefCell::new(Vec::new()),
             actions: ActionMap::default(),
             hotbar: Hotbar::new(),
-            button_pickup: Button::new("pck", Position::Anchored(Anchor::TopLeft, 62.0, 32.0)),            
             button_sleep: Button::new("slp", Position::Anchored(Anchor::TopLeft, 88.0, 32.0)),            
             button_inventory: Button::new("Character", Position::Anchored(Anchor::TopLeft, 128.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::TopLeft, 228.0, 32.0)),       
@@ -108,8 +106,6 @@ impl Scene for GameSceneState {
         self.chunk.render(ctx);
 
         if let Some(_) = self.hotbar.selected_action {
-            println!("{:?}", self.cursor_pos);
-            println!("{:?}", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
             ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
         }
 
@@ -121,7 +117,6 @@ impl Scene for GameSceneState {
             y = y + 16.;
         }
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx);
-        self.button_pickup.render(ctx);
         self.button_sleep.render(ctx);
         self.button_codex.render(ctx);
         self.button_inventory.render(ctx);
@@ -132,7 +127,6 @@ impl Scene for GameSceneState {
 
     fn update(&mut self, update: &Update) {
         self.hotbar.update(HotbarState::new(&self.chunk.player), update);
-        self.button_pickup.update();
         self.button_sleep.update();
         self.button_codex.update();
         self.button_inventory.update();
@@ -190,10 +184,6 @@ impl Scene for GameSceneState {
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
         self.inventory_dialog.input_state(evt, &mut self.chunk.player, &self.world);
-        if let ButtonEvent::Click = self.button_pickup.event(evt) {
-            self.hotbar.selected_action = Some(ActionEnum::PickUp);
-            return;
-        }
         if let ButtonEvent::Click = self.button_sleep.event(evt) {
             self.hotbar.selected_action = Some(ActionEnum::Sleep);
             return;

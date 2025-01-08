@@ -79,6 +79,7 @@ plagues, droughts, etc
 
 Nice procedural generator: http://procgenesis.com/WorldGen/worldgen.html
 Erosion methods: https://github.com/dandrino/terrain-erosion-3-ways
+Better noise https://www.youtube.com/watch?v=gsJHzBTPG0Y
 
 - ✓ Render elevation in word view
   - ✓ Shadows on basic view

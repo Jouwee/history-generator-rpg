@@ -22,6 +22,7 @@ impl Hotbar {
         let mut available_actions = HashSet::new();
         available_actions.insert(ActionEnum::UnarmedAttack);
         available_actions.insert(ActionEnum::Talk);
+        available_actions.insert(ActionEnum::PickUp);
         let mut hotbar = Hotbar {
             background: Texture::from_image(&background.to_rgba8(), &settings),
             available_actions,
@@ -36,7 +37,7 @@ impl Hotbar {
         self.action_buttons.clear();
         self.action_buttons.size = Some([128., 24.]);
         for (i, action) in self.available_actions.iter().enumerate() {
-            self.action_buttons.add_key(&format!("act_{i}"), Button::new(action.name(), Position::Auto));
+            self.action_buttons.add_key(&format!("act_{i}"), Button::new_icon(action.icon().texture, Position::Auto));
         }
     }
 
