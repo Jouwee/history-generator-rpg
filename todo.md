@@ -6,6 +6,10 @@
 
 - stuff like materials and biomes need a "string-key" to be referenced by other configs
 
+[obj:pine_tree]
+spritesheet_pick_one = ["pine_tree.png"]
+vegetation_placement {}
+
 ## refactor - Re-implement noise
 
 Package-size, learning
@@ -25,9 +29,9 @@ Package-size, learning
     - ✓ Floor
     - ✓ Water
     - Walls
-  - Review chunk gen
-    - Trees on stone
-    - Trees in Grasslands vs forests
+  - ✓ Review chunk gen
+    - ✓ Trees on stone
+    - ✓ Trees in Grasslands vs forests
 - ✓ Better UI
   - ✓ Action bar
   - ✓ Health bar

@@ -158,8 +158,10 @@ impl Chunk {
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
                 if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
-                    if rng.rand_chance(0.1) {
-                        chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                    if let Some(ground) = chunk.map.ground_layer.tile(x, y) {
+                        if ground == 1 && rng.rand_chance(0.1) {
+                            chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                        }
                     }
                 }
             }

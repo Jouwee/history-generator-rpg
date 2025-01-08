@@ -44,6 +44,10 @@ impl LayeredDualgridTilemap {
         }
     }
 
+    pub fn tile(&self, x: usize, y: usize) -> Option<usize> {
+        return self.tiles[x + y * self.width]
+    }
+
     pub fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
         self.tiles[x + y * self.width] = Some(tile);
         self.collapse_tile(x, y);
