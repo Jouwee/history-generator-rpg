@@ -23,6 +23,7 @@ impl Hotbar {
         available_actions.insert(ActionEnum::UnarmedAttack);
         available_actions.insert(ActionEnum::Talk);
         available_actions.insert(ActionEnum::PickUp);
+        available_actions.insert(ActionEnum::Sleep);
         let mut hotbar = Hotbar {
             background: Texture::from_image(&background.to_rgba8(), &settings),
             available_actions,

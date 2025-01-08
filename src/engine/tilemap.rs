@@ -49,15 +49,15 @@ impl TileMap {
                     Tile::Empty => (),
                     Tile::SingleTile(tile) => {
                         let pos = [
-                            x as f64 * self.cell_width as f64 - (tile.tile_width - self.cell_width) as f64 / 2.,
-                            y as f64 * self.cell_height as f64 - (tile.tile_height - self.cell_height) as f64,
+                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
                         ];
                         ctx.texture_ref(&tile.texture, pos);
                     },
                     Tile::T16Subset(tile) => {
                         let pos = [
-                            x as f64 * self.cell_width as f64 - (tile.tile_width - self.cell_width) as f64 / 2.,
-                            y as f64 * self.cell_height as f64 - (tile.tile_height - self.cell_height) as f64,
+                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
                         ];
                         let mut u = false;
                         if y > 0 {

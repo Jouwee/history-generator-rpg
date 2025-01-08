@@ -43,7 +43,7 @@ impl ActionEnum {
             Self::Attack => "gui/icons/actions/armed_attack.png",
             Self::Talk => "gui/icons/actions/talk.png",
             Self::PickUp => "gui/icons/actions/pickup.png",
-            // Self::Sleep => "Sleep",
+            Self::Sleep => "gui/icons/actions/sleep.png",
             _ => "gui/icons/actions/unarmed_attack.png"
         };
         return Sprite::new(path);

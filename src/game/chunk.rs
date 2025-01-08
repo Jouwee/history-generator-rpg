@@ -42,7 +42,7 @@ impl Chunk {
 
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/stone_walls.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 32)));
+        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 24, 48)));
         let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = ImageReader::open("assets/sprites/bed.png").unwrap().decode().unwrap();
@@ -81,9 +81,12 @@ impl Chunk {
         let mut chunk = Self::new(Size2D(256, 256), player);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
-                chunk.map.ground_layer.set_tile(x, y, 0);
+                chunk.map.ground_layer.set_tile(x, y, 1);
             }
         }
+
+        // Bed
+        chunk.map.object_layer.set_tile(36, 34, 3);
 
         let species = world.species.get(&Id(3) /* spider */).unwrap();
         let npc = Actor::from_species(Coord2::xy(26, 26), species);

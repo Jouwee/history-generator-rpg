@@ -25,20 +25,25 @@ Package-size, learning
     - ✓ Floor
     - ✓ Water
     - Walls
-  - Tile variations
   - Review chunk gen
     - Trees on stone
     - Trees in Grasslands vs forests
-  - Player sprite
-  - Human sprite
-  - Spider sprite
-  - Leshen sprite
-  - Fiend sprite
-- Better UI
-  - Action bar
+- ✓ Better UI
+  - ✓ Action bar
   - ✓ Health bar
   - ✓ AP bar
   - ✓ Cursor on action
+
+## feat - Break into more tasks
+
+- Player sprite
+- Human sprite
+- Spider sprite
+- Leshen sprite
+- Fiend sprite
+
+- Tile variations
+
 - Simple click for most probable action
   - Friendly - Talk
   - Enemy - Attack
