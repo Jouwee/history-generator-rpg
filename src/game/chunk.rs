@@ -41,7 +41,7 @@ impl Chunk {
     pub fn new(size: Size2D, player: Actor) -> Chunk {
 
         let mut tileset = TileSet::new();
-        let image = ImageReader::open("assets/sprites/stone_walls.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 24, 48)));
         let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
@@ -56,13 +56,13 @@ impl Chunk {
         let image = ImageReader::open("assets/sprites/chunk_tiles/stone.png").unwrap().decode().unwrap();
         dual_tileset.add(0, image, 24, 24);
         let image = ImageReader::open("assets/sprites/chunk_tiles/grass.png").unwrap().decode().unwrap();
-        dual_tileset.add(3, image, 24, 24);
+        dual_tileset.add(4, image, 24, 24);
         let image = ImageReader::open("assets/sprites/chunk_tiles/sand.png").unwrap().decode().unwrap();
         dual_tileset.add(1, image, 24, 24);
         let image = ImageReader::open("assets/sprites/chunk_tiles/water.png").unwrap().decode().unwrap();
         dual_tileset.add(2, image, 24, 24);
         let image = ImageReader::open("assets/sprites/chunk_tiles/floor.png").unwrap().decode().unwrap();
-        dual_tileset.add(4, image, 24, 24);
+        dual_tileset.add(3, image, 24, 24);
 
         Chunk {
             size,

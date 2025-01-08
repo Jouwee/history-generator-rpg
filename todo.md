@@ -22,13 +22,13 @@ Package-size, learning
   - ✓ Pixel art scale
     - ✓ Click events
     - ✓ Follow player
-  - 24x24 spritesheets
+  - ✓ 24x24 spritesheets
     - ✓ Grass
     - ✓ Stone
     - ✓ Sand
     - ✓ Floor
     - ✓ Water
-    - Walls
+    - ✓ Walls
   - ✓ Review chunk gen
     - ✓ Trees on stone
     - ✓ Trees in Grasslands vs forests
