@@ -462,7 +462,11 @@ impl WorldHistoryGenerator {
                     3 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                item = Item::Sword(Sword::new(handle, blade, pommel, guard, &self.world))
+                let mut sword = Sword::new(handle, blade, pommel, guard, &self.world);
+                sword.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
+                    "sword", "blade", "slash", "fang", "tongue", "kiss", "wing", "edge", "talon"
+                )));
+                item = Item::Sword(sword)
             },
             1 => {
                 let mut head = Id(0);
@@ -473,7 +477,11 @@ impl WorldHistoryGenerator {
                     2 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                item = Item::Mace(Mace::new(handle, head, pommel, &self.world))
+                let mut mace = Mace::new(handle, head, pommel, &self.world);
+                mace.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
+                    "breaker", "kiss", "fist", "touch"
+                )));
+                item = Item::Mace(mace)
             },
             _ => {
                 let mut tip = Id(0);
@@ -482,12 +490,25 @@ impl WorldHistoryGenerator {
                     1 => tip = material_id,
                     _ => handle = material_id,
                 }
-                item = Item::Lance(Lance::new(handle, tip, &self.world))
+                let mut lance = Lance::new(handle, tip, &self.world);
+                lance.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
+                    "fang", "talon", "bolt", "beak", "thorn"
+                )));
+                item = Item::Lance(lance)
             }
         }
         let id = self.world.artifacts.insert(item);
         self.world.events.push(date, location, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
         return id
+    }
+
+    fn artifact_name(&self, mut rng: Rng, suffixes: Vec<&str>) -> String {
+        let preffixes = [
+            "whisper", "storm", "fire", "moon", "sun", "ice", "raven", "thunder", "flame", "frost", "ember"
+        ];
+        let prefix = preffixes[rng.randu_range(0, preffixes.len())];
+        let suffix = suffixes[rng.randu_range(0, suffixes.len())];
+        return Strings::capitalize(format!("{prefix}{suffix}").as_str());
     }
 
     fn name_person(&self, mut figure: Person, surname: &Option<String>) -> Person {
@@ -623,10 +644,11 @@ impl WorldHistoryGenerator {
         for (killed, killer) in battle.0.creature_casualties.iter() {
             let artifact_material = self.kill_person(date, *killed);
             if let Some(artifact_material) = artifact_material {
-                let artifact_id = self.create_artifact(date, battle.0.location, &artifact_material);
                 if let Some(killer_id) = killer {
+                    let artifact_id = self.create_artifact(date, battle.0.location, &artifact_material);
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
+                    println!("what?");
                     killer.importance = killer.importance.at_least(&Importance::Unimportant);
                     self.world.events.push(date, battle.0.location, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *killer_id }));
                     // Else, who would get the artifact?

@@ -74,7 +74,7 @@ impl<'a> BiographyWriter<'a> {
             }
             WorldEventEnum::ArtifactCreated(event) => {
                 let artifact = self.world.artifacts.get(&event.item);
-                return format!("In {}, an artifact was made. {}", date, artifact.description(self.world))
+                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(self.world), artifact.description(self.world))
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
@@ -165,7 +165,7 @@ impl<'a> BiographyWriter<'a> {
             }
             WorldEventEnum::ArtifactCreated(event) => {
                 let artifact = self.world.artifacts.get(&event.item);
-                return format!("In {}, an artifact was made. {}", date, artifact.description(self.world))
+                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(self.world), artifact.description(self.world))
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
@@ -254,6 +254,7 @@ impl<'a> BiographyWriter<'a> {
                 return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}.\n{kill_description}"));
             }
             WorldEventEnum::ArtifactPossession(evt) => {
+                println!("what2?");
                 let person = self.world.people.get(&evt.person).unwrap();
                 let artifact = self.world.artifacts.get(&evt.item);
                 return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))

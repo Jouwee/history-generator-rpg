@@ -1,6 +1,40 @@
 # Doing
 
-# TODO - 0.1.0 - Final polish
+# TODO - 0.0.11 - Better artifact hunting
+
+# feat - Artifact names
+
+- Simple prefix-suffix name
+- Show in history
+
+# feat - Record artifacts used in kills
+
+# feat - Bandit camps
+
+- Chance to spawn camp settlement
+- Review simulation parameters
+  - Given time, all cities grow infinitely
+  - Some type of pop-cap. Needs money to increase (projects)
+  - Camps never work on projects
+
+# feat - Bandits try to steal artifacts
+
+# feat - Review human sprite
+
+- Male vs Female
+- Skin tones
+  - Light
+  - Medium
+  - Dark
+- Show equipped weapon
+- Hairstyle
+  - Bald
+  - Shaved
+  - Short
+  - Long
+- Generic armor over it (no equipment)
+
+# Backlog
 
 ## refactor - Load definitions from yaml/toml files
 
@@ -15,28 +49,6 @@ vegetation_placement {}
 Package-size, learning
 
 ## bug - Names like Anea00000000000
-
-## feat - Review game scene
-
-- Game
-  - ✓ Pixel art scale
-    - ✓ Click events
-    - ✓ Follow player
-  - ✓ 24x24 spritesheets
-    - ✓ Grass
-    - ✓ Stone
-    - ✓ Sand
-    - ✓ Floor
-    - ✓ Water
-    - ✓ Walls
-  - ✓ Review chunk gen
-    - ✓ Trees on stone
-    - ✓ Trees in Grasslands vs forests
-- ✓ Better UI
-  - ✓ Action bar
-  - ✓ Health bar
-  - ✓ AP bar
-  - ✓ Cursor on action
 
 ## feat - Break into more tasks
 
@@ -87,11 +99,7 @@ The majority of the current time spent in history generation is searching who is
 - Enter turn-based mode automatically when there are enemies
 - Enter turn-based mode automatically when you attack
 
-# TODO - 0.?.? - Main menu, Saving and loading
-
 ## feat - Saving and loading
-
-# Backlog
 
 ## refactor - Actor composition system
 
@@ -125,7 +133,7 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
-# Release 0.1.0 - Final polish
+# Release 0.0.10 - Graphical update
 
 ## feat - Review worldgen scene
 
@@ -156,6 +164,28 @@ Myths of Edin
 Tales of Tirus
 Legends of Tesea
 ✓ Tales of Kathay
+
+## feat - Review game scene
+
+- Game
+  - ✓ Pixel art scale
+    - ✓ Click events
+    - ✓ Follow player
+  - ✓ 24x24 spritesheets
+    - ✓ Grass
+    - ✓ Stone
+    - ✓ Sand
+    - ✓ Floor
+    - ✓ Water
+    - ✓ Walls
+  - ✓ Review chunk gen
+    - ✓ Trees on stone
+    - ✓ Trees in Grasslands vs forests
+- ✓ Better UI
+  - ✓ Action bar
+  - ✓ Health bar
+  - ✓ AP bar
+  - ✓ Cursor on action
 
 # Release 0.0.9 - More interesting world generation
 

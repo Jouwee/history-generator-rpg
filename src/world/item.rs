@@ -19,14 +19,23 @@ impl Item {
     pub fn name(&self, world: &World) -> String {
         match self {
             Item::Sword(sword) => {
+                if let Some(name) = &sword.name {
+                    return name.clone()
+                }
                 let blade = world.materials.get(&sword.blade_mat).unwrap().name.clone();
                 return format!("{blade} sword")
             },
             Item::Mace(mace) => {
+                if let Some(name) = &mace.name {
+                    return name.clone()
+                }
                 let head = world.materials.get(&mace.head_mat).unwrap().name.clone();
                 return format!("{head} mace")
             },
             Item::Lance(lance) => {
+                if let Some(name) = &lance.name {
+                    return name.clone()
+                }
                 let tip = world.materials.get(&lance.tip_mat).unwrap().name.clone();
                 return format!("{tip} lance")
             }
@@ -107,14 +116,15 @@ pub struct Sword {
     pub blade_mat: Id,
     pub pommel_mat: Id,
     pub guard_mat: Id,
-    pub damage: DamageComponent
+    pub damage: DamageComponent,
+    pub name: Option<String>
 }
 
 impl Sword {
     pub fn new(handle_mat: Id, blade_mat: Id, pommel_mat: Id, guard_mat: Id, world: &World) -> Sword {
         let blade = world.materials.get(&blade_mat).unwrap();
         let damage = DamageComponent::new(blade.sharpness, 0., 0.);
-        Sword { handle_mat, blade_mat, pommel_mat, guard_mat, damage }
+        Sword { handle_mat, blade_mat, pommel_mat, guard_mat, damage, name: None }
     }
 }
 
@@ -123,14 +133,15 @@ pub struct Mace {
     pub handle_mat: Id,
     pub head_mat: Id,
     pub pommel_mat: Id,
-    pub damage: DamageComponent
+    pub damage: DamageComponent,
+    pub name: Option<String>
 }
 
 impl Mace {
     pub fn new(handle_mat: Id, head_mat: Id, pommel_mat: Id, world: &World) -> Mace {
         let head = world.materials.get(&head_mat).unwrap();
         let damage = DamageComponent::new(0., 0., head.sharpness);
-        Mace { handle_mat, head_mat, pommel_mat, damage }
+        Mace { handle_mat, head_mat, pommel_mat, damage, name: None }
     }
 }
 
@@ -138,14 +149,15 @@ impl Mace {
 pub struct Lance {
     pub handle_mat: Id,
     pub tip_mat: Id,
-    pub damage: DamageComponent
+    pub damage: DamageComponent,
+    pub name: Option<String>
 }
 
 impl Lance {
     pub fn new(handle_mat: Id, tip_mat: Id, world: &World) -> Lance {
         let tip = world.materials.get(&tip_mat).unwrap();
         let damage = DamageComponent::new(0., tip.sharpness, 0.);
-        Lance { handle_mat, tip_mat, damage }
+        Lance { handle_mat, tip_mat, damage, name: None }
     }
 }
 
