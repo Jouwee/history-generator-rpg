@@ -94,16 +94,31 @@ impl WorldEvent {
     
     pub fn importance_factor(&self, world: &World) -> f32 {
         match &self.event {
-            WorldEventEnum::ArtifactCreated(_evt) => 1.0,
-            WorldEventEnum::ArtifactPossession(_evt) => 0.8,
-            WorldEventEnum::Battle(_evt) => 0.3,
+            WorldEventEnum::ArtifactCreated(_evt) => 0.1,
+            WorldEventEnum::ArtifactPossession(_evt) => 0.,
+            WorldEventEnum::Battle(_evt) => 0.1,
             WorldEventEnum::PeaceDeclared(_evt) => 0.3,
             WorldEventEnum::WarDeclared(_evt) => 0.3,
-            WorldEventEnum::SettlementFounded(_evt) => 0.1,
+            WorldEventEnum::SettlementFounded(_evt) => 0.01,
             WorldEventEnum::NewSettlementLeader(_evt) => 0.1,
-            WorldEventEnum::Marriage(evt) => 0.5 * Self::person_importance(world, evt.person1_id).max(Self::person_importance(world, evt.person2_id)),
-            WorldEventEnum::PersonBorn(evt) => 0.1 * Self::person_importance(world, evt.person_id),
-            WorldEventEnum::PersonDeath(evt) => 0.6 * Self::person_importance(world, evt.creature),
+            WorldEventEnum::Marriage(evt) => 0.01 * Self::person_importance(world, evt.person1_id).max(Self::person_importance(world, evt.person2_id)),
+            WorldEventEnum::PersonBorn(_) => 0.0,
+            WorldEventEnum::PersonDeath(evt) => {
+                let cause_of_death_multiplier = match evt.cause_of_death {
+                    CauseOfDeath::NaturalCauses => 0.2,
+                    CauseOfDeath::KilledInBattle(killer, weapon) => {
+                        let mut mult = 0.6;
+                        if let Some(killer) = killer {
+                            mult += 0.2 * Self::person_importance(world, killer);
+                        }
+                        if weapon.is_some() {
+                            mult += 0.2;
+                        }
+                        return mult
+                    }
+                };
+                cause_of_death_multiplier * Self::person_importance(world, evt.creature)
+            },
         }
     }
 
@@ -143,22 +158,35 @@ impl WorldEventEnum {
     }
 
     pub fn get_creatures(&self) -> Vec<Id> {
-        match self {
-            Self::PersonBorn(evt) => vec!(evt.person_id),
-            Self::PersonDeath(evt) => vec!(evt.creature),
-            Self::ArtifactPossession(evt) => vec!(evt.person),
-            Self::Marriage(evt) => vec!(evt.person1_id, evt.person2_id),
-            Self::NewSettlementLeader(evt) => vec!(evt.new_leader_id),
+        let options = match self {
+            Self::PersonBorn(evt) => vec!(Some(evt.person_id)),
+            Self::PersonDeath(evt) => {
+                match evt.cause_of_death {
+                    CauseOfDeath::NaturalCauses => vec!(Some(evt.creature)),
+                    CauseOfDeath::KilledInBattle(killer, _) => vec!(Some(evt.creature), killer)
+                }
+            },
+            Self::ArtifactPossession(evt) => vec!(Some(evt.person)),
+            Self::Marriage(evt) => vec!(Some(evt.person1_id), Some(evt.person2_id)),
+            Self::NewSettlementLeader(evt) => vec!(Some(evt.new_leader_id)),
             _ => vec!()
-        }
+        };
+        options.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
     }
 
     pub fn get_artifacts(&self) -> Vec<Id> {
-        match self {
-            Self::ArtifactCreated(evt) => vec!(evt.item),
-            Self::ArtifactPossession(evt) => vec!(evt.item),
+        let options = match self {
+            Self::PersonDeath(evt) => {
+                match evt.cause_of_death {
+                    CauseOfDeath::NaturalCauses => vec!(),
+                    CauseOfDeath::KilledInBattle(_, weapon) => vec!(weapon)
+                }
+            },
+            Self::ArtifactCreated(evt) => vec!(Some(evt.item)),
+            Self::ArtifactPossession(evt) => vec!(Some(evt.item)),
             _ => vec!()
-        }
+        };
+        options.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
     }
 }
 
@@ -176,7 +204,7 @@ pub struct CreatureDeathEvent {
 #[derive(Debug, Clone)]
 pub enum CauseOfDeath {
     NaturalCauses,
-    KilledInBattle(/* killer */ Option<Id>)
+    KilledInBattle(/* killer */ Option<Id>, /* Item used */ Option<Id>)
 }
 
 #[derive(Debug, Clone)]

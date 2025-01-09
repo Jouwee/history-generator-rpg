@@ -2,29 +2,6 @@
 
 # TODO - 0.0.11 - Better artifact hunting
 
-# feat - More artifacts
-
-- ✓ Item quality (Poor, Normal, Good, Legendary)
-  - ✓ Quality affects stats
-- ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
-  - ✓ Only rich settlements can create artifacts
-
-# feat - More interesting artifact transfer
-
-Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
-
-- ✓ If some sentient being killed the wielder, it may collect the item
-- If in it's town, chance of being buried with the item or someone inheriting
-- If died outside of home, is droped on the random tile
-
-How to handle graves
-
-- Dead people in a city are generated as grave objects
-- New action - Dig
-  - Switches grave to open grave
-  - Spawns any items the corpse had
-  - Turns entities hostile
-
 # feat - Record artifacts used in kills
 
 # feat - Bandit camps
@@ -211,6 +188,19 @@ Legends of Tesea
   - ✓ Health bar
   - ✓ AP bar
   - ✓ Cursor on action
+
+# feat - More artifacts
+
+- ✓ Item quality (Poor, Normal, Good, Legendary)
+  - ✓ Quality affects stats
+- ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
+  - ✓ Only rich settlements can create artifacts
+
+# feat - More interesting artifact transfer
+
+Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
+
+- ✓ If some sentient being killed the wielder, it may collect the item
 
 # Release 0.0.9 - More interesting world generation
 

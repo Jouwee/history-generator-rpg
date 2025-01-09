@@ -41,6 +41,8 @@ explored civilized area -> interact with people -> receive info -> investigate -
 - Someone grave-robbed an artifact from a grave
 - Someone fround an item lost in the wilderness
 - Some thief stole an item from someone
+- If wielder dies in town, chance of being buried with the item or someone inheriting
+- If wielder dies outside of home, is droped on the random tile
 
 ## idea - History simulation of Technology
 

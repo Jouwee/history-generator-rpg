@@ -52,9 +52,14 @@ impl<'a> BiographyWriter<'a> {
             WorldEventEnum::PersonDeath(event) => {
                 let cause_of_death = match &event.cause_of_death {
                     crate::CauseOfDeath::NaturalCauses => "of natural causes",
-                    crate::CauseOfDeath::KilledInBattle(killer) => {
+                    crate::CauseOfDeath::KilledInBattle(killer, weapon) => {
                         if let Some(killer) = killer {
-                            &format!("in battle by the hand of {}", self.name_with_title(&self.world.people.get(killer).unwrap()))
+                            let mut suffix = String::new();
+                            if let Some(weapon) = weapon {
+                                let weapon = self.world.artifacts.get(weapon).name(&self.world);
+                                suffix = format!(" using {}", weapon);
+                            }
+                            &format!("in battle by the hand of {}{suffix}", self.name_with_title(&self.world.people.get(killer).unwrap()))
                         } else {
                             "in battle"
                         }
@@ -153,9 +158,14 @@ impl<'a> BiographyWriter<'a> {
             WorldEventEnum::PersonDeath(event) => {
                 let cause_of_death = match &event.cause_of_death {
                     crate::CauseOfDeath::NaturalCauses => "of natural causes",
-                    crate::CauseOfDeath::KilledInBattle(killer) => {
+                    crate::CauseOfDeath::KilledInBattle(killer, weapon) => {
                         if let Some(killer) = killer {
-                            &format!("in battle by the hand of {}", self.name_with_title(&self.world.people.get(killer).unwrap()))
+                            let mut suffix = String::new();
+                            if let Some(weapon) = weapon {
+                                let weapon = self.world.artifacts.get(weapon).name(&self.world);
+                                suffix = format!(" using {}", weapon);
+                            }
+                            &format!("in battle by the hand of {}{suffix}", self.name_with_title(&self.world.people.get(killer).unwrap()))
                         } else {
                             "in battle"
                         }

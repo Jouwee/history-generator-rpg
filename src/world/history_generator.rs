@@ -418,7 +418,7 @@ impl WorldHistoryGenerator {
         }
         if person.possesions.len() > 0 {
             'possession_handling: {
-                if let CauseOfDeath::KilledInBattle(killer) = &cause_of_death {
+                if let CauseOfDeath::KilledInBattle(killer, _weapon) = &cause_of_death {
                     if let Some(killer_id) = killer {
                         let mut killer = self.world.people.get_mut(&killer_id).unwrap();
                         let species = self.world.species.get(&killer.species).unwrap();
@@ -683,10 +683,12 @@ impl WorldHistoryGenerator {
     }
 
     fn apply_battle_result(&mut self, date: WorldEventDate, battle: (BattleResult, BattleResult)) {
-        for (killed, killer) in battle.0.creature_casualties.iter() {
-            let artifact_material = self.kill_person(date, *killed, CauseOfDeath::KilledInBattle(killer.clone()));
+        for (killed, killer_id) in battle.0.creature_casualties.iter() {
+            let killer = killer_id.and_then(|id| Some(self.world.people.get(&id).unwrap()));
+            let weapon = killer.and_then(|killer| killer.possesions.get(0).and_then(|id| Some(id.clone())));
+            let artifact_material = self.kill_person(date, *killed, CauseOfDeath::KilledInBattle(killer_id.clone(), weapon));
             if let Some(artifact_material) = artifact_material {
-                if let Some(killer_id) = killer {
+                if let Some(killer_id) = killer_id {
                     let artifact_id = self.create_artifact(date, battle.0.location, &artifact_material);
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
@@ -701,11 +703,13 @@ impl WorldHistoryGenerator {
             settlement.kill_military(battle.0.army_casualties, &self.rng);
             settlement.kill_civilians(battle.0.civilian_casualties);
         }
-        for (killed, killer) in battle.1.creature_casualties.iter() {
-            let artifact_material = self.kill_person(date, *killed, CauseOfDeath::KilledInBattle(killer.clone()));
+        for (killed, killer_id) in battle.1.creature_casualties.iter() {
+            let killer = killer_id.and_then(|id| Some(self.world.people.get(&id).unwrap()));
+            let weapon = killer.and_then(|killer| killer.possesions.get(0).and_then(|id| Some(id.clone())));
+            let artifact_material = self.kill_person(date, *killed, CauseOfDeath::KilledInBattle(killer_id.clone(), weapon));
             if let Some(artifact_material) = artifact_material {
                 let artifact_id = self.create_artifact(date, battle.1.location, &artifact_material);
-                if let Some(killer_id) = killer {
+                if let Some(killer_id) = killer_id {
                     let mut killer = self.world.people.get_mut(killer_id).unwrap();
                     killer.possesions.push(artifact_id);
                     killer.importance = killer.importance.at_least(&Importance::Unimportant);
