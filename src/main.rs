@@ -356,7 +356,8 @@ fn main() {
             seed: 1234567,
             cultures: vec!(nords, khajit),
             regions: regions,            
-            great_beasts_yearly_spawn_chance: 0.3
+            great_beasts_yearly_spawn_chance: 0.3,
+            legendary_artifact_comission_chance: 0.01,
         })),
         assets: Assets::new(),
         debug_overlay: DebugOverlay::new(),
@@ -423,9 +424,10 @@ fn main() {
                         let species = world.species.get(&Id(0)).unwrap();
                         let mut player = Actor::player(Coord2::xy(32, 32), species);
 
-                        player.inventory.add(Item::Sword(Sword::new(Id(3), Id(0), Id(1), Id(1), &world)));
-                        player.inventory.add(Item::Mace(Mace::new(Id(3), Id(0), Id(1), &world)));
-                        player.inventory.add(Item::Lance(Lance::new(Id(3), Id(0), &world)));
+                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), Id(1), &world)));
+                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Legendary, Id(3), Id(0), Id(1), Id(1), &world)));
+                        player.inventory.add(Item::Mace(Mace::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), &world)));
+                        player.inventory.add(Item::Lance(Lance::new(world::item::ItemQuality::Normal, Id(3), Id(0), &world)));
                         let codex = KnowledgeCodex::new();
                         app.scene = SceneEnum::World(WorldScene::new(world, player, codex));
                         continue

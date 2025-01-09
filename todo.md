@@ -4,9 +4,10 @@
 
 # feat - More artifacts
 
-- Item quality (Poor, Normal, Good, Legendary)
-  - Quality affects stats
-- Random chance of a leader comissioning an "regular" artifact (no special materials)
+- ✓ Item quality (Poor, Normal, Good, Legendary)
+  - ✓ Quality affects stats
+- ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
+  - ✓ Only rich settlements can create artifacts
 
 # feat - More interesting artifact transfer
 

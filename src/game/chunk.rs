@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker}, World};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker, ItemQuality}, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -93,7 +93,7 @@ impl Chunk {
         chunk.npcs.push(npc);
 
         let point = Coord2::xy(34, 34);
-        let item = ItemMaker::random(&Rng::seeded("a"), world);
+        let item = ItemMaker::random(&Rng::seeded("a"), world, ItemQuality::Normal);
         let texture = item.make_texture(world);
         chunk.items_on_ground.push((point, item, texture));
 
@@ -201,7 +201,7 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                let item = ItemMaker::random(&rng, world);
+                let item = ItemMaker::random(&rng, world, ItemQuality::Normal);
                 let texture = item.make_texture(world);
                 chunk.items_on_ground.push((point, item, texture));
             }

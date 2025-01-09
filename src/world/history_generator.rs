@@ -2,14 +2,15 @@ use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
 use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::Item, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
 
 
 pub struct WorldGenerationParameters {
     pub seed: u32,
     pub cultures: Vec<Culture>,
     pub regions: Vec<Region>,
-    pub great_beasts_yearly_spawn_chance: f32
+    pub great_beasts_yearly_spawn_chance: f32,
+    pub legendary_artifact_comission_chance: f32
 }
 
 pub struct WorldHistoryGenerator {
@@ -159,6 +160,7 @@ impl WorldHistoryGenerator {
                 ActionToSimulate::None => {},
                 ActionToSimulate::Death(id) => { let _ = self.kill_person(event_date, id, CauseOfDeath::NaturalCauses); },
                 ActionToSimulate::GreatBeastHunt(id) => self.beast_hunt_nearby(event_date, &id),
+                ActionToSimulate::ComissionArtifact(id) => self.create_simple_artifact(event_date, &id),
                 ActionToSimulate::MarryRandomPerson(id) => self.marry_random_person(event_date, &id),
                 ActionToSimulate::HaveChildWith(id_father, id_mother) => self.have_child_with(event_date, id_father, id_mother),
                 ActionToSimulate::ColonizeNewSettlement(id) => self.colonize_new_settlement(event_date, id)
@@ -384,8 +386,18 @@ impl WorldHistoryGenerator {
                     }
                 }
                 if let Some(civ) = &person.civ {
-                    if civ.leader_of_settlement.is_none() && rng.rand_chance(0.02) {
-                        return ActionToSimulate::ColonizeNewSettlement(id)
+                    match civ.leader_of_settlement {
+                        Some(sett_id) => {
+                            let settlement = self.world.settlements.get(&sett_id);
+                            if settlement.demographics.population > 100 && rng.rand_chance(self.parameters.legendary_artifact_comission_chance) {
+                                return ActionToSimulate::ComissionArtifact(id)
+                            }
+                        },
+                        None => {
+                            if rng.rand_chance(0.02) {
+                                return ActionToSimulate::ColonizeNewSettlement(id)
+                            }
+                        }
                     }
                 }
             }
@@ -482,7 +494,7 @@ impl WorldHistoryGenerator {
                     3 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                let mut sword = Sword::new(handle, blade, pommel, guard, &self.world);
+                let mut sword = Sword::new(ItemQuality::Legendary, handle, blade, pommel, guard, &self.world);
                 sword.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "sword", "blade", "slash", "fang", "tongue", "kiss", "wing", "edge", "talon"
                 )));
@@ -497,7 +509,7 @@ impl WorldHistoryGenerator {
                     2 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                let mut mace = Mace::new(handle, head, pommel, &self.world);
+                let mut mace = Mace::new(ItemQuality::Legendary, handle, head, pommel, &self.world);
                 mace.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "breaker", "kiss", "fist", "touch"
                 )));
@@ -510,7 +522,7 @@ impl WorldHistoryGenerator {
                     1 => tip = material_id,
                     _ => handle = material_id,
                 }
-                let mut lance = Lance::new(handle, tip, &self.world);
+                let mut lance = Lance::new(ItemQuality::Legendary, handle, tip, &self.world);
                 lance.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "fang", "talon", "bolt", "beak", "thorn"
                 )));
@@ -595,6 +607,16 @@ impl WorldHistoryGenerator {
         if let Some(battle) = result {
             self.apply_battle_result(date, battle);
         }
+    }
+
+    fn create_simple_artifact(&mut self, date: WorldEventDate, creature_id: &Id) {
+        let position = self.world.people.get(&creature_id).unwrap().position.clone();
+        let artifact_id = self.create_artifact(date, position, &Id(0) /* Steel */);
+        let mut creature = self.world.people.get_mut(&creature_id).unwrap();
+        creature.possesions.push(artifact_id);
+        creature.importance = creature.importance.at_least(&Importance::Unimportant);
+        self.world.events.push(date, position, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *creature_id }));
+
     }
 
     fn marry_random_person(&mut self, date: WorldEventDate, person_id: &Id) {
@@ -734,6 +756,7 @@ enum ActionToSimulate {
     None,
     Death(Id),
     GreatBeastHunt(Id),
+    ComissionArtifact(Id),
     MarryRandomPerson(Id),
     HaveChildWith(Id, Id),
     ColonizeNewSettlement(Id)
