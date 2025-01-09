@@ -36,6 +36,12 @@ explored civilized area -> interact with people -> receive info -> investigate -
     https://www.youtube.com/watch?v=w1mz-TrauFM
     https://www.youtube.com/watch?v=MxeJh2Asigg&t=316s
 
+# Other things that can happend to a artifact
+
+- Someone grave-robbed an artifact from a grave
+- Someone fround an item lost in the wilderness
+- Some thief stole an item from someone
+
 ## idea - History simulation of Technology
 
 Start with no tech, chance of someone/some faction learning a tech in a tech tree, that gives buffs. Chance to exchange techs on trades.

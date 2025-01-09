@@ -2,10 +2,27 @@
 
 # TODO - 0.0.11 - Better artifact hunting
 
-# feat - Artifact names
+# feat - More artifacts
 
-- Simple prefix-suffix name
-- Show in history
+- Item quality (Poor, Normal, Good, Legendary)
+  - Quality affects stats
+- Random chance of a leader comissioning an "regular" artifact (no special materials)
+
+# feat - More interesting artifact transfer
+
+Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
+
+- ✓ If some sentient being killed the wielder, it may collect the item
+- If in it's town, chance of being buried with the item or someone inheriting
+- If died outside of home, is droped on the random tile
+
+How to handle graves
+
+- Dead people in a city are generated as grave objects
+- New action - Dig
+  - Switches grave to open grave
+  - Spawns any items the corpse had
+  - Turns entities hostile
 
 # feat - Record artifacts used in kills
 
@@ -132,6 +149,13 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 ## refactor - optimize build time with workspaces
 
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
+
+# Release 0.0.11 - Graphical update
+
+# feat - Artifact names
+
+- Simple prefix-suffix name
+- Show in history
 
 # Release 0.0.10 - Graphical update
 

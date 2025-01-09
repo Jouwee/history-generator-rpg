@@ -50,7 +50,17 @@ impl<'a> BiographyWriter<'a> {
                 }
             },
             WorldEventEnum::PersonDeath(event) => {
-                return format!("In {}, {} died", date, self.name_with_title(&self.world.people.get(&event.person_id).unwrap()))
+                let cause_of_death = match &event.cause_of_death {
+                    crate::CauseOfDeath::NaturalCauses => "of natural causes",
+                    crate::CauseOfDeath::KilledInBattle(killer) => {
+                        if let Some(killer) = killer {
+                            &format!("in battle by the hand of {}", self.name_with_title(&self.world.people.get(killer).unwrap()))
+                        } else {
+                            "in battle"
+                        }
+                    },
+                };
+                return format!("In {}, {} died {}", date, self.name_with_title(&self.world.people.get(&event.creature).unwrap()), cause_of_death)
             },
             WorldEventEnum::SettlementFounded(event) => {
                 let settlement = self.world.settlements.get(&event.settlement_id);
@@ -141,7 +151,17 @@ impl<'a> BiographyWriter<'a> {
                 }
             },
             WorldEventEnum::PersonDeath(event) => {
-                return format!("In {}, {} died", date, self.name(&self.world.people.get(&event.person_id).unwrap()))
+                let cause_of_death = match &event.cause_of_death {
+                    crate::CauseOfDeath::NaturalCauses => "of natural causes",
+                    crate::CauseOfDeath::KilledInBattle(killer) => {
+                        if let Some(killer) = killer {
+                            &format!("in battle by the hand of {}", self.name_with_title(&self.world.people.get(killer).unwrap()))
+                        } else {
+                            "in battle"
+                        }
+                    },
+                };
+                return format!("In {}, {} died {}", date, self.name_with_title(&self.world.people.get(&event.creature).unwrap()), cause_of_death)
             },
             WorldEventEnum::SettlementFounded(event) => {
                 let settlement = self.world.settlements.get(&event.settlement_id);
@@ -254,7 +274,6 @@ impl<'a> BiographyWriter<'a> {
                 return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}.\n{kill_description}"));
             }
             WorldEventEnum::ArtifactPossession(evt) => {
-                println!("what2?");
                 let person = self.world.people.get(&evt.person).unwrap();
                 let artifact = self.world.artifacts.get(&evt.item);
                 return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))

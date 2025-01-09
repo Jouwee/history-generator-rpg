@@ -103,7 +103,7 @@ impl WorldEvent {
             WorldEventEnum::NewSettlementLeader(_evt) => 0.1,
             WorldEventEnum::Marriage(evt) => 0.5 * Self::person_importance(world, evt.person1_id).max(Self::person_importance(world, evt.person2_id)),
             WorldEventEnum::PersonBorn(evt) => 0.1 * Self::person_importance(world, evt.person_id),
-            WorldEventEnum::PersonDeath(evt) => 0.6 * Self::person_importance(world, evt.person_id),
+            WorldEventEnum::PersonDeath(evt) => 0.6 * Self::person_importance(world, evt.creature),
         }
     }
 
@@ -121,7 +121,7 @@ impl WorldEvent {
 #[derive(Debug, Clone)]
 pub enum WorldEventEnum {
     PersonBorn(SimplePersonEvent),
-    PersonDeath(SimplePersonEvent),
+    PersonDeath(CreatureDeathEvent),
     Marriage(MarriageEvent),
     NewSettlementLeader(NewSettlementLeaderEvent),
     SettlementFounded(SettlementFoundedEvent),
@@ -145,7 +145,7 @@ impl WorldEventEnum {
     pub fn get_creatures(&self) -> Vec<Id> {
         match self {
             Self::PersonBorn(evt) => vec!(evt.person_id),
-            Self::PersonDeath(evt) => vec!(evt.person_id),
+            Self::PersonDeath(evt) => vec!(evt.creature),
             Self::ArtifactPossession(evt) => vec!(evt.person),
             Self::Marriage(evt) => vec!(evt.person1_id, evt.person2_id),
             Self::NewSettlementLeader(evt) => vec!(evt.new_leader_id),
@@ -165,6 +165,18 @@ impl WorldEventEnum {
 #[derive(Debug, Clone)]
 pub struct SimplePersonEvent {
     pub person_id: Id,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreatureDeathEvent {
+    pub creature: Id,
+    pub cause_of_death: CauseOfDeath 
+}
+
+#[derive(Debug, Clone)]
+pub enum CauseOfDeath {
+    NaturalCauses,
+    KilledInBattle(/* killer */ Option<Id>)
 }
 
 #[derive(Debug, Clone)]
