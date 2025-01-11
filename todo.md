@@ -2,8 +2,6 @@
 
 # TODO - 0.0.11 - Better artifact hunting
 
-# feat - Record artifacts used in kills
-
 # feat - Bandit camps
 
 - Chance to spawn camp settlement
@@ -128,12 +126,27 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
-# Release 0.0.11 - Graphical update
+# Release 0.0.11 - Better artifacts
 
 # feat - Artifact names
 
 - Simple prefix-suffix name
 - Show in history
+
+# feat - Record artifacts used in kills
+
+# feat - More artifacts
+
+- ✓ Item quality (Poor, Normal, Good, Legendary)
+  - ✓ Quality affects stats
+- ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
+  - ✓ Only rich settlements can create artifacts
+
+# feat - More interesting artifact transfer
+
+Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
+
+- ✓ If some sentient being killed the wielder, it may collect the item
 
 # Release 0.0.10 - Graphical update
 
@@ -188,19 +201,6 @@ Legends of Tesea
   - ✓ Health bar
   - ✓ AP bar
   - ✓ Cursor on action
-
-# feat - More artifacts
-
-- ✓ Item quality (Poor, Normal, Good, Legendary)
-  - ✓ Quality affects stats
-- ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
-  - ✓ Only rich settlements can create artifacts
-
-# feat - More interesting artifact transfer
-
-Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
-
-- ✓ If some sentient being killed the wielder, it may collect the item
 
 # Release 0.0.9 - More interesting world generation
 

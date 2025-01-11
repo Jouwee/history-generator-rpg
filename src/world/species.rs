@@ -3,7 +3,6 @@ use crate::commons::history_vec::Id;
 use super::attributes::Attributes;
 
 pub struct Species {
-    pub id: Id,
     pub name: String,
     pub texture: String,
     pub lifetime: SpeciesLifetime,
@@ -15,9 +14,8 @@ pub struct Species {
 
 impl Species {
 
-    pub fn new(id: Id, name: &str, texture: &str) -> Species {
+    pub fn new(name: &str, texture: &str) -> Species {
         Species {
-            id,
             name: String::from(name),
             texture: String::from(texture),
             intelligence: SpeciesIntelligence::Civilized,

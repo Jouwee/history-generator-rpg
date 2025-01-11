@@ -43,7 +43,7 @@ impl BattleForce {
             if let Ok(creature) = creature {
                 // TODO: Improve performance
                 if creature.position == settlement.xy.to_coord() {
-                    let species = world.species.get(&creature.species).unwrap();
+                    let species = world.species.get(&creature.species);
                     units.push(Unit::from_creature(id, species));
                 }
             }
@@ -52,7 +52,7 @@ impl BattleForce {
     }
 
     pub fn from_creatures(world: &World, creatures: Vec<&Person>) -> BattleForce {
-        BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, world.species.get(&creature.species).unwrap())).collect())
+        BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, world.species.get(&creature.species))).collect())
     }
 
     fn new(belligerent_faction: Option<Id>, belligerent_settlement: Option<Id>, units: Vec<Unit>) -> BattleForce {

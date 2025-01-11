@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{faction::FactionRelation, species::Species, world::ArtifactId};
+use super::{faction::FactionRelation, world::{ArtifactId, SpeciesId}};
 
 
 #[derive(Clone, PartialEq, Debug)]
@@ -25,7 +25,7 @@ impl PersonSex {
 #[derive(Clone, Debug)]
 pub struct Person {
     pub id: Id,
-    pub species: Id,
+    pub species: SpeciesId,
     pub position: Coord2,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -50,14 +50,14 @@ pub struct CivilizedComponent {
 impl Person {
 
     // TODO: random Age
-    pub fn new(id: Id, species: &Species, importance: Importance, birth: u32, position: Coord2) -> Person {
+    pub fn new(id: Id, species: &SpeciesId, importance: Importance, birth: u32, position: Coord2) -> Person {
         let mut sex = PersonSex::Male;
         if Rng::seeded(id).rand_chance(0.5) {
             sex = PersonSex::Female;
         }
         Person {
             id,
-            species: species.id,
+            species: species.clone(),
             importance,
             position,
             birth,

@@ -88,7 +88,7 @@ impl Chunk {
         // Bed
         chunk.map.object_layer.set_tile(36, 34, 3);
 
-        let species = world.species.get(&Id(3) /* spider */).unwrap();
+        let species = world.species.find("species:spider");
         let npc = Actor::from_species(Coord2::xy(26, 26), species);
         chunk.npcs.push(npc);
 
@@ -183,7 +183,7 @@ impl Chunk {
             let person = person.borrow();
             if person.position == xy {
                 let point = chunk.get_spawn_pos(&mut rng);
-                let species = world.species.get(&person.species).unwrap();
+                let species = world.species.get(&person.species);
                 chunk.npcs.push(Actor::from_person(point, *id, &person, &species, world));
             }
         }
@@ -192,7 +192,7 @@ impl Chunk {
             if chunk.npcs.len() == 0 {
                 for _ in 0..rng.randu_range(3, 7) {
                     let point = chunk.get_spawn_pos(&mut rng);
-                    let species = world.species.get(&Id(3) /* spider */).unwrap();
+                    let species = world.species.find("species:spider");
                     let npc = Actor::from_species(point, species);
                     chunk.npcs.push(npc);
                 }

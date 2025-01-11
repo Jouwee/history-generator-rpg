@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::{ArtifactId, World}};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::{ArtifactId, SpeciesId, World}};
 
 
 pub struct WorldGenerationParameters {
@@ -90,8 +90,8 @@ impl WorldHistoryGenerator {
             let faction_id = generator.world.factions.insert(faction);
             // TODO: Position
             let position = Coord2::xy(generator.rng.randu_range(0, generator.world.map.size.x()) as i32, generator.rng.randu_range(0, generator.world.map.size.y()) as i32);
-            let species = generator.world.species.get(&Id(0)).unwrap(); // Human
-            let person = Person::new(id, species, Importance::Important, 1, position)
+            let species = generator.world.species.id_of("species:human");
+            let person = Person::new(id, &species, Importance::Important, 1, position)
                 .civilization(&Some(CivilizedComponent {
                     culture: culture.id,
                     faction: faction_id,
@@ -106,24 +106,24 @@ impl WorldHistoryGenerator {
         return generator;
     }
 
-    fn load_species() -> HashMap<Id, Species> {
-        let mut map = HashMap::new();
-        map.insert(Id(0), Species::new(Id(0), "human", "character.png"));
-        map.insert(Id(1), Species::new(Id(1), "leshen", "leshen.png")
+    fn load_species() -> ResourceMap<SpeciesId, Species> {
+        let mut map = ResourceMap::new();
+        map.add("species:human", Species::new("human", "character.png"));
+        map.add("species:leshen", Species::new("leshen", "leshen.png")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
             .lifetime(300)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
         );
-        map.insert(Id(2), Species::new(Id(2), "fiend", "fiend.png")
+        map.add("species:fiend", Species::new("fiend", "fiend.png")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
             .lifetime(200)
             .fertility(0.)
             .drops(vec!((Id(4), 1)))
         );
-        map.insert(Id(3), Species::new(Id(3), "spider", "spider.png")
+        map.add("species:spider", Species::new("spider", "spider.png")
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
         );
@@ -249,8 +249,7 @@ impl WorldHistoryGenerator {
                     }
                     if !valid_heir {
                         self.rng.next();
-                        let species = self.world.species.get(&leader.species).unwrap();
-                        let new_leader = Person::new(self.next_person_id.next(), &species, Importance::Important, year, settlement.xy.to_coord())
+                        let new_leader = Person::new(self.next_person_id.next(), &leader.species, Importance::Important, year, settlement.xy.to_coord())
                             .civilization(&Some(civ.clone()));
                         let mut new_leader = self.name_person(new_leader, &None);
                         if let Some(civ2) = &mut new_leader.civ {
@@ -358,7 +357,7 @@ impl WorldHistoryGenerator {
         }
 
         let mut rng = self.rng.derive(id);
-        let species = self.world.species.get(&person.species).unwrap();
+        let species = self.world.species.get(&person.species);
         let age = (date.year - person.birth) as f32;
 
         // Random death chance
@@ -410,7 +409,7 @@ impl WorldHistoryGenerator {
         person.death = date.year;
         let mut artifact_material = None;
         {
-            let species = self.world.species.get(&person.species).unwrap();
+            let species = self.world.species.get(&person.species);
             if species.drops.len() > 0 {
                 let (drop_to_use, _) = species.drops.get(self.rng.randu_range(0, species.drops.len())).unwrap();
                 artifact_material = Some(drop_to_use.clone());
@@ -421,7 +420,7 @@ impl WorldHistoryGenerator {
                 if let CauseOfDeath::KilledInBattle(killer, _weapon) = &cause_of_death {
                     if let Some(killer_id) = killer {
                         let mut killer = self.world.people.get_mut(&killer_id).unwrap();
-                        let species = self.world.species.get(&killer.species).unwrap();
+                        let species = self.world.species.get(&killer.species);
                         // TODO: They might not be marked as dead yet
                         if killer.alive() && species.intelligence == SpeciesIntelligence::Civilized {
                             for item in person.possesions.iter() {
@@ -457,8 +456,7 @@ impl WorldHistoryGenerator {
     }
 
     fn create_child(&self, id: Id, birth: u32, father: &Person, mother: &Person) -> Person {
-        let species = self.world.species.get(&father.species).unwrap();
-        let mut figure = Person::new(id, species, father.importance.lower(), birth, mother.position);
+        let mut figure = Person::new(id, &father.species, father.importance.lower(), birth, mother.position);
         if let Some(civ) = &father.civ {
             figure.civ = Some(CivilizedComponent {
                 culture: civ.culture,
@@ -565,11 +563,11 @@ impl WorldHistoryGenerator {
     }
 
     fn spawn_great_beast(&mut self, year: u32) {
-        let mut species = Id(2); // Fiend
+        let mut species = "species:fiend";
         if self.rng.rand_chance(0.3) {
-            species = Id(1); // Leshen
+            species = "species:leshen";
         }
-        let species = self.world.species.get(&species).unwrap();
+        let species = self.world.species.id_of(species);
         let mut suitable_location = None;
         'candidates: for _ in 1..10 {
             let txy = Coord2::xy(self.rng.randu_range(0, self.world.map.size.x()) as i32, self.rng.randu_range(0, self.world.map.size.y()) as i32);
@@ -587,7 +585,7 @@ impl WorldHistoryGenerator {
         }
         if let Some(xy) = suitable_location {
             let id = self.next_person_id.next();
-            self.world.people.insert(Person::new(id, species, Importance::Important, year, xy));
+            self.world.people.insert(Person::new(id, &species, Importance::Important, year, xy));
             self.world.events.push(WorldEventDate { year }, xy, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: id }))
         }
     }
@@ -622,8 +620,7 @@ impl WorldHistoryGenerator {
     fn marry_random_person(&mut self, date: WorldEventDate, person_id: &Id) {
         let mut person = self.world.people.get_mut(&person_id).unwrap();
         let id = self.next_person_id.next();
-        let species = self.world.species.get(&person.species).unwrap();
-        let spouse = Person::new(id, &species, person.importance.lower(), date.year, person.position)
+        let spouse = Person::new(id, &person.species, person.importance.lower(), date.year, person.position)
             .civilization(&person.civ);
         let mut spouse = self.name_person(spouse, &None);
         spouse.last_name = person.last_name.clone();

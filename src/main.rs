@@ -421,7 +421,7 @@ fn main() {
                         for event in world.events.iter() {
                             writeln!(&mut f, "{}", writer.event(event)).unwrap();
                         }
-                        let species = world.species.get(&Id(0)).unwrap();
+                        let species = world.species.find("species:human");
                         let mut player = Actor::player(Coord2::xy(32, 32), species);
 
                         player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), Id(1), &world)));

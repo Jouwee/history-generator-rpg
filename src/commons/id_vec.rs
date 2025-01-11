@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell};
 
-pub trait Id {
+pub trait Id: Clone + Copy {
 
     fn as_usize(&self) -> usize;
     fn new(id: usize) -> Self;

@@ -3,5 +3,6 @@ pub mod history_vec;
 pub mod id_vec;
 pub mod markovchains;
 pub mod matrix_index;
+pub mod resource_map;
 pub mod rng;
 pub mod strings;
