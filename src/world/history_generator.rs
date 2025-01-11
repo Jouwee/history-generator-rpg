@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::World};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::{ArtifactId, World}};
 
 
 pub struct WorldGenerationParameters {
@@ -54,7 +54,7 @@ impl WorldHistoryGenerator {
             species: Self::load_species(),
             regions,
             materials: Self::load_materials(),
-            artifacts: HistoryVec::new(),
+            artifacts: IdVec::new(),
             factions: HistoryVec::new(),
             settlements: HistoryVec::new(),
             people: People::new(),
@@ -479,7 +479,7 @@ impl WorldHistoryGenerator {
         return figure        
     }
 
-    fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &Id) -> Id {
+    fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &Id) -> ArtifactId {
         let material_id = material_id.clone();
         let item;
         match self.rng.randu_range(0, 3) {
@@ -529,7 +529,7 @@ impl WorldHistoryGenerator {
                 item = Item::Lance(lance)
             }
         }
-        let id = self.world.artifacts.insert(item);
+        let id = self.world.artifacts.add(item);
         self.world.events.push(date, location, WorldEventEnum::ArtifactCreated(crate::ArtifactEvent { item: id }));
         return id
     }

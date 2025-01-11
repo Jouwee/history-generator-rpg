@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{battle_simulator::BattleResult, world::World};
+use super::{battle_simulator::BattleResult, world::{ArtifactId, World}};
 
 // Speed of rumor spread, in units per year
 const SPEED_OF_RUMORS: f32 = 5.;
@@ -174,7 +174,7 @@ impl WorldEventEnum {
         options.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
     }
 
-    pub fn get_artifacts(&self) -> Vec<Id> {
+    pub fn get_artifacts(&self) -> Vec<ArtifactId> {
         let options = match self {
             Self::PersonDeath(evt) => {
                 match evt.cause_of_death {
@@ -204,7 +204,7 @@ pub struct CreatureDeathEvent {
 #[derive(Debug, Clone)]
 pub enum CauseOfDeath {
     NaturalCauses,
-    KilledInBattle(/* killer */ Option<Id>, /* Item used */ Option<Id>)
+    KilledInBattle(/* killer */ Option<Id>, /* Item used */ Option<ArtifactId>)
 }
 
 #[derive(Debug, Clone)]
@@ -244,11 +244,11 @@ pub struct BattleEvent {
 
 #[derive(Debug, Clone)]
 pub struct ArtifactEvent {
-    pub item: Id
+    pub item: ArtifactId
 }
 
 #[derive(Debug, Clone)]
 pub struct ArtifactPossesionEvent {
-    pub item: Id,
+    pub item: ArtifactId,
     pub person: Id
 }

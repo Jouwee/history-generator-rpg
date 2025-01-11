@@ -1,11 +1,11 @@
 use std::collections::{hash_map::Iter, HashMap, HashSet};
 
-use crate::{commons::history_vec::Id, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, world::world::ArtifactId, WorldEvent, WorldEventEnum};
 
 pub struct KnowledgeCodex {
     creatures: HashMap<Id, CreatureKnowledge>,
     places: HashMap<Id, PlaceKnowledge>,
-    artifacts: HashMap<Id, ArtifactKnowledge>,
+    artifacts: HashMap<ArtifactId, ArtifactKnowledge>,
 }
 
 impl KnowledgeCodex {
@@ -63,11 +63,11 @@ impl KnowledgeCodex {
         self.places.get(id)
     }
 
-    pub fn known_artifacts(&self) -> Iter<Id, ArtifactKnowledge> {
+    pub fn known_artifacts(&self) -> Iter<ArtifactId, ArtifactKnowledge> {
         self.artifacts.iter()
     }
 
-    pub fn artifact(&self, id: &Id) -> Option<&ArtifactKnowledge> {
+    pub fn artifact(&self, id: &ArtifactId) -> Option<&ArtifactKnowledge> {
         self.artifacts.get(id)
     }
 

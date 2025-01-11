@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, world::world::World};
+use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, world::world::{ArtifactId, World}};
 
 use super::knowledge_codex::{ArtifactFact, KnowledgeCodex};
 
@@ -63,7 +63,7 @@ impl CodexDialog {
             }
             if let View::Artifacts = self.view {
                 for (id, _knowledge) in codex.known_artifacts() {
-                    if let ButtonEvent::Click = dialog.get_mut::<VList>("entry_list").unwrap().get_mut::<Button>(format!("artifact:{}", id.0).as_str()).unwrap().event(evt) {
+                    if let ButtonEvent::Click = dialog.get_mut::<VList>("entry_list").unwrap().get_mut::<Button>(format!("artifact:{}", id.as_usize()).as_str()).unwrap().event(evt) {
                         Self::click_artifact(dialog.get_mut::<VList>("selected_info").unwrap(), *id, world, codex);
                     }
                 }
@@ -93,7 +93,7 @@ impl CodexDialog {
         container.clear();
         for (id, _knowledge) in codex.known_artifacts() {
             let item = world.artifacts.get(id);
-            container.add_key(format!("artifact:{}", id.0).as_str(), Button::new(&item.name(&world), Position::Auto));
+            container.add_key(format!("artifact:{}", id.as_usize()).as_str(), Button::new(&item.name(&world), Position::Auto));
         }
     }
 
@@ -121,7 +121,7 @@ impl CodexDialog {
         }
     }
 
-    fn click_artifact(container: &mut VList, id: Id, world: &World, codex: &KnowledgeCodex) {
+    fn click_artifact(container: &mut VList, id: ArtifactId, world: &World, codex: &KnowledgeCodex) {
         let artifact = world.artifacts.get(&id);
         let knowledge = codex.artifact(&id).unwrap();
         let writer = BiographyWriter::new(world);

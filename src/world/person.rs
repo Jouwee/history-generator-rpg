@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{faction::FactionRelation, species::Species};
+use super::{faction::FactionRelation, species::Species, world::ArtifactId};
 
 
 #[derive(Clone, PartialEq, Debug)]
@@ -36,7 +36,7 @@ pub struct Person {
     pub death: u32,
     pub next_of_kin: Vec<NextOfKin>,
     pub civ: Option<CivilizedComponent>,
-    pub possesions: Vec<Id>
+    pub possesions: Vec<ArtifactId>
 }
 
 #[derive(Clone, Debug)]
