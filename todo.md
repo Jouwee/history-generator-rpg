@@ -1,16 +1,6 @@
 # Doing
 
-# TODO - 0.0.11 - Better artifact hunting
-
-# feat - Bandit camps
-
-- Chance to spawn camp settlement
-- Review simulation parameters
-  - Given time, all cities grow infinitely
-  - Some type of pop-cap. Needs money to increase (projects)
-  - Camps never work on projects
-
-# feat - Bandits try to steal artifacts
+# TODO - 0.0.12 - Juice
 
 # feat - Review human sprite
 
@@ -26,6 +16,33 @@
   - Short
   - Long
 - Generic armor over it (no equipment)
+
+# feat - Hit indicators
+
+- Damage number on hit (See BGIII for inspo)
+
+# feat - Animations
+
+- Bob around while walking
+- "Dash" on mellee attack
+- "Recoil" on hit
+
+# feat - Sound
+
+- ✓ Background music
+  - ✓ Battle vs Regular music
+  - ✓ Loop forever
+  - ✓ Fade on switch
+- ✓ Walking sound
+  - ✓ Grass
+    - ✓ 3 Variations
+  - ✓ Stone/Floor
+    - ✓ 3 Variations
+  - ✓ Volume based on distance
+- ✓ Unarmed strike sound
+  - ✓ 3 Variations
+- ✓ Armed strike sound
+  - ✓ 3 Variations
 
 # Backlog
 

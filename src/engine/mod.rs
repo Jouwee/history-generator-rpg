@@ -2,6 +2,7 @@ use geometry::{Coord2, Vec2};
 use image::Rgba;
 
 pub mod assets;
+pub mod audio;
 pub mod debug;
 pub mod geometry;
 pub mod gui;

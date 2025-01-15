@@ -4,12 +4,13 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, world::item::{Item, ItemMaker, ItemQuality}, World};
+use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, World};
 
 use super::{actor::Actor, Renderable};
 
 pub struct Chunk {
     size: Size2D,
+    pub tiles_clone: ResourceMap<TileId, Tile>,
     pub map: ChunkMap,
     pub player: Actor,
     pub npcs: Vec<Actor>,
@@ -38,7 +39,7 @@ impl ChunkMap {
 }
 
 impl Chunk {
-    pub fn new(size: Size2D, player: Actor) -> Chunk {
+    pub fn new(size: Size2D, player: Actor, resources: &Resources) -> Chunk {
 
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
@@ -53,19 +54,13 @@ impl Chunk {
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageReader::open("assets/sprites/chunk_tiles/stone.png").unwrap().decode().unwrap();
-        dual_tileset.add(0, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/chunk_tiles/grass.png").unwrap().decode().unwrap();
-        dual_tileset.add(4, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/chunk_tiles/sand.png").unwrap().decode().unwrap();
-        dual_tileset.add(1, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/chunk_tiles/water.png").unwrap().decode().unwrap();
-        dual_tileset.add(2, image, 24, 24);
-        let image = ImageReader::open("assets/sprites/chunk_tiles/floor.png").unwrap().decode().unwrap();
-        dual_tileset.add(3, image, 24, 24);
+        for tile in resources.tiles.iter() {
+            dual_tileset.add(tile.tile_layer, tile.tileset_image.clone(), 24, 24);
+        }
 
         Chunk {
             size,
+            tiles_clone: resources.tiles.clone(),
             map: ChunkMap {
                 ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
                 object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
@@ -77,8 +72,8 @@ impl Chunk {
         }
     }
 
-    pub fn playground(world: &World, player: Actor) -> Chunk {
-        let mut chunk = Self::new(Size2D(256, 256), player);
+    pub fn playground(world: &World, resources: &Resources, player: Actor) -> Chunk {
+        let mut chunk = Self::new(Size2D(256, 256), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
                 chunk.map.ground_layer.set_tile(x, y, 1);
@@ -100,8 +95,8 @@ impl Chunk {
         return chunk
     }
 
-    pub fn from_world_tile(world: &World, xy: Coord2, player: Actor) -> Chunk {
-        let mut chunk = Self::new(Size2D(256, 256), player);
+    pub fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
+        let mut chunk = Self::new(Size2D(256, 256), player, resources);
         let mut rng = Rng::rand();
         let tile = world.map.tile(xy.x as usize, xy.y as usize);
         let noise = Perlin::new(rng.derive("terrain").seed());
@@ -317,6 +312,16 @@ impl Chunk {
             self.map.object_layer.set_tile(x - 1, y, 5);
         }
 
+    }
+
+    pub fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
+        if let Some(tile) = self.map.ground_layer.tile(pos.x as usize, pos.y as usize) {
+            let tile = self.tiles_clone.try_get(tile);
+            if let Some(tile) = tile {
+                return tile.step_sound_effect.clone()
+            }
+        }
+        None
     }
 
 }

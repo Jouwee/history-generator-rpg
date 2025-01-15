@@ -6,14 +6,15 @@ extern crate piston;
 
 use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
-use engine::{assets::Assets, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
+use resources::resources::Resources;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Lance, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
-use piston::event_loop::{EventSettings, Events};
+use piston::{event_loop::{EventSettings, Events}, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
@@ -23,6 +24,7 @@ use piston::window::WindowSettings;
 pub mod engine;
 pub mod commons;
 pub mod literature;
+pub mod resources;
 pub mod world;
 pub mod game;
 
@@ -34,10 +36,16 @@ enum SceneEnum {
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
+    context: GameContext,
     scene: SceneEnum,
     assets: Assets,
     debug_overlay: DebugOverlay,
     display_context: DisplayContext
+}
+
+pub struct GameContext {
+    audio: Audio,
+    resources: Resources
 }
 
 pub struct DisplayContext {
@@ -91,17 +99,30 @@ impl App {
 
     }
 
-    fn update(&mut self, args: &Update) {
-        self.debug_overlay.update(args);
+    fn update(&mut self, args: &UpdateArgs, event_settings: &EventSettings, last_mouse_pos: [f64; 2]) {
+        let mut update = Update {
+            delta_time: 0.,
+            max_update_time: (1. / event_settings.ups as f64),
+            updates_per_second: event_settings.ups as u32,
+            mouse_pos_cam: [0., 0.],
+            mouse_pos_gui: [0., 0.]
+        };
+        update.delta_time = args.dt;
+        let p = last_mouse_pos;
+        update.mouse_pos_cam = [p[0] / self.display_context.scale + self.display_context.camera_rect[0], p[1] / self.display_context.scale + self.display_context.camera_rect[1]];
+        update.mouse_pos_gui = [p[0] / self.display_context.scale, p[1] / self.display_context.scale];
+
+        self.context.audio.update(&update);
+        self.debug_overlay.update(&update);
         match &mut self.scene {
             SceneEnum::WorldGen(game_state) => {
-                game_state.update(args);
+                game_state.update(&update, &mut self.context);
             },
             SceneEnum::World(game_state) => {
-                game_state.update(args);
+                game_state.update(&update, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.update(args);
+                game_state.update(&update, &mut self.context);
             },
         }
     }
@@ -110,13 +131,13 @@ impl App {
         self.debug_overlay.input(args);
         match &mut self.scene {
             SceneEnum::WorldGen(game_state) => {
-                game_state.input(args);
+                game_state.input(args, &mut self.context);
             },
             SceneEnum::World(game_state) => {
-                game_state.input(args);
+                game_state.input(args, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.input(args);
+                game_state.input(args, &mut self.context);
             },
         }
     }
@@ -352,6 +373,10 @@ fn main() {
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
+        context: GameContext {
+            audio: Audio::new(),
+            resources: Resources::new()
+        },
         scene: SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
             seed: 1234567,
             cultures: vec!(nords, khajit),
@@ -368,20 +393,26 @@ fn main() {
         }
     };
 
+    app.context.resources.load();
+
+    if let SceneEnum::WorldGen(scene) = &mut app.scene {
+        scene.init(&mut app.context);
+    }
+
+    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/fantasy-music-lumina-143991.mp3"));
+    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/forgotten-land-epic-dark-fantasy-195835.mp3"));
+    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/the-spell-dark-magic-background-music-ob-lix-8009.mp3"));
+    app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/cinematic-battle-music-271343.mp3"));
+    app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/fantasy-pagan-medieval-cinematic-epic-war-battle-119770.mp3"));
+
+    app.context.audio.switch_music(TrackMood::Regular);
+
 
     let mut last_mouse_pos = [0.0, 0.0];
 
     let mut event_settings = EventSettings::new();
     event_settings.max_fps = 30;
     event_settings.ups = 30;
-
-    let mut update = Update {
-        delta_time: 0.,
-        max_update_time: (1. / event_settings.ups as f64),
-        updates_per_second: event_settings.ups as u32,
-        mouse_pos_cam: [0., 0.],
-        mouse_pos_gui: [0., 0.],
-    };
 
     let mut events = Events::new(event_settings);
     while let Some(e) = events.next(&mut window) {
@@ -390,11 +421,7 @@ fn main() {
         }
 
         if let Some(args) = e.update_args() {
-            update.delta_time = args.dt;
-            let p = last_mouse_pos;
-            update.mouse_pos_cam = [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]];
-            update.mouse_pos_gui = [p[0] / app.display_context.scale, p[1] / app.display_context.scale];
-            app.update(&update);
+            app.update(&args, &event_settings, last_mouse_pos);
         }
 
         if let Some(k) = e.mouse_cursor_args() {
@@ -413,7 +440,7 @@ fn main() {
                 app.input(&input_event);
 
                 if let Button::Keyboard(Key::Return) = k.button {
-                    if let SceneEnum::WorldGen(scene)   = app.scene {
+                    if let SceneEnum::WorldGen(scene) = app.scene {
                         let world = scene.into_world();
                         // Dumps the world history into a file
                         let mut f = File::create("history.log").unwrap();
@@ -429,23 +456,29 @@ fn main() {
                         player.inventory.add(Item::Mace(Mace::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), &world)));
                         player.inventory.add(Item::Lance(Lance::new(world::item::ItemQuality::Normal, Id(3), Id(0), &world)));
                         let codex = KnowledgeCodex::new();
-                        app.scene = SceneEnum::World(WorldScene::new(world, player, codex));
+                        let mut scene = WorldScene::new(world, player, codex);
+                        scene.init(&mut app.context);
+                        app.scene = SceneEnum::World(scene);
                         continue
                     }
                 }
 
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::from_world_tile(&scene.world, scene.cursor, scene.player);
-                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk));
+                        let chunk = Chunk::from_world_tile(&scene.world, &app.context.resources, scene.cursor, scene.player);
+                        let mut scene = GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk);
+                        scene.init(&mut app.context);
+                        app.scene = SceneEnum::Game(scene);
                         continue
                     }
                 }
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::playground(&scene.world, scene.player);
-                        app.scene = SceneEnum::Game(GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk));
+                        let chunk = Chunk::playground(&scene.world, &app.context.resources, scene.player);
+                        let mut scene = GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk);
+                        scene.init(&mut app.context);
+                        app.scene = SceneEnum::Game(scene);
                         continue
                     }
                 }
@@ -462,6 +495,7 @@ fn main() {
                         // }
                         let mut new_scene = WorldScene::new(scene.world, scene.chunk.player, scene.codex);
                         new_scene.cursor = scene.world_pos;
+                        new_scene.init(&mut app.context);
                         app.scene = SceneEnum::World(new_scene);
                         continue
                     }

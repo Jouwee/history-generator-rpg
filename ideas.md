@@ -22,8 +22,8 @@ explored civilized area -> interact with people -> receive info -> investigate -
     - ✓ Piercing - 3 tiers
   - Consumables
     - Health potion
-- Other mechanics
-  - Resting at cities to recover health
+- ✓ Other mechanics
+  - ✓ Resting at cities to recover health
 - ✓ World interaction
   - ✓ Artifacts
     - ✓ More powerful versions of weapons generated through History

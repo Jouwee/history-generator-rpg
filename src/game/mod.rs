@@ -9,7 +9,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World};
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World, GameContext};
 
 pub mod action;
 pub mod actor;
@@ -96,6 +96,14 @@ impl GameSceneState {
 }
 
 impl Scene for GameSceneState {
+    fn init(&mut self, ctx: &mut GameContext) {
+        if self.chunk.npcs.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
+            ctx.audio.switch_music(TrackMood::Battle);
+        } else {
+            ctx.audio.switch_music(TrackMood::Regular);
+        }
+    }
+
     fn render(&mut self, ctx: &mut RenderContext) {
         ctx.pixel_art(2);
         let center = self.chunk.player.xy;
@@ -122,7 +130,7 @@ impl Scene for GameSceneState {
         self.inventory_dialog.render(ctx);        
     }
 
-    fn update(&mut self, update: &Update) {
+    fn update(&mut self, update: &Update, ctx: &mut GameContext) {
         self.hotbar.update(HotbarState::new(&self.chunk.player), update);
         self.button_codex.update();
         self.button_inventory.update();
@@ -132,8 +140,15 @@ impl Scene for GameSceneState {
 
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
+        let mut hostile = false;
         for npc in self.chunk.npcs.iter_mut() {
             npc.update();
+            hostile = hostile || npc.actor_type == ActorType::Hostile;
+        }
+        if hostile {
+            ctx.audio.switch_music(TrackMood::Battle);
+        } else {
+            ctx.audio.switch_music(TrackMood::Regular);
         }
 
         if self.turn_controller.is_player_turn() {
@@ -144,6 +159,9 @@ impl Scene for GameSceneState {
         if let ActorType::Hostile = npc.actor_type {
             if npc.xy.dist_squared(&self.chunk.player.xy) < 3. {
                 if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.chunk.player) {
+                    if let Some(fx) = ActionEnum::Attack.sound_effect() {
+                        ctx.audio.play_once(fx);
+                    }
                     if let Some(log) = log {
                         self.log(log.string, log.color);
                     }
@@ -152,20 +170,40 @@ impl Scene for GameSceneState {
                 let xy = npc.xy.clone();
                 if npc.xy.x < self.chunk.player.xy.x {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveRight, npc, &mut self.chunk.map, &xy) {
+                        let xy = npc.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            // TODO: Use actual camera
+                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                        }
                         return
                     }
                 }
                 if npc.xy.x > self.chunk.player.xy.x {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveLeft, npc, &mut self.chunk.map, &xy) {
+                        let xy = npc.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            // TODO: Use actual camera
+                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                        }
                         return
                     }
                 }
                 if npc.xy.y < self.chunk.player.xy.y {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveDown, npc, &mut self.chunk.map, &xy) {
+                        let xy = npc.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            // TODO: Use actual camera
+                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                        }
                         return
                     }
                 }
                 if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveUp, npc, &mut self.chunk.map, &xy) {
+                    let xy = npc.xy.clone();
+                    if let Some(sound) = self.chunk.get_step_sound(xy) {
+                        // TODO: Use actual camera
+                        ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                    }
                     return
                 }
             }
@@ -175,7 +213,7 @@ impl Scene for GameSceneState {
         self.turn_controller.next_turn();
     }
 
-    fn input(&mut self, evt: &InputEvent) {
+    fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
         self.hotbar.input(HotbarState::new(&self.chunk.player), evt);
         self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
@@ -202,21 +240,37 @@ impl Scene for GameSceneState {
                 },
                 Btn::Keyboard(Key::Up) => {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveUp, &mut self.chunk.player, &mut self.chunk.map, &xy) {
+                        let xy = self.chunk.player.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            ctx.audio.play_once(sound);
+                        }
                         return
                     }
                 },
                 Btn::Keyboard(Key::Down) => {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveDown, &mut self.chunk.player, &mut self.chunk.map, &xy) {
+                        let xy = self.chunk.player.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            ctx.audio.play_once(sound);
+                        }
                         return
                     }
                 },
                 Btn::Keyboard(Key::Left) => {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveLeft, &mut self.chunk.player, &mut self.chunk.map, &xy) {
+                        let xy = self.chunk.player.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            ctx.audio.play_once(sound);
+                        }
                         return
                     }
                 },
                 Btn::Keyboard(Key::Right) => {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveRight, &mut self.chunk.player, &mut self.chunk.map, &xy) {
+                        let xy = self.chunk.player.xy.clone();
+                        if let Some(sound) = self.chunk.get_step_sound(xy) {
+                            ctx.audio.play_once(sound);
+                        }
                         return
                     }
                 },
@@ -230,6 +284,10 @@ impl Scene for GameSceneState {
                                 match action {
                                     ActionEnum::Attack | ActionEnum::UnarmedAttack => {
                                         if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.chunk.player, target) {
+
+                                            if let Some(fx) = action.sound_effect() {
+                                                ctx.audio.play_once(fx);
+                                            }
                                             if target.hp.health_points == 0. {
                                                 self.chunk.player.add_xp(100);
                                                 self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
