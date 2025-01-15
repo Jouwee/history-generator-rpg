@@ -2,6 +2,7 @@ use crate::{commons::{damage_model::DefenceComponent, history_vec::Id}, engine::
 
 use super::{inventory::inventory::Inventory, Renderable};
 
+#[derive(PartialEq, Eq)]
 pub enum ActorType {
     Player,
     Passive,

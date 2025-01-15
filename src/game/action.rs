@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::damage_model::DamageComponent, engine::{geometry::Coord2, sprite::Sprite, Color}, world::item::Item};
+use crate::{commons::damage_model::DamageComponent, engine::{audio::SoundEffect, geometry::Coord2, sprite::Sprite, Color}, world::item::Item};
 
 use super::{actor::Actor, chunk::ChunkMap, log::LogEntry};
 
@@ -47,6 +47,14 @@ impl ActionEnum {
             _ => "gui/icons/actions/unarmed_attack.png"
         };
         return Sprite::new(path);
+    }
+
+    pub fn sound_effect(&self) -> Option<SoundEffect> {
+        match self {
+            ActionEnum::Attack => Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
+            ActionEnum::UnarmedAttack => Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            _ => None
+        }
     }
 
 }

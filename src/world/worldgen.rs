@@ -4,7 +4,7 @@ use graphics::rectangle::{square, Border};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent};
+use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, GameContext};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
@@ -110,6 +110,11 @@ impl WorldGenScene {
 }
 
 impl Scene for WorldGenScene {
+
+    fn init(&mut self, ctx: &mut GameContext) {
+        ctx.audio.switch_music(TrackMood::Regular);
+    }
+
     fn render(&mut self, ctx: &mut RenderContext) {
         ctx.scale(2.);
         use graphics::*;
@@ -143,7 +148,7 @@ impl Scene for WorldGenScene {
         ctx.text(&text, 11, [(center - text_width / 2.).round(), 40.], white);
     }
 
-    fn update(&mut self, _update: &Update) {
+    fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
         let end_year = 500;
         if self.generator.year >= end_year {
             return
@@ -166,6 +171,6 @@ impl Scene for WorldGenScene {
         }
     }
 
-    fn input(&mut self, _evt: &InputEvent) {
+    fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) {
     }
 }

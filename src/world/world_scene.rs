@@ -2,7 +2,7 @@ use ::image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use piston::{Button, Key};
 
-use crate::{commons::history_vec::Id, engine::{geometry::Coord2, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, codex::knowledge_codex::KnowledgeCodex, InputEvent}};
+use crate::{commons::history_vec::Id, engine::{audio::TrackMood, geometry::Coord2, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::{actor::Actor, codex::knowledge_codex::KnowledgeCodex, InputEvent}, GameContext};
 
 use super::world::World;
 
@@ -90,6 +90,10 @@ impl WorldScene {
 }
 
 impl Scene for WorldScene {
+    fn init(&mut self, ctx: &mut GameContext) {
+        ctx.audio.switch_music(TrackMood::Regular);
+    }
+
     fn render(&mut self, ctx: &mut RenderContext) {
         ctx.pixel_art(2);
         use graphics::*;
@@ -149,11 +153,11 @@ impl Scene for WorldScene {
         ctx.text(&text, 11, [(center - text_width / 2.).round(), 40.], white);
     }
 
-    fn update(&mut self, _update: &Update) {
+    fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
         
     }
 
-    fn input(&mut self, evt: &InputEvent) {
+    fn input(&mut self, evt: &InputEvent, _ctx: &mut GameContext) {
         match evt.button_args.button {
             Button::Keyboard(Key::Up) => {
                 if self.cursor.y > 0 {

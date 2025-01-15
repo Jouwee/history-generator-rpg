@@ -112,6 +112,10 @@ impl Coord2 {
         return x*x + y*y
     }
 
+    pub fn to_vec2(&self) -> Vec2 {
+        return Vec2::xy(self.x as f32, self.y as f32)
+    }
+
 }
 
 impl Add for Coord2 {
