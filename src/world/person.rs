@@ -141,6 +141,13 @@ impl Person {
         return sorted
     }
 
+    pub fn appearance_hints(&self) -> Vec<(&str, &str)> {
+        match self.sex {
+            PersonSex::Male => vec!(("base", "male_light")),
+            PersonSex::Female => vec!(("base", "female_light")),
+        }
+    }
+
 }
 
 

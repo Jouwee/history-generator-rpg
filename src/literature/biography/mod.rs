@@ -1,14 +1,16 @@
-use crate::{commons::history_vec::Id, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, resources::resources::Resources, world::{battle_simulator::FinalResult, person::Person, topology::WorldTileData}, Relative, World, WorldEvent, WorldEventEnum};
 
 pub struct BiographyWriter<'a> { 
-    world: &'a World   
+    world: &'a World,
+    resources: &'a Resources,
 }
 
 impl<'a> BiographyWriter<'a> {
 
-    pub fn new(world: &'a World) -> BiographyWriter {
+    pub fn new(world: &'a World, resources: &'a Resources) -> BiographyWriter<'a> {
         return BiographyWriter {
-            world
+            world,
+            resources
         }
     }
 
@@ -56,7 +58,7 @@ impl<'a> BiographyWriter<'a> {
                         if let Some(killer) = killer {
                             let mut suffix = String::new();
                             if let Some(weapon) = weapon {
-                                let weapon = self.world.artifacts.get(weapon).name(&self.world);
+                                let weapon = self.world.artifacts.get(weapon).name(&self.resources.materials);
                                 suffix = format!(" using {}", weapon);
                             }
                             &format!("in battle by the hand of {}{suffix}", self.name_with_title(&self.world.people.get(killer).unwrap()))
@@ -89,7 +91,7 @@ impl<'a> BiographyWriter<'a> {
             }
             WorldEventEnum::ArtifactCreated(event) => {
                 let artifact = self.world.artifacts.get(&event.item);
-                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(self.world), artifact.description(self.world))
+                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(&self.resources.materials), artifact.description(&self.resources.materials))
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
@@ -138,7 +140,7 @@ impl<'a> BiographyWriter<'a> {
             WorldEventEnum::ArtifactPossession(evt) => {
                 let person = self.world.people.get(&evt.person).unwrap();
                 let artifact = self.world.artifacts.get(&evt.item);
-                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))
+                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(&self.resources.materials))
             }
         }
     }
@@ -162,7 +164,7 @@ impl<'a> BiographyWriter<'a> {
                         if let Some(killer) = killer {
                             let mut suffix = String::new();
                             if let Some(weapon) = weapon {
-                                let weapon = self.world.artifacts.get(weapon).name(&self.world);
+                                let weapon = self.world.artifacts.get(weapon).name(&self.resources.materials);
                                 suffix = format!(" using {}", weapon);
                             }
                             &format!("in battle by the hand of {}{suffix}", self.name_with_title(&self.world.people.get(killer).unwrap()))
@@ -195,7 +197,7 @@ impl<'a> BiographyWriter<'a> {
             }
             WorldEventEnum::ArtifactCreated(event) => {
                 let artifact = self.world.artifacts.get(&event.item);
-                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(self.world), artifact.description(self.world))
+                return format!("In {}, an artifact was made. {}. {}", date, artifact.name(&self.resources.materials), artifact.description(&self.resources.materials))
             }
             WorldEventEnum::Battle(event) => {
                 let (attacker, defender) = &event.battle_result;
@@ -286,7 +288,7 @@ impl<'a> BiographyWriter<'a> {
             WorldEventEnum::ArtifactPossession(evt) => {
                 let person = self.world.people.get(&evt.person).unwrap();
                 let artifact = self.world.artifacts.get(&evt.item);
-                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(self.world))
+                return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(&self.resources.materials))
             }
         }
     }

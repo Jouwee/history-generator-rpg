@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DefenceComponent, history_vec::Id}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{Species, SpeciesIntelligence}, world::World}, Person};
+use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
 
 use super::{inventory::inventory::Inventory, Renderable};
 
@@ -16,7 +16,7 @@ pub struct Actor {
     pub attributes: Attributes,
     pub defence: DefenceComponent,
     pub actor_type: ActorType,
-    pub texture: String,
+    pub sprite: CreatureAppearance,
     pub person_id: Option<Id>,
     pub person: Option<Person>,
     pub xp: u32,
@@ -37,7 +37,7 @@ impl Actor {
             level: 1,
             person: None,
             person_id: None,
-            texture: String::from("player.png"),
+            sprite: species.appearance.collapse(&Rng::rand(), vec!()),
             actor_type: ActorType::Player,
             inventory: Inventory::new()
         }
@@ -58,7 +58,7 @@ impl Actor {
             level: 1,
             person: None,
             person_id: None,
-            texture: species.texture.clone(),
+            sprite: species.appearance.collapse(&Rng::rand(), vec!()),
             actor_type,
             inventory: Inventory::new()
         }
@@ -85,7 +85,7 @@ impl Actor {
             level: 1,
             person: Some(person.clone()),
             person_id: Some(person_id),
-            texture: species.texture.clone(),
+            sprite: species.appearance.collapse(&Rng::rand(), person.appearance_hints()),
             actor_type,
             inventory
         }
@@ -164,8 +164,16 @@ impl Actor {
 }
 
 impl Renderable for Actor {
-    fn render(&self, ctx: &mut RenderContext) {
-        ctx.image(&self.texture, [self.xy.x as f64 * 24.0, self.xy.y as f64 * 24.0 - 11.]);
+    fn render(&self, ctx: &mut RenderContext, game_ctx: &GameContext) {
+        let pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        let textures = self.sprite.texture();
+        for texture in textures {
+            ctx.texture(texture, pos);
+        }
+        let item = self.inventory.equipped();
+        if let Some(item) = item {
+            ctx.texture(item.make_equipped_texture(&game_ctx.resources.materials), pos);
+        }
     }
 }
 

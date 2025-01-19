@@ -10,7 +10,7 @@ use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overla
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Lance, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -29,6 +29,7 @@ pub mod world;
 pub mod game;
 
 enum SceneEnum {
+    None,
     WorldGen(WorldGenScene),
     World(WorldScene),
     Game(GameSceneState)
@@ -81,14 +82,15 @@ impl App {
             textures: Vec::new(),
         };
         match &mut self.scene {
+            SceneEnum::None => {},
             SceneEnum::WorldGen(game_state) => {
-                game_state.render(&mut context);
+                game_state.render(&mut context, &self.context);
             },
             SceneEnum::World(game_state) => {
-                game_state.render(&mut context);
+                game_state.render(&mut context, &self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.render(&mut context);
+                game_state.render(&mut context, &self.context);
             },
         }
         self.debug_overlay.render(&mut context);
@@ -115,6 +117,7 @@ impl App {
         self.context.audio.update(&update);
         self.debug_overlay.update(&update);
         match &mut self.scene {
+            SceneEnum::None => {},
             SceneEnum::WorldGen(game_state) => {
                 game_state.update(&update, &mut self.context);
             },
@@ -130,6 +133,7 @@ impl App {
     fn input(&mut self, args: &InputEvent) {
         self.debug_overlay.input(args);
         match &mut self.scene {
+            SceneEnum::None => {},
             SceneEnum::WorldGen(game_state) => {
                 game_state.input(args, &mut self.context);
             },
@@ -370,20 +374,16 @@ fn main() {
         .build()
         .unwrap();
 
+    let resources = Resources::new();
+
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
         context: GameContext {
             audio: Audio::new(),
-            resources: Resources::new()
+            resources
         },
-        scene: SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
-            seed: 1234567,
-            cultures: vec!(nords, khajit),
-            regions: regions,            
-            great_beasts_yearly_spawn_chance: 0.3,
-            legendary_artifact_comission_chance: 0.01,
-        })),
+        scene: SceneEnum::None,
         assets: Assets::new(),
         debug_overlay: DebugOverlay::new(),
         display_context: DisplayContext {
@@ -392,12 +392,7 @@ fn main() {
             gui_rect: [0.; 4]
         }
     };
-
     app.context.resources.load();
-
-    if let SceneEnum::WorldGen(scene) = &mut app.scene {
-        scene.init(&mut app.context);
-    }
 
     app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/fantasy-music-lumina-143991.mp3"));
     app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/forgotten-land-epic-dark-fantasy-195835.mp3"));
@@ -405,8 +400,17 @@ fn main() {
     app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/cinematic-battle-music-271343.mp3"));
     app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/fantasy-pagan-medieval-cinematic-epic-war-battle-119770.mp3"));
 
-    app.context.audio.switch_music(TrackMood::Regular);
+    app.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
+            seed: 1234567,
+            cultures: vec!(nords, khajit),
+            regions: regions,            
+            great_beasts_yearly_spawn_chance: 0.3,
+            legendary_artifact_comission_chance: 0.01,
+        }, &app.context.resources));
 
+    if let SceneEnum::WorldGen(scene) = &mut app.scene {
+        scene.init(&mut app.context);
+    }
 
     let mut last_mouse_pos = [0.0, 0.0];
 
@@ -444,17 +448,19 @@ fn main() {
                         let world = scene.into_world();
                         // Dumps the world history into a file
                         let mut f = File::create("history.log").unwrap();
-                        let writer = BiographyWriter::new(&world);
+                        let writer = BiographyWriter::new(&world, &app.context.resources);
                         for event in world.events.iter() {
                             writeln!(&mut f, "{}", writer.event(event)).unwrap();
                         }
                         let species = world.species.find("species:human");
                         let mut player = Actor::player(Coord2::xy(32, 32), species);
 
-                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), Id(1), &world)));
-                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Legendary, Id(3), Id(0), Id(1), Id(1), &world)));
-                        player.inventory.add(Item::Mace(Mace::new(world::item::ItemQuality::Normal, Id(3), Id(0), Id(1), &world)));
-                        player.inventory.add(Item::Lance(Lance::new(world::item::ItemQuality::Normal, Id(3), Id(0), &world)));
+                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal,
+                            app.context.resources.materials.id_of("mat:oak"),
+                            app.context.resources.materials.id_of("mat:copper"),
+                            app.context.resources.materials.id_of("mat:copper"),
+                            app.context.resources.materials.id_of("mat:copper"),
+                            &app.context.resources.materials)));
                         let codex = KnowledgeCodex::new();
                         let mut scene = WorldScene::new(world, player, codex);
                         scene.init(&mut app.context);

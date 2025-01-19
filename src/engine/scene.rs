@@ -11,7 +11,7 @@ pub struct Update {
 
 pub trait Scene {
     fn init(&mut self, _ctx: &mut GameContext) {}
-    fn render(&mut self, ctx: &mut RenderContext);
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext);
     fn update(&mut self, update: &Update, ctx: &mut GameContext);
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext);
     fn cursor_move(&mut self, _pos: [f64; 2]) {}

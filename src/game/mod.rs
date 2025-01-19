@@ -21,7 +21,7 @@ pub mod inventory;
 pub mod log;
 
 pub trait Renderable {
-    fn render(&self, ctx: &mut RenderContext);
+    fn render(&self, ctx: &mut RenderContext, game_ctx: &GameContext);
 }
 
 pub struct InputEvent {
@@ -69,13 +69,13 @@ impl GameSceneState {
         return state
     }
 
-    pub fn remove_npc(&mut self, i: usize) {
+    pub fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let id;
         {
             let npc = self.chunk.npcs.get(i).unwrap();
             id = npc.person_id;
             for (_i, item, _equipped) in npc.inventory.iter() {
-                self.chunk.items_on_ground.push((npc.xy, item.clone(), item.make_texture(&self.world)));
+                self.chunk.items_on_ground.push((npc.xy, item.clone(), item.make_texture(&ctx.resources.materials)));
             }
         }
         self.chunk.npcs.remove(i);
@@ -104,12 +104,12 @@ impl Scene for GameSceneState {
         }
     }
 
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
         ctx.pixel_art(2);
         let center = self.chunk.player.xy;
         ctx.push();
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
-        self.chunk.render(ctx);
+        self.chunk.render(ctx, &game_ctx);
 
         if let Some(_) = self.hotbar.selected_action {
             ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
@@ -215,16 +215,16 @@ impl Scene for GameSceneState {
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
         self.hotbar.input(HotbarState::new(&self.chunk.player), evt);
-        self.interact_dialog.input_state(evt, &self.world, &mut self.codex);
-        self.codex_dialog.input_state(evt, &self.world, &mut self.codex);
-        self.inventory_dialog.input_state(evt, &mut self.chunk.player, &self.world);
+        self.interact_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
+        self.codex_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
+        self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
         if let ButtonEvent::Click = self.button_codex.event(evt) {
             self.codex_dialog.start_dialog();
             return;
         }
 
         if let ButtonEvent::Click = self.button_inventory.event(evt) {
-            self.inventory_dialog.start_dialog(&self.chunk.player, &self.world);
+            self.inventory_dialog.start_dialog(&self.chunk.player, &ctx.resources);
             return;
         }
 
@@ -291,7 +291,7 @@ impl Scene for GameSceneState {
                                             if target.hp.health_points == 0. {
                                                 self.chunk.player.add_xp(100);
                                                 self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
-                                                self.remove_npc(i);
+                                                self.remove_npc(i, ctx);
                                             } else if let Some(log) = log {
                                                 self.log(log.string, log.color);
                                             }

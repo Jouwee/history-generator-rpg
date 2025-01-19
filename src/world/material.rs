@@ -1,6 +1,17 @@
 use crate::engine::Color;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+pub struct MaterialId(usize);
+impl crate::commons::id_vec::Id for MaterialId {
+    fn new(id: usize) -> Self {
+        MaterialId(id)
+    }
+    fn as_usize(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Material {
     pub name: String,
     pub material_type: MaterialType,
@@ -43,7 +54,7 @@ impl Material {
 
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum MaterialType {
     Metal,
     Wood,

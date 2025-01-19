@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::Texture;
 
-use crate::{commons::{damage_model::DamageComponent, history_vec::Id, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}};
+use crate::{commons::{damage_model::DamageComponent, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::resources::Materials};
 
-use super::world::World;
+use super::material::MaterialId;
 
 #[derive(Clone, Debug)]
 pub enum Item {
@@ -16,51 +16,51 @@ pub enum Item {
 
 impl Item {
 
-    pub fn name(&self, world: &World) -> String {
+    pub fn name(&self, materials: &Materials) -> String {
         match self {
             Item::Sword(sword) => {
                 if let Some(name) = &sword.name {
                     return name.clone()
                 }
-                let blade = world.materials.get(&sword.blade_mat).unwrap().name.clone();
+                let blade = materials.get(&sword.blade_mat).name.clone();
                 return format!("{blade} sword")
             },
             Item::Mace(mace) => {
                 if let Some(name) = &mace.name {
                     return name.clone()
                 }
-                let head = world.materials.get(&mace.head_mat).unwrap().name.clone();
+                let head = materials.get(&mace.head_mat).name.clone();
                 return format!("{head} mace")
             },
             Item::Lance(lance) => {
                 if let Some(name) = &lance.name {
                     return name.clone()
                 }
-                let tip = world.materials.get(&lance.tip_mat).unwrap().name.clone();
+                let tip = materials.get(&lance.tip_mat).name.clone();
                 return format!("{tip} lance")
             }
         }
     }
 
-    pub fn description(&self, world: &World) -> String {
+    pub fn description(&self, materials: &Materials) -> String {
         let str;
         match self {
             Item::Sword(sword) => {
-                let handle = world.materials.get(&sword.handle_mat).unwrap().name.clone();
-                let blade = world.materials.get(&sword.blade_mat).unwrap().name.clone();
-                let pommel = world.materials.get(&sword.pommel_mat).unwrap().name.clone();
-                let guard = world.materials.get(&sword.guard_mat).unwrap().name.clone();
+                let handle = materials.get(&sword.handle_mat).name.clone();
+                let blade = materials.get(&sword.blade_mat).name.clone();
+                let pommel = materials.get(&sword.pommel_mat).name.clone();
+                let guard = materials.get(&sword.guard_mat).name.clone();
                 str = format!("It's a sword. It's blade is made of {blade}. The handle, made of {handle} is topped by a pomel of {pommel} and a guard of {guard}.");
             },
             Item::Mace(mace) => {
-                let handle = world.materials.get(&mace.handle_mat).unwrap().name.clone();
-                let head = world.materials.get(&mace.head_mat).unwrap().name.clone();
-                let pommel = world.materials.get(&mace.pommel_mat).unwrap().name.clone();
+                let handle = materials.get(&mace.handle_mat).name.clone();
+                let head = materials.get(&mace.head_mat).name.clone();
+                let pommel = materials.get(&mace.pommel_mat).name.clone();
                 str = format!("It's a mace. It's head is made of {head}. The handle, made of {handle} is topped by a pomel of {pommel}.");
             },
             Item::Lance(lance) => {
-                let handle = world.materials.get(&lance.handle_mat).unwrap().name.clone();
-                let tip = world.materials.get(&lance.tip_mat).unwrap().name.clone();
+                let handle = materials.get(&lance.handle_mat).name.clone();
+                let tip = materials.get(&lance.tip_mat).name.clone();
                 str = format!("It's a lance. It's tip is made of {tip}, with a handle made of {handle}.");
             }
         }
@@ -76,33 +76,65 @@ impl Item {
     }
 
 
-    pub fn make_texture(&self, world: &World) -> Texture {
+    pub fn make_texture(&self, materials: &Materials) -> Texture {
         match self {
             Self::Sword(sword) => {
                 let image = ImageReader::open("./assets/sprites/sword.png").unwrap().decode().unwrap();
                 let pallete_sprite = PalleteSprite::new(image);
                 let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, world.materials.get(&sword.blade_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Red, world.materials.get(&sword.guard_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Green, world.materials.get(&sword.handle_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Yellow, world.materials.get(&sword.pommel_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Blue, materials.get(&sword.blade_mat).color_pallete);
+                map.insert(ColorMap::Red, materials.get(&sword.guard_mat).color_pallete);
+                map.insert(ColorMap::Green, materials.get(&sword.handle_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&sword.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
             Self::Mace(mace) => {
                 let image = ImageReader::open("./assets/sprites/mace.png").unwrap().decode().unwrap();
                 let pallete_sprite = PalleteSprite::new(image);
                 let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, world.materials.get(&mace.head_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Yellow, world.materials.get(&mace.handle_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Green, world.materials.get(&mace.pommel_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Blue, materials.get(&mace.head_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&mace.handle_mat).color_pallete);
+                map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
             Self::Lance(lance) => {
                 let image = ImageReader::open("./assets/sprites/lance.png").unwrap().decode().unwrap();
                 let pallete_sprite = PalleteSprite::new(image);
                 let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, world.materials.get(&lance.tip_mat).unwrap().color_pallete);
-                map.insert(ColorMap::Yellow, world.materials.get(&lance.handle_mat).unwrap().color_pallete);
+                map.insert(ColorMap::Blue, materials.get(&lance.tip_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&lance.handle_mat).color_pallete);
+                return pallete_sprite.remap(map)
+            }
+        }
+    }
+
+    pub fn make_equipped_texture(&self, materials: &Materials) -> Texture {
+        match self {
+            Self::Sword(sword) => {
+                let image = ImageReader::open("./assets/sprites/species/human/sword_equipped.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, materials.get(&sword.blade_mat).color_pallete);
+                map.insert(ColorMap::Red, materials.get(&sword.guard_mat).color_pallete);
+                map.insert(ColorMap::Green, materials.get(&sword.handle_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&sword.pommel_mat).color_pallete);
+                return pallete_sprite.remap(map)
+            },
+            Self::Mace(mace) => {
+                let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, materials.get(&mace.head_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&mace.handle_mat).color_pallete);
+                map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
+                return pallete_sprite.remap(map)
+            },
+            Self::Lance(lance) => {
+                let image = ImageReader::open("./assets/sprites/species/human/lance_equipped.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                map.insert(ColorMap::Blue, materials.get(&lance.tip_mat).color_pallete);
+                map.insert(ColorMap::Yellow, materials.get(&lance.handle_mat).color_pallete);
                 return pallete_sprite.remap(map)
             }
         }
@@ -134,17 +166,17 @@ impl ItemQuality {
 #[derive(Clone, Debug)]
 pub struct Sword {
     pub quality: ItemQuality,
-    pub handle_mat: Id,
-    pub blade_mat: Id,
-    pub pommel_mat: Id,
-    pub guard_mat: Id,
+    pub handle_mat: MaterialId,
+    pub blade_mat: MaterialId,
+    pub pommel_mat: MaterialId,
+    pub guard_mat: MaterialId,
     pub damage: DamageComponent,
     pub name: Option<String>
 }
 
 impl Sword {
-    pub fn new(quality: ItemQuality, handle_mat: Id, blade_mat: Id, pommel_mat: Id, guard_mat: Id, world: &World) -> Sword {
-        let blade = world.materials.get(&blade_mat).unwrap();
+    pub fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
+        let blade = materials.get(&blade_mat);
         let damage = DamageComponent::new(blade.sharpness * quality.main_stat_multiplier(), 0., 0.);
         Sword { quality, handle_mat, blade_mat, pommel_mat, guard_mat, damage, name: None }
     }
@@ -153,16 +185,16 @@ impl Sword {
 #[derive(Clone, Debug)]
 pub struct Mace {
     pub quality: ItemQuality,
-    pub handle_mat: Id,
-    pub head_mat: Id,
-    pub pommel_mat: Id,
+    pub handle_mat: MaterialId,
+    pub head_mat: MaterialId,
+    pub pommel_mat: MaterialId,
     pub damage: DamageComponent,
     pub name: Option<String>
 }
 
 impl Mace {
-    pub fn new(quality: ItemQuality, handle_mat: Id, head_mat: Id, pommel_mat: Id, world: &World) -> Mace {
-        let head = world.materials.get(&head_mat).unwrap();
+    pub fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
+        let head = materials.get(&head_mat);
         let damage = DamageComponent::new(0., 0., head.sharpness * quality.main_stat_multiplier());
         Mace { quality, handle_mat, head_mat, pommel_mat, damage, name: None }
     }
@@ -171,15 +203,15 @@ impl Mace {
 #[derive(Clone, Debug)]
 pub struct Lance {
     pub quality: ItemQuality,
-    pub handle_mat: Id,
-    pub tip_mat: Id,
+    pub handle_mat: MaterialId,
+    pub tip_mat: MaterialId,
     pub damage: DamageComponent,
     pub name: Option<String>
 }
 
 impl Lance {
-    pub fn new(quality: ItemQuality, handle_mat: Id, tip_mat: Id, world: &World) -> Lance {
-        let tip = world.materials.get(&tip_mat).unwrap();
+    pub fn new(quality: ItemQuality, handle_mat: MaterialId, tip_mat: MaterialId, materials: &Materials) -> Lance {
+        let tip = materials.get(&tip_mat);
         let damage = DamageComponent::new(0., tip.sharpness * quality.main_stat_multiplier(), 0.);
         Lance { quality, handle_mat, tip_mat, damage, name: None }
     }
@@ -189,21 +221,21 @@ pub struct ItemMaker {}
 
 impl ItemMaker {
 
-    pub fn random(rng: &Rng, world: &World, quality: ItemQuality) -> Item {
+    pub fn random(rng: &Rng, materials: &Materials, quality: ItemQuality) -> Item {
         let mut rng = rng.derive("random_item");
         let item = rng.randu_range(0, 3);
 
-        let blades = [Id(0), Id(1), Id(6)];
+        let blades = [materials.id_of("mat:steel"), materials.id_of("mat:bronze"), materials.id_of("mat:copper")];
         let blade = blades[rng.randu_range(0, blades.len())];
-        let handles = [Id(2), Id(3)];
+        let handles = [materials.id_of("mat:oak"), materials.id_of("mat:birch")];
         let handle = handles[rng.randu_range(0, handles.len())];
-        let extras = [Id(0), Id(1), Id(6)];
+        let extras = [materials.id_of("mat:steel"), materials.id_of("mat:bronze"), materials.id_of("mat:copper")];
         let extra = extras[rng.randu_range(0, extras.len())];
 
         match item {
-            0 => Item::Sword(Sword::new(quality, handle, blade, extra, extra, world)),
-            1 => Item::Mace(Mace::new(quality, handle, blade, extra, world)),
-            _ => Item::Lance(Lance::new(quality, handle, blade, world))
+            0 => Item::Sword(Sword::new(quality, handle, blade, extra, extra, materials)),
+            1 => Item::Mace(Mace::new(quality, handle, blade, extra, materials)),
+            _ => Item::Lance(Lance::new(quality, handle, blade, materials))
         }
     }
 

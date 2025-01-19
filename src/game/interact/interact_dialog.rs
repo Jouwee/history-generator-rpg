@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, world::{person::Person, world::World}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, resources::resources::Resources, world::{person::Person, world::World}};
 
 pub struct InteractDialog {
     interact_dialog: Option<Dialog>,
@@ -35,13 +35,7 @@ impl InteractDialog {
             self.dialog_y = self.dialog_y + 16.;
         }
     }
-
-    pub fn ask_who(&mut self, person: &Person) {
-        self.add_dialog_line("> Who are you?");
-        self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
-    }
-
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, codex: &mut KnowledgeCodex) {
+    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &mut KnowledgeCodex) {
         if let Some(dialog) = &mut self.interact_dialog {
             if let Some(person) = &self.person {
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
@@ -52,7 +46,7 @@ impl InteractDialog {
                     let rumor = world.events.find_rumor(&Rng::seeded(person.id), &world,  crate::WorldEventDate { year: 500 }, person.position);
                     if let Some((id, rumor)) = rumor {
                         codex.add_event(id, rumor);
-                        self.add_dialog_line(BiographyWriter::new(world).rumor(rumor).as_str());
+                        self.add_dialog_line(BiographyWriter::new(world, resources).rumor(rumor).as_str());
                     } else {
                         self.add_dialog_line("Sorry, I haven't heard anything.");
                     }

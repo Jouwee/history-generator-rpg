@@ -4,7 +4,7 @@ use graphics::rectangle::{square, Border};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, GameContext};
+use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
 
 use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
 
@@ -17,7 +17,7 @@ pub struct WorldGenScene {
 }
 
 impl WorldGenScene {
-    pub fn new(params: WorldGenerationParameters) -> WorldGenScene {
+    pub fn new(params: WorldGenerationParameters, resources: &Resources) -> WorldGenScene {
         let spritesheet = ImageReader::open("assets/sprites/banner.png").unwrap().decode().unwrap();
         let settings = TextureSettings::new().filter(Filter::Nearest);
 
@@ -66,7 +66,7 @@ impl WorldGenScene {
         let black = Color::from_hex("14233a");
 
         let mut scene = WorldGenScene {
-            generator: WorldHistoryGenerator::seed_world(params),
+            generator: WorldHistoryGenerator::seed_world(params, resources),
             total_time: Duration::new(0, 0),
             tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 4, 4),
             banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
@@ -115,7 +115,7 @@ impl Scene for WorldGenScene {
         ctx.audio.switch_music(TrackMood::Regular);
     }
 
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
         ctx.scale(2.);
         use graphics::*;
         let white = Color::rgb([1., 1., 1.]);

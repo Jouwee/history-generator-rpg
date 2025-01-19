@@ -1,4 +1,4 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::Actor, world::{attributes::Attributes, world::World}};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::Actor, resources::resources::Resources, world::attributes::Attributes};
 
 use super::inventory::Inventory;
 
@@ -13,10 +13,10 @@ impl CharacterDialog {
         }
     }
 
-    pub fn start_dialog(&mut self, actor: &Actor, world: &World) {
+    pub fn start_dialog(&mut self, actor: &Actor, resources: &Resources) {
         let mut dialog = Dialog::new();
         let mut inventory = VList::new(Position::Anchored(Anchor::TopLeft, 10., 10.));
-        Self::build_inventory(&mut inventory, &actor.inventory, world);
+        Self::build_inventory(&mut inventory, &actor.inventory, resources);
         dialog.add_key("inventory", inventory);
         let mut attributes = VList::new(Position::Anchored(Anchor::TopLeft, 400., 10.));
         Self::build_attributes(&mut attributes, &actor.attributes);
@@ -44,10 +44,10 @@ impl CharacterDialog {
         }
     }
 
-    pub fn build_inventory(container: &mut impl Container, inventory: &Inventory, world: &World) {
+    pub fn build_inventory(container: &mut impl Container, inventory: &Inventory, resources: &Resources) {
         container.clear();
         for (i, item, equip) in inventory.iter() {
-            let mut name = item.name(world);
+            let mut name = item.name(&resources.materials);
             if equip {
                 name.push_str(" (e)");
             }
@@ -55,7 +55,7 @@ impl CharacterDialog {
         }
     }
 
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, world: &World) {
+    pub fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, resources: &Resources) {
         if let Some(dialog) = &mut self.dialog {
             if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
                 self.dialog = None;
@@ -64,7 +64,7 @@ impl CharacterDialog {
             for i in 0..actor.inventory.len() {
                 if let ButtonEvent::Click = dialog.get_mut::<VList>("inventory").unwrap().get_mut::<Button>(&i.to_string()).unwrap().event(evt) {
                     actor.inventory.equip(i);
-                    Self::build_inventory(dialog.get_mut::<VList>("inventory").unwrap(), &actor.inventory, world);
+                    Self::build_inventory(dialog.get_mut::<VList>("inventory").unwrap(), &actor.inventory, resources);
                 }
             }
             if let Some(button) = dialog.get_mut::<VList>("attributes").unwrap().get_mut::<Button>("add_str") {

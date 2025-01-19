@@ -1,23 +1,28 @@
-use crate::commons::history_vec::Id;
+use std::collections::{BTreeMap, HashMap};
 
-use super::attributes::Attributes;
+use image::ImageReader;
+use opengl_graphics::{Filter, Texture, TextureSettings};
+
+use crate::commons::rng::Rng;
+
+use super::{attributes::Attributes, material::MaterialId};
 
 pub struct Species {
     pub name: String,
-    pub texture: String,
+    pub appearance: SpeciesApearance,
     pub lifetime: SpeciesLifetime,
     pub intelligence: SpeciesIntelligence,
     pub fertility: SpeciesFertility,
     pub attributes: Attributes,
-    pub drops: Vec<(Id, usize)>
+    pub drops: Vec<(MaterialId, usize)>
 }
 
 impl Species {
 
-    pub fn new(name: &str, texture: &str) -> Species {
+    pub fn new(name: &str, appearance: SpeciesApearance) -> Species {
         Species {
             name: String::from(name),
-            texture: String::from(texture),
+            appearance,
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
@@ -46,7 +51,7 @@ impl Species {
         self
     }
 
-    pub fn drops(mut self, drops: Vec<(Id, usize)>) -> Self {
+    pub fn drops(mut self, drops: Vec<(MaterialId, usize)>) -> Self {
         self.drops = drops;
         self
     }
@@ -84,4 +89,67 @@ pub enum SpeciesIntelligence {
 pub struct SpeciesFertility {
     pub male_drop: f32,
     pub female_drop: f32
+}
+
+#[derive(Clone)]
+pub struct SpeciesApearance {
+    map: BTreeMap<String, HashMap<String, String>>
+}
+
+impl SpeciesApearance {
+
+    pub fn single_sprite(path: &str) -> SpeciesApearance {
+        let mut map = BTreeMap::new();
+        let mut var = HashMap::new();
+        var.insert(String::from("default"), String::from(path));
+        map.insert(String::from("base"), var);
+        Self { map }
+    }
+
+    pub fn composite(parts: Vec<(&str, Vec<(&str, &str)>)>) -> SpeciesApearance {
+        let mut map = BTreeMap::new();
+        for part in parts {
+            let mut var = HashMap::new();
+            for variation in part.1 {
+                var.insert(String::from(variation.0), String::from(variation.1));
+            }
+            map.insert(String::from(part.0), var);
+        }
+        Self { map }
+    }
+
+    pub fn collapse(&self, rng: &Rng, hints: Vec<(&str, &str)>) -> CreatureAppearance {
+        let mut collapsed = CreatureAppearance {
+            map: BTreeMap::new()
+        };
+        for (k, v) in self.map.iter() {
+            let hint = hints.iter().find(|h| h.0 == k);
+            if let Some(hint) = hint {
+                collapsed.map.insert(k.clone(), v.get(hint.1).unwrap().clone());    
+            } else {
+                let mut rng = rng.derive(k);
+                let variations: Vec<&String> = v.values().collect();
+                collapsed.map.insert(k.clone(), variations[rng.randu_range(0, variations.len())].clone());
+            }
+        }
+        collapsed
+    }
+
+}
+
+pub struct CreatureAppearance {
+    map: BTreeMap<String, String>
+}
+
+impl CreatureAppearance {
+    pub fn texture(&self) -> Vec<Texture> {
+        let mut vec = Vec::new();
+        for (_k, v) in self.map.iter() {
+            // TODO: Don't load everytime
+            let image = ImageReader::open(format!("./assets/sprites/{v}")).unwrap().decode().unwrap();
+            let settings = TextureSettings::new().filter(Filter::Nearest);
+            vec.push(Texture::from_image(&image.to_rgba8(), &settings));
+        }
+        return vec;
+    }
 }

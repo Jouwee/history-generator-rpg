@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Color, Point2D}, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::Material, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesIntelligence}, world::{ArtifactId, SpeciesId, World}};
+use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesApearance, SpeciesIntelligence}, world::{ArtifactId, SpeciesId, World}};
 
 
 pub struct WorldGenerationParameters {
@@ -19,11 +19,12 @@ pub struct WorldHistoryGenerator {
     parameters: WorldGenerationParameters,
     pub world: World,
     next_person_id: Id,
+    resources: Resources
 }
 
 impl WorldHistoryGenerator {
 
-    pub fn seed_world(parameters: WorldGenerationParameters) -> WorldHistoryGenerator {
+    pub fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
         let rng = Rng::seeded(parameters.seed);
        
         let mut params = WorldTopologyGenerationParameters {
@@ -51,9 +52,8 @@ impl WorldHistoryGenerator {
         let mut world = World {
             map: world_map,
             cultures: HashMap::new(),
-            species: Self::load_species(),
+            species: Self::load_species(resources),
             regions,
-            materials: Self::load_materials(),
             artifacts: IdVec::new(),
             factions: HistoryVec::new(),
             settlements: HistoryVec::new(),
@@ -76,6 +76,7 @@ impl WorldHistoryGenerator {
         let mut generator = WorldHistoryGenerator {
             rng,
             parameters,
+            resources: resources.clone(),
             world,
             year: 1,
             next_person_id: person_id
@@ -106,43 +107,42 @@ impl WorldHistoryGenerator {
         return generator;
     }
 
-    fn load_species() -> ResourceMap<SpeciesId, Species> {
+    fn load_species(resources: &Resources) -> ResourceMap<SpeciesId, Species> {
+        // TODO: Move to resources
         let mut map = ResourceMap::new();
-        map.add("species:human", Species::new("human", "character.png"));
-        map.add("species:leshen", Species::new("leshen", "leshen.png")
+        map.add("species:human", Species::new("human", SpeciesApearance::composite(
+            vec!(
+                ("base", vec!(
+                    ("male_light", "species/human/base_male_light.png"),
+                    ("female_light", "species/human/base_female_light.png")
+                )),
+                ("hair", vec!(
+                    ("bun", "species/human/hair_bun.png"),
+                    ("short", "species/human/hair_short.png"),
+                    ("shaved", "species/human/hair_shaved.png"),
+                    ("bald", "system/transparent.png"),
+                )),
+                ("clothes", vec!(("default", "species/human/armor_placeholder.png"))),
+            )
+        )));
+        map.add("species:leshen", Species::new("leshen", SpeciesApearance::single_sprite("leshen.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
             .lifetime(300)
             .fertility(0.)
-            .drops(vec!((Id(4), 1)))
+            .drops(vec!((resources.materials.id_of("mat:bone_leshen"), 1)))
         );
-        map.add("species:fiend", Species::new("fiend", "fiend.png")
+        map.add("species:fiend", Species::new("fiend", SpeciesApearance::single_sprite("fiend.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
             .lifetime(200)
             .fertility(0.)
-            .drops(vec!((Id(4), 1)))
+            .drops(vec!((resources.materials.id_of("mat:bone_fiend"), 1)))
         );
-        map.add("species:spider", Species::new("spider", "spider.png")
+        map.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("spider.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
         );
-        map
-    }
-
-    fn load_materials() -> HashMap<Id, Material> {
-        let mut map = HashMap::new();
-        map.insert(Id(0), Material::new_metal("steel"));
-        let mut bronze = Material::new_metal("bronze");
-        bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
-        map.insert(Id(1), bronze);
-        map.insert(Id(2), Material::new_wood("birch"));
-        map.insert(Id(3), Material::new_wood("oak"));
-        map.insert(Id(4), Material::new_bone("leshen bone"));
-        map.insert(Id(5), Material::new_bone("fiend bone"));
-        let mut copper = Material::new_metal("copper");
-        copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
-        map.insert(Id(6), copper);
         map
     }
 
@@ -404,7 +404,7 @@ impl WorldHistoryGenerator {
         return ActionToSimulate::None
     }
 
-    fn kill_person(&mut self, date: WorldEventDate, id: Id, cause_of_death: CauseOfDeath) -> Option<Id> {
+    fn kill_person(&mut self, date: WorldEventDate, id: Id, cause_of_death: CauseOfDeath) -> Option<MaterialId> {
         let mut person = self.world.people.get_mut(&id).unwrap();
         person.death = date.year;
         let mut artifact_material = None;
@@ -477,50 +477,50 @@ impl WorldHistoryGenerator {
         return figure        
     }
 
-    fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &Id) -> ArtifactId {
+    fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &MaterialId) -> ArtifactId {
         let material_id = material_id.clone();
         let item;
         match self.rng.randu_range(0, 3) {
             0 => {
-                let mut blade = Id(0);
-                let mut handle = Id(3);
-                let mut guard = Id(1);
-                let mut pommel = Id(1);
+                let mut blade = self.resources.materials.id_of("mat:steel");
+                let mut handle = self.resources.materials.id_of("mat:oak");
+                let mut guard = self.resources.materials.id_of("mat:bronze");
+                let mut pommel = self.resources.materials.id_of("mat:bronze");
                 match self.rng.randu_range(0, 4) {
                     1 => blade = material_id,
                     2 => guard = material_id,
                     3 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                let mut sword = Sword::new(ItemQuality::Legendary, handle, blade, pommel, guard, &self.world);
+                let mut sword = Sword::new(ItemQuality::Legendary, handle, blade, pommel, guard, &self.resources.materials);
                 sword.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "sword", "blade", "slash", "fang", "tongue", "kiss", "wing", "edge", "talon"
                 )));
                 item = Item::Sword(sword)
             },
             1 => {
-                let mut head = Id(0);
-                let mut handle = Id(3);
-                let mut pommel = Id(1);
+                let mut head = self.resources.materials.id_of("mat:steel");
+                let mut handle = self.resources.materials.id_of("mat:oak");
+                let mut pommel = self.resources.materials.id_of("mat:bronze");
                 match self.rng.randu_range(0, 3) {
                     1 => head = material_id,
                     2 => handle = material_id,
                     _ => pommel = material_id,
                 }
-                let mut mace = Mace::new(ItemQuality::Legendary, handle, head, pommel, &self.world);
+                let mut mace = Mace::new(ItemQuality::Legendary, handle, head, pommel, &self.resources.materials);
                 mace.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "breaker", "kiss", "fist", "touch"
                 )));
                 item = Item::Mace(mace)
             },
             _ => {
-                let mut tip = Id(0);
-                let mut handle = Id(3);
+                let mut tip = self.resources.materials.id_of("mat:steel");
+                let mut handle = self.resources.materials.id_of("mat:oak");
                 match self.rng.randu_range(0, 2) {
                     1 => tip = material_id,
                     _ => handle = material_id,
                 }
-                let mut lance = Lance::new(ItemQuality::Legendary, handle, tip, &self.world);
+                let mut lance = Lance::new(ItemQuality::Legendary, handle, tip, &self.resources.materials);
                 lance.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
                     "fang", "talon", "bolt", "beak", "thorn"
                 )));
@@ -609,7 +609,7 @@ impl WorldHistoryGenerator {
 
     fn create_simple_artifact(&mut self, date: WorldEventDate, creature_id: &Id) {
         let position = self.world.people.get(&creature_id).unwrap().position.clone();
-        let artifact_id = self.create_artifact(date, position, &Id(0) /* Steel */);
+        let artifact_id = self.create_artifact(date, position, &self.resources.materials.id_of("mat:steel"));
         let mut creature = self.world.people.get_mut(&creature_id).unwrap();
         creature.possesions.push(artifact_id);
         creature.importance = creature.importance.at_least(&Importance::Unimportant);

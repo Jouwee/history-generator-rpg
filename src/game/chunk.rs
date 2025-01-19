@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, World};
+use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, GameContext, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -88,8 +88,8 @@ impl Chunk {
         chunk.npcs.push(npc);
 
         let point = Coord2::xy(34, 34);
-        let item = ItemMaker::random(&Rng::seeded("a"), world, ItemQuality::Normal);
-        let texture = item.make_texture(world);
+        let item = ItemMaker::random(&Rng::seeded("a"), &resources.materials, ItemQuality::Normal);
+        let texture = item.make_texture(&resources.materials);
         chunk.items_on_ground.push((point, item, texture));
 
         return chunk
@@ -196,8 +196,8 @@ impl Chunk {
                     rng.randu_range(0, chunk.size.x()) as i32,
                     rng.randu_range(0, chunk.size.y()) as i32
                 );
-                let item = ItemMaker::random(&rng, world, ItemQuality::Normal);
-                let texture = item.make_texture(world);
+                let item = ItemMaker::random(&rng, &resources.materials, ItemQuality::Normal);
+                let texture = item.make_texture(&resources.materials);
                 chunk.items_on_ground.push((point, item, texture));
             }
         }
@@ -327,7 +327,7 @@ impl Chunk {
 }
 
 impl Renderable for Chunk {
-    fn render(&self, ctx: &mut crate::engine::render::RenderContext) {
+    fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext) {
         self.map.ground_layer.render(ctx);
 
         let mut actors_by_position = HashMap::new();
@@ -342,7 +342,7 @@ impl Renderable for Chunk {
         self.map.object_layer.render(ctx, |ctx, x, y| {
             if let Some(actors) = actors_by_position.get(&Coord2::xy(x as i32, y as i32)) {
                 for actor in actors {
-                    actor.render(ctx);
+                    actor.render(ctx, game_ctx);
                 }
             }
         });
