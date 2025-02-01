@@ -93,7 +93,7 @@ impl ActionMap {
         });
     }
 
-    pub fn try_use_on_target(&self, action: ActionEnum, actor: &mut Actor, target: &mut Actor) -> Result<Option<LogEntry>, ()> {
+    pub fn try_use_on_target(&self, action: ActionEnum, actor: &mut Actor, target: &mut Actor) -> Result<ActionTargetOutput, ()> {
         if let Some(action) = self.map.get(&action) {
             if action.action.can_run_on_target(actor, target) && actor.ap.can_use(action.base_ap_cost) {
                 let log = action.action.run_on_target(actor, target);
@@ -139,13 +139,28 @@ impl ActionMap {
 
 }
 
+pub struct ActionTargetOutput {
+    pub damage: Option<DamageOutput>
+}
+
+
+impl ActionTargetOutput {
+    fn empty() -> ActionTargetOutput {
+        ActionTargetOutput { damage: None }
+    }
+}
+
+pub struct DamageOutput {
+    pub damage: f32
+}
+
 
 pub trait ActionTrait {
     fn final_ap_cost(&self) {}
     fn can_run_on_self(&self, _actor: &Actor) -> bool { false }
     fn run_on_self(&self, _actor: &mut Actor) -> Option<LogEntry> { None }
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { false }
-    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> { None }
+    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> ActionTargetOutput { ActionTargetOutput::empty() }
     fn can_run_on_item(&self, _actor: &Actor, _target: &Item) -> bool { false }
     fn run_on_item(&self, _actor: &mut Actor, _target: &mut Item) -> Option<LogEntry> { None }
     fn can_run_on_tile(&self, _actor: &Actor, _chunk: &ChunkMap, _pos: &Coord2) -> bool { false }
@@ -156,12 +171,14 @@ pub struct UnarmedAttack {}
 impl ActionTrait for UnarmedAttack {
 
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
-    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
+    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> ActionTargetOutput {
         let str_mult = actor.attributes.strength_attack_damage_mult();
         let damage_model = DamageComponent::new(0., 0., 1.).multiply(str_mult);
         let damage = damage_model.resolve(&target.defence);
         target.hp.damage(damage);
-        Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
+        return ActionTargetOutput {
+            damage: Some(DamageOutput { damage })
+        }
     }
 
 }
@@ -170,7 +187,7 @@ pub struct AttackAction {}
 impl ActionTrait for AttackAction {
 
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
-    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> Option<LogEntry> {
+    fn run_on_target(&self, actor: &mut Actor, target: &mut Actor) -> ActionTargetOutput {
         let damage_model;
         let str_mult = actor.attributes.strength_attack_damage_mult();
         if let Some(item) = actor.inventory.equipped() {
@@ -181,7 +198,9 @@ impl ActionTrait for AttackAction {
         }
         let damage = damage_model.resolve(&target.defence);
         target.hp.damage(damage);
-        Some(LogEntry::new(format!("X attacks Y for {damage}"), Color::from_hex("eb9661")))
+        return ActionTargetOutput {
+            damage: Some(DamageOutput { damage })
+        }
     }
 
 }
@@ -190,8 +209,8 @@ pub struct TalkAction {}
 impl ActionTrait for TalkAction {
 
     fn can_run_on_target(&self, _actor: &Actor, _target: &Actor) -> bool { true }
-    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> Option<LogEntry> {
-        Some(LogEntry::new(format!("Hello!"), Color::from_hex("eb9661")))
+    fn run_on_target(&self, _actor: &mut Actor, _target: &mut Actor) -> ActionTargetOutput {
+        return ActionTargetOutput::empty()
     }
 
 }

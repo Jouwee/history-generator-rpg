@@ -4,6 +4,7 @@ use action::{ActionEnum, ActionMap};
 use actor::ActorType;
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
+use effect_layer::EffectLayer;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
@@ -15,6 +16,7 @@ pub mod action;
 pub mod actor;
 pub mod chunk;
 pub mod codex;
+pub mod effect_layer;
 pub mod hotbar;
 pub mod interact;
 pub mod inventory;
@@ -44,7 +46,8 @@ pub struct GameSceneState {
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
     inventory_dialog: CharacterDialog,
-    cursor_pos: Coord2
+    cursor_pos: Coord2,
+    effect_layer: EffectLayer,
 }
 
 impl GameSceneState {
@@ -63,7 +66,8 @@ impl GameSceneState {
             interact_dialog: InteractDialog::new(),
             codex_dialog: CodexDialog::new(),
             inventory_dialog: CharacterDialog::new(),
-            cursor_pos: Coord2::xy(0, 0)
+            cursor_pos: Coord2::xy(0, 0),
+            effect_layer: EffectLayer::new()
         };
         state.save_creature_appearances();
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
@@ -142,13 +146,16 @@ impl Scene for GameSceneState {
         ctx.pixel_art(2);
         let center = self.chunk.player.xy;
         ctx.push();
+        // Game
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx, &game_ctx);
 
         if let Some(_) = self.hotbar.selected_action {
             ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
         }
-
+        // Effects
+        self.effect_layer.render(ctx, game_ctx);
+        // UI
         let _ = ctx.try_pop();
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
         for (line, color) in self.log.borrow().iter() {
@@ -170,6 +177,7 @@ impl Scene for GameSceneState {
         self.interact_dialog.update();
         self.codex_dialog.update();
         self.inventory_dialog.update();
+        self.effect_layer.update(update, ctx);
 
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
@@ -192,16 +200,16 @@ impl Scene for GameSceneState {
         // TODO: AI
         if let ActorType::Hostile = npc.actor_type {
             if npc.xy.dist_squared(&self.chunk.player.xy) < 3. {
-                if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.chunk.player) {
+                if let Ok(result) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.chunk.player) {
                     if let Some(fx) = ActionEnum::Attack.sound_effect() {
                         ctx.audio.play_once(fx);
+                    }
+                    if let Some(damage) = result.damage  {
+                        self.effect_layer.add_damage_number(self.chunk.player.xy, damage.damage);
                     }
                     let dir = self.chunk.player.xy - npc.xy;
                     npc.animation.play(&Self::build_attack_anim(dir));
                     self.chunk.player.animation.play(&Self::build_hurt_anim(dir));
-                    if let Some(log) = log {
-                        self.log(log.string, log.color);
-                    }
                 }
             } else if npc.ap.can_use(20) {
                 let xy = npc.xy.clone();
@@ -328,10 +336,13 @@ impl Scene for GameSceneState {
 
                                 match action {
                                     ActionEnum::Attack | ActionEnum::UnarmedAttack => {
-                                        if let Ok(log) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.chunk.player, target) {
+                                        if let Ok(result) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.chunk.player, target) {
 
                                             if let Some(fx) = action.sound_effect() {
                                                 ctx.audio.play_once(fx);
+                                            }
+                                            if let Some(damage) = result.damage  {
+                                                self.effect_layer.add_damage_number(target.xy, damage.damage);
                                             }
                                             let dir = target.xy - self.chunk.player.xy;
                                             self.chunk.player.animation.play(&Self::build_attack_anim(dir));
@@ -340,8 +351,6 @@ impl Scene for GameSceneState {
                                                 self.chunk.player.add_xp(100);
                                                 self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
                                                 self.remove_npc(i, ctx);
-                                            } else if let Some(log) = log {
-                                                self.log(log.string, log.color);
                                             }
                                             // Turn everyone hostile
                                             for p in self.chunk.npcs.iter_mut() {
