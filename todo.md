@@ -6,12 +6,6 @@
 
 - Damage number on hit (See BGIII for inspo)
 
-## feat - Animations
-
-- Bob around while walking
-- "Dash" on mellee attack
-- "Recoil" on hit
-
 ## refactor - New asset manager
 
 - Add to Game Context
@@ -128,6 +122,12 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
 # Release 0.0.12 - Juice
+
+## feat - Animations
+
+- ✓ Bob around while walking
+- ✓ "Dash" on mellee attack
+- ✓ "Recoil" on hit
 
 ## bug - History generation is not deterministic
 

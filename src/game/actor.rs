@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
+use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
 
 use super::{inventory::inventory::Inventory, Renderable};
 
@@ -13,6 +13,7 @@ pub enum ActorType {
 
 pub struct Actor {
     pub xy: Coord2,
+    pub animation: AnimationTransform,
     pub ap: ActionPointsComponent,
     pub hp: HealthPointsComponent,
     pub attributes: Attributes,
@@ -31,6 +32,7 @@ impl Actor {
     pub fn player(xy: Coord2, species: &Species) -> Actor {
         Actor {
             xy,
+            animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
             hp: HealthPointsComponent::new(&species.attributes),
             attributes: species.attributes.clone(),
@@ -52,6 +54,7 @@ impl Actor {
         }
         Actor {
             xy,
+            animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
             hp: HealthPointsComponent::new(&species.attributes),
             attributes: species.attributes.clone(),
@@ -79,6 +82,7 @@ impl Actor {
         }
         Actor {
             xy,
+            animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
             hp: HealthPointsComponent::new(&species.attributes),
             attributes: species.attributes.clone(),
@@ -93,7 +97,8 @@ impl Actor {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, delta: f64) {
+        self.animation.update(delta);
         self.hp.update(&self.attributes);
         self.ap.update(&self.attributes);
     }
@@ -167,7 +172,10 @@ impl Actor {
 
 impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &GameContext) {
-        let pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        // Applies the animation to the rendering
+        pos[0] += self.animation.translate[0];
+        pos[1] += self.animation.translate[1];
         let textures = self.sprite.texture();
         for texture in textures {
             ctx.texture(texture, pos);

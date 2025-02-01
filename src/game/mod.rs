@@ -9,7 +9,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World, GameContext};
+use crate::{engine::{animation::Animation, audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World, GameContext};
 
 pub mod action;
 pub mod actor;
@@ -106,6 +106,27 @@ impl GameSceneState {
         }
     }
 
+    fn build_walk_anim() -> Animation {
+        Animation::new()
+            .translate(0.08, [0., -6.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+
+    }
+
+    fn build_hurt_anim(direction: Coord2) -> Animation {
+        let direction = direction.to_vec2().normalize(12.);
+        Animation::new()
+            .translate(0.02, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.2, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+    }
+
+    fn build_attack_anim(direction: Coord2) -> Animation {
+        let direction = direction.to_vec2().normalize(24.);
+        Animation::new()
+            .translate(0.08, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+    }
+
 }
 
 impl Scene for GameSceneState {
@@ -154,9 +175,10 @@ impl Scene for GameSceneState {
 
         let mut hostile = false;
         for npc in self.chunk.npcs.iter_mut() {
-            npc.update();
+            npc.update(update.delta_time);
             hostile = hostile || npc.actor_type == ActorType::Hostile;
         }
+        self.chunk.player.update(update.delta_time);
         if hostile {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
@@ -174,6 +196,9 @@ impl Scene for GameSceneState {
                     if let Some(fx) = ActionEnum::Attack.sound_effect() {
                         ctx.audio.play_once(fx);
                     }
+                    let dir = self.chunk.player.xy - npc.xy;
+                    npc.animation.play(&Self::build_attack_anim(dir));
+                    self.chunk.player.animation.play(&Self::build_hurt_anim(dir));
                     if let Some(log) = log {
                         self.log(log.string, log.color);
                     }
@@ -183,6 +208,7 @@ impl Scene for GameSceneState {
                 if npc.xy.x < self.chunk.player.xy.x {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveRight, npc, &mut self.chunk.map, &xy) {
                         let xy = npc.xy.clone();
+                        npc.animation.play(&Self::build_walk_anim());
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             // TODO: Use actual camera
                             ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
@@ -193,6 +219,7 @@ impl Scene for GameSceneState {
                 if npc.xy.x > self.chunk.player.xy.x {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveLeft, npc, &mut self.chunk.map, &xy) {
                         let xy = npc.xy.clone();
+                        npc.animation.play(&Self::build_walk_anim());
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             // TODO: Use actual camera
                             ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
@@ -203,6 +230,7 @@ impl Scene for GameSceneState {
                 if npc.xy.y < self.chunk.player.xy.y {
                     if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveDown, npc, &mut self.chunk.map, &xy) {
                         let xy = npc.xy.clone();
+                        npc.animation.play(&Self::build_walk_anim());
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             // TODO: Use actual camera
                             ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
@@ -212,6 +240,7 @@ impl Scene for GameSceneState {
                 }
                 if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveUp, npc, &mut self.chunk.map, &xy) {
                     let xy = npc.xy.clone();
+                    npc.animation.play(&Self::build_walk_anim());
                     if let Some(sound) = self.chunk.get_step_sound(xy) {
                         // TODO: Use actual camera
                         ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
@@ -256,6 +285,7 @@ impl Scene for GameSceneState {
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             ctx.audio.play_once(sound);
                         }
+                        self.chunk.player.animation.play(&Self::build_walk_anim());
                         return
                     }
                 },
@@ -265,6 +295,7 @@ impl Scene for GameSceneState {
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             ctx.audio.play_once(sound);
                         }
+                        self.chunk.player.animation.play(&Self::build_walk_anim());
                         return
                     }
                 },
@@ -274,6 +305,7 @@ impl Scene for GameSceneState {
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             ctx.audio.play_once(sound);
                         }
+                        self.chunk.player.animation.play(&Self::build_walk_anim());
                         return
                     }
                 },
@@ -283,6 +315,7 @@ impl Scene for GameSceneState {
                         if let Some(sound) = self.chunk.get_step_sound(xy) {
                             ctx.audio.play_once(sound);
                         }
+                        self.chunk.player.animation.play(&Self::build_walk_anim());
                         return
                     }
                 },
@@ -300,6 +333,9 @@ impl Scene for GameSceneState {
                                             if let Some(fx) = action.sound_effect() {
                                                 ctx.audio.play_once(fx);
                                             }
+                                            let dir = target.xy - self.chunk.player.xy;
+                                            self.chunk.player.animation.play(&Self::build_attack_anim(dir));
+                                            target.animation.play(&&Self::build_hurt_anim(dir));
                                             if target.hp.health_points == 0. {
                                                 self.chunk.player.add_xp(100);
                                                 self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
