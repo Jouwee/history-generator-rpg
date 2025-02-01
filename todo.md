@@ -71,8 +71,6 @@ Package-size, learning
 
 ## feat - Death
 
-## bug - History generation is not deterministic
-
 ## feat - More interesting worldgen / history
 
 - More settlement names
@@ -130,6 +128,8 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
 # Release 0.0.12 - Juice
+
+## bug - History generation is not deterministic
 
 ## feat - Review human sprite
 

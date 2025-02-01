@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, VecDeque}, f32::consts::PI};
+use std::{collections::{BTreeMap, VecDeque}, f32::consts::PI};
 
 use noise::{NoiseFn, Perlin};
 use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vec2, Vector2}, Point2D}};
@@ -53,7 +53,7 @@ impl WorldTopology {
             direction: Vector2
         }
         // Generate plates and origins
-        let mut plates = HashMap::new();
+        let mut plates = BTreeMap::new();
         for i in 1..params.num_plate_tectonics+1 {
             let seed = Point2D(params.rng.randu_range(0, self.size.x()), params.rng.randu_range(0, self.size.y()));
             let dist_to_edge = seed.dist_squared(&Point2D(0, 0))
@@ -147,7 +147,6 @@ impl WorldTopology {
             let i = (b.0.1 * self.size.x()) + b.0.0;
             let noise = noise.get([b.0.0 as f64 / 2., b.0.1 as f64 / 2.]) as f32;
             let noise = (noise + 1.) / 2.;
-            // let noise = 1.;
             match b.1 {
                 Boundary::Convergent(strength) => self.elevation[i] += (128. * strength * noise) as i32,
                 Boundary::Divergent(strength) => self.elevation[i] -= (128. * strength * noise) as i32,
@@ -362,4 +361,88 @@ pub struct WorldTileData {
     pub vegetation: f32,
     pub soil_fertility: f32,
     pub region_id: u8
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::geometry::Size2D;
+
+
+    #[test]
+    fn check_determinism() {
+
+        let rng = Rng::seeded("test");
+        let mut params_a = WorldTopologyGenerationParameters {
+            rng: rng.derive("topology"),
+            num_plate_tectonics: 25
+        };
+        let mut params_b = WorldTopologyGenerationParameters {
+            rng: rng.derive("topology"),
+            num_plate_tectonics: 25
+        };
+
+        let mut world_a = WorldTopology::new(Size2D(32, 32));
+        let mut world_b = WorldTopology::new(Size2D(32, 32));
+
+        world_a.plate_tectonics(&mut params_a);
+        world_b.plate_tectonics(&mut params_b);
+        compare(&world_a, &world_b);
+
+        world_a.precipitation(&mut params_a);
+        world_b.precipitation(&mut params_b);
+        compare(&world_a, &world_b);
+
+        let regions = vec!(Region {
+            id: 0,
+            name: String::from("Ocean"),
+            elevation: (-2000, 0),
+            temperature: (0, 5),
+            vegetation: (0.0, 0.0),
+            soil_fertility_range: (0.8, 1.2),
+            gold_generation_range: (0.8, 1.2),
+            fauna: Vec::from([
+                String::from("whale"),
+                String::from("fish")
+            ]),
+            flora: Vec::from([
+                String::from("kelp"),
+                String::from("coral")
+            ])
+        },
+        Region {
+            id: 1,
+            name: String::from("Coastal"),
+            elevation: (0, 2000),
+            temperature: (0, 5),
+            vegetation: (0.0, 0.1),
+            soil_fertility_range: (0.8, 1.2),
+            gold_generation_range: (0.8, 1.2),
+            fauna: Vec::from([
+                String::from("whale"),
+                String::from("fish")
+            ]),
+            flora: Vec::from([
+                String::from("kelp"),
+                String::from("coral")
+            ])
+        });
+
+        world_a.noise(&params_a.rng, &regions);
+        world_b.noise(&params_b.rng, &regions);
+        compare(&world_a, &world_b);
+
+    }
+
+    fn compare(world_a: &WorldTopology, world_b: &WorldTopology) {
+        for i in 0..world_a.size.area() {
+            assert_eq!(world_a.elevation[i], world_b.elevation[i]);
+            assert_eq!(world_a.precipitation[i], world_b.precipitation[i]);
+            assert_eq!(world_a.temperature[i], world_b.temperature[i]);
+            assert_eq!(world_a.vegetation[i], world_b.vegetation[i]);
+            assert_eq!(world_a.soil_ferility[i], world_b.soil_ferility[i]);
+            assert_eq!(world_a.region_id[i], world_b.region_id[i]);
+        }
+    }
 }
