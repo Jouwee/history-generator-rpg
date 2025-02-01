@@ -545,7 +545,7 @@ impl WorldHistoryGenerator {
         if let Some(civ) = &figure.civ {
             let culture = self.world.cultures.get(&civ.culture).unwrap();
             let first_name;
-            match figure.sex {
+            match figure.sex() {
                 PersonSex::Male => first_name = culture.first_name_male_model.generate(&self.rng.derive("first_name"), 4, 15),
                 PersonSex::Female => first_name = culture.first_name_female_model.generate(&self.rng.derive("first_name"), 4, 15)
             }
@@ -623,6 +623,7 @@ impl WorldHistoryGenerator {
         let spouse = Person::new(id, &person.species, person.importance.lower(), date.year, person.position)
             .civilization(&person.civ);
         let mut spouse = self.name_person(spouse, &None);
+        spouse.set_sex(person.sex().opposite());
         spouse.last_name = person.last_name.clone();
         spouse.next_of_kin.push(NextOfKin {
             person_id: person.id,

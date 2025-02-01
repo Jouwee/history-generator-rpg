@@ -2,47 +2,37 @@
 
 # TODO - 0.0.12 - Juice
 
-# feat - Review human sprite
-
-- Male vs Female
-- Skin tones
-  - Light
-  - Medium
-  - Dark
-- Show equipped weapon
-- Hairstyle
-  - Bald
-  - Shaved
-  - Short
-  - Long
-- Generic armor over it (no equipment)
-
-# feat - Hit indicators
+## feat - Hit indicators
 
 - Damage number on hit (See BGIII for inspo)
 
-# feat - Animations
+## feat - Animations
 
 - Bob around while walking
 - "Dash" on mellee attack
 - "Recoil" on hit
 
-# feat - Sound
+## refactor - New asset manager
 
-- ✓ Background music
-  - ✓ Battle vs Regular music
-  - ✓ Loop forever
-  - ✓ Fade on switch
-- ✓ Walking sound
-  - ✓ Grass
-    - ✓ 3 Variations
-  - ✓ Stone/Floor
-    - ✓ 3 Variations
-  - ✓ Volume based on distance
-- ✓ Unarmed strike sound
-  - ✓ 3 Variations
-- ✓ Armed strike sound
-  - ✓ 3 Variations
+- Add to Game Context
+- New Image asset
+- Apply on species.rs (TODO)
+
+## refactor - Remove ID attribute from person, settlement and faction
+
+## perf - Better spatial searches
+
+The majority of the current time spent in history generation is searching who is in a town to simulate battles
+
+## perf - Slice people array on oldest person
+
+I have tried creating auxilary arrays of people that are alive to not iterate over everyone, without sucess. It has always been faster to iterate everyone and filter out dead people.
+
+But I haven't tried a simple slice.
+
+Create an index (starting at 0) of the first alive index. Then, before each iteration, from that index up, stop at the first alive person again.
+
+And only iterate from that index forward.
 
 # Backlog
 
@@ -96,10 +86,6 @@ Package-size, learning
   - Seed
   - Great beast frequency
 
-## refactor - Better spatial searches
-
-The majority of the current time spent in history generation is searching who is in a town to simulate battles
-
 ## feat - Rebalance
 
 ## feat - Switch between turn-based and realtime
@@ -143,23 +129,59 @@ In the end, the attackers suffered no casualties. While the defenders suffered n
 
 https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
 
+# Release 0.0.12 - Juice
+
+## feat - Review human sprite
+
+- ✓ Sex
+  - ✓ Male
+  - ✓ Female
+- ✓ Skin tones
+  - ✓ Light
+- ✓ Hairstyle
+  - ✓ Bald
+  - ✓ Shaved
+  - ✓ Short
+  - ✓ Bun
+- ✓ Show equipped weapon
+- ✓ Generic armor over it (no equipment)
+- ✓ Realign sprites
+- ✓ Save appearances
+
+## feat - Sound
+
+- ✓ Background music
+  - ✓ Battle vs Regular music
+  - ✓ Loop forever
+  - ✓ Fade on switch
+- ✓ Walking sound
+  - ✓ Grass
+    - ✓ 3 Variations
+  - ✓ Stone/Floor
+    - ✓ 3 Variations
+  - ✓ Volume based on distance
+- ✓ Unarmed strike sound
+  - ✓ 3 Variations
+- ✓ Armed strike sound
+  - ✓ 3 Variations
+
 # Release 0.0.11 - Better artifacts
 
-# feat - Artifact names
+## feat - Artifact names
 
 - Simple prefix-suffix name
 - Show in history
 
-# feat - Record artifacts used in kills
+## feat - Record artifacts used in kills
 
-# feat - More artifacts
+## feat - More artifacts
 
 - ✓ Item quality (Poor, Normal, Good, Legendary)
   - ✓ Quality affects stats
 - ✓ Random chance of a leader comissioning an "regular" artifact (no special materials)
   - ✓ Only rich settlements can create artifacts
 
-# feat - More interesting artifact transfer
+## feat - More interesting artifact transfer
 
 Change how the transfer of artifacts is handled. At the moment, when someone dies, the artifact goes to a heir.
 

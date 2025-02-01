@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
 
 use super::{inventory::inventory::Inventory, Renderable};
@@ -37,7 +39,7 @@ impl Actor {
             level: 1,
             person: None,
             person_id: None,
-            sprite: species.appearance.collapse(&Rng::rand(), vec!()),
+            sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type: ActorType::Player,
             inventory: Inventory::new()
         }
@@ -58,7 +60,7 @@ impl Actor {
             level: 1,
             person: None,
             person_id: None,
-            sprite: species.appearance.collapse(&Rng::rand(), vec!()),
+            sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type,
             inventory: Inventory::new()
         }
@@ -85,7 +87,7 @@ impl Actor {
             level: 1,
             person: Some(person.clone()),
             person_id: Some(person_id),
-            sprite: species.appearance.collapse(&Rng::rand(), person.appearance_hints()),
+            sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
             actor_type,
             inventory
         }

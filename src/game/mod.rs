@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display};
 
 use action::{ActionEnum, ActionMap};
 use actor::ActorType;
@@ -65,8 +65,21 @@ impl GameSceneState {
             inventory_dialog: CharacterDialog::new(),
             cursor_pos: Coord2::xy(0, 0)
         };
+        state.save_creature_appearances();
         state.turn_controller.roll_initiative(state.chunk.npcs.len());
         return state
+    }
+
+    fn save_creature_appearances(&mut self) {
+        for npc in self.chunk.npcs.iter() {
+            if let Some(id) = npc.person_id {
+                let mut creature = self.world.people.get_mut(&id).unwrap();
+                creature.appearance_hints = HashMap::new();
+                for (k, v) in npc.sprite.map.iter() {
+                    creature.appearance_hints.insert(k.clone(), v.0.clone());
+                }
+            }
+        }
     }
 
     pub fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
@@ -116,7 +129,6 @@ impl Scene for GameSceneState {
         }
 
         let _ = ctx.try_pop();
-        ctx.text("space - end turn", 10, [10.0, 1000.0], Color::from_hex("ffffff"));
         let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
         for (line, color) in self.log.borrow().iter() {
             ctx.text(line, 10, [1024.0, y], *color);

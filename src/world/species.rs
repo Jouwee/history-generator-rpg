@@ -118,18 +118,19 @@ impl SpeciesApearance {
         Self { map }
     }
 
-    pub fn collapse(&self, rng: &Rng, hints: Vec<(&str, &str)>) -> CreatureAppearance {
+    pub fn collapse(&self, rng: &Rng, hints: &HashMap<String, String>) -> CreatureAppearance {
         let mut collapsed = CreatureAppearance {
             map: BTreeMap::new()
         };
         for (k, v) in self.map.iter() {
-            let hint = hints.iter().find(|h| h.0 == k);
+            let hint = hints.get(k);
             if let Some(hint) = hint {
-                collapsed.map.insert(k.clone(), v.get(hint.1).unwrap().clone());    
+                collapsed.map.insert(k.clone(), (hint.to_string(), v.get(hint).unwrap().clone()));    
             } else {
                 let mut rng = rng.derive(k);
-                let variations: Vec<&String> = v.values().collect();
-                collapsed.map.insert(k.clone(), variations[rng.randu_range(0, variations.len())].clone());
+                let variations: Vec<(&String, &String)> = v.iter().collect();
+                let variation = variations[rng.randu_range(0, variations.len())];
+                collapsed.map.insert(k.clone(), (variation.0.clone(), variation.1.clone()));
             }
         }
         collapsed
@@ -138,7 +139,7 @@ impl SpeciesApearance {
 }
 
 pub struct CreatureAppearance {
-    map: BTreeMap<String, String>
+    pub map: BTreeMap<String, (String, String)>
 }
 
 impl CreatureAppearance {
@@ -146,7 +147,7 @@ impl CreatureAppearance {
         let mut vec = Vec::new();
         for (_k, v) in self.map.iter() {
             // TODO: Don't load everytime
-            let image = ImageReader::open(format!("./assets/sprites/{v}")).unwrap().decode().unwrap();
+            let image = ImageReader::open(format!("./assets/sprites/{}", v.1)).unwrap().decode().unwrap();
             let settings = TextureSettings::new().filter(Filter::Nearest);
             vec.push(Texture::from_image(&image.to_rgba8(), &settings));
         }

@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
@@ -32,11 +32,12 @@ pub struct Person {
     pub birth_last_name: Option<String>,
     pub importance: Importance,
     pub birth: u32,
-    pub sex: PersonSex,
+    sex: PersonSex,
     pub death: u32,
     pub next_of_kin: Vec<NextOfKin>,
     pub civ: Option<CivilizedComponent>,
-    pub possesions: Vec<ArtifactId>
+    pub possesions: Vec<ArtifactId>,
+    pub appearance_hints: HashMap<String, String>
 }
 
 #[derive(Clone, Debug)]
@@ -55,7 +56,7 @@ impl Person {
         if Rng::seeded(id).rand_chance(0.5) {
             sex = PersonSex::Female;
         }
-        Person {
+        let mut person = Person {
             id,
             species: species.clone(),
             importance,
@@ -68,8 +69,27 @@ impl Person {
             death: 0,
             next_of_kin: vec!(),
             civ: None,
-            possesions: Vec::new()
-        }
+            possesions: Vec::new(),
+            appearance_hints: HashMap::new()
+        };
+        person.update_appearance_hints();
+        return person
+    }
+
+    pub fn set_sex(&mut self, sex: PersonSex) {
+        self.sex = sex;
+        self.update_appearance_hints();
+    }
+
+    pub fn sex(&self) -> &PersonSex {
+        return &self.sex;
+    }
+
+    fn update_appearance_hints(&mut self) {
+        match self.sex {
+            PersonSex::Male => self.appearance_hints.insert(String::from("base"), String::from("male_light")),
+            PersonSex::Female => self.appearance_hints.insert(String::from("base"), String::from("female_light"))
+        };
     }
 
     pub fn civilization(mut self, civilization: &Option<CivilizedComponent>) -> Self {
@@ -139,13 +159,6 @@ impl Person {
             return Ordering::Equal;
         });
         return sorted
-    }
-
-    pub fn appearance_hints(&self) -> Vec<(&str, &str)> {
-        match self.sex {
-            PersonSex::Male => vec!(("base", "male_light")),
-            PersonSex::Female => vec!(("base", "female_light")),
-        }
     }
 
 }
