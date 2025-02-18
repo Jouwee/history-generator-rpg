@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display};
 
-use action::{ActionEnum, ActionMap};
+use action::{ActionTargetOutput, ActionType, DamageOutput};
 use actor::ActorType;
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
@@ -39,7 +39,6 @@ pub struct GameSceneState {
     pub chunk: Chunk,
     turn_controller: TurnController,
     log: RefCell<Vec<(String, Color)>>,
-    actions: ActionMap,
     button_codex: Button,
     button_inventory: Button,
     hotbar: Hotbar,
@@ -59,7 +58,6 @@ impl GameSceneState {
             world_pos,
             turn_controller: TurnController::new(),
             log: RefCell::new(Vec::new()),
-            actions: ActionMap::default(),
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::BottomLeft, 64.0, 32.0)),       
@@ -135,6 +133,7 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn init(&mut self, ctx: &mut GameContext) {
+        self.hotbar.init(ctx);
         if self.chunk.npcs.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
@@ -162,7 +161,7 @@ impl Scene for GameSceneState {
             ctx.text(line, 10, [1024.0, y], *color);
             y = y + 16.;
         }
-        self.hotbar.render(HotbarState::new(&self.chunk.player), ctx);
+        self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
         self.button_codex.render(ctx);
         self.button_inventory.render(ctx);
         self.interact_dialog.render(ctx);
@@ -171,7 +170,7 @@ impl Scene for GameSceneState {
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
-        self.hotbar.update(HotbarState::new(&self.chunk.player), update);
+        self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
         self.button_codex.update();
         self.button_inventory.update();
         self.interact_dialog.update();
@@ -200,60 +199,110 @@ impl Scene for GameSceneState {
         // TODO: AI
         if let ActorType::Hostile = npc.actor_type {
             if npc.xy.dist_squared(&self.chunk.player.xy) < 3. {
-                if let Ok(result) = self.actions.try_use_on_target(ActionEnum::Attack, npc, &mut self.chunk.player) {
-                    if let Some(fx) = ActionEnum::Attack.sound_effect() {
-                        ctx.audio.play_once(fx);
+                let action = match npc.inventory.equipped() {                
+                    Some(_) => ctx.resources.actions.find("act:sword:attack"),
+                    None => ctx.resources.actions.find("act:punch")
+                };
+                if npc.ap.can_use(action.ap_cost) {
+                    // TODO: Dupped code
+                    if let ActionType::Targeted { damage } = &action.action_type {
+                        if let Some(damage) = damage {
+                            let damage = match &damage {
+                                action::DamageType::Fixed(dmg) => dmg,
+                                action::DamageType::FromWeapon => {
+                                    let item = self.chunk.player.inventory.equipped().expect("Used equipped action with no equipped item");
+                                    &item.damage_model()
+                                }
+                            };
+
+                            let str_mult = self.chunk.player.attributes.strength_attack_damage_mult();
+                            let damage_model = damage.multiply(str_mult);
+                            let damage = damage_model.resolve(&self.chunk.player.defence);
+
+                            if let Some(fx) = &action.sound_effect {
+                                ctx.audio.play_once(fx.clone());
+                            }
+                            self.effect_layer.add_damage_number(self.chunk.player.xy, damage);
+                            let dir = self.chunk.player.xy - npc.xy;
+                            npc.animation.play(&Self::build_attack_anim(dir));
+                            self.chunk.player.animation.play(&Self::build_hurt_anim(dir));
+                        }
                     }
-                    if let Some(damage) = result.damage  {
-                        self.effect_layer.add_damage_number(self.chunk.player.xy, damage.damage);
-                    }
-                    let dir = self.chunk.player.xy - npc.xy;
-                    npc.animation.play(&Self::build_attack_anim(dir));
-                    self.chunk.player.animation.play(&Self::build_hurt_anim(dir));
                 }
             } else if npc.ap.can_use(20) {
-                let xy = npc.xy.clone();
                 if npc.xy.x < self.chunk.player.xy.x {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveRight, npc, &mut self.chunk.map, &xy) {
-                        let xy = npc.xy.clone();
-                        npc.animation.play(&Self::build_walk_anim());
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            // TODO: Use actual camera
-                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                    let action = ctx.resources.actions.find("act:move_right");  
+                    if npc.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = npc.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                npc.ap.consume(action.ap_cost);
+                                npc.xy = npc.xy + offset;
+                                npc.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    // TODO: Use actual camera
+                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                                }
+                                return
+                            }
                         }
-                        return
                     }
                 }
                 if npc.xy.x > self.chunk.player.xy.x {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveLeft, npc, &mut self.chunk.map, &xy) {
-                        let xy = npc.xy.clone();
-                        npc.animation.play(&Self::build_walk_anim());
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            // TODO: Use actual camera
-                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                    let action = ctx.resources.actions.find("act:move_left");  
+                    if npc.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = npc.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                npc.ap.consume(action.ap_cost);
+                                npc.xy = npc.xy + offset;
+                                npc.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    // TODO: Use actual camera
+                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                                }
+                                return
+                            }
                         }
-                        return
                     }
                 }
                 if npc.xy.y < self.chunk.player.xy.y {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveDown, npc, &mut self.chunk.map, &xy) {
-                        let xy = npc.xy.clone();
-                        npc.animation.play(&Self::build_walk_anim());
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            // TODO: Use actual camera
-                            ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                    let action = ctx.resources.actions.find("act:move_down");  
+                    if npc.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = npc.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                npc.ap.consume(action.ap_cost);
+                                npc.xy = npc.xy + offset;
+                                npc.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    // TODO: Use actual camera
+                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                                }
+                                return
+                            }
                         }
-                        return
                     }
                 }
-                if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveUp, npc, &mut self.chunk.map, &xy) {
-                    let xy = npc.xy.clone();
-                    npc.animation.play(&Self::build_walk_anim());
-                    if let Some(sound) = self.chunk.get_step_sound(xy) {
-                        // TODO: Use actual camera
-                        ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                let action = ctx.resources.actions.find("act:move_up");  
+                if npc.ap.can_use(action.ap_cost) {
+                    if let ActionType::Move { offset } = action.action_type {
+                        let xy = npc.xy.clone();
+                        let pos = xy + offset;
+                        if !self.chunk.map.blocks_movement(pos) {
+                            npc.ap.consume(action.ap_cost);
+                            npc.xy = npc.xy + offset;
+                            npc.animation.play(&Self::build_walk_anim());
+                            if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                // TODO: Use actual camera
+                                ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
+                            }
+                            return
+                        }
                     }
-                    return
                 }
             }
         }
@@ -263,7 +312,7 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
-        self.hotbar.input(HotbarState::new(&self.chunk.player), evt);
+        self.hotbar.input(HotbarState::new(&self.chunk.player), evt, ctx);
         self.interact_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
         self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
@@ -281,121 +330,164 @@ impl Scene for GameSceneState {
             return
         }
         if evt.button_args.state == ButtonState::Press {
-            let xy = self.chunk.player.xy.clone();
             match evt.button_args.button {
                 Btn::Keyboard(Key::Space) => {
                     self.turn_controller.next_turn();
                     self.chunk.player.ap.fill();
                 },
                 Btn::Keyboard(Key::Up) => {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveUp, &mut self.chunk.player, &mut self.chunk.map, &xy) {
-                        let xy = self.chunk.player.xy.clone();
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            ctx.audio.play_once(sound);
+                    let action = ctx.resources.actions.find("act:move_up");  
+                    if self.chunk.player.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = self.chunk.player.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                self.chunk.player.ap.consume(action.ap_cost);
+                                self.chunk.player.xy = self.chunk.player.xy + offset;
+                                self.chunk.player.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    ctx.audio.play_once(sound);
+                                }
+                            }
                         }
-                        self.chunk.player.animation.play(&Self::build_walk_anim());
-                        return
                     }
                 },
                 Btn::Keyboard(Key::Down) => {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveDown, &mut self.chunk.player, &mut self.chunk.map, &xy) {
-                        let xy = self.chunk.player.xy.clone();
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            ctx.audio.play_once(sound);
+                    let action = ctx.resources.actions.find("act:move_down");  
+                    if self.chunk.player.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = self.chunk.player.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                self.chunk.player.ap.consume(action.ap_cost);
+                                self.chunk.player.xy = self.chunk.player.xy + offset;
+                                self.chunk.player.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    ctx.audio.play_once(sound);
+                                }
+                            }
                         }
-                        self.chunk.player.animation.play(&Self::build_walk_anim());
-                        return
                     }
                 },
                 Btn::Keyboard(Key::Left) => {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveLeft, &mut self.chunk.player, &mut self.chunk.map, &xy) {
-                        let xy = self.chunk.player.xy.clone();
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            ctx.audio.play_once(sound);
+                    let action = ctx.resources.actions.find("act:move_left");  
+                    if self.chunk.player.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = self.chunk.player.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                self.chunk.player.ap.consume(action.ap_cost);
+                                self.chunk.player.xy = self.chunk.player.xy + offset;
+                                self.chunk.player.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    ctx.audio.play_once(sound);
+                                }
+                            }
                         }
-                        self.chunk.player.animation.play(&Self::build_walk_anim());
-                        return
                     }
                 },
                 Btn::Keyboard(Key::Right) => {
-                    if let Ok(_) = self.actions.try_use_on_tile(ActionEnum::MoveRight, &mut self.chunk.player, &mut self.chunk.map, &xy) {
-                        let xy = self.chunk.player.xy.clone();
-                        if let Some(sound) = self.chunk.get_step_sound(xy) {
-                            ctx.audio.play_once(sound);
+                    let action = ctx.resources.actions.find("act:move_right");  
+                    if self.chunk.player.ap.can_use(action.ap_cost) {
+                        if let ActionType::Move { offset } = action.action_type {
+                            let xy = self.chunk.player.xy.clone();
+                            let pos = xy + offset;
+                            if !self.chunk.map.blocks_movement(pos) {
+                                self.chunk.player.ap.consume(action.ap_cost);
+                                self.chunk.player.xy = self.chunk.player.xy + offset;
+                                self.chunk.player.animation.play(&Self::build_walk_anim());
+                                if let Some(sound) = self.chunk.get_step_sound(xy) {
+                                    ctx.audio.play_once(sound);
+                                }
+                            }
                         }
-                        self.chunk.player.animation.play(&Self::build_walk_anim());
-                        return
                     }
                 },
                 Btn::Mouse(_any) => {
-                    if let Some(action) = &self.hotbar.selected_action {
-                        let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                        if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                            let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
-                            if let Some((i, target)) = target {
 
-                                match action {
-                                    ActionEnum::Attack | ActionEnum::UnarmedAttack => {
-                                        if let Ok(result) = self.actions.try_use_on_target(ActionEnum::Attack, &mut self.chunk.player, target) {
+                    if let Some(action_id) = &self.hotbar.selected_action {
+                        let action = ctx.resources.actions.get(action_id);
+                        if self.chunk.player.ap.can_use(action.ap_cost) {
+                            match &action.action_type {
+                                ActionType::Targeted { damage } => {
+                                    // TODO: Dupped code
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                                        if let Some((i, target)) = target {
+                                            self.chunk.player.ap.consume(action.ap_cost);
 
-                                            if let Some(fx) = action.sound_effect() {
-                                                ctx.audio.play_once(fx);
+
+                                            if let Some(damage) = damage {
+                                                
+                                                let damage = match &damage {
+                                                    action::DamageType::Fixed(dmg) => dmg,
+                                                    action::DamageType::FromWeapon => {
+                                                        let item = self.chunk.player.inventory.equipped().expect("Used equipped action with no equipped item");
+                                                        &item.damage_model()
+                                                    }
+                                                };
+
+                                                let str_mult = self.chunk.player.attributes.strength_attack_damage_mult();
+                                                let damage_model = damage.multiply(str_mult);
+                                                let damage = damage_model.resolve(&target.defence);
+                                                target.hp.damage(damage);
+                                                let result = ActionTargetOutput {
+                                                    damage: Some(DamageOutput { damage })
+                                                };
+
+                                                if let Some(fx) = &action.sound_effect {
+                                                    ctx.audio.play_once(fx.clone());
+                                                }
+                                                if let Some(damage) = result.damage  {
+                                                    self.effect_layer.add_damage_number(target.xy, damage.damage);
+                                                }
+                                                let dir = target.xy - self.chunk.player.xy;
+                                                self.chunk.player.animation.play(&Self::build_attack_anim(dir));
+                                                target.animation.play(&&Self::build_hurt_anim(dir));
+                                                if target.hp.health_points == 0. {
+                                                    self.chunk.player.add_xp(100);
+                                                    self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
+                                                    self.remove_npc(i, ctx);
+                                                }
+                                                // Turn everyone hostile
+                                                for p in self.chunk.npcs.iter_mut() {
+                                                    p.actor_type = ActorType::Hostile;
+                                                }
+                                                return
+
+
                                             }
-                                            if let Some(damage) = result.damage  {
-                                                self.effect_layer.add_damage_number(target.xy, damage.damage);
-                                            }
-                                            let dir = target.xy - self.chunk.player.xy;
-                                            self.chunk.player.animation.play(&Self::build_attack_anim(dir));
-                                            target.animation.play(&&Self::build_hurt_anim(dir));
-                                            if target.hp.health_points == 0. {
-                                                self.chunk.player.add_xp(100);
-                                                self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
-                                                self.remove_npc(i, ctx);
-                                            }
-                                            // Turn everyone hostile
-                                            for p in self.chunk.npcs.iter_mut() {
-                                                p.actor_type = ActorType::Hostile;
-                                            }
-                                            return
+
                                         }
                                     }
-
-                                    ActionEnum::Talk => {
-                                        if let Ok(_) = self.actions.try_use_on_target(ActionEnum::Talk, &mut self.chunk.player, target) {
+                                },
+                                ActionType::Talk => {
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                        let target = self.chunk.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
+                                        if let Some(target) = target {
                                             self.interact_dialog.start_dialog(&self.world, target.person_id.unwrap());
-                                            return
                                         }
                                     }
-                                    _ => ()
                                 }
-
-                            }
-                            let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item, _tex))| *xy == tile_pos);
-                            if let Some((i, (_xy, item, _texture))) = target {
-
-                                match action {
-                                    ActionEnum::PickUp => {
-                                        if let Ok(log) = self.actions.try_use_on_item(ActionEnum::PickUp, &mut self.chunk.player, item) {
-                                            if let Some(log) = log {
-                                                self.log(log.string, log.color);
-                                            }
+                                ActionType::PickUp => {
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                        let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item, _tex))| *xy == tile_pos);
+                                        if let Some((i, (_xy, item, _texture))) = target {
+                                            self.chunk.player.inventory.add(item.clone());
                                             self.chunk.items_on_ground.remove(i);
-                                            return
                                         }
                                     }
-                                    _ => ()
                                 }
-
-                            }
-                            match action {
-                                ActionEnum::Sleep => {
-                                    if let Ok(log) = self.actions.try_use_on_tile(ActionEnum::Sleep, &mut self.chunk.player, &mut self.chunk.map, &tile_pos) {
-                                        if let Some(log) = log {
-                                            self.log(log.string, log.color);
-                                        }
-                                        return
+                                ActionType::Sleep => {
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    // TODO: Bed
+                                    if self.chunk.map.get_object_idx(tile_pos) == 3 {
+                                        self.chunk.player.hp.refill();
                                     }
-                                }
+                                },
                                 _ => ()
                             }
                         }

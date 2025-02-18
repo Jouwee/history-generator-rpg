@@ -1,17 +1,15 @@
-use std::collections::HashSet;
-
 use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, Color};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
 
-use super::{action::ActionEnum, actor::Actor, InputEvent};
+use super::{action::ActionId, actor::Actor, InputEvent};
 
 pub struct Hotbar {
     background: Texture,
-    available_actions: HashSet<ActionEnum>,
-    pub selected_action: Option<ActionEnum>,
+    available_actions: Vec<ActionId>,
+    pub selected_action: Option<ActionId>,
     action_buttons: HList
 }
 
@@ -19,33 +17,37 @@ impl Hotbar {
     pub fn new() -> Hotbar {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let background = ImageReader::open("assets/sprites/gui/hotbar/background.png").unwrap().decode().unwrap();
-        let mut available_actions = HashSet::new();
-        available_actions.insert(ActionEnum::UnarmedAttack);
-        available_actions.insert(ActionEnum::Talk);
-        available_actions.insert(ActionEnum::PickUp);
-        available_actions.insert(ActionEnum::Sleep);
-        let mut hotbar = Hotbar {
+        Hotbar {
             background: Texture::from_image(&background.to_rgba8(), &settings),
-            available_actions,
+            available_actions: Vec::new(),
             selected_action: None,
             action_buttons: HList::new(Position::Anchored(Anchor::BottomCenter, 0., -24.))
-        };
-        hotbar.update_buttons();
-        return hotbar
+        }
     }
 
-    fn update_buttons(&mut self) {
+    pub fn init(&mut self, ctx: &GameContext) {
+        self.available_actions.push(ctx.resources.actions.id_of("act:talk"));
+        self.available_actions.push(ctx.resources.actions.id_of("act:pickup"));
+        self.available_actions.push(ctx.resources.actions.id_of("act:sleep"));
+        self.available_actions.push(ctx.resources.actions.id_of("act:punch"));
+        // TODO: Show only when sword equipped
+        self.available_actions.push(ctx.resources.actions.id_of("act:sword:attack"));
+        self.update_buttons(&ctx.resources.actions);
+    }
+
+    fn update_buttons(&mut self, actions: &Actions) {
         self.action_buttons.clear();
         self.action_buttons.size = Some([128., 24.]);
-        for (i, action) in self.available_actions.iter().enumerate() {
-            self.action_buttons.add_key(&format!("act_{i}"), Button::new_icon(action.icon().texture, Position::Auto));
+        for (i, action_id) in self.available_actions.iter().enumerate() {
+            let action = actions.get(action_id);
+            self.action_buttons.add_key(&format!("act_{i}"), Button::new_icon(Sprite::new(action.icon.clone()).texture, Position::Auto));
         }
     }
 
 }
 
 impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
-    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext) {
+    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext, _ctx: &GameContext) {
         // Background
         let center = ctx.layout_rect[2] / 2.;
         let base_pos = [center - 128., ctx.layout_rect[3] - 34.];
@@ -77,24 +79,24 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
 
     }
 
-    fn update(&mut self, state: HotbarState, _update: &Update) {
+    fn update(&mut self, _state: HotbarState, _update: &Update, _ctx: &GameContext) {
         // TODO: How to do this only when it changes?
-        if state.player.inventory.equipped().is_some() {
-            if !self.available_actions.contains(&ActionEnum::Attack) {
-                self.available_actions.insert(ActionEnum::Attack);
-                self.update_buttons();
-            }
-            self.available_actions.insert(ActionEnum::Attack);
-        } else {
-            if self.available_actions.contains(&ActionEnum::Attack) {
-                self.available_actions.remove(&ActionEnum::Attack);
-                self.update_buttons();
-            }
-            self.available_actions.remove(&ActionEnum::Attack);
-        }
+        // if state.player.inventory.equipped().is_some() {
+        //     if !self.available_actions_enum.contains(&ActionEnum::Attack) {
+        //         self.available_actions_enum.insert(ActionEnum::Attack);
+        //         self.update_buttons(&ctx.resources.actions);
+        //     }
+        //     self.available_actions_enum.insert(ActionEnum::Attack);
+        // } else {
+        //     if self.available_actions_enum.contains(&ActionEnum::Attack) {
+        //         self.available_actions_enum.remove(&ActionEnum::Attack);
+        //         self.update_buttons(&ctx.resources.actions);
+        //     }
+        //     self.available_actions_enum.remove(&ActionEnum::Attack);
+        // }
     }
 
-    fn input(&mut self, _state: HotbarState, evt: &InputEvent) {
+    fn input(&mut self, _state: HotbarState, evt: &InputEvent, _ctx: &GameContext) {
         for (i, action) in self.available_actions.iter().enumerate() {
             if let ButtonEvent::Click = self.action_buttons.get_mut::<Button>(&format!("act_{i}")).unwrap().event(evt) {
                 self.selected_action = Some(*action);
@@ -116,7 +118,7 @@ impl<'a> HotbarState<'a> {
 }
 
 pub trait NodeWithState<T> {
-    fn render(&mut self, _state: T, _ctx: &mut RenderContext) {}
-    fn update(&mut self, _state: T, _update: &Update) {}
-    fn input(&mut self, _state: T, _evt: &InputEvent) {}
+    fn render(&mut self, _state: T, _ctx: &mut RenderContext, _game_ctx: &GameContext) {}
+    fn update(&mut self, _state: T, _update: &Update, _ctx: &GameContext) {}
+    fn input(&mut self, _state: T, _evt: &InputEvent, _ctx: &GameContext) {}
 }
