@@ -1,5 +1,6 @@
-use crate::{commons::damage_model::DamageComponent, engine::{audio::SoundEffect, geometry::Coord2}};
+use crate::{commons::damage_model::DamageComponent, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2}, GameContext};
 
+use super::{actor::Actor, chunk::ChunkMap, effect_layer::EffectLayer};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub struct ActionId(usize);
@@ -36,11 +37,87 @@ pub enum DamageType {
     Fixed(DamageComponent)
 }
 
-pub struct ActionTargetOutput {
-    pub damage: Option<DamageOutput>
-}
+pub struct ActionRunner { }
 
+impl ActionRunner {
+    pub fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
+        match &action.action_type {
+            ActionType::Move { offset } => {
+                if actor.ap.can_use(action.ap_cost) {
+                    let xy = actor.xy.clone();
+                    let pos = xy + *offset;
+                    if !chunk_map.blocks_movement(pos) {
+                        actor.ap.consume(action.ap_cost);
+                        actor.xy = pos;
+                        actor.animation.play(&Self::build_walk_anim());
+                        if let Some(sound) = chunk_map.get_step_sound(xy) {
+                            // TODO: Use actual camera
+                            ctx.audio.play_positional(sound, xy.to_vec2(), player_pos.to_vec2());
+                        }
+                        return true
+                    }
+                }
+            }
+            _ => ()
+        }
+        return false
+    }
 
-pub struct DamageOutput {
-    pub damage: f32
+    pub fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, ctx: &GameContext) -> bool {
+        match &action.action_type {
+            ActionType::Targeted { damage } => {
+                if actor.ap.can_use(action.ap_cost) {
+                    if actor.xy.dist_squared(&target.xy) < 3. {
+                        actor.ap.consume(action.ap_cost);
+                        if let Some(damage) = damage {
+                            // Compute damage
+                            let damage = match &damage {
+                                DamageType::Fixed(dmg) => dmg,
+                                DamageType::FromWeapon => {
+                                    let item = actor.inventory.equipped().expect("Used equipped action with no equipped item");
+                                    &item.damage_model()
+                                }
+                            };
+                            let str_mult = actor.attributes.strength_attack_damage_mult();
+                            let damage_model = damage.multiply(str_mult);
+                            let damage = damage_model.resolve(&target.defence);
+                            // Apply side-effects
+                            target.hp.damage(damage);
+                            if let Some(fx) = &action.sound_effect {
+                                ctx.audio.play_once(fx.clone());
+                            }
+                            effect_layer.add_damage_number(target.xy, damage);
+                            // Animations
+                            let dir = target.xy - actor.xy;
+                            actor.animation.play(&Self::build_attack_anim(dir));
+                            target.animation.play(&&Self::build_hurt_anim(dir));
+                        }
+                    }
+                }
+            }
+            _ => ()
+        }
+        return false
+    }
+
+    fn build_walk_anim() -> Animation {
+        Animation::new()
+            .translate(0.08, [0., -6.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+
+    }
+
+    fn build_hurt_anim(direction: Coord2) -> Animation {
+        let direction = direction.to_vec2().normalize(12.);
+        Animation::new()
+            .translate(0.02, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.2, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+    }
+
+    fn build_attack_anim(direction: Coord2) -> Animation {
+        let direction = direction.to_vec2().normalize(24.);
+        Animation::new()
+            .translate(0.08, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+    }
 }

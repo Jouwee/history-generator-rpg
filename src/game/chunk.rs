@@ -10,7 +10,6 @@ use super::{actor::Actor, Renderable};
 
 pub struct Chunk {
     size: Size2D,
-    pub tiles_clone: ResourceMap<TileId, Tile>,
     pub map: ChunkMap,
     pub player: Actor,
     pub npcs: Vec<Actor>,
@@ -19,6 +18,7 @@ pub struct Chunk {
 }
 
 pub struct ChunkMap {
+    tiles_clone: ResourceMap<TileId, Tile>,
     ground_layer: LayeredDualgridTilemap,
     object_layer: TileMap,
 }
@@ -34,6 +34,16 @@ impl ChunkMap {
 
     pub fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
+    }
+
+    pub fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
+        if let Some(tile) = self.ground_layer.tile(pos.x as usize, pos.y as usize) {
+            let tile = self.tiles_clone.try_get(tile);
+            if let Some(tile) = tile {
+                return tile.step_sound_effect.clone()
+            }
+        }
+        None
     }
 
 }
@@ -60,8 +70,8 @@ impl Chunk {
 
         Chunk {
             size,
-            tiles_clone: resources.tiles.clone(),
             map: ChunkMap {
+                tiles_clone: resources.tiles.clone(),
                 ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
                 object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
             },
@@ -312,16 +322,6 @@ impl Chunk {
             self.map.object_layer.set_tile(x - 1, y, 5);
         }
 
-    }
-
-    pub fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
-        if let Some(tile) = self.map.ground_layer.tile(pos.x as usize, pos.y as usize) {
-            let tile = self.tiles_clone.try_get(tile);
-            if let Some(tile) = tile {
-                return tile.step_sound_effect.clone()
-            }
-        }
-        None
     }
 
 }

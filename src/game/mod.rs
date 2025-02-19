@@ -1,6 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
-use action::{ActionTargetOutput, ActionType, DamageOutput};
+use action::{ActionRunner, ActionType};
 use actor::ActorType;
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
@@ -10,7 +10,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::CharacterDialog;
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{animation::Animation, audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}, Color}, world::world::World, GameContext};
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
 
 pub mod action;
 pub mod actor;
@@ -38,7 +38,6 @@ pub struct GameSceneState {
     pub world_pos: Coord2,
     pub chunk: Chunk,
     turn_controller: TurnController,
-    log: RefCell<Vec<(String, Color)>>,
     button_codex: Button,
     button_inventory: Button,
     hotbar: Hotbar,
@@ -57,7 +56,6 @@ impl GameSceneState {
             chunk,
             world_pos,
             turn_controller: TurnController::new(),
-            log: RefCell::new(Vec::new()),
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::BottomLeft, 64.0, 32.0)),       
@@ -100,35 +98,6 @@ impl GameSceneState {
         self.turn_controller.remove(i);
     }
 
-    pub fn log(&self, text: impl Display, color: Color) {
-        let mut log = self.log.borrow_mut();
-        log.push((text.to_string(), color));
-        if log.len() > 50 {
-            log.pop();
-        }
-    }
-
-    fn build_walk_anim() -> Animation {
-        Animation::new()
-            .translate(0.08, [0., -6.], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
-
-    }
-
-    fn build_hurt_anim(direction: Coord2) -> Animation {
-        let direction = direction.to_vec2().normalize(12.);
-        Animation::new()
-            .translate(0.02, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.2, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
-    }
-
-    fn build_attack_anim(direction: Coord2) -> Animation {
-        let direction = direction.to_vec2().normalize(24.);
-        Animation::new()
-            .translate(0.08, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
-    }
-
 }
 
 impl Scene for GameSceneState {
@@ -156,11 +125,6 @@ impl Scene for GameSceneState {
         self.effect_layer.render(ctx, game_ctx);
         // UI
         let _ = ctx.try_pop();
-        let mut y = 1000.0 - self.log.borrow().len() as f64 * 16.;
-        for (line, color) in self.log.borrow().iter() {
-            ctx.text(line, 10, [1024.0, y], *color);
-            y = y + 16.;
-        }
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
         self.button_codex.render(ctx);
         self.button_inventory.render(ctx);
@@ -203,106 +167,31 @@ impl Scene for GameSceneState {
                     Some(_) => ctx.resources.actions.find("act:sword:attack"),
                     None => ctx.resources.actions.find("act:punch")
                 };
-                if npc.ap.can_use(action.ap_cost) {
-                    // TODO: Dupped code
-                    if let ActionType::Targeted { damage } = &action.action_type {
-                        if let Some(damage) = damage {
-                            let damage = match &damage {
-                                action::DamageType::Fixed(dmg) => dmg,
-                                action::DamageType::FromWeapon => {
-                                    let item = self.chunk.player.inventory.equipped().expect("Used equipped action with no equipped item");
-                                    &item.damage_model()
-                                }
-                            };
-
-                            let str_mult = self.chunk.player.attributes.strength_attack_damage_mult();
-                            let damage_model = damage.multiply(str_mult);
-                            let damage = damage_model.resolve(&self.chunk.player.defence);
-
-                            if let Some(fx) = &action.sound_effect {
-                                ctx.audio.play_once(fx.clone());
-                            }
-                            self.effect_layer.add_damage_number(self.chunk.player.xy, damage);
-                            let dir = self.chunk.player.xy - npc.xy;
-                            npc.animation.play(&Self::build_attack_anim(dir));
-                            self.chunk.player.animation.play(&Self::build_hurt_anim(dir));
-                        }
-                    }
+                if ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx) {
+                    return
                 }
             } else if npc.ap.can_use(20) {
                 if npc.xy.x < self.chunk.player.xy.x {
-                    let action = ctx.resources.actions.find("act:move_right");  
-                    if npc.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = npc.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                npc.ap.consume(action.ap_cost);
-                                npc.xy = npc.xy + offset;
-                                npc.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    // TODO: Use actual camera
-                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
-                                }
-                                return
-                            }
-                        }
+                    let action = ctx.resources.actions.find("act:move_right");
+                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
+                        return
                     }
                 }
                 if npc.xy.x > self.chunk.player.xy.x {
                     let action = ctx.resources.actions.find("act:move_left");  
-                    if npc.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = npc.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                npc.ap.consume(action.ap_cost);
-                                npc.xy = npc.xy + offset;
-                                npc.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    // TODO: Use actual camera
-                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
-                                }
-                                return
-                            }
-                        }
+                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
+                        return
                     }
                 }
                 if npc.xy.y < self.chunk.player.xy.y {
                     let action = ctx.resources.actions.find("act:move_down");  
-                    if npc.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = npc.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                npc.ap.consume(action.ap_cost);
-                                npc.xy = npc.xy + offset;
-                                npc.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    // TODO: Use actual camera
-                                    ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
-                                }
-                                return
-                            }
-                        }
+                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
+                        return
                     }
                 }
                 let action = ctx.resources.actions.find("act:move_up");  
-                if npc.ap.can_use(action.ap_cost) {
-                    if let ActionType::Move { offset } = action.action_type {
-                        let xy = npc.xy.clone();
-                        let pos = xy + offset;
-                        if !self.chunk.map.blocks_movement(pos) {
-                            npc.ap.consume(action.ap_cost);
-                            npc.xy = npc.xy + offset;
-                            npc.animation.play(&Self::build_walk_anim());
-                            if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                // TODO: Use actual camera
-                                ctx.audio.play_positional(sound, xy.to_vec2(), self.chunk.player.xy.to_vec2());
-                            }
-                            return
-                        }
-                    }
+                if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
+                    return
                 }
             }
         }
@@ -337,71 +226,23 @@ impl Scene for GameSceneState {
                 },
                 Btn::Keyboard(Key::Up) => {
                     let action = ctx.resources.actions.find("act:move_up");  
-                    if self.chunk.player.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = self.chunk.player.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                self.chunk.player.ap.consume(action.ap_cost);
-                                self.chunk.player.xy = self.chunk.player.xy + offset;
-                                self.chunk.player.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    ctx.audio.play_once(sound);
-                                }
-                            }
-                        }
-                    }
+                    let xy = &self.chunk.player.xy.clone();
+                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
                 Btn::Keyboard(Key::Down) => {
                     let action = ctx.resources.actions.find("act:move_down");  
-                    if self.chunk.player.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = self.chunk.player.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                self.chunk.player.ap.consume(action.ap_cost);
-                                self.chunk.player.xy = self.chunk.player.xy + offset;
-                                self.chunk.player.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    ctx.audio.play_once(sound);
-                                }
-                            }
-                        }
-                    }
+                    let xy = &self.chunk.player.xy.clone();
+                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
                 Btn::Keyboard(Key::Left) => {
                     let action = ctx.resources.actions.find("act:move_left");  
-                    if self.chunk.player.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = self.chunk.player.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                self.chunk.player.ap.consume(action.ap_cost);
-                                self.chunk.player.xy = self.chunk.player.xy + offset;
-                                self.chunk.player.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    ctx.audio.play_once(sound);
-                                }
-                            }
-                        }
-                    }
+                    let xy = &self.chunk.player.xy.clone();
+                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
                 Btn::Keyboard(Key::Right) => {
                     let action = ctx.resources.actions.find("act:move_right");  
-                    if self.chunk.player.ap.can_use(action.ap_cost) {
-                        if let ActionType::Move { offset } = action.action_type {
-                            let xy = self.chunk.player.xy.clone();
-                            let pos = xy + offset;
-                            if !self.chunk.map.blocks_movement(pos) {
-                                self.chunk.player.ap.consume(action.ap_cost);
-                                self.chunk.player.xy = self.chunk.player.xy + offset;
-                                self.chunk.player.animation.play(&Self::build_walk_anim());
-                                if let Some(sound) = self.chunk.get_step_sound(xy) {
-                                    ctx.audio.play_once(sound);
-                                }
-                            }
-                        }
-                    }
+                    let xy = &self.chunk.player.xy.clone();
+                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
                 Btn::Mouse(_any) => {
 
@@ -409,56 +250,21 @@ impl Scene for GameSceneState {
                         let action = ctx.resources.actions.get(action_id);
                         if self.chunk.player.ap.can_use(action.ap_cost) {
                             match &action.action_type {
-                                ActionType::Targeted { damage } => {
-                                    // TODO: Dupped code
+                                ActionType::Targeted { damage: _ } => {
                                     let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                                         if let Some((i, target)) = target {
-                                            self.chunk.player.ap.consume(action.ap_cost);
-
-
-                                            if let Some(damage) = damage {
-                                                
-                                                let damage = match &damage {
-                                                    action::DamageType::Fixed(dmg) => dmg,
-                                                    action::DamageType::FromWeapon => {
-                                                        let item = self.chunk.player.inventory.equipped().expect("Used equipped action with no equipped item");
-                                                        &item.damage_model()
-                                                    }
-                                                };
-
-                                                let str_mult = self.chunk.player.attributes.strength_attack_damage_mult();
-                                                let damage_model = damage.multiply(str_mult);
-                                                let damage = damage_model.resolve(&target.defence);
-                                                target.hp.damage(damage);
-                                                let result = ActionTargetOutput {
-                                                    damage: Some(DamageOutput { damage })
-                                                };
-
-                                                if let Some(fx) = &action.sound_effect {
-                                                    ctx.audio.play_once(fx.clone());
-                                                }
-                                                if let Some(damage) = result.damage  {
-                                                    self.effect_layer.add_damage_number(target.xy, damage.damage);
-                                                }
-                                                let dir = target.xy - self.chunk.player.xy;
-                                                self.chunk.player.animation.play(&Self::build_attack_anim(dir));
-                                                target.animation.play(&&Self::build_hurt_anim(dir));
+                                            if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, ctx) {
                                                 if target.hp.health_points == 0. {
                                                     self.chunk.player.add_xp(100);
-                                                    self.log(format!("NPC is dead!"), Color::from_hex("b55945"));
                                                     self.remove_npc(i, ctx);
                                                 }
                                                 // Turn everyone hostile
                                                 for p in self.chunk.npcs.iter_mut() {
                                                     p.actor_type = ActorType::Hostile;
                                                 }
-                                                return
-
-
                                             }
-
                                         }
                                     }
                                 },
