@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::Texture;
 
-use crate::{commons::{damage_model::DamageComponent, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::resources::Materials};
+use crate::{commons::{damage_model::DamageComponent, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
 
 use super::material::MaterialId;
 
@@ -65,6 +65,20 @@ impl Item {
             }
         }
         return str
+    }
+
+    pub fn actions(&self, actions: &Actions) -> Vec<ActionId> {
+        match self {
+            Item::Sword(_sword) => {
+                return vec!(actions.id_of("act:sword:attack"))
+            },
+            Item::Mace(_mace) => {
+                return vec!(actions.id_of("act:sword:attack"))
+            },
+            Item::Lance(_lance) => {
+                return vec!(actions.id_of("act:sword:attack"))
+            }
+        }
     }
 
     pub fn damage_model(&self) -> DamageComponent {

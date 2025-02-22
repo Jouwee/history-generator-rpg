@@ -55,16 +55,17 @@ impl CharacterDialog {
         }
     }
 
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, resources: &Resources) {
+    pub fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, resources: &Resources) -> CharacterDialogOutput {
         if let Some(dialog) = &mut self.dialog {
             if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
                 self.dialog = None;
-                return
+                return CharacterDialogOutput::None;
             }
             for i in 0..actor.inventory.len() {
                 if let ButtonEvent::Click = dialog.get_mut::<VList>("inventory").unwrap().get_mut::<Button>(&i.to_string()).unwrap().event(evt) {
                     actor.inventory.equip(i);
                     Self::build_inventory(dialog.get_mut::<VList>("inventory").unwrap(), &actor.inventory, resources);
+                    return CharacterDialogOutput::EquipmentChanged;
                 }
             }
             if let Some(button) = dialog.get_mut::<VList>("attributes").unwrap().get_mut::<Button>("add_str") {
@@ -72,7 +73,7 @@ impl CharacterDialog {
                     actor.attributes.strength = actor.attributes.strength + 1;
                     actor.attributes.unallocated = actor.attributes.unallocated - 1;
                     Self::build_attributes(dialog.get_mut::<VList>("attributes").unwrap(), &actor.attributes);
-                    return;
+                    return CharacterDialogOutput::None;
                 }
             }
             if let Some(button) = dialog.get_mut::<VList>("attributes").unwrap().get_mut::<Button>("add_agi") {
@@ -80,7 +81,7 @@ impl CharacterDialog {
                     actor.attributes.agility = actor.attributes.agility + 1;
                     actor.attributes.unallocated = actor.attributes.unallocated - 1;
                     Self::build_attributes(dialog.get_mut::<VList>("attributes").unwrap(), &actor.attributes);
-                    return;
+                    return CharacterDialogOutput::None;
                 }
             }
             if let Some(button) = dialog.get_mut::<VList>("attributes").unwrap().get_mut::<Button>("add_con") {
@@ -88,13 +89,19 @@ impl CharacterDialog {
                     actor.attributes.constitution = actor.attributes.constitution + 1;
                     actor.attributes.unallocated = actor.attributes.unallocated - 1;
                     Self::build_attributes(dialog.get_mut::<VList>("attributes").unwrap(), &actor.attributes);
-                    return;
+                    return CharacterDialogOutput::None;
                 }
             }
             
         }
+        return CharacterDialogOutput::None;
     }
 
+}
+
+pub enum CharacterDialogOutput {
+    None,
+    EquipmentChanged
 }
 
 impl GUINode for CharacterDialog {

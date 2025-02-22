@@ -2,13 +2,14 @@ use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
+use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
 
-use super::{action::ActionId, actor::Actor, InputEvent};
+use super::{action::ActionId, actor::Actor, inventory::inventory::Inventory, InputEvent};
 
 pub struct Hotbar {
     background: Texture,
     available_actions: Vec<ActionId>,
+    equipped_actions: Vec<ActionId>,
     pub selected_action: Option<ActionId>,
     action_buttons: HList
 }
@@ -20,27 +21,34 @@ impl Hotbar {
         Hotbar {
             background: Texture::from_image(&background.to_rgba8(), &settings),
             available_actions: Vec::new(),
+            equipped_actions: Vec::new(),
             selected_action: None,
             action_buttons: HList::new(Position::Anchored(Anchor::BottomCenter, 0., -24.))
         }
     }
 
-    pub fn init(&mut self, ctx: &GameContext) {
+    pub fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.available_actions.push(ctx.resources.actions.id_of("act:talk"));
         self.available_actions.push(ctx.resources.actions.id_of("act:pickup"));
         self.available_actions.push(ctx.resources.actions.id_of("act:sleep"));
         self.available_actions.push(ctx.resources.actions.id_of("act:punch"));
-        // TODO: Show only when sword equipped
-        self.available_actions.push(ctx.resources.actions.id_of("act:sword:attack"));
+        self.equip(inventory, ctx);
+    }
+
+    pub fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
+        self.equipped_actions = Vec::new();
+        if let Some(equipped) = inventory.equipped() {
+            self.equipped_actions = equipped.actions(&ctx.resources.actions);
+        }
         self.update_buttons(&ctx.resources.actions);
     }
 
     fn update_buttons(&mut self, actions: &Actions) {
         self.action_buttons.clear();
         self.action_buttons.size = Some([128., 24.]);
-        for (i, action_id) in self.available_actions.iter().enumerate() {
+        for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = actions.get(action_id);
-            self.action_buttons.add_key(&format!("act_{i}"), Button::new_icon(Sprite::new(action.icon.clone()).texture, Position::Auto));
+            self.action_buttons.add_key(&format!("act_{}", action_id.as_usize()), Button::new_icon(Sprite::new(action.icon.clone()).texture, Position::Auto));
         }
     }
 
@@ -80,26 +88,12 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
     }
 
     fn update(&mut self, _state: HotbarState, _update: &Update, _ctx: &GameContext) {
-        // TODO: How to do this only when it changes?
-        // if state.player.inventory.equipped().is_some() {
-        //     if !self.available_actions_enum.contains(&ActionEnum::Attack) {
-        //         self.available_actions_enum.insert(ActionEnum::Attack);
-        //         self.update_buttons(&ctx.resources.actions);
-        //     }
-        //     self.available_actions_enum.insert(ActionEnum::Attack);
-        // } else {
-        //     if self.available_actions_enum.contains(&ActionEnum::Attack) {
-        //         self.available_actions_enum.remove(&ActionEnum::Attack);
-        //         self.update_buttons(&ctx.resources.actions);
-        //     }
-        //     self.available_actions_enum.remove(&ActionEnum::Attack);
-        // }
     }
 
     fn input(&mut self, _state: HotbarState, evt: &InputEvent, _ctx: &GameContext) {
-        for (i, action) in self.available_actions.iter().enumerate() {
-            if let ButtonEvent::Click = self.action_buttons.get_mut::<Button>(&format!("act_{i}")).unwrap().event(evt) {
-                self.selected_action = Some(*action);
+        for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
+            if let ButtonEvent::Click = self.action_buttons.get_mut::<Button>(&format!("act_{}", action_id.as_usize())).unwrap().event(evt) {
+                self.selected_action = Some(*action_id);
             }
         }
     }

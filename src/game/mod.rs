@@ -7,7 +7,7 @@ use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use effect_layer::EffectLayer;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
-use inventory::character_dialog::CharacterDialog;
+use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
@@ -102,7 +102,7 @@ impl GameSceneState {
 
 impl Scene for GameSceneState {
     fn init(&mut self, ctx: &mut GameContext) {
-        self.hotbar.init(ctx);
+        self.hotbar.init(&self.chunk.player.inventory, ctx);
         if self.chunk.npcs.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
@@ -204,7 +204,11 @@ impl Scene for GameSceneState {
         self.hotbar.input(HotbarState::new(&self.chunk.player), evt, ctx);
         self.interact_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
-        self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
+        let dialog_evt = self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
+        match dialog_evt {
+            CharacterDialogOutput::EquipmentChanged => self.hotbar.equip(&self.chunk.player.inventory, &ctx),
+            CharacterDialogOutput::None => ()
+        }
         if let ButtonEvent::Click = self.button_codex.event(evt) {
             self.codex_dialog.start_dialog();
             return;
