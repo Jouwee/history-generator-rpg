@@ -29,3 +29,10 @@ impl Attributes {
     }
 
 }
+
+#[derive(Clone)]
+pub enum AttributeEnum {
+    Strength,
+    Agility,
+    Constitution
+}

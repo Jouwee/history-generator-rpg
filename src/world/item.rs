@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::Texture;
 
-use crate::{commons::{damage_model::DamageComponent, rng::Rng}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
+use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
 
 use super::material::MaterialId;
 
@@ -70,22 +70,14 @@ impl Item {
     pub fn actions(&self, actions: &Actions) -> Vec<ActionId> {
         match self {
             Item::Sword(_sword) => {
-                return vec!(actions.id_of("act:sword:attack"))
+                return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:thrust"))
             },
             Item::Mace(_mace) => {
-                return vec!(actions.id_of("act:sword:attack"))
+                return vec!(actions.id_of("act:sword:slash"))
             },
             Item::Lance(_lance) => {
-                return vec!(actions.id_of("act:sword:attack"))
+                return vec!(actions.id_of("act:sword:slash"))
             }
-        }
-    }
-
-    pub fn damage_model(&self) -> DamageComponent {
-        match self {
-            Item::Sword(sword) => sword.damage,
-            Item::Mace(mace) => mace.damage,
-            Item::Lance(lance) => lance.damage
         }
     }
 
@@ -154,6 +146,14 @@ impl Item {
         }
     }
 
+    pub fn damage_mult(&self) -> f32 { 
+        match self {
+            Item::Sword(sword) => sword.damage_mult,
+            Item::Lance(sword) => sword.damage_mult,
+            Item::Mace(sword) => sword.damage_mult,
+        }
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -184,15 +184,15 @@ pub struct Sword {
     pub blade_mat: MaterialId,
     pub pommel_mat: MaterialId,
     pub guard_mat: MaterialId,
-    pub damage: DamageComponent,
+    pub damage_mult: f32,
     pub name: Option<String>
 }
 
 impl Sword {
     pub fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
         let blade = materials.get(&blade_mat);
-        let damage = DamageComponent::new(blade.sharpness * quality.main_stat_multiplier(), 0., 0.);
-        Sword { quality, handle_mat, blade_mat, pommel_mat, guard_mat, damage, name: None }
+        let damage_mult = blade.sharpness * quality.main_stat_multiplier();
+        Sword { quality, handle_mat, blade_mat, pommel_mat, guard_mat, damage_mult, name: None }
     }
 }
 
@@ -202,15 +202,15 @@ pub struct Mace {
     pub handle_mat: MaterialId,
     pub head_mat: MaterialId,
     pub pommel_mat: MaterialId,
-    pub damage: DamageComponent,
+    pub damage_mult: f32,
     pub name: Option<String>
 }
 
 impl Mace {
     pub fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
         let head = materials.get(&head_mat);
-        let damage = DamageComponent::new(0., 0., head.sharpness * quality.main_stat_multiplier());
-        Mace { quality, handle_mat, head_mat, pommel_mat, damage, name: None }
+        let damage_mult = head.sharpness * quality.main_stat_multiplier();
+        Mace { quality, handle_mat, head_mat, pommel_mat, damage_mult, name: None }
     }
 }
 
@@ -219,15 +219,15 @@ pub struct Lance {
     pub quality: ItemQuality,
     pub handle_mat: MaterialId,
     pub tip_mat: MaterialId,
-    pub damage: DamageComponent,
+    pub damage_mult: f32,
     pub name: Option<String>
 }
 
 impl Lance {
     pub fn new(quality: ItemQuality, handle_mat: MaterialId, tip_mat: MaterialId, materials: &Materials) -> Lance {
         let tip = materials.get(&tip_mat);
-        let damage = DamageComponent::new(0., tip.sharpness * quality.main_stat_multiplier(), 0.);
-        Lance { quality, handle_mat, tip_mat, damage, name: None }
+        let damage_mult = tip.sharpness * quality.main_stat_multiplier();
+        Lance { quality, handle_mat, tip_mat, damage_mult, name: None }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, Color}, game::action::{Action, ActionId, ActionType, DamageType}, world::material::{Material, MaterialId}};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::material::{Material, MaterialId}};
 
 use super::tile::{Tile, TileId};
 
@@ -53,19 +53,38 @@ impl Resources {
     }
 
     pub fn load_actions(&mut self) {
-        self.actions.add("act:sword:attack", Action {
-            name: String::from("Attack"),
+        self.actions.add("act:sword:slash", Action {
+            name: String::from("Slash"),
             icon: String::from("gui/icons/actions/armed_attack.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
-            action_type: ActionType::Targeted { damage: Some(DamageType::FromWeapon) }
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::FromWeapon(DamageComponent::new(1., 0., 0.))),
+                inflicts: None
+            }
+        });
+        self.actions.add("act:sword:thrust", Action {
+            name: String::from("Thrust"),
+            icon: String::from("gui/icons/actions/armed_attack.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
+            ap_cost: 60,
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::FromWeapon(DamageComponent::new(0., 0.8, 0.))),
+                inflicts: Some(Infliction {
+                    chance: AfflictionChance::Always,
+                    affliction: Affliction::Bleeding { duration: 5 }
+                })
+            }
         });
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
             icon: String::from("gui/icons/actions/unarmed_attack.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
-            action_type: ActionType::Targeted { damage: Some(DamageType::Fixed(DamageComponent::new(0., 0., 1.))) }
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::Fixed(DamageComponent::new(0., 0., 1.))),
+                inflicts: None
+            }
         });
         self.actions.add("act:talk", Action {
             name: String::from("Talk"),

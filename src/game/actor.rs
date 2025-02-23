@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
 
-use super::{inventory::inventory::Inventory, Renderable};
+use super::{action::Affliction, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
 #[derive(PartialEq, Eq)]
 pub enum ActorType {
@@ -24,7 +24,8 @@ pub struct Actor {
     pub person: Option<Person>,
     pub xp: u32,
     pub level: u32,
-    pub inventory: Inventory
+    pub inventory: Inventory,
+    afflictions: Vec<RunningAffliction>
 }
 
 impl Actor {
@@ -43,7 +44,8 @@ impl Actor {
             person_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type: ActorType::Player,
-            inventory: Inventory::new()
+            inventory: Inventory::new(),
+            afflictions: Vec::new()
         }
     }
 
@@ -65,7 +67,8 @@ impl Actor {
             person_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type,
-            inventory: Inventory::new()
+            inventory: Inventory::new(),
+            afflictions: Vec::new()
         }
     }
 
@@ -93,14 +96,37 @@ impl Actor {
             person_id: Some(person_id),
             sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
             actor_type,
-            inventory
+            inventory,
+            afflictions: Vec::new()
         }
     }
 
     pub fn update(&mut self, delta: f64) {
         self.animation.update(delta);
+        // TODO: Why do this everytime?
         self.hp.update(&self.attributes);
         self.ap.update(&self.attributes);
+    }
+
+    pub fn start_of_round(&mut self, effect_layer: &mut EffectLayer) {
+        for affliction in self.afflictions.iter_mut() {
+            affliction.delta += 1;
+            match affliction.affliction {
+                Affliction::Bleeding { duration: _ } => {
+                    self.hp.damage(1.);
+                    effect_layer.add_damage_number(self.xy, 1.);
+                }
+            }
+        }
+        self.afflictions.retain(|affliction| {
+            match affliction.affliction {
+                Affliction::Bleeding { duration } => affliction.delta < duration
+            }
+        });
+    }
+
+    pub fn add_affliction(&mut self, affliction: &Affliction) {
+        self.afflictions.push(RunningAffliction { affliction: affliction.clone(), delta: 0 });
     }
 
     pub fn add_xp(&mut self, ammount: u32) {
@@ -260,4 +286,9 @@ impl HealthPointsComponent {
     pub fn damage(&mut self, damage: f32) {
         self.health_points = (self.health_points - damage).max(0.0);
     }
+}
+
+struct RunningAffliction {
+    affliction: Affliction,
+    delta: usize,
 }

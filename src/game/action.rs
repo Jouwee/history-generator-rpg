@@ -25,7 +25,10 @@ pub struct Action {
 #[derive(Clone)]
 pub enum ActionType {
     Move { offset: Coord2 },
-    Targeted { damage: Option<DamageType> },
+    Targeted {
+        damage: Option<DamageType>,
+        inflicts: Option<Infliction>
+    },
     Talk,
     PickUp,
     Sleep
@@ -33,8 +36,24 @@ pub enum ActionType {
 
 #[derive(Clone)]
 pub enum DamageType {
-    FromWeapon,
+    FromWeapon(DamageComponent),
     Fixed(DamageComponent)
+}
+
+#[derive(Clone)]
+pub struct Infliction {
+    pub chance: AfflictionChance,
+    pub affliction: Affliction,
+}
+
+#[derive(Clone)]
+pub enum AfflictionChance {
+    Always
+}
+
+#[derive(Clone)]
+pub enum Affliction {
+    Bleeding { duration: usize }
 }
 
 pub struct ActionRunner { }
@@ -65,7 +84,7 @@ impl ActionRunner {
 
     pub fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, ctx: &GameContext) -> bool {
         match &action.action_type {
-            ActionType::Targeted { damage } => {
+            ActionType::Targeted { damage, inflicts } => {
                 if actor.ap.can_use(action.ap_cost) {
                     if actor.xy.dist_squared(&target.xy) < 3. {
                         actor.ap.consume(action.ap_cost);
@@ -73,15 +92,15 @@ impl ActionRunner {
                             // Compute damage
                             let damage = match &damage {
                                 DamageType::Fixed(dmg) => dmg,
-                                DamageType::FromWeapon => {
+                                DamageType::FromWeapon(dmg) => {
                                     let item = actor.inventory.equipped().expect("Used equipped action with no equipped item");
-                                    &item.damage_model()
+                                    &dmg.multiply(item.damage_mult())
                                 }
                             };
                             let str_mult = actor.attributes.strength_attack_damage_mult();
                             let damage_model = damage.multiply(str_mult);
                             let damage = damage_model.resolve(&target.defence);
-                            // Apply side-effects
+                            // Apply damage
                             target.hp.damage(damage);
                             if let Some(fx) = &action.sound_effect {
                                 ctx.audio.play_once(fx.clone());
@@ -92,6 +111,15 @@ impl ActionRunner {
                             actor.animation.play(&Self::build_attack_anim(dir));
                             target.animation.play(&&Self::build_hurt_anim(dir));
                         }
+                        if let Some(inflicts) = inflicts {
+                            let inflict = match inflicts.chance {
+                                AfflictionChance::Always => true
+                            };
+                            if inflict {
+                                target.add_affliction(&inflicts.affliction)
+                            }
+                        }
+                        return true
                     }
                 }
             }

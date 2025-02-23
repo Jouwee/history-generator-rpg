@@ -82,6 +82,26 @@ impl GameSceneState {
         }
     }
 
+    pub fn next_turn(&mut self, ctx: &mut GameContext) {
+        if self.turn_controller.is_player_turn() {
+            self.chunk.player.ap.fill();
+        } else {
+            let actor_ending = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+            actor_ending.ap.fill();
+        }
+        self.turn_controller.next_turn();
+        if self.turn_controller.is_player_turn() {
+            self.chunk.player.start_of_round(&mut self.effect_layer);
+        } else {
+            let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+            npc.start_of_round(&mut self.effect_layer);
+            if npc.hp.health_points == 0. {
+                self.chunk.player.add_xp(100);
+                self.remove_npc(self.turn_controller.npc_idx(), ctx);
+            }
+        }
+    }
+
     pub fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let id;
         {
@@ -195,9 +215,7 @@ impl Scene for GameSceneState {
                 }
             }
         }
-        let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
-        npc.ap.fill();
-        self.turn_controller.next_turn();
+        self.next_turn(ctx);
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
@@ -225,8 +243,7 @@ impl Scene for GameSceneState {
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
                 Btn::Keyboard(Key::Space) => {
-                    self.turn_controller.next_turn();
-                    self.chunk.player.ap.fill();
+                    self.next_turn(ctx);
                 },
                 Btn::Keyboard(Key::Up) => {
                     let action = ctx.resources.actions.find("act:move_up");  
@@ -254,12 +271,13 @@ impl Scene for GameSceneState {
                         let action = ctx.resources.actions.get(action_id);
                         if self.chunk.player.ap.can_use(action.ap_cost) {
                             match &action.action_type {
-                                ActionType::Targeted { damage: _ } => {
+                                ActionType::Targeted { damage: _, inflicts: _ } => {
                                     let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                                         if let Some((i, target)) = target {
                                             if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, ctx) {
+                                                println!("new hp: {}", target.hp.health_points);
                                                 if target.hp.health_points == 0. {
                                                     self.chunk.player.add_xp(100);
                                                     self.remove_npc(i, ctx);
