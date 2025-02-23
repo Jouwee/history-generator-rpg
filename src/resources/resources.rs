@@ -55,7 +55,7 @@ impl Resources {
     pub fn load_actions(&mut self) {
         self.actions.add("act:sword:slash", Action {
             name: String::from("Slash"),
-            icon: String::from("gui/icons/actions/armed_attack.png"),
+            icon: String::from("gui/icons/actions/slashing_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             action_type: ActionType::Targeted {
@@ -63,13 +63,13 @@ impl Resources {
                 inflicts: None
             }
         });
-        self.actions.add("act:sword:thrust", Action {
-            name: String::from("Thrust"),
-            icon: String::from("gui/icons/actions/armed_attack.png"),
+        self.actions.add("act:sword:bleeding_cut", Action {
+            name: String::from("Bleeding Cut"),
+            icon: String::from("gui/icons/actions/bleeding_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             action_type: ActionType::Targeted {
-                damage: Some(DamageType::FromWeapon(DamageComponent::new(0., 0.8, 0.))),
+                damage: Some(DamageType::FromWeapon(DamageComponent::new(0.8, 0.0, 0.))),
                 inflicts: Some(Infliction {
                     chance: AfflictionChance::Always,
                     affliction: Affliction::Bleeding { duration: 5 }

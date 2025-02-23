@@ -70,7 +70,7 @@ impl Item {
     pub fn actions(&self, actions: &Actions) -> Vec<ActionId> {
         match self {
             Item::Sword(_sword) => {
-                return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:thrust"))
+                return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut"))
             },
             Item::Mace(_mace) => {
                 return vec!(actions.id_of("act:sword:slash"))

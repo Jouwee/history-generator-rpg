@@ -48,7 +48,7 @@ impl Hotbar {
         self.action_buttons.size = Some([128., 24.]);
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = actions.get(action_id);
-            self.action_buttons.add_key(&format!("act_{}", action_id.as_usize()), Button::new_icon(Sprite::new(action.icon.clone()).texture, Position::Auto));
+            self.action_buttons.add_key(&format!("act_{}", action_id.as_usize()), Button::new_bg(Sprite::new(action.icon.clone()).texture, Position::Auto));
         }
     }
 

@@ -5,12 +5,14 @@ use ::image::ImageReader;
 use opengl_graphics::Texture;
 use piston::Button as Btn;
 
-use crate::{engine::{render::RenderContext, spritesheet::Spritesheet, Color}, game::InputEvent};
+use crate::{engine::{render::RenderContext, sprite::Sprite, spritesheet::Spritesheet, Color}, game::InputEvent};
 
 use super::{GUINode, Position};
 
 pub struct Button {
     text: String,
+    background: Texture,
+    frame: Spritesheet,
     icon: Option<Texture>,
     position: Position,
     last_layout: [f64; 4]
@@ -18,8 +20,12 @@ pub struct Button {
 
 impl Button {
     pub fn new(text: impl Display, position: Position) -> Button {
+        let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
+        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         Button {
             text: text.to_string(),
+            background: Sprite::new("gui/button/background.png").texture,
+            frame: spritesheet,
             position,
             last_layout: [0.; 4],
             icon: None
@@ -27,11 +33,28 @@ impl Button {
     }
 
     pub fn new_icon(icon: Texture, position: Position) -> Button {
+        let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
+        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         Button {
             text: String::new(),
+            background: Sprite::new("gui/button/background.png").texture,
+            frame: spritesheet,
             position,
             last_layout: [0.; 4],
             icon: Some(icon)
+        }
+    }
+
+    pub fn new_bg(bg: Texture, position: Position) -> Button {
+        let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
+        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
+        Button {
+            text: String::new(),
+            background: bg,
+            frame: spritesheet,
+            position,
+            last_layout: [0.; 4],
+            icon: None
         }
     }
 
@@ -56,41 +79,45 @@ impl GUINode for Button {
         let size = self.min_size(ctx);
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         self.last_layout = [position[0], position[1], size[0], size[1]];
-        let spritesheet = ImageReader::open("./assets/sprites/gui/button.png").unwrap().decode().unwrap();
-        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
+        // Background
+        let transform = ctx.context.transform.trans(position[0], position[1]).scale(size[0] / 24., size[1] / 24.);
+        image(&self.background, transform, ctx.gl);
         // Corners
         let transform = ctx.context.transform.trans(position[0], position[1]);
-        image(spritesheet.sprite(0, 0), transform, ctx.gl);
+        image(self.frame.sprite(0, 0), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0], position[1] + size[1] - 8.);
-        image(spritesheet.sprite(0, 2), transform, ctx.gl);
+        image(self.frame.sprite(0, 2), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1]);
-        image(spritesheet.sprite(2, 0), transform, ctx.gl);
+        image(self.frame.sprite(2, 0), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + size[1] - 8.);
-        image(spritesheet.sprite(2, 2), transform, ctx.gl);
+        image(self.frame.sprite(2, 2), transform, ctx.gl);
         // Borders
         let transform = ctx.context.transform.trans(position[0] + 8., position[1]).scale((size[0]-16.) / 8., 1.);
-        image(spritesheet.sprite(1, 0), transform, ctx.gl);
+        image(self.frame.sprite(1, 0), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + 8., position[1] + size[1] - 8.).scale((size[0]-16.) / 8., 1.);
-        image(spritesheet.sprite(1, 2), transform, ctx.gl);
+        image(self.frame.sprite(1, 2), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0], position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-        image(spritesheet.sprite(0, 1), transform, ctx.gl);
+        image(self.frame.sprite(0, 1), transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-        image(spritesheet.sprite(2, 1), transform, ctx.gl);
-        // Body
-        let transform = ctx.context.transform.trans(position[0] + 8., position[1] + 8.).scale((size[0]-16.) / 8., (size[1]-16.) / 8.);
-        image(spritesheet.sprite(1, 1), transform, ctx.gl);
+        image(self.frame.sprite(2, 1), transform, ctx.gl);
+        // Icon
         if let Some(icon) = &self.icon {
             let transform = ctx.context.transform.trans(position[0], position[1]);
             image(icon, transform, ctx.gl);
         }
-        // Somewhat center text
-        position[0] += 4.;
-        position[1] += 17.;
-        ctx.text_small(&self.text, 5, position, Color::from_hex("ffffff"));
+        if self.text.len() > 0 {
+            // Somewhat center text
+            position[0] += 4.;
+            position[1] += 17.;
+            ctx.text_small(&self.text, 5, position, Color::from_hex("ffffff"));
+        }
     }
 
     fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
         if let Some(_) = &self.icon {
+            return [24., 24.]
+        }
+        if self.text.len() == 0 {
             return [24., 24.]
         }
         let width = ctx.small_font.width(5, &self.text);
