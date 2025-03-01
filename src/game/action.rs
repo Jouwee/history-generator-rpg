@@ -53,7 +53,8 @@ pub enum AfflictionChance {
 
 #[derive(Clone)]
 pub enum Affliction {
-    Bleeding { duration: usize }
+    Bleeding { duration: usize },
+    Stunned { duration: usize }
 }
 
 pub struct ActionRunner { }

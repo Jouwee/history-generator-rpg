@@ -11,7 +11,6 @@ use super::material::MaterialId;
 pub enum Item {
     Sword(Sword),
     Mace(Mace),
-    Lance(Lance),
 }
 
 impl Item {
@@ -32,13 +31,6 @@ impl Item {
                 let head = materials.get(&mace.head_mat).name.clone();
                 return format!("{head} mace")
             },
-            Item::Lance(lance) => {
-                if let Some(name) = &lance.name {
-                    return name.clone()
-                }
-                let tip = materials.get(&lance.tip_mat).name.clone();
-                return format!("{tip} lance")
-            }
         }
     }
 
@@ -58,11 +50,6 @@ impl Item {
                 let pommel = materials.get(&mace.pommel_mat).name.clone();
                 str = format!("It's a mace. It's head is made of {head}. The handle, made of {handle} is topped by a pomel of {pommel}.");
             },
-            Item::Lance(lance) => {
-                let handle = materials.get(&lance.handle_mat).name.clone();
-                let tip = materials.get(&lance.tip_mat).name.clone();
-                str = format!("It's a lance. It's tip is made of {tip}, with a handle made of {handle}.");
-            }
         }
         return str
     }
@@ -73,11 +60,8 @@ impl Item {
                 return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut"))
             },
             Item::Mace(_mace) => {
-                return vec!(actions.id_of("act:sword:slash"))
+                return vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike"))
             },
-            Item::Lance(_lance) => {
-                return vec!(actions.id_of("act:sword:slash"))
-            }
         }
     }
 
@@ -103,14 +87,6 @@ impl Item {
                 map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
-            Self::Lance(lance) => {
-                let image = ImageReader::open("./assets/sprites/lance.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&lance.tip_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&lance.handle_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            }
         }
     }
 
@@ -135,21 +111,12 @@ impl Item {
                 map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
-            Self::Lance(lance) => {
-                let image = ImageReader::open("./assets/sprites/species/human/lance_equipped.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&lance.tip_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&lance.handle_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            }
         }
     }
 
     pub fn damage_mult(&self) -> f32 { 
         match self {
             Item::Sword(sword) => sword.damage_mult,
-            Item::Lance(sword) => sword.damage_mult,
             Item::Mace(sword) => sword.damage_mult,
         }
     }
@@ -214,23 +181,6 @@ impl Mace {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Lance {
-    pub quality: ItemQuality,
-    pub handle_mat: MaterialId,
-    pub tip_mat: MaterialId,
-    pub damage_mult: f32,
-    pub name: Option<String>
-}
-
-impl Lance {
-    pub fn new(quality: ItemQuality, handle_mat: MaterialId, tip_mat: MaterialId, materials: &Materials) -> Lance {
-        let tip = materials.get(&tip_mat);
-        let damage_mult = tip.sharpness * quality.main_stat_multiplier();
-        Lance { quality, handle_mat, tip_mat, damage_mult, name: None }
-    }
-}
-
 pub struct ItemMaker {}
 
 impl ItemMaker {
@@ -248,8 +198,7 @@ impl ItemMaker {
 
         match item {
             0 => Item::Sword(Sword::new(quality, handle, blade, extra, extra, materials)),
-            1 => Item::Mace(Mace::new(quality, handle, blade, extra, materials)),
-            _ => Item::Lance(Lance::new(quality, handle, blade, materials))
+            _ => Item::Mace(Mace::new(quality, handle, blade, extra, materials)),
         }
     }
 

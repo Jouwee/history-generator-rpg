@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Lance, Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
 use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesApearance, SpeciesIntelligence}, world::{ArtifactId, SpeciesId, World}};
 
@@ -480,7 +480,7 @@ impl WorldHistoryGenerator {
     fn create_artifact(&mut self, date: WorldEventDate, location: Coord2, material_id: &MaterialId) -> ArtifactId {
         let material_id = material_id.clone();
         let item;
-        match self.rng.randu_range(0, 3) {
+        match self.rng.randu_range(0, 2) {
             0 => {
                 let mut blade = self.resources.materials.id_of("mat:steel");
                 let mut handle = self.resources.materials.id_of("mat:oak");
@@ -498,7 +498,7 @@ impl WorldHistoryGenerator {
                 )));
                 item = Item::Sword(sword)
             },
-            1 => {
+            _ => {
                 let mut head = self.resources.materials.id_of("mat:steel");
                 let mut handle = self.resources.materials.id_of("mat:oak");
                 let mut pommel = self.resources.materials.id_of("mat:bronze");
@@ -512,19 +512,6 @@ impl WorldHistoryGenerator {
                     "breaker", "kiss", "fist", "touch"
                 )));
                 item = Item::Mace(mace)
-            },
-            _ => {
-                let mut tip = self.resources.materials.id_of("mat:steel");
-                let mut handle = self.resources.materials.id_of("mat:oak");
-                match self.rng.randu_range(0, 2) {
-                    1 => tip = material_id,
-                    _ => handle = material_id,
-                }
-                let mut lance = Lance::new(ItemQuality::Legendary, handle, tip, &self.resources.materials);
-                lance.name = Some(self.artifact_name(self.rng.derive("name"), vec!(
-                    "fang", "talon", "bolt", "beak", "thorn"
-                )));
-                item = Item::Lance(lance)
             }
         }
         let id = self.world.artifacts.add(item);

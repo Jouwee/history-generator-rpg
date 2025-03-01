@@ -102,6 +102,11 @@ impl Chunk {
         let texture = item.make_texture(&resources.materials);
         chunk.items_on_ground.push((point, item, texture));
 
+        let point = Coord2::xy(35, 34);
+        let item = ItemMaker::random(&Rng::seeded("c"), &resources.materials, ItemQuality::Normal);
+        let texture = item.make_texture(&resources.materials);
+        chunk.items_on_ground.push((point, item, texture));
+
         return chunk
     }
 

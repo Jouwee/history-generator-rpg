@@ -76,6 +76,29 @@ impl Resources {
                 })
             }
         });
+        self.actions.add("act:mace:smash", Action {
+            name: String::from("Smash"),
+            icon: String::from("gui/icons/actions/mace_smash.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            ap_cost: 40,
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::FromWeapon(DamageComponent::new(0., 0., 1.))),
+                inflicts: None
+            }
+        });
+        self.actions.add("act:mace:concussive_strike", Action {
+            name: String::from("Concussive Strike"),
+            icon: String::from("gui/icons/actions/concussive_strike.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            ap_cost: 60,
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::FromWeapon(DamageComponent::new(1.0, 0.0, 0.))),
+                inflicts: Some(Infliction {
+                    chance: AfflictionChance::Always,
+                    affliction: Affliction::Stunned { duration: 1 }
+                })
+            }
+        });
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
             icon: String::from("gui/icons/actions/unarmed_attack.png"),

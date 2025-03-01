@@ -115,12 +115,16 @@ impl Actor {
                 Affliction::Bleeding { duration: _ } => {
                     self.hp.damage(1.);
                     effect_layer.add_damage_number(self.xy, 1.);
+                },
+                Affliction::Stunned { duration: _ } => {
+                    self.ap.consume(self.ap.max_action_points / 4);
                 }
             }
         }
         self.afflictions.retain(|affliction| {
             match affliction.affliction {
-                Affliction::Bleeding { duration } => affliction.delta < duration
+                Affliction::Bleeding { duration } => affliction.delta < duration,
+                Affliction::Stunned { duration } => affliction.delta < duration,
             }
         });
     }
