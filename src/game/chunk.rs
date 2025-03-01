@@ -82,7 +82,7 @@ impl Chunk {
         }
     }
 
-    pub fn playground(world: &World, resources: &Resources, player: Actor) -> Chunk {
+    pub fn playground(resources: &Resources, player: Actor) -> Chunk {
         let mut chunk = Self::new(Size2D(256, 256), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
@@ -93,8 +93,9 @@ impl Chunk {
         // Bed
         chunk.map.object_layer.set_tile(36, 34, 3);
 
-        let species = world.species.find("species:spider");
-        let npc = Actor::from_species(Coord2::xy(26, 26), species);
+        let species_id = &resources.species.id_of("species:spider");
+        let species = resources.species.get(species_id);
+        let npc = Actor::from_species(Coord2::xy(26, 26), &resources.species.id_of("species:spider"), species);
         chunk.npcs.push(npc);
 
         let point = Coord2::xy(34, 34);
@@ -193,8 +194,8 @@ impl Chunk {
             let person = person.borrow();
             if person.position == xy {
                 let point = chunk.get_spawn_pos(&mut rng);
-                let species = world.species.get(&person.species);
-                chunk.npcs.push(Actor::from_person(point, *id, &person, &species, world));
+                let species = resources.species.get(&person.species);
+                chunk.npcs.push(Actor::from_person(point, *id, &person, &person.species, &species, world));
             }
         }
 
@@ -202,8 +203,9 @@ impl Chunk {
             if chunk.npcs.len() == 0 {
                 for _ in 0..rng.randu_range(3, 7) {
                     let point = chunk.get_spawn_pos(&mut rng);
-                    let species = world.species.find("species:spider");
-                    let npc = Actor::from_species(point, species);
+                    let species_id = resources.species.id_of("species:spider");
+                    let species = resources.species.get(&species_id);
+                    let npc = Actor::from_species(point, &species_id, species);
                     chunk.npcs.push(npc);
                 }
 

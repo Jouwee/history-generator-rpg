@@ -184,11 +184,21 @@ impl Scene for GameSceneState {
         if let ActorType::Hostile = npc.actor_type {
             if npc.xy.dist_squared(&self.chunk.player.xy) < 3. {
                 let action = match npc.inventory.equipped() {                
-                    Some(_) => ctx.resources.actions.find("act:sword:attack"),
-                    None => ctx.resources.actions.find("act:punch")
+                    Some(_) => Some(ctx.resources.actions.find("act:sword:attack")),
+                    None => {
+                        let species = ctx.resources.species.get(&npc.species);
+                        let action = species.innate_actions.first();
+                        if let Some(action) = action {
+                            Some(ctx.resources.actions.get(action))
+                        } else {
+                            None
+                        }
+                    }
                 };
-                if ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx) {
-                    return
+                if let Some(action) = action {
+                    if ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx) {
+                        return
+                    }
                 }
             } else if npc.ap.can_use(20) {
                 if npc.xy.x < self.chunk.player.xy.x {

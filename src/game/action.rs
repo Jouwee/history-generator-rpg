@@ -54,6 +54,7 @@ pub enum AfflictionChance {
 #[derive(Clone)]
 pub enum Affliction {
     Bleeding { duration: usize },
+    Poisoned { duration: usize },
     Stunned { duration: usize }
 }
 

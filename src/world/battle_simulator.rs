@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, resources::resources::Resources};
 
 use super::{person::Person, settlement::Settlement, species::Species, world::World};
 
@@ -32,18 +32,18 @@ impl Unit {
 
 impl BattleForce {
 
-    pub fn from_attacking_settlement(world: &World, settlement_id: Id, settlement: &Settlement) -> BattleForce {
-        return Self::from_defending_settlement(world, settlement_id, settlement)
+    pub fn from_attacking_settlement(world: &World, resources: &Resources, settlement_id: Id, settlement: &Settlement) -> BattleForce {
+        return Self::from_defending_settlement(world, resources, settlement_id, settlement)
     }
 
-    pub fn from_defending_settlement(world: &World, settlement_id: Id, settlement: &Settlement) -> BattleForce {
+    pub fn from_defending_settlement(world: &World, resources: &Resources, settlement_id: Id, settlement: &Settlement) -> BattleForce {
         let mut units: Vec<Unit> = (0..settlement.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
         for (id, creature) in world.people.iter() {
             let creature = creature.try_borrow();
             if let Ok(creature) = creature {
                 // TODO: Improve performance
                 if creature.position == settlement.xy.to_coord() {
-                    let species = world.species.get(&creature.species);
+                    let species = resources.species.get(&creature.species);
                     units.push(Unit::from_creature(id, species));
                 }
             }
@@ -51,8 +51,8 @@ impl BattleForce {
         BattleForce::new(Some(settlement.faction_id), Some(settlement_id), units)
     }
 
-    pub fn from_creatures(world: &World, creatures: Vec<&Person>) -> BattleForce {
-        BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, world.species.get(&creature.species))).collect())
+    pub fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
+        BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, resources.species.get(&creature.species))).collect())
     }
 
     fn new(belligerent_faction: Option<Id>, belligerent_settlement: Option<Id>, units: Vec<Unit>) -> BattleForce {

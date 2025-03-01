@@ -1,8 +1,8 @@
 use std::{cell::{Ref, RefCell, RefMut}, collections::{BTreeMap, HashMap}};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap}, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec}, WorldEvents};
 
-use super::{culture::Culture, faction::Faction, item::Item, person::Person, region::Region, settlement::Settlement, species::Species, topology::WorldTopology};
+use super::{culture::Culture, faction::Faction, item::Item, person::Person, region::Region, settlement::Settlement, topology::WorldTopology};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -16,20 +16,8 @@ impl crate::commons::id_vec::Id for ArtifactId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct SpeciesId(usize);
-impl crate::commons::id_vec::Id for SpeciesId {
-    fn new(id: usize) -> Self {
-        SpeciesId(id)
-    }
-    fn as_usize(&self) -> usize {
-        self.0
-    }
-}
-
 pub struct World {
     pub map: WorldTopology,
-    pub species: ResourceMap<SpeciesId, Species>,
     pub cultures: HashMap<Id, Culture>,
     pub regions: HashMap<Id, Region>,
     pub factions: HistoryVec<Faction>,

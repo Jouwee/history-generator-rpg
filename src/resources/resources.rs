@@ -1,14 +1,16 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::material::{Material, MaterialId}};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::{attributes::Attributes, material::{Material, MaterialId}, species::{Species, SpeciesApearance, SpeciesId, SpeciesIntelligence}}};
 
 use super::tile::{Tile, TileId};
 
 pub type Actions = ResourceMap<ActionId, Action>;
 pub type Materials = ResourceMap<MaterialId, Material>;
+pub type SpeciesMap = ResourceMap<SpeciesId, Species>;
 
 #[derive(Clone)]
 pub struct Resources {
     pub actions: Actions,
     pub materials: Materials,
+    pub species: SpeciesMap,
     pub tiles: ResourceMap<TileId, Tile>
 }
 
@@ -18,26 +20,19 @@ impl Resources {
         Resources {
             actions: ResourceMap::new(),
             materials: ResourceMap::new(),
+            species: ResourceMap::new(),
             tiles: ResourceMap::new(),
         }
     }
 
     pub fn load(&mut self) {
+        self.load_materials();
         self.load_actions();
-        let mut tile = Tile::new(0, "assets/sprites/chunk_tiles/stone.png");
-        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
-        self.tiles.add("tile:stone", tile);
-        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass.png");
-        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
-        self.tiles.add("tile:grass", tile);
-        let tile = Tile::new(1, "assets/sprites/chunk_tiles/sand.png");
-        self.tiles.add("tile:sand", tile);
-        let tile = Tile::new(2, "assets/sprites/chunk_tiles/water.png");
-        self.tiles.add("tile:water", tile);
-        let mut tile = Tile::new(3, "assets/sprites/chunk_tiles/floor.png");
-        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_wood_1.mp3", "sfx/step_wood_2.mp3", "sfx/step_wood_3.mp3")));
-        self.tiles.add("tile:floor", tile);
-        
+        self.load_species();
+        self.load_tiles();
+    }
+
+    pub fn load_materials(&mut self) {
         self.materials.add("mat:steel", Material::new_metal("steel"));
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
@@ -49,7 +44,6 @@ impl Resources {
         let mut copper = Material::new_metal("copper");
         copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
         self.materials.add("mat:copper", copper);
-
     }
 
     pub fn load_actions(&mut self) {
@@ -109,6 +103,19 @@ impl Resources {
                 inflicts: None
             }
         });
+        self.actions.add("act:spider_bite", Action {
+            name: String::from("Bite"),
+            icon: String::from("missing.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            ap_cost: 40,
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::Fixed(DamageComponent::new(0., 1., 0.))),
+                inflicts: Some(Infliction {
+                    chance: AfflictionChance::Always,
+                    affliction: Affliction::Poisoned { duration: 10 }
+                })
+            }
+        });
         self.actions.add("act:talk", Action {
             name: String::from("Talk"),
             icon: String::from("gui/icons/actions/talk.png"),
@@ -158,6 +165,61 @@ impl Resources {
             ap_cost: 20,
             action_type: ActionType::Move { offset: Coord2::xy(0, 1) }
         });
+    }
+
+    pub fn load_species(&mut self) {
+        self.species.add("species:human", Species::new("human", SpeciesApearance::composite(
+            vec!(
+                ("base", vec!(
+                    ("male_light", "species/human/base_male_light.png"),
+                    ("female_light", "species/human/base_female_light.png")
+                )),
+                ("hair", vec!(
+                    ("bun", "species/human/hair_bun.png"),
+                    ("short", "species/human/hair_short.png"),
+                    ("shaved", "species/human/hair_shaved.png"),
+                    ("bald", "system/transparent.png"),
+                )),
+                ("clothes", vec!(("default", "species/human/armor_placeholder.png"))),
+            )
+        )).innate_actions(vec!(self.actions.id_of("act:punch"))));
+        self.species.add("species:leshen", Species::new("leshen", SpeciesApearance::single_sprite("leshen.png"))
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
+            .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
+            .lifetime(300)
+            .fertility(0.)
+            .drops(vec!((self.materials.id_of("mat:bone_leshen"), 1)))
+        );
+        self.species.add("species:fiend", Species::new("fiend", SpeciesApearance::single_sprite("fiend.png"))
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
+            .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
+            .lifetime(200)
+            .fertility(0.)
+            .drops(vec!((self.materials.id_of("mat:bone_fiend"), 1)))
+        );
+        self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
+            .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
+        );
+    }
+
+    pub fn load_tiles(&mut self) {
+        let mut tile = Tile::new(0, "assets/sprites/chunk_tiles/stone.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
+        self.tiles.add("tile:stone", tile);
+        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
+        self.tiles.add("tile:grass", tile);
+        let tile = Tile::new(1, "assets/sprites/chunk_tiles/sand.png");
+        self.tiles.add("tile:sand", tile);
+        let tile = Tile::new(2, "assets/sprites/chunk_tiles/water.png");
+        self.tiles.add("tile:water", tile);
+        let mut tile = Tile::new(3, "assets/sprites/chunk_tiles/floor.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_wood_1.mp3", "sfx/step_wood_2.mp3", "sfx/step_wood_3.mp3")));
+        self.tiles.add("tile:floor", tile);
     }
 
     pub fn tile(&self, id: &TileId) -> &Tile {

@@ -3,10 +3,22 @@ use std::collections::{BTreeMap, HashMap};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::commons::rng::Rng;
+use crate::{commons::rng::Rng, game::action::ActionId};
 
 use super::{attributes::Attributes, material::MaterialId};
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+pub struct SpeciesId(usize);
+impl crate::commons::id_vec::Id for SpeciesId {
+    fn new(id: usize) -> Self {
+        SpeciesId(id)
+    }
+    fn as_usize(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Species {
     pub name: String,
     pub appearance: SpeciesApearance,
@@ -14,6 +26,7 @@ pub struct Species {
     pub intelligence: SpeciesIntelligence,
     pub fertility: SpeciesFertility,
     pub attributes: Attributes,
+    pub innate_actions: Vec<ActionId>,
     pub drops: Vec<(MaterialId, usize)>
 }
 
@@ -27,8 +40,14 @@ impl Species {
             lifetime: SpeciesLifetime::new(120),
             fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },
+            innate_actions: Vec::new(),
             drops: Vec::new()
         }
+    }
+
+    pub fn innate_actions(mut self, innate_actions: Vec<ActionId>) -> Self {
+        self.innate_actions = innate_actions;
+        return self
     }
 
     pub fn intelligence(mut self, intelligence: SpeciesIntelligence) -> Self {
@@ -58,6 +77,7 @@ impl Species {
 
 }
 
+#[derive(Debug, Clone)]
 pub struct SpeciesLifetime {
     pub max_age: u32,
     pub adult_age: f32
@@ -70,9 +90,6 @@ impl SpeciesLifetime {
             adult_age: max_age as f32 * 0.15
         }
     }
-}
-
-impl SpeciesLifetime {
 
     pub fn is_adult(&self, age: f32) -> bool {
         return age > self.adult_age;
@@ -80,18 +97,19 @@ impl SpeciesLifetime {
 
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub enum SpeciesIntelligence {
     Instinctive,
     Civilized
 }
 
+#[derive(Debug, Clone)]
 pub struct SpeciesFertility {
     pub male_drop: f32,
     pub female_drop: f32
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SpeciesApearance {
     map: BTreeMap<String, HashMap<String, String>>
 }
@@ -138,6 +156,7 @@ impl SpeciesApearance {
 
 }
 
+#[derive(Debug, Clone)]
 pub struct CreatureAppearance {
     pub map: BTreeMap<String, (String, String)>
 }

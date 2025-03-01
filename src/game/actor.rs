@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesIntelligence}, world::World}, GameContext, Person};
+use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}, world::World}, GameContext, Person};
 
 use super::{action::Affliction, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
@@ -22,6 +22,7 @@ pub struct Actor {
     pub sprite: CreatureAppearance,
     pub person_id: Option<Id>,
     pub person: Option<Person>,
+    pub species: SpeciesId,
     pub xp: u32,
     pub level: u32,
     pub inventory: Inventory,
@@ -30,7 +31,7 @@ pub struct Actor {
 
 impl Actor {
 
-    pub fn player(xy: Coord2, species: &Species) -> Actor {
+    pub fn player(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -40,6 +41,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            species: *species_id,
             person: None,
             person_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
@@ -49,7 +51,7 @@ impl Actor {
         }
     }
 
-    pub fn from_species(xy: Coord2, species: &Species) -> Actor {
+    pub fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
@@ -63,6 +65,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            species: *species_id,
             person: None,
             person_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
@@ -72,7 +75,7 @@ impl Actor {
         }
     }
 
-    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species: &Species, world: &World) -> Actor {
+    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
@@ -92,6 +95,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            species: *species_id,
             person: Some(person.clone()),
             person_id: Some(person_id),
             sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
@@ -116,6 +120,10 @@ impl Actor {
                     self.hp.damage(1.);
                     effect_layer.add_damage_number(self.xy, 1.);
                 },
+                Affliction::Poisoned { duration: _ } => {
+                    self.hp.damage(1.);
+                    effect_layer.add_damage_number(self.xy, 1.);
+                },
                 Affliction::Stunned { duration: _ } => {
                     self.ap.consume(self.ap.max_action_points / 4);
                 }
@@ -124,6 +132,7 @@ impl Actor {
         self.afflictions.retain(|affliction| {
             match affliction.affliction {
                 Affliction::Bleeding { duration } => affliction.delta < duration,
+                Affliction::Poisoned { duration } => affliction.delta < duration,
                 Affliction::Stunned { duration } => affliction.delta < duration,
             }
         });

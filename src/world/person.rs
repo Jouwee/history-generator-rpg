@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{faction::FactionRelation, world::{ArtifactId, SpeciesId}};
+use super::{faction::FactionRelation, species::SpeciesId, world::ArtifactId};
 
 
 #[derive(Clone, PartialEq, Debug)]

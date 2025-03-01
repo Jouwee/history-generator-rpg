@@ -1,8 +1,8 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, resource_map::ResourceMap, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
-use super::{attributes::Attributes, battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::{Species, SpeciesApearance, SpeciesIntelligence}, world::{ArtifactId, SpeciesId, World}};
+use super::{battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::SpeciesIntelligence, world::{ArtifactId, World}};
 
 
 pub struct WorldGenerationParameters {
@@ -52,7 +52,6 @@ impl WorldHistoryGenerator {
         let mut world = World {
             map: world_map,
             cultures: HashMap::new(),
-            species: Self::load_species(resources),
             regions,
             artifacts: IdVec::new(),
             factions: HistoryVec::new(),
@@ -91,7 +90,7 @@ impl WorldHistoryGenerator {
             let faction_id = generator.world.factions.insert(faction);
             // TODO: Position
             let position = Coord2::xy(generator.rng.randu_range(0, generator.world.map.size.x()) as i32, generator.rng.randu_range(0, generator.world.map.size.y()) as i32);
-            let species = generator.world.species.id_of("species:human");
+            let species = resources.species.id_of("species:human");
             let person = Person::new(id, &species, Importance::Important, 1, position)
                 .civilization(&Some(CivilizedComponent {
                     culture: culture.id,
@@ -105,45 +104,6 @@ impl WorldHistoryGenerator {
         }
         generator.next_person_id = person_id;
         return generator;
-    }
-
-    fn load_species(resources: &Resources) -> ResourceMap<SpeciesId, Species> {
-        // TODO: Move to resources
-        let mut map = ResourceMap::new();
-        map.add("species:human", Species::new("human", SpeciesApearance::composite(
-            vec!(
-                ("base", vec!(
-                    ("male_light", "species/human/base_male_light.png"),
-                    ("female_light", "species/human/base_female_light.png")
-                )),
-                ("hair", vec!(
-                    ("bun", "species/human/hair_bun.png"),
-                    ("short", "species/human/hair_short.png"),
-                    ("shaved", "species/human/hair_shaved.png"),
-                    ("bald", "system/transparent.png"),
-                )),
-                ("clothes", vec!(("default", "species/human/armor_placeholder.png"))),
-            )
-        )));
-        map.add("species:leshen", Species::new("leshen", SpeciesApearance::single_sprite("leshen.png"))
-            .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
-            .lifetime(300)
-            .fertility(0.)
-            .drops(vec!((resources.materials.id_of("mat:bone_leshen"), 1)))
-        );
-        map.add("species:fiend", Species::new("fiend", SpeciesApearance::single_sprite("fiend.png"))
-            .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
-            .lifetime(200)
-            .fertility(0.)
-            .drops(vec!((resources.materials.id_of("mat:bone_fiend"), 1)))
-        );
-        map.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("spider.png"))
-            .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
-        );
-        map
     }
 
     pub fn simulate_year(&mut self) {
@@ -330,8 +290,8 @@ impl WorldHistoryGenerator {
                 }
 
                 if let Some((enemy_settlement_id, enemy_settlement)) = attack {
-                    let mut attacker_force = BattleForce::from_attacking_settlement(&self.world, id, &settlement);
-                    let mut defender_force = BattleForce::from_defending_settlement(&self.world, enemy_settlement_id, &enemy_settlement);
+                    let mut attacker_force = BattleForce::from_attacking_settlement(&self.world, &self.resources, id, &settlement);
+                    let mut defender_force = BattleForce::from_defending_settlement(&self.world, &self.resources, enemy_settlement_id, &enemy_settlement);
                     let result = attacker_force.battle(&mut defender_force, &mut self.rng.derive("battle"), enemy_settlement.xy.to_coord(), enemy_settlement_id);
                     battle = Some(result);
                 }
@@ -357,7 +317,7 @@ impl WorldHistoryGenerator {
         }
 
         let mut rng = self.rng.derive(id);
-        let species = self.world.species.get(&person.species);
+        let species = self.resources.species.get(&person.species);
         let age = (date.year - person.birth) as f32;
 
         // Random death chance
@@ -409,7 +369,7 @@ impl WorldHistoryGenerator {
         person.death = date.year;
         let mut artifact_material = None;
         {
-            let species = self.world.species.get(&person.species);
+            let species = self.resources.species.get(&person.species);
             if species.drops.len() > 0 {
                 let (drop_to_use, _) = species.drops.get(self.rng.randu_range(0, species.drops.len())).unwrap();
                 artifact_material = Some(drop_to_use.clone());
@@ -420,7 +380,7 @@ impl WorldHistoryGenerator {
                 if let CauseOfDeath::KilledInBattle(killer, _weapon) = &cause_of_death {
                     if let Some(killer_id) = killer {
                         let mut killer = self.world.people.get_mut(&killer_id).unwrap();
-                        let species = self.world.species.get(&killer.species);
+                        let species = self.resources.species.get(&killer.species);
                         // TODO: They might not be marked as dead yet
                         if killer.alive() && species.intelligence == SpeciesIntelligence::Civilized {
                             for item in person.possesions.iter() {
@@ -554,7 +514,7 @@ impl WorldHistoryGenerator {
         if self.rng.rand_chance(0.3) {
             species = "species:leshen";
         }
-        let species = self.world.species.id_of(species);
+        let species = self.resources.species.id_of(species);
         let mut suitable_location = None;
         'candidates: for _ in 1..10 {
             let txy = Coord2::xy(self.rng.randu_range(0, self.world.map.size.x()) as i32, self.rng.randu_range(0, self.world.map.size.y()) as i32);
@@ -583,8 +543,8 @@ impl WorldHistoryGenerator {
         let xy = beast.position + Coord2::xy(rng.randi_range(-15, 15), rng.randi_range(-15, 15));
         let mut result = None;
         if let Some((sett_id, settlement)) = self.world.settlements.iter().find(|(_, sett)| sett.borrow().xy.to_coord() == xy) {
-            let mut creature_force = BattleForce::from_creatures(&self.world, vec!(&beast));
-            let mut settlement_force = BattleForce::from_defending_settlement(&self.world, sett_id, &settlement.borrow());
+            let mut creature_force = BattleForce::from_creatures(&self.resources, vec!(&beast));
+            let mut settlement_force = BattleForce::from_defending_settlement(&self.world, &self.resources, sett_id, &settlement.borrow());
             let battle = creature_force.battle(&mut settlement_force, &mut rng, settlement.borrow().xy.to_coord(), sett_id);
             result = Some(battle);
         }

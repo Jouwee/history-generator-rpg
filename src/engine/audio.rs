@@ -159,7 +159,7 @@ pub struct SoundEffect {
 impl SoundEffect {
 
     pub fn new(paths: Vec<&str>) -> SoundEffect {
-        SoundEffect { files: paths.iter().map(|f| SoundFile::new(f)).collect(), pitch_rand: [0.9, 1.1] }
+        SoundEffect { files: paths.iter().map(|f| SoundFile::new(f)).collect(), pitch_rand: [0.8, 1.2] }
     }
 
 }

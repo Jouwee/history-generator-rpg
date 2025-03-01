@@ -319,7 +319,7 @@ impl<'a> BiographyWriter<'a> {
     }
 
     pub fn descriptor(&self, figure: &Person) -> String {
-        let species = self.world.species.get(&figure.species);
+        let species = self.resources.species.get(&figure.species);
         return format!("a {}", species.name)
     }
 

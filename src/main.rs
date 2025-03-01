@@ -452,8 +452,9 @@ fn main() {
                         for event in world.events.iter() {
                             writeln!(&mut f, "{}", writer.event(event)).unwrap();
                         }
-                        let species = world.species.find("species:human");
-                        let mut player = Actor::player(Coord2::xy(32, 32), species);
+                        let species_id = app.context.resources.species.id_of("species:human");
+                        let species = app.context.resources.species.get(&species_id);
+                        let mut player = Actor::player(Coord2::xy(32, 32), &species_id, species);
 
                         player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal,
                             app.context.resources.materials.id_of("mat:oak"),
@@ -481,7 +482,7 @@ fn main() {
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::playground(&scene.world, &app.context.resources, scene.player);
+                        let chunk = Chunk::playground(&app.context.resources, scene.player);
                         let mut scene = GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
