@@ -1,4 +1,4 @@
-use crate::{commons::damage_model::DamageComponent, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2}, GameContext};
+use crate::{commons::damage_model::DamageComponent, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, GameContext};
 
 use super::{actor::Actor, chunk::ChunkMap, effect_layer::EffectLayer};
 
@@ -56,6 +56,16 @@ pub enum Affliction {
     Bleeding { duration: usize },
     Poisoned { duration: usize },
     Stunned { duration: usize }
+}
+
+impl Affliction {
+    pub fn name_color(&self) -> (&str, Palette) {
+        match self {
+            Affliction::Bleeding { duration: _ } => ("Bleeding", Palette::Red),
+            Affliction::Poisoned { duration: _ } => ("Poisoned", Palette::Green),
+            Affliction::Stunned { duration: _ } => ("Stunned", Palette::Gray),
+        }
+    }
 }
 
 pub struct ActionRunner { }
@@ -118,6 +128,8 @@ impl ActionRunner {
                                 AfflictionChance::Always => true
                             };
                             if inflict {
+                                let (name, color) = inflicts.affliction.name_color();
+                                effect_layer.add_text_indicator(target.xy, name, color);
                                 target.add_affliction(&inflicts.affliction)
                             }
                         }

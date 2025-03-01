@@ -95,3 +95,21 @@ impl Color {
     }
 
 }
+
+pub enum Palette {
+    Green,
+    Red,
+    Gray
+}
+
+impl Palette {
+
+    pub fn color(&self) -> Color {
+        match self {
+            Palette::Green => Color::from_hex("3c502d"),
+            Palette::Red => Color::from_hex("882309"),
+            Palette::Gray => Color::from_hex("b2b1c4")
+        }
+    }
+
+}
