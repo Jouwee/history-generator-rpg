@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}, world::World}, GameContext, Person};
 
-use super::{action::Affliction, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
+use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
 #[derive(PartialEq, Eq)]
 pub enum ActorType {
@@ -19,6 +19,7 @@ pub struct Actor {
     pub attributes: Attributes,
     pub defence: DefenceComponent,
     pub actor_type: ActorType,
+    pub ai: AiRunner,
     pub sprite: CreatureAppearance,
     pub person_id: Option<Id>,
     pub person: Option<Person>,
@@ -41,6 +42,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            ai: AiRunner::new(),
             species: *species_id,
             person: None,
             person_id: None,
@@ -65,6 +67,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            ai: AiRunner::new(),
             species: *species_id,
             person: None,
             person_id: None,
@@ -95,6 +98,7 @@ impl Actor {
             defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
+            ai: AiRunner::new(),
             species: *species_id,
             person: Some(person.clone()),
             person_id: Some(person_id),

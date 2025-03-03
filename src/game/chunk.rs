@@ -108,6 +108,39 @@ impl Chunk {
         let texture = item.make_texture(&resources.materials);
         chunk.items_on_ground.push((point, item, texture));
 
+        // Puts a spider in a small labyrinth
+        let species_id = &resources.species.id_of("species:spider");
+        let species = resources.species.get(species_id);
+        let npc = Actor::from_species(Coord2::xy(26, 40), &resources.species.id_of("species:spider"), species);
+        chunk.npcs.push(npc);
+
+
+
+        chunk.map.object_layer.set_tile(24,37, 1);
+        chunk.map.object_layer.set_tile(25,37, 1);
+        chunk.map.object_layer.set_tile(26,37, 1);
+        chunk.map.object_layer.set_tile(28,37, 1);
+        chunk.map.object_layer.set_tile(23,38, 1);
+        chunk.map.object_layer.set_tile(29,38, 1);
+        chunk.map.object_layer.set_tile(23,39, 1);
+        chunk.map.object_layer.set_tile(25,39, 1);
+        chunk.map.object_layer.set_tile(26,39, 1);
+        chunk.map.object_layer.set_tile(27,39, 1);
+        chunk.map.object_layer.set_tile(29,39, 1);
+        chunk.map.object_layer.set_tile(23,40, 1);
+        chunk.map.object_layer.set_tile(25,40, 1);
+        chunk.map.object_layer.set_tile(28,40, 1);
+        chunk.map.object_layer.set_tile(22,41, 1);
+        chunk.map.object_layer.set_tile(26,41, 1);
+        chunk.map.object_layer.set_tile(28,41, 1);
+        chunk.map.object_layer.set_tile(22,42, 1);
+        chunk.map.object_layer.set_tile(24,42, 1);
+        chunk.map.object_layer.set_tile(25,43, 1);
+        chunk.map.object_layer.set_tile(26,43, 1);
+        chunk.map.object_layer.set_tile(27,43, 1);
+        chunk.map.object_layer.set_tile(28,43, 1);
+        chunk.map.object_layer.set_tile(29,43, 1);
+
         return chunk
     }
 

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use action::{ActionRunner, ActionType};
 use actor::ActorType;
+use ai::AiSolver;
 use chunk::Chunk;
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use effect_layer::EffectLayer;
@@ -14,6 +15,7 @@ use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, 
 
 pub mod action;
 pub mod actor;
+pub mod ai;
 pub mod chunk;
 pub mod codex;
 pub mod effect_layer;
@@ -92,12 +94,22 @@ impl GameSceneState {
         self.turn_controller.next_turn();
         if self.turn_controller.is_player_turn() {
             self.chunk.player.start_of_round(&mut self.effect_layer);
-        } else {
-            let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
-            npc.start_of_round(&mut self.effect_layer);
-            if npc.hp.health_points == 0. {
-                self.chunk.player.add_xp(100);
-                self.remove_npc(self.turn_controller.npc_idx(), ctx);
+        } else {       
+            {
+                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+                npc.start_of_round(&mut self.effect_layer);
+                if npc.hp.health_points == 0. {
+                    self.chunk.player.add_xp(100);
+                    self.remove_npc(self.turn_controller.npc_idx(), ctx);
+                    self.next_turn(ctx);
+                    return
+                }
+            }
+            {
+                let npc = self.chunk.npcs.get(self.turn_controller.npc_idx()).unwrap();
+                let ai = AiSolver::choose_actions(&ctx.resources.actions, &npc, &self.chunk, ctx);
+                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+                npc.ai = ai;
             }
         }
     }
@@ -180,52 +192,22 @@ impl Scene for GameSceneState {
             return
         }
         let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
-        // TODO: AI
-        if let ActorType::Hostile = npc.actor_type {
-            if npc.xy.dist_squared(&self.chunk.player.xy) < 3. {
-                let action = match npc.inventory.equipped() {                
-                    Some(_) => Some(ctx.resources.actions.find("act:sword:attack")),
-                    None => {
-                        let species = ctx.resources.species.get(&npc.species);
-                        let action = species.innate_actions.first();
-                        if let Some(action) = action {
-                            Some(ctx.resources.actions.get(action))
-                        } else {
-                            None
-                        }
-                    }
-                };
-                if let Some(action) = action {
-                    if ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx) {
-                        return
-                    }
-                }
-            } else if npc.ap.can_use(20) {
-                if npc.xy.x < self.chunk.player.xy.x {
-                    let action = ctx.resources.actions.find("act:move_right");
-                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
-                        return
-                    }
-                }
-                if npc.xy.x > self.chunk.player.xy.x {
-                    let action = ctx.resources.actions.find("act:move_left");  
-                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
-                        return
-                    }
-                }
-                if npc.xy.y < self.chunk.player.xy.y {
-                    let action = ctx.resources.actions.find("act:move_down");  
-                    if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
-                        return
-                    }
-                }
-                let action = ctx.resources.actions.find("act:move_up");  
-                if ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy) {
-                    return
-                }
-            }
+
+        if npc.ai.waiting_delay(update.delta_time) {
+            return
         }
-        self.next_turn(ctx);
+
+        let next = npc.ai.next_action(&ctx.resources.actions);
+        if let Some(action) = next {
+            let _ = match action.action_type {
+                ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
+                ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
+                //ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx)
+                _ => true
+            };
+        } else {
+            self.next_turn(ctx);
+        }
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {

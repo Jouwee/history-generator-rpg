@@ -4,9 +4,9 @@ use crate::world::attributes::Attributes;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DamageComponent {
-    slashing: f32,
-    piercing: f32,
-    bludgeoning: f32,
+    pub slashing: f32,
+    pub piercing: f32,
+    pub bludgeoning: f32,
 }
 
 impl DamageComponent {
