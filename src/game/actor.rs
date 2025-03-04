@@ -143,6 +143,16 @@ impl Actor {
     }
 
     pub fn add_affliction(&mut self, affliction: &Affliction) {
+        // Removes dupped
+        self.afflictions.retain(|a| {
+            let current = &a.affliction;
+            match (current, affliction) {
+                (Affliction::Bleeding { duration: _ }, Affliction::Bleeding { duration: _ }) => false,
+                (Affliction::Poisoned { duration: _ }, Affliction::Poisoned { duration: _ }) => false,
+                (Affliction::Stunned { duration: _ }, Affliction::Stunned { duration: _ }) => false,
+                _ => true
+            }
+        });
         self.afflictions.push(RunningAffliction { affliction: affliction.clone(), delta: 0 });
     }
 
