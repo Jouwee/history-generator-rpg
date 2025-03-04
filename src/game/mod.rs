@@ -34,14 +34,22 @@ pub struct InputEvent {
     pub button_args: ButtonArgs,
 }
 
+enum TurnMode {
+    TurnBased,
+    RealTime
+}
+
 pub struct GameSceneState {
     pub world: World,
     pub codex: KnowledgeCodex,
     pub world_pos: Coord2,
     pub chunk: Chunk,
+    turn_mode: TurnMode,
     turn_controller: TurnController,
     button_codex: Button,
     button_inventory: Button,
+    button_end_turn: Button,
+    button_toggle_turn_based: Button,
     hotbar: Hotbar,
     interact_dialog: InteractDialog,
     codex_dialog: CodexDialog,
@@ -58,10 +66,13 @@ impl GameSceneState {
             codex,
             chunk,
             world_pos,
+            turn_mode: TurnMode::RealTime,
             turn_controller: TurnController::new(),
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::BottomLeft, 64.0, 32.0)),       
+            button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
+            button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
             interact_dialog: InteractDialog::new(),
             codex_dialog: CodexDialog::new(),
             inventory_dialog: CharacterDialog::new(),
@@ -116,6 +127,16 @@ impl GameSceneState {
         }
     }
 
+    fn realtime_end_turn(&mut self, actor_idx: usize, ctx: &mut GameContext) {
+        let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
+        actor.ap.fill();
+        actor.start_of_round(&mut self.effect_layer);
+        let actor = self.chunk.npcs.get(actor_idx).unwrap();
+        let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, &self.chunk, ctx);
+        let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
+        actor.ai = ai;
+    }
+
     pub fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let id;
         {
@@ -130,6 +151,25 @@ impl GameSceneState {
             self.chunk.killed_people.push(id);
         }
         self.turn_controller.remove(i);
+    }
+
+    fn can_end_turn(&self) -> bool {
+        if let TurnMode::TurnBased = self.turn_mode {
+            return true
+        }
+        return false
+    }
+
+    fn can_change_turn_mode(&self) -> bool {
+        if let TurnMode::RealTime = self.turn_mode {
+            return true
+        }
+        for npc in self.chunk.npcs.iter() {
+            if npc.actor_type == ActorType::Hostile {
+                return false
+            }
+        }
+        return true
     }
 
 }
@@ -162,6 +202,12 @@ impl Scene for GameSceneState {
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
         self.button_codex.render(ctx, game_ctx);
         self.button_inventory.render(ctx, game_ctx);
+        if self.can_end_turn() {
+            self.button_end_turn.render(ctx, game_ctx);
+        }
+        if self.can_change_turn_mode() {
+            self.button_toggle_turn_based.render(ctx, game_ctx);
+        }
         self.interact_dialog.render(ctx, game_ctx);
         self.codex_dialog.render(ctx, game_ctx);
         self.inventory_dialog.render(ctx, game_ctx);       
@@ -172,6 +218,16 @@ impl Scene for GameSceneState {
         self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
         self.button_codex.update(update, ctx);
         self.button_inventory.update(update, ctx);
+        if self.can_end_turn() {
+            self.button_end_turn.update(update, ctx);
+        }
+        if self.can_change_turn_mode() {
+            match self.turn_mode {
+                TurnMode::RealTime => self.button_toggle_turn_based.text("Enter turn-based mode"),
+                TurnMode::TurnBased => self.button_toggle_turn_based.text("Exit turn-based mode"),
+            }
+            self.button_toggle_turn_based.update(update, ctx);
+        }
         self.interact_dialog.update(update, ctx);
         self.codex_dialog.update(update, ctx);
         self.inventory_dialog.update(update, ctx);
@@ -184,6 +240,7 @@ impl Scene for GameSceneState {
         for npc in self.chunk.npcs.iter_mut() {
             npc.update(update.delta_time);
             hostile = hostile || npc.actor_type == ActorType::Hostile;
+            self.turn_mode = TurnMode::TurnBased;
         }
         self.chunk.player.update(update.delta_time);
         if hostile {
@@ -192,26 +249,52 @@ impl Scene for GameSceneState {
             ctx.audio.switch_music(TrackMood::Regular);
         }
 
-        if self.turn_controller.is_player_turn() {
-            return
-        }
-        let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+        match self.turn_mode {
+            TurnMode::TurnBased => {
+                if self.turn_controller.is_player_turn() {
+                    return
+                }
+                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
 
-        if npc.ai.waiting_delay(update.delta_time) {
-            return
+                if npc.ai.waiting_delay(update.delta_time) {
+                    return
+                }
+
+                let next = npc.ai.next_action(&ctx.resources.actions);
+                if let Some(action) = next {
+                    let _ = match action.action_type {
+                        ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
+                        ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
+                        _ => true
+                    };
+                } else {
+                    self.next_turn(ctx);
+                }
+            },
+            TurnMode::RealTime => {
+                let mut end_turns_idxs = Vec::new();
+                for (idx, npc) in self.chunk.npcs.iter_mut().enumerate() {
+                    if npc.ai.waiting_delay(update.delta_time) {
+                        return
+                    }
+
+                    let next = npc.ai.next_action(&ctx.resources.actions);
+                    if let Some(action) = next {
+                        let _ = match action.action_type {
+                            ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
+                            ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
+                            _ => true
+                        };
+                    } else {
+                        end_turns_idxs.push(idx);
+                    }
+                }
+                for idx in end_turns_idxs {
+                    self.realtime_end_turn(idx, ctx);
+                }
+            }
         }
 
-        let next = npc.ai.next_action(&ctx.resources.actions);
-        if let Some(action) = next {
-            let _ = match action.action_type {
-                ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
-                //ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx)
-                _ => true
-            };
-        } else {
-            self.next_turn(ctx);
-        }
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
@@ -223,6 +306,21 @@ impl Scene for GameSceneState {
             CharacterDialogOutput::EquipmentChanged => self.hotbar.equip(&self.chunk.player.inventory, &ctx),
             CharacterDialogOutput::None => ()
         }
+
+        if self.can_end_turn() {
+            if let ButtonEvent::Click = self.button_end_turn.event(evt) {
+                self.next_turn(ctx);
+            }
+        }
+        if self.can_change_turn_mode() {
+            if let ButtonEvent::Click = self.button_toggle_turn_based.event(evt) {
+                match self.turn_mode {
+                    TurnMode::RealTime => self.turn_mode = TurnMode::TurnBased,
+                    TurnMode::TurnBased => self.turn_mode = TurnMode::RealTime,
+                }
+            }
+        }
+
         if let ButtonEvent::Click = self.button_codex.event(evt) {
             self.codex_dialog.start_dialog();
             return;
@@ -233,13 +331,22 @@ impl Scene for GameSceneState {
             return;
         }
 
-        if !self.turn_controller.is_player_turn() {
-            return
+        match self.turn_mode {
+            TurnMode::TurnBased => {
+                if !self.turn_controller.is_player_turn() {
+                    return
+                }
+            },
+            TurnMode::RealTime => {
+                self.chunk.player.ap.fill();
+            }
         }
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
                 Btn::Keyboard(Key::Space) => {
-                    self.next_turn(ctx);
+                    if let TurnMode::TurnBased = self.turn_mode {
+                        self.next_turn(ctx);
+                    }
                 },
                 Btn::Keyboard(Key::Up) => {
                     let action = ctx.resources.actions.find("act:move_up");  
