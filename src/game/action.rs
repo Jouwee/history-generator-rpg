@@ -1,4 +1,4 @@
-use crate::{commons::damage_model::DamageComponent, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, GameContext};
+use crate::{commons::damage_model::{DamageComponent, DamageOutput}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, GameContext};
 
 use super::{actor::Actor, chunk::ChunkMap, effect_layer::EffectLayer};
 
@@ -49,7 +49,7 @@ pub struct Infliction {
 
 #[derive(Clone)]
 pub enum AfflictionChance {
-    Always
+    OnHit
 }
 
 #[derive(Clone)]
@@ -101,6 +101,7 @@ impl ActionRunner {
                 if actor.ap.can_use(action.ap_cost) {
                     if actor.xy.dist_squared(&target.xy) < 3. {
                         actor.ap.consume(action.ap_cost);
+                        let mut hit = true;
                         if let Some(damage) = damage {
                             // Compute damage
                             let damage = match &damage {
@@ -113,12 +114,21 @@ impl ActionRunner {
                             let str_mult = actor.attributes.strength_attack_damage_mult();
                             let damage_model = damage.multiply(str_mult);
                             let damage = damage_model.resolve(&target.defence);
-                            // Apply damage
-                            target.hp.damage(damage);
+
+                            match damage {
+                                DamageOutput::Dodged => {
+                                    hit = false;
+                                    effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
+                                },
+                                DamageOutput::Hit(damage) => {
+                                    target.hp.damage(damage);
+                                    effect_layer.add_damage_number(target.xy, damage);
+                                }
+                            }
+
                             if let Some(fx) = &action.sound_effect {
                                 ctx.audio.play_once(fx.clone());
                             }
-                            effect_layer.add_damage_number(target.xy, damage);
                             // Animations
                             let dir = target.xy - actor.xy;
                             actor.animation.play(&Self::build_attack_anim(dir));
@@ -126,7 +136,7 @@ impl ActionRunner {
                         }
                         if let Some(inflicts) = inflicts {
                             let inflict = match inflicts.chance {
-                                AfflictionChance::Always => true
+                                AfflictionChance::OnHit => hit
                             };
                             if inflict {
                                 let (name, color) = inflicts.affliction.name_color();

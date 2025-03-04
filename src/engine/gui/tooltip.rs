@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use graphics::{image, CharacterCache, Transformed};
 use ::image::ImageReader;
 
-use crate::{commons::damage_model::DamageComponent, engine::{render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, game::action::{Affliction, DamageType, Infliction}, GameContext};
+use crate::{engine::{render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, game::action::{Affliction, DamageType, Infliction}, GameContext};
 
 use super::GUINode;
 

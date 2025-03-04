@@ -138,7 +138,7 @@ impl AiSolver {
                         }
                         if let Some(inflicts) = inflicts {
                             let score_mult = match inflicts.chance {
-                                super::action::AfflictionChance::Always => 1.,
+                                super::action::AfflictionChance::OnHit => 1.,
                             };
                             let score = match inflicts.affliction {
                                 super::action::Affliction::Bleeding { duration } => 1. * duration as f64,

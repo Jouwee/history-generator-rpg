@@ -28,6 +28,10 @@ impl Attributes {
         self.constitution as i32 - 10
     }
 
+    pub fn dodge_chance(&self) -> f32 {
+        return self.agility as f32 * 0.01
+    }
+
 }
 
 #[derive(Clone)]

@@ -67,7 +67,7 @@ impl Resources {
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(0.8, 0.0, 0.))),
                 inflicts: Some(Infliction {
-                    chance: AfflictionChance::Always,
+                    chance: AfflictionChance::OnHit,
                     affliction: Affliction::Bleeding { duration: 5 }
                 })
             }
@@ -92,7 +92,7 @@ impl Resources {
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(1.0, 0.0, 0.))),
                 inflicts: Some(Infliction {
-                    chance: AfflictionChance::Always,
+                    chance: AfflictionChance::OnHit,
                     affliction: Affliction::Stunned { duration: 1 }
                 })
             }
@@ -117,7 +117,7 @@ impl Resources {
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::Fixed(DamageComponent::new(0., 1., 0.))),
                 inflicts: Some(Infliction {
-                    chance: AfflictionChance::Always,
+                    chance: AfflictionChance::OnHit,
                     affliction: Affliction::Poisoned { duration: 10 }
                 })
             }
