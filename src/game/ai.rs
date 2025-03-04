@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, time::Instant};
+use std::{collections::{HashMap, VecDeque}, time::Instant, vec};
 
 use crate::{engine::geometry::Coord2, game::actor::ActorType, resources::resources::Actions, GameContext};
 
@@ -85,7 +85,17 @@ impl AiSolver {
             return runner
         }
 
-        let paths = Self::sim_step(ctx, &mut results, &all_actions, actions, chunk);
+        let mut astar = AStar::new(chunk.player.xy);
+        
+        astar.find_path(ctx.xy, |xy| {
+            if chunk.map.blocks_movement(xy) {
+                return MovementCost::Impossible;
+            } else {
+                return MovementCost::Cost(1.);
+            }
+        });
+
+        let paths = Self::sim_step(ctx, &mut results, &all_actions, &mut astar, actions, chunk);
 
 
         let mut runner = AiRunner::new();
@@ -98,7 +108,7 @@ impl AiSolver {
         return runner
     }
 
-    fn sim_step(ctx: SimContext, results: &mut Vec<SimContext>, available_actions: &Vec<ActionId>, actions: &Actions, chunk: &Chunk) -> u32 {
+    fn sim_step(ctx: SimContext, results: &mut Vec<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk) -> u32 {
         Self::add_to_results(ctx.clone(), results);
         if ctx.depth > 10 {
             return 1
@@ -119,9 +129,9 @@ impl AiSolver {
                     ctx.ap -= action.ap_cost as i32;
                     ctx.depth += 1;
                     ctx.actions.push(*action_id);
-                    ctx.position_score = Self::compute_position_score(&ctx, chunk);
+                    ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                     ctx.compute_final_score();
-                    paths += Self::sim_step(ctx, results, available_actions, actions, chunk);
+                    paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                 },
                 ActionType::Targeted { damage, inflicts } => {
                     // TODO: Ai Groups
@@ -148,7 +158,7 @@ impl AiSolver {
                             ctx.damage_score += score * score_mult;
                         }
                         ctx.compute_final_score();
-                        paths += Self::sim_step(ctx, results, available_actions, actions, chunk);
+                        paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                     }
                 },
                 _ => ()
@@ -157,13 +167,19 @@ impl AiSolver {
         return paths
     }
 
-    fn compute_position_score(ctx: &SimContext, chunk: &Chunk) -> f64 {
-        // TODO: Ai Groups
+    fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &Chunk) -> f64 {
         let dist = ctx.xy.dist(&chunk.player.xy) as f64;
         if dist < 3. {
             return 0.;
         }
-        return 1. / dist;
+
+        // TODO: Ai Groups
+        
+        let path = astar.get_path(ctx.xy);
+        if path.len() == 0 {
+            return 0.
+        }
+        return 1. / path.len() as f64;
     }
 
     fn add_to_results(ctx: SimContext, results: &mut Vec<SimContext>) {
@@ -196,7 +212,106 @@ struct SimContext {
 impl SimContext {
 
     fn compute_final_score(&mut self) {
-        self.score = self.position_score + self.damage_score
+        // Tiny boost for simplicity, mostly to choose between ties
+        let simplicity_boost = 0.01 / self.actions.len() as f64;
+        self.score = self.position_score + self.damage_score + simplicity_boost
     }
 
+}
+
+
+struct AStar {
+    to: Coord2,
+    came_from: HashMap<Coord2, Coord2>,
+    cost_so_far: HashMap<Coord2, f32>,
+    frontier: VecDeque<Coord2>
+}
+
+impl AStar {
+
+    fn new(to: Coord2) -> AStar {
+        let mut astar = AStar {
+            to,
+            came_from: HashMap::new(),
+            cost_so_far: HashMap::new(),
+            frontier: VecDeque::new()
+        };
+        astar.frontier.push_front(to);
+        astar.cost_so_far.insert(to, 0.);
+        return astar
+    }
+
+    fn find_path<F>(&mut self, from: Coord2, cost: F) where F: Fn(Coord2) -> MovementCost {
+        while !self.frontier.is_empty() {
+            let current = self.frontier.pop_front().unwrap();
+            
+            if current == from {
+                break
+            }
+            
+            for next in self.neighbors(current) {
+                let cost = cost(next);
+                match cost {
+                    MovementCost::Impossible => (),
+                    MovementCost::Cost(cost) => {
+                        let new_cost = self.cost_so_far.get(&current).unwrap() + cost;
+                        if !self.cost_so_far.contains_key(&next) || new_cost < *self.cost_so_far.get(&next).unwrap() {
+                            self.cost_so_far.insert(next, new_cost);
+                            // TODO: Using priotity as sorting should be faster, but inserting sorted is too costly
+                            // let priority = new_cost + Self::heuristic(next, from);
+                            self.frontier.push_back(next); // P = priority
+                            self.came_from.insert(next, current);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn get_path(&self, from: Coord2) -> Vec<Coord2> {
+
+        let mut current = from;
+        let mut path = Vec::new();
+        if !self.came_from.contains_key(&from) { // no path was found
+            return path
+        }
+        while current != self.to {
+            path.push(current);
+            current = *self.came_from.get(&current).unwrap();
+        }
+        path.push(self.to);
+        // path.reverse();
+        
+        return path
+        
+        // return came_from, cost_so_far
+    }
+
+    fn neighbors(&self, point: Coord2) -> Vec<Coord2> {
+        let mut neighbors = Vec::new();
+        if point.x >= 1 {
+            neighbors.push(point + Coord2::xy(-1, 0));
+        }
+        if point.y >= 1 {
+            neighbors.push(point + Coord2::xy(0, -1));
+        }
+        // TODO:
+        if point.x < 128 {
+            neighbors.push(point + Coord2::xy(1, 0));
+        }
+        if point.y < 128  {
+            neighbors.push(point + Coord2::xy(0, 1));
+        }
+        return neighbors;
+    }
+
+    fn heuristic(a: Coord2, b: Coord2) -> f32 {
+        return f32::abs((a.x - b.x) as f32) + f32::abs((a.y - b.y) as f32);
+    }
+    
+}
+
+enum MovementCost {
+    Impossible,
+    Cost(f32)
 }
