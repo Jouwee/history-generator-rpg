@@ -149,7 +149,8 @@ impl MarkovChainSingleWordModel {
             }
 
             match char {
-                NULL => string.push('0'),
+                // This can happen if the selected path has to end before min_length
+                NULL => break,
                 START_OF => string.push('^'),
                 END_OF => break,
                 26 => string.push('_'),
@@ -184,8 +185,11 @@ mod tests {
         // assert_eq!(mo2.generate(0, 3, 10), "jasper");
         // assert_eq!(mo2.generate(10, 3, 10), "jon");
 
-        let mo3 = MarkovChainSingleWordModel::train(vec!("john", "joe", "joseph", "jonny", "jon", "jonathan", "jasper"), 3);
+        let mo3 = MarkovChainSingleWordModel::train(vec!("john", "joe", "joseph", "jonny", "jon", "jonas", "jasper"), 3);
         assert_eq!(mo3.generate(&Rng::new(0), 3, 10), "jasper");
         assert_eq!(mo3.generate(&Rng::new(10), 3, 10), "jon");
+        // Might generate smaller than min if there's no other path
+        assert_eq!(mo3.generate(&Rng::new(10), 15, 20), "jonasa");
+
     }
 }
