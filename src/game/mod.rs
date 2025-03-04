@@ -11,7 +11,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
 
 pub mod action;
 pub mod actor;
@@ -47,6 +47,7 @@ pub struct GameSceneState {
     codex_dialog: CodexDialog,
     inventory_dialog: CharacterDialog,
     cursor_pos: Coord2,
+    tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
 }
 
@@ -65,6 +66,7 @@ impl GameSceneState {
             codex_dialog: CodexDialog::new(),
             inventory_dialog: CharacterDialog::new(),
             cursor_pos: Coord2::xy(0, 0),
+            tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new()
         };
         state.save_creature_appearances();
@@ -158,20 +160,22 @@ impl Scene for GameSceneState {
         // UI
         let _ = ctx.try_pop();
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
-        self.button_codex.render(ctx);
-        self.button_inventory.render(ctx);
-        self.interact_dialog.render(ctx);
-        self.codex_dialog.render(ctx);
-        self.inventory_dialog.render(ctx);        
+        self.button_codex.render(ctx, game_ctx);
+        self.button_inventory.render(ctx, game_ctx);
+        self.interact_dialog.render(ctx, game_ctx);
+        self.codex_dialog.render(ctx, game_ctx);
+        self.inventory_dialog.render(ctx, game_ctx);       
+        self.tooltip_overlay.render(ctx, game_ctx); 
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
         self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
-        self.button_codex.update();
-        self.button_inventory.update();
-        self.interact_dialog.update();
-        self.codex_dialog.update();
-        self.inventory_dialog.update();
+        self.button_codex.update(update, ctx);
+        self.button_inventory.update(update, ctx);
+        self.interact_dialog.update(update, ctx);
+        self.codex_dialog.update(update, ctx);
+        self.inventory_dialog.update(update, ctx);
+        self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
 
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
@@ -316,10 +320,6 @@ impl Scene for GameSceneState {
                 _ => (),
             }
         }
-    }
-
-    fn cursor_move(&mut self, _pos: [f64; 2]) {
-
     }
 
 }

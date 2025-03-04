@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use graphics::CharacterCache;
 
-use crate::engine::{render::RenderContext, Color};
+use crate::{engine::{render::RenderContext, Color}, GameContext};
 
 use super::{GUINode, Position};
 
@@ -22,7 +22,7 @@ impl Label {
 }
 
 impl GUINode for Label {
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), [128., 16.]);
         // Increments y-position because text is rendered bottom-up, everything else is top-down. This normalizes labels to be top-down
         position[1] += 7.;

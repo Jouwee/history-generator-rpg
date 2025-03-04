@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, resources::resources::Resources, world::world::{ArtifactId, World}};
+use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, resources::resources::Resources, world::world::{ArtifactId, World}, GameContext};
 
 use super::knowledge_codex::{ArtifactFact, KnowledgeCodex};
 
@@ -140,9 +140,9 @@ impl CodexDialog {
 
 impl GUINode for CodexDialog {
     
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
         if let Some(interact_dialog) = &mut self.dialog {
-            interact_dialog.render(ctx);
+            interact_dialog.render(ctx, game_ctx);
         }
     }
 

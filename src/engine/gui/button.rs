@@ -1,13 +1,13 @@
-use std::fmt::Display;
+use std::{fmt::Display, hash::{DefaultHasher, Hash, Hasher}};
 
 use graphics::{image, CharacterCache, Transformed};
 use ::image::ImageReader;
 use opengl_graphics::Texture;
 use piston::Button as Btn;
 
-use crate::{engine::{render::RenderContext, sprite::Sprite, spritesheet::Spritesheet, Color}, game::InputEvent};
+use crate::{engine::{render::RenderContext, scene::Update, sprite::Sprite, spritesheet::Spritesheet, Color}, game::InputEvent, GameContext};
 
-use super::{GUINode, Position};
+use super::{tooltip::Tooltip, GUINode, Position};
 
 pub struct Button {
     text: String,
@@ -15,7 +15,8 @@ pub struct Button {
     frame: Spritesheet,
     icon: Option<Texture>,
     position: Position,
-    last_layout: [f64; 4]
+    last_layout: [f64; 4],
+    tooltip: Option<(u64, Tooltip)>,
 }
 
 impl Button {
@@ -28,7 +29,8 @@ impl Button {
             frame: spritesheet,
             position,
             last_layout: [0.; 4],
-            icon: None
+            icon: None,
+            tooltip: None,
         }
     }
 
@@ -41,7 +43,8 @@ impl Button {
             frame: spritesheet,
             position,
             last_layout: [0.; 4],
-            icon: Some(icon)
+            icon: Some(icon),
+            tooltip: None,
         }
     }
 
@@ -54,8 +57,17 @@ impl Button {
             frame: spritesheet,
             position,
             last_layout: [0.; 4],
-            icon: None
+            icon: None,
+            tooltip: None
         }
+    }
+
+    pub fn tooltip(mut self, tooltip: Tooltip) -> Self {
+        let mut hasher = DefaultHasher::new();
+        tooltip.hash(&mut hasher);
+        let hash = hasher.finish();
+        self.tooltip = Some((hash, tooltip));
+        return self
     }
 
     pub fn text(&mut self, text: impl Display) {
@@ -75,7 +87,20 @@ impl Button {
 }
 
 impl GUINode for Button {
-    fn render(&mut self, ctx: &mut RenderContext) {
+
+    fn update(&mut self, update: &Update, ctx: &mut GameContext) {
+        if let Some((hash, tooltip)) = &self.tooltip {
+            let position = self.last_layout;
+            let pos = update.mouse_pos_gui;
+            if pos[0] >= position[0] && pos[1] >= position[1] && pos[0] <= position[0]+position[2] && pos[1] <= position[1]+position[3] {
+                ctx.tooltips.show_delayed_prehash(*hash, &tooltip, pos);
+            } else {
+                ctx.tooltips.hide_prehash(*hash);
+            }
+        }
+    }
+
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
         let size = self.min_size(ctx);
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         self.last_layout = [position[0], position[1], size[0], size[1]];

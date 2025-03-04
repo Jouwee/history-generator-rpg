@@ -6,7 +6,7 @@ extern crate piston;
 
 use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
-use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
@@ -46,7 +46,8 @@ pub struct App {
 
 pub struct GameContext {
     audio: Audio,
-    resources: Resources
+    resources: Resources,
+    tooltips: TooltipRegistry,
 }
 
 pub struct DisplayContext {
@@ -376,12 +377,15 @@ fn main() {
 
     let resources = Resources::new();
 
+    let tooltips = TooltipRegistry::new();
+
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
         context: GameContext {
             audio: Audio::new(),
-            resources
+            resources,
+            tooltips
         },
         scene: SceneEnum::None,
         assets: Assets::new(),

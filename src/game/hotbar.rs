@@ -2,9 +2,9 @@ use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
+use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
 
-use super::{action::ActionId, actor::Actor, inventory::inventory::Inventory, InputEvent};
+use super::{action::{Action, ActionId}, actor::Actor, inventory::inventory::Inventory, InputEvent};
 
 pub struct Hotbar {
     background: Texture,
@@ -48,14 +48,36 @@ impl Hotbar {
         self.action_buttons.size = Some([128., 24.]);
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = actions.get(action_id);
-            self.action_buttons.add_key(&format!("act_{}", action_id.as_usize()), Button::new_bg(Sprite::new(action.icon.clone()).texture, Position::Auto));
+            self.action_buttons.add_key(
+                &format!("act_{}", action_id.as_usize()), 
+                Button::new_bg(Sprite::new(action.icon.clone()).texture, Position::Auto)
+                    .tooltip(Self::build_tooltip(action))
+            );
         }
+    }
+
+    fn build_tooltip(action: &Action) -> Tooltip {
+        let mut tooltip = Tooltip::new(action.name.clone());
+        tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
+        match &action.action_type {
+            super::action::ActionType::Targeted { damage, inflicts } => {
+                if let Some(damage) = damage {
+                    tooltip.add_line(TooltipLine::Damage(damage.clone()));
+                }
+                if let Some(inflicts) = inflicts {
+                    tooltip.add_line(TooltipLine::Inflicts(inflicts.clone()));
+                }
+            }
+            _ => ()
+        };
+        tooltip.add_line(TooltipLine::Body(action.description.clone()));
+        return tooltip;
     }
 
 }
 
 impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
-    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext, _ctx: &GameContext) {
+    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext, game_ctx: &GameContext) {
         // Background
         let center = ctx.layout_rect[2] / 2.;
         let base_pos = [center - 128., ctx.layout_rect[3] - 34.];
@@ -83,14 +105,15 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
         let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
         ctx.text_small(&text, 5, [(ap_pos[0] + 31. - text_width / 2.).round(), ap_pos[1] + 5.], Color::from_hex("ffffff"));
 
-        self.action_buttons.render(ctx);
+        self.action_buttons.render(ctx, game_ctx);
 
     }
 
-    fn update(&mut self, _state: HotbarState, _update: &Update, _ctx: &GameContext) {
+    fn update(&mut self, _state: HotbarState, update: &Update, ctx: &mut GameContext) {
+        self.action_buttons.update(update, ctx);
     }
 
-    fn input(&mut self, _state: HotbarState, evt: &InputEvent, _ctx: &GameContext) {
+    fn input(&mut self, _state: HotbarState, evt: &InputEvent, _ctx: &mut GameContext) {
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             if let ButtonEvent::Click = self.action_buttons.get_mut::<Button>(&format!("act_{}", action_id.as_usize())).unwrap().event(evt) {
                 self.selected_action = Some(*action_id);
@@ -113,6 +136,6 @@ impl<'a> HotbarState<'a> {
 
 pub trait NodeWithState<T> {
     fn render(&mut self, _state: T, _ctx: &mut RenderContext, _game_ctx: &GameContext) {}
-    fn update(&mut self, _state: T, _update: &Update, _ctx: &GameContext) {}
-    fn input(&mut self, _state: T, _evt: &InputEvent, _ctx: &GameContext) {}
+    fn update(&mut self, _state: T, _update: &Update, _ctx: &mut GameContext) {}
+    fn input(&mut self, _state: T, _evt: &InputEvent, _ctx: &mut GameContext) {}
 }

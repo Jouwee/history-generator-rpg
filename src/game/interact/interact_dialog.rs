@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, resources::resources::Resources, world::{person::Person, world::World}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, resources::resources::Resources, world::{person::Person, world::World}, GameContext};
 
 pub struct InteractDialog {
     interact_dialog: Option<Dialog>,
@@ -64,9 +64,9 @@ impl InteractDialog {
 
 impl GUINode for InteractDialog {
     
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
         if let Some(interact_dialog) = &mut self.interact_dialog {
-            interact_dialog.render(ctx);
+            interact_dialog.render(ctx, game_ctx);
         }
     }
 

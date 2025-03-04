@@ -1,7 +1,7 @@
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::engine::{render::RenderContext, spritesheet::Spritesheet};
+use crate::{engine::{render::RenderContext, spritesheet::Spritesheet}, GameContext};
 
 use super::{container::{Container, InnerContainer}, GUINode, Position};
 
@@ -17,7 +17,7 @@ impl Dialog {
 }
 
 impl GUINode for Dialog {
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
         let size = [600., 300.];
         let position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         let rect = [position[0], position[1], size[0], size[1]];
@@ -45,7 +45,7 @@ impl GUINode for Dialog {
         // Body
         let transform = ctx.context.transform.trans(position[0] + 8., position[1] + 8.).scale((size[0]-16.) / 8., (size[1]-16.) / 8.);
         image(spritesheet.sprite(1, 1), transform, ctx.gl);
-        self.render_children(ctx, rect);
+        self.render_children(ctx, game_ctx, rect);
     }
 }
 

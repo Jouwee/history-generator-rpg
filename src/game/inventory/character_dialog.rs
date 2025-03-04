@@ -1,4 +1,4 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::Actor, resources::resources::Resources, world::attributes::Attributes};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::Actor, resources::resources::Resources, world::attributes::Attributes, GameContext};
 
 use super::inventory::Inventory;
 
@@ -106,9 +106,9 @@ pub enum CharacterDialogOutput {
 
 impl GUINode for CharacterDialog {
     
-    fn render(&mut self, ctx: &mut RenderContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
         if let Some(interact_dialog) = &mut self.dialog {
-            interact_dialog.render(ctx);
+            interact_dialog.render(ctx, game_ctx);
         }
     }
 

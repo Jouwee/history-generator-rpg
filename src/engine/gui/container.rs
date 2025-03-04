@@ -1,6 +1,6 @@
 use std::{any::Any, collections::BTreeMap};
 
-use crate::engine::render::RenderContext;
+use crate::{engine::{render::RenderContext, scene::Update}, GameContext};
 
 use super::{button::Button, dialog::Dialog, label::Label, vlist::VList, GUINode};
 
@@ -50,15 +50,23 @@ pub trait Container {
         child.downcast_mut::<T>()
     }
 
-    fn render_children(&mut self, ctx: &mut RenderContext, my_rect: [f64; 4]) {
+    fn render_children(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext, my_rect: [f64; 4]) {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
         for child in self.container_mut().children.iter_mut() {
             if let Some(gui_node) = Self::to_gui_node(child) {
-                gui_node.render(ctx);
+                gui_node.render(ctx, game_ctx);
             }
         }
         ctx.layout_rect = layout_rect;
+    }
+
+    fn update_children(&mut self, update: &Update, ctx: &mut GameContext) {
+        for child in self.container_mut().children.iter_mut() {
+            if let Some(gui_node) = Self::to_gui_node(child) {
+                gui_node.update(update, ctx);
+            }
+        }
     }
 
     fn to_gui_node<'a>(unknown: &'a mut Box<dyn Any>) -> Option<&'a mut dyn GUINode> {

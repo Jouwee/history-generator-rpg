@@ -17,6 +17,7 @@ impl crate::commons::id_vec::Id for ActionId {
 pub struct Action {
     pub name: String,
     pub icon: String,
+    pub description: String,
     pub sound_effect: Option<SoundEffect>,
     pub ap_cost: u16,
     pub action_type: ActionType
