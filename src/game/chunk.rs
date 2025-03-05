@@ -197,8 +197,8 @@ impl Chunk {
         }
 
         let noise = Perlin::new(rng.derive("trees").seed());
-        for x in 0..chunk.size.x() {
-            for y in 0..chunk.size.y() {
+        for x in 1..chunk.size.x()-1 {
+            for y in 1..chunk.size.y()-1 {
                 if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                     if let Some(ground) = chunk.map.ground_layer.tile(x, y) {
                         if ground == 1 && rng.rand_chance(0.1) {
@@ -388,14 +388,30 @@ impl Renderable for Chunk {
         for (pos, _item, texture) in self.items_on_ground.iter() {
             ctx.texture_ref(texture, [pos.x as f64 * 24., pos.y as f64 * 24.]);
         }
-
-        // 50 - 60
-
-        let img = game_ctx.assets.image("gui/nav_arrow.png");
-        for y in 0..self.size.y() {
-            ctx.texture_ref(&img.texture, [12., y as f64 * 24. + 12.]);
+        // Renders the nav borders
+        {
+            let left = game_ctx.assets.image("gui/nav_arrow_left.png");
+            for y in 0..self.size.y() {
+                ctx.texture_ref(&left.texture, [12., y as f64 * 24. + 12.]);
+            }
         }
-        //ctx.texture(img, [-1000., -1000.]);
-
+        {
+            let right = game_ctx.assets.image("gui/nav_arrow_right.png");
+            for y in 0..self.size.y() {
+                ctx.texture_ref(&right.texture, [self.size.x() as f64 * 24. - 12., y as f64 * 24. + 12.]);
+            }
+        }
+        {
+            let up = game_ctx.assets.image("gui/nav_arrow_up.png");
+            for x in 1..self.size.x()-1 {
+                ctx.texture_ref(&up.texture, [x as f64 * 24. + 12., 12.]);
+            }
+        }
+        {
+            let down = game_ctx.assets.image("gui/nav_arrow_down.png");
+            for x in 1..self.size.x()-1 {
+                ctx.texture_ref(&down.texture, [x as f64 * 24. + 12., self.size.y() as f64 * 24. - 12.]);
+            }
+        }
     }
 }
