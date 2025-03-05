@@ -16,7 +16,7 @@ impl EffectLayer {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
+    pub fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text

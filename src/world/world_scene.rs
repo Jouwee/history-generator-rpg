@@ -94,7 +94,7 @@ impl Scene for WorldScene {
         ctx.audio.switch_music(TrackMood::Regular);
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         ctx.pixel_art(2);
         use graphics::*;
 

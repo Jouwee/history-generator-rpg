@@ -50,7 +50,7 @@ pub trait Container {
         child.downcast_mut::<T>()
     }
 
-    fn render_children(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext, my_rect: [f64; 4]) {
+    fn render_children(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext, my_rect: [f64; 4]) {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
         for child in self.container_mut().children.iter_mut() {

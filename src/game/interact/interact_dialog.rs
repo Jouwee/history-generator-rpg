@@ -64,7 +64,7 @@ impl InteractDialog {
 
 impl GUINode for InteractDialog {
     
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         if let Some(interact_dialog) = &mut self.interact_dialog {
             interact_dialog.render(ctx, game_ctx);
         }

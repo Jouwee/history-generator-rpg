@@ -225,7 +225,7 @@ impl Actor {
 }
 
 impl Renderable for Actor {
-    fn render(&self, ctx: &mut RenderContext, game_ctx: &GameContext) {
+    fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
         // Applies the animation to the rendering
         pos[0] += self.animation.translate[0];

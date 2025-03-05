@@ -25,7 +25,7 @@ pub mod inventory;
 pub mod log;
 
 pub trait Renderable {
-    fn render(&self, ctx: &mut RenderContext, game_ctx: &GameContext);
+    fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
 }
 
 pub struct InputEvent {
@@ -209,13 +209,13 @@ impl Scene for GameSceneState {
         }
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.pixel_art(2);
         let center = self.chunk.player.xy;
         ctx.push();
         // Game
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
-        self.chunk.render(ctx, &game_ctx);
+        self.chunk.render(ctx, game_ctx);
 
         if let Some(_) = self.hotbar.selected_action {
             ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);

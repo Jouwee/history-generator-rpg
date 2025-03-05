@@ -30,7 +30,7 @@ impl Container for VList {
         &mut self.inner
     }
 
-    fn render_children(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext, my_rect: [f64; 4]) {
+    fn render_children(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext, my_rect: [f64; 4]) {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
         let gap = self.gap;
@@ -47,7 +47,7 @@ impl Container for VList {
 
 impl GUINode for VList {
     
-    fn render(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
         let size = [600., 300.];
         let position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         let rect = [position[0], position[1], size[0], size[1]];

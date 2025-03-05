@@ -115,7 +115,7 @@ impl Scene for WorldGenScene {
         ctx.audio.switch_music(TrackMood::Regular);
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         ctx.scale(2.);
         use graphics::*;
         let white = Color::rgb([1., 1., 1.]);

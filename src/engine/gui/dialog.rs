@@ -17,7 +17,7 @@ impl Dialog {
 }
 
 impl GUINode for Dialog {
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let size = [600., 300.];
         let position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         let rect = [position[0], position[1], size[0], size[1]];

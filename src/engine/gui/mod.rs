@@ -10,7 +10,7 @@ pub mod tooltip;
 pub mod vlist;
 
 pub trait GUINode {
-    fn render(&mut self, _ctx: &mut RenderContext, _game_ctx: &GameContext) {}
+    fn render(&mut self, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
     fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) {}
 

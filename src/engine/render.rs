@@ -3,14 +3,14 @@ use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use piston::RenderArgs;
 use crate::graphics::Transformed;
 
-use super::{assets::Assets, Color};
+use super::{assets::OldAssets, Color};
 
 pub struct RenderContext<'a, 'b> {
     pub args: &'a RenderArgs,
     pub original_transform: [[f64; 3]; 2],
     pub context: Context,
     pub gl: &'a mut GlGraphics,
-    pub assets: &'b mut Assets,
+    pub assets: &'b mut OldAssets,
     pub layout_rect: [f64; 4],
     pub camera_rect: [f64; 4],
     pub transform_queue: Vec<[[f64; 3]; 2]>,

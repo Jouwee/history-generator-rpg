@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use piston::{Button, ButtonState, Key};
 
@@ -6,8 +6,11 @@ use crate::{engine::{render::RenderContext, scene::Update, Color}, game::InputEv
 
 pub struct DebugOverlay {
     active: bool,
-    fps: TrackingBlocks,
-    tps: TrackingBlocks,
+    fps: CountingBlocks,
+    render_time: TrackingBlocks,
+    tps: CountingBlocks,
+    update_time: TrackingBlocks,
+    input_time: TrackingBlocks,
 }
 
 impl DebugOverlay {
@@ -15,8 +18,11 @@ impl DebugOverlay {
     pub fn new() -> DebugOverlay {
         DebugOverlay {
             active: false,
-            fps: TrackingBlocks::new(),
-            tps: TrackingBlocks::new(),
+            fps: CountingBlocks::new(),
+            render_time: TrackingBlocks::new(),
+            tps: CountingBlocks::new(),
+            update_time: TrackingBlocks::new(),
+            input_time: TrackingBlocks::new(),
         }
     }
 
@@ -24,13 +30,26 @@ impl DebugOverlay {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], Color::from_hex("00000080"));
-            context.text(format!("FPS: {:.2}", self.fps.average()).as_str(), 11, [0., 16.], Color::from_hex("ffffff"));
-            context.text(format!("TPS: {:.2}", self.tps.average()).as_str(), 11, [0., 34.], Color::from_hex("ffffff"));
+            context.text_small(format!("FPS: {:.2} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), 5, [0., 12.], Color::from_hex("ffffff"));
+            context.text_small(format!("TPS: {:.2} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), 5, [0., 20.], Color::from_hex("ffffff"));
+            context.text_small(format!("Inp: {:.2}", self.input_time.average()).as_str(), 5, [0., 28.], Color::from_hex("ffffff"));
         }
     }
 
     pub fn update(&mut self, _update: &Update) {
         self.tps.count();
+    }
+
+    pub fn render_time(&mut self, time: Duration) {
+        self.render_time.add(time.as_secs_f64());
+    }
+
+    pub fn update_time(&mut self, time: Duration) {
+        self.update_time.add(time.as_secs_f64());
+    }
+
+    pub fn input_time(&mut self, time: Duration) {
+        self.input_time.add(time.as_secs_f64());
     }
 
     pub fn input(&mut self, input: &InputEvent) {
@@ -42,16 +61,16 @@ impl DebugOverlay {
     }
 }
 
-struct TrackingBlocks {
+struct CountingBlocks {
     // Start, finish, count
     blocks: [(f64, usize); 10],
     start: Instant
 }
 
-impl TrackingBlocks {
+impl CountingBlocks {
     
-    fn new() -> TrackingBlocks {
-        TrackingBlocks {
+    fn new() -> CountingBlocks {
+        CountingBlocks {
             blocks: [(0., 0); 10],
             start: Instant::now()
         }
@@ -76,6 +95,35 @@ impl TrackingBlocks {
         }
         let current = self.start.elapsed().as_secs_f64();
         return sum as f64 / (current - self.blocks[9].0);
+    }
+
+}
+
+struct TrackingBlocks {
+    blocks: [f64; 10],
+    idx: usize
+}
+
+impl TrackingBlocks {
+    
+    fn new() -> TrackingBlocks {
+        TrackingBlocks {
+            blocks: [0.; 10],
+            idx: 0
+        }
+    }
+
+    fn add(&mut self, v: f64) {
+        self.blocks[self.idx] = v;
+        self.idx = (self.idx + 1) % 10;
+    }
+
+    fn average(&self) -> f64 {
+        let mut sum = 0.;
+        for i in 0..10 {
+            sum += self.blocks[i];
+        }
+        return sum as f64 / 10.;
     }
 
 }

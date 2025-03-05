@@ -100,7 +100,7 @@ impl GUINode for Button {
         }
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let size = self.min_size(ctx);
         let mut position = self.compute_position(&self.position, self.parent_rect(ctx), size);
         self.last_layout = [position[0], position[1], size[0], size[1]];

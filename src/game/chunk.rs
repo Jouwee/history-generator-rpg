@@ -365,7 +365,7 @@ impl Chunk {
 }
 
 impl Renderable for Chunk {
-    fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext) {
+    fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
         self.map.ground_layer.render(ctx);
 
         let mut actors_by_position = HashMap::new();
@@ -388,6 +388,14 @@ impl Renderable for Chunk {
         for (pos, _item, texture) in self.items_on_ground.iter() {
             ctx.texture_ref(texture, [pos.x as f64 * 24., pos.y as f64 * 24.]);
         }
+
+        // 50 - 60
+
+        let img = game_ctx.assets.image("gui/nav_arrow.png");
+        for y in 0..self.size.y() {
+            ctx.texture_ref(&img.texture, [12., y as f64 * 24. + 12.]);
+        }
+        //ctx.texture(img, [-1000., -1000.]);
 
     }
 }

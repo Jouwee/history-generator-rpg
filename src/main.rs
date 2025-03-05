@@ -6,7 +6,7 @@ extern crate piston;
 
 use std::{collections::HashMap, fs::File, vec, io::Write};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
-use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
@@ -39,13 +39,14 @@ pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     context: GameContext,
     scene: SceneEnum,
-    assets: Assets,
+    assets: OldAssets,
     debug_overlay: DebugOverlay,
     display_context: DisplayContext
 }
 
 pub struct GameContext {
     audio: Audio,
+    assets: Assets,
     resources: Resources,
     tooltips: TooltipRegistry,
 }
@@ -68,7 +69,7 @@ impl App {
         let c = self.gl.draw_begin(args.viewport());
         
         // Clear the screen.
-        clear(Color::from_hex("14233a").f32_arr(), &mut self.gl);
+        clear(Color::from_hex("090714").f32_arr(), &mut self.gl);
         let mut context = RenderContext {
             args,
             context: c,
@@ -85,13 +86,13 @@ impl App {
         match &mut self.scene {
             SceneEnum::None => {},
             SceneEnum::WorldGen(game_state) => {
-                game_state.render(&mut context, &self.context);
+                game_state.render(&mut context, &mut self.context);
             },
             SceneEnum::World(game_state) => {
-                game_state.render(&mut context, &self.context);
+                game_state.render(&mut context, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.render(&mut context, &self.context);
+                game_state.render(&mut context, &mut self.context);
             },
         }
         self.debug_overlay.render(&mut context);
@@ -384,11 +385,12 @@ fn main() {
         gl: GlGraphics::new(opengl),
         context: GameContext {
             audio: Audio::new(),
+            assets: Assets::new(),
             resources,
             tooltips
         },
         scene: SceneEnum::None,
-        assets: Assets::new(),
+        assets: OldAssets::new(),
         debug_overlay: DebugOverlay::new(),
         display_context: DisplayContext {
             scale: 2.,
@@ -425,11 +427,15 @@ fn main() {
     let mut events = Events::new(event_settings);
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
+            let now: Instant = Instant::now();
             app.render(&args);
+            app.debug_overlay.render_time(now.elapsed());
         }
 
         if let Some(args) = e.update_args() {
+            let now: Instant = Instant::now();
             app.update(&args, &event_settings, last_mouse_pos);
+            app.debug_overlay.update_time(now.elapsed());
         }
 
         if let Some(k) = e.mouse_cursor_args() {
@@ -437,6 +443,7 @@ fn main() {
         }
 
         if let Some(k) = e.button_args() {
+            let now: Instant = Instant::now();
             if k.state == ButtonState::Press {
                 let p = last_mouse_pos;
                 let input_event = InputEvent {
@@ -523,6 +530,8 @@ fn main() {
                 }
                 
             }
+            app.debug_overlay.input_time(now.elapsed());
+
         }
 
     }

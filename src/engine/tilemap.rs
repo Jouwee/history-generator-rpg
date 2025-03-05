@@ -40,7 +40,7 @@ impl TileMap {
         return self.tiles[idx]
     }
 
-    pub fn render<F>(&self, ctx: &mut RenderContext, z_order_render: F) where F: Fn(&mut RenderContext, usize, usize) -> () {
+    pub fn render<F>(&self, ctx: &mut RenderContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, usize, usize) -> () {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (y * self.width) + x;

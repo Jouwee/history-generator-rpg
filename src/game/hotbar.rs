@@ -77,7 +77,7 @@ impl Hotbar {
 }
 
 impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
-    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, state: HotbarState, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         // Background
         let center = ctx.layout_rect[2] / 2.;
         let base_pos = [center - 128., ctx.layout_rect[3] - 34.];
@@ -135,7 +135,7 @@ impl<'a> HotbarState<'a> {
 }
 
 pub trait NodeWithState<T> {
-    fn render(&mut self, _state: T, _ctx: &mut RenderContext, _game_ctx: &GameContext) {}
+    fn render(&mut self, _state: T, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
     fn update(&mut self, _state: T, _update: &Update, _ctx: &mut GameContext) {}
     fn input(&mut self, _state: T, _evt: &InputEvent, _ctx: &mut GameContext) {}
 }

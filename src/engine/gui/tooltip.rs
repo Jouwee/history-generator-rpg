@@ -28,9 +28,15 @@ impl GUINode for TooltipOverlay {
         }
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &GameContext) {
-        if let Some((_hash, tooltip, cursor, time)) = &game_ctx.tooltips.current_tooltip {
-            if *time < 0.5 {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+
+        let tooltip = match &game_ctx.tooltips.current_tooltip {
+            Some(v) => Some(v.clone()),
+            None => None
+        };
+
+        if let Some((_hash, tooltip, cursor, time)) = tooltip {
+            if time < 0.5 {
                 return
             }
             // Compute size
@@ -182,7 +188,7 @@ impl TooltipLine {
         }
     }
 
-    fn render(&self, mut pos: [f64; 2], ctx: &mut RenderContext, _game_ctx: &GameContext) {
+    fn render(&self, mut pos: [f64; 2], ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         match &self {
             Self::Title(title) => ctx.text_small(&title, 5, pos, Color::from_hex("ffffff")),
             Self::Body(body) => ctx.text_small(&body, 5, pos, Color::from_hex("5a6069")),

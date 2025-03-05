@@ -32,7 +32,7 @@ impl Container for HList {
         &mut self.inner
     }
 
-    fn render_children(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext, my_rect: [f64; 4]) {
+    fn render_children(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext, my_rect: [f64; 4]) {
         let layout_rect = ctx.layout_rect;
         ctx.layout_rect = my_rect;
         let gap = self.gap;
@@ -49,7 +49,7 @@ impl Container for HList {
 
 impl GUINode for HList {
     
-    fn render(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &GameContext) {
+    fn render(&mut self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
         let size = match self.size {
             Some(size) => size,
             None => [400., 100.]
