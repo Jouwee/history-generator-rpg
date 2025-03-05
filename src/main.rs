@@ -10,7 +10,7 @@ use engine::{assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overla
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -466,6 +466,16 @@ fn main() {
                             app.context.resources.materials.id_of("mat:copper"),
                             app.context.resources.materials.id_of("mat:copper"),
                             &app.context.resources.materials)));
+
+
+                        player.inventory.add(Item::Mace(Mace::new(world::item::ItemQuality::Normal,
+                            app.context.resources.materials.id_of("mat:oak"),
+                            app.context.resources.materials.id_of("mat:steel"),
+                            app.context.resources.materials.id_of("mat:copper"),
+                            &app.context.resources.materials)));
+
+                        player.inventory.equip(1);
+
                         let codex = KnowledgeCodex::new();
                         let mut scene = WorldScene::new(world, player, codex);
                         scene.init(&mut app.context);

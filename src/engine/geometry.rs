@@ -14,6 +14,9 @@ impl Size2D {
     pub fn area(&self) -> usize {
         return self.x() * self.y()
     }
+    pub fn in_bounds(&self, xy: Coord2) -> bool {
+        return xy.x > 0 && xy.y > 0 && xy.x < self.0 as i32 && xy.y < self.1 as i32
+    }
 }
 
 pub struct Vector2 {

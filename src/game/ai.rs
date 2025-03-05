@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, VecDeque}, time::Instant, vec};
 
-use crate::{engine::geometry::Coord2, game::actor::ActorType, resources::resources::Actions, GameContext};
+use crate::{engine::geometry::{Coord2, Size2D}, game::actor::ActorType, resources::resources::Actions, GameContext};
 
 use super::{action::{Action, ActionId, ActionType, DamageType}, actor::Actor, chunk::Chunk};
 
@@ -85,10 +85,10 @@ impl AiSolver {
             return runner
         }
 
-        let mut astar = AStar::new(chunk.player.xy);
+        let mut astar = AStar::new(chunk.size, chunk.player.xy);
         
         astar.find_path(ctx.xy, |xy| {
-            if chunk.map.blocks_movement(xy) {
+            if !chunk.size.in_bounds(xy) || chunk.map.blocks_movement(xy) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);
@@ -123,7 +123,7 @@ impl AiSolver {
                 ActionType::Move { offset } => {
                     let mut ctx = ctx.clone();
                     ctx.xy = ctx.xy + *offset;
-                    if chunk.map.blocks_movement(ctx.xy) {
+                    if !chunk.size.in_bounds(ctx.xy) || chunk.map.blocks_movement(ctx.xy) {
                         continue;
                     }
                     ctx.ap -= action.ap_cost as i32;
@@ -224,17 +224,19 @@ struct AStar {
     to: Coord2,
     came_from: HashMap<Coord2, Coord2>,
     cost_so_far: HashMap<Coord2, f32>,
-    frontier: VecDeque<Coord2>
+    frontier: VecDeque<Coord2>,
+    size: Size2D
 }
 
 impl AStar {
 
-    fn new(to: Coord2) -> AStar {
+    fn new(size: Size2D, to: Coord2) -> AStar {
         let mut astar = AStar {
             to,
             came_from: HashMap::new(),
             cost_so_far: HashMap::new(),
-            frontier: VecDeque::new()
+            frontier: VecDeque::new(),
+            size
         };
         astar.frontier.push_front(to);
         astar.cost_so_far.insert(to, 0.);
@@ -295,19 +297,18 @@ impl AStar {
         if point.y >= 1 {
             neighbors.push(point + Coord2::xy(0, -1));
         }
-        // TODO:
-        if point.x < 128 {
+        if point.x < self.size.0 as i32 {
             neighbors.push(point + Coord2::xy(1, 0));
         }
-        if point.y < 128  {
+        if point.y < self.size.1 as i32 {
             neighbors.push(point + Coord2::xy(0, 1));
         }
         return neighbors;
     }
 
-    fn heuristic(a: Coord2, b: Coord2) -> f32 {
-        return f32::abs((a.x - b.x) as f32) + f32::abs((a.y - b.y) as f32);
-    }
+    // fn heuristic(a: Coord2, b: Coord2) -> f32 {
+    //     return f32::abs((a.x - b.x) as f32) + f32::abs((a.y - b.y) as f32);
+    // }
     
 }
 

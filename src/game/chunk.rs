@@ -9,7 +9,7 @@ use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, eng
 use super::{actor::Actor, Renderable};
 
 pub struct Chunk {
-    size: Size2D,
+    pub size: Size2D,
     pub map: ChunkMap,
     pub player: Actor,
     pub npcs: Vec<Actor>,
