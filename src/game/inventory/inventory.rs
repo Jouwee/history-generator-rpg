@@ -1,5 +1,6 @@
 use crate::world::item::Item;
 
+#[derive(Clone)]
 pub struct Inventory {
     items: Vec<Item>,
     equipped: Option<usize>

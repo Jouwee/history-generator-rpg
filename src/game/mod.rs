@@ -61,7 +61,7 @@ pub struct GameSceneState {
 
 impl GameSceneState {
     pub fn new(world: World, world_pos: Coord2, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
-        let mut state = GameSceneState {
+        GameSceneState {
             world,
             codex,
             chunk,
@@ -79,10 +79,7 @@ impl GameSceneState {
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new()
-        };
-        state.save_creature_appearances();
-        state.turn_controller.roll_initiative(state.chunk.npcs.len());
-        return state
+        }
     }
 
     fn save_creature_appearances(&mut self) {
@@ -172,10 +169,38 @@ impl GameSceneState {
         return true
     }
 
+    fn move_to_chunk(&mut self, world_pos: Coord2, ctx: &mut GameContext) {
+        // Move player to opposite side
+        let mut player = self.chunk.player.clone();
+        let offset = world_pos - self.world_pos;
+        if offset.x < 0 {
+            player.xy.x = self.chunk.size.x() as i32 - 2;
+        }
+        if offset.x > 0 {
+            player.xy.x = 1;
+        }
+        if offset.y < 0 {
+            player.xy.y = self.chunk.size.y() as i32 - 2;
+        }
+        if offset.y > 0 {
+            player.xy.y = 1;
+        }
+        // Creates the new chunk
+        // TODO: When out of bounds, make a special chunk gen
+        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, self.world_pos, player);
+        // Switcheroo
+        self.world_pos = world_pos;
+        self.chunk = chunk;
+        // Re-init
+        self.init(ctx);
+    }
+
 }
 
 impl Scene for GameSceneState {
     fn init(&mut self, ctx: &mut GameContext) {
+        self.save_creature_appearances();
+        self.turn_controller.roll_initiative(self.chunk.npcs.len());
         self.hotbar.init(&self.chunk.player.inventory, ctx);
         if self.chunk.npcs.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
@@ -240,13 +265,31 @@ impl Scene for GameSceneState {
         for npc in self.chunk.npcs.iter_mut() {
             npc.update(update.delta_time);
             hostile = hostile || npc.actor_type == ActorType::Hostile;
-            self.turn_mode = TurnMode::TurnBased;
         }
         self.chunk.player.update(update.delta_time);
         if hostile {
+            self.turn_mode = TurnMode::TurnBased;
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
             ctx.audio.switch_music(TrackMood::Regular);
+        }
+
+        // Check movement between chunks
+        if self.chunk.player.xy.x == 0 {
+            self.move_to_chunk(self.world_pos + Coord2::xy(-1, 0), ctx);
+            return
+        }
+        if self.chunk.player.xy.y == 0 {
+            self.move_to_chunk(self.world_pos + Coord2::xy(0, -1), ctx);
+            return
+        }
+        if self.chunk.player.xy.x == self.chunk.size.x() as i32 - 1 {
+            self.move_to_chunk(self.world_pos + Coord2::xy(1, 0), ctx);
+            return
+        }
+        if self.chunk.player.xy.y == self.chunk.size.y() as i32 - 1 {
+            self.move_to_chunk(self.world_pos + Coord2::xy(0, 1), ctx);
+            return
         }
 
         match self.turn_mode {

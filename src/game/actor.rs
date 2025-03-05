@@ -4,13 +4,14 @@ use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}
 
 use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum ActorType {
     Player,
     Passive,
     Hostile
 }
 
+#[derive(Clone)]
 pub struct Actor {
     pub xy: Coord2,
     pub animation: AnimationTransform,
@@ -240,6 +241,7 @@ impl Renderable for Actor {
     }
 }
 
+#[derive(Clone)]
 pub struct ActionPointsComponent {
     pub action_points: i32,
     pub max_action_points: u16,
@@ -280,6 +282,7 @@ impl ActionPointsComponent {
 
 }
 
+#[derive(Clone)]
 pub struct HealthPointsComponent {
     pub health_points: f32,
     pub max_health_points: u16,
@@ -315,6 +318,7 @@ impl HealthPointsComponent {
     }
 }
 
+#[derive(Clone)]
 struct RunningAffliction {
     affliction: Affliction,
     delta: usize,

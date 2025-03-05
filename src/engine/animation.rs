@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct AnimationTransform {
     pub translate: [f64; 2],
     current_animation: Option<Animation>,

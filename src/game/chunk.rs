@@ -83,7 +83,7 @@ impl Chunk {
     }
 
     pub fn playground(resources: &Resources, player: Actor) -> Chunk {
-        let mut chunk = Self::new(Size2D(256, 256), player, resources);
+        let mut chunk = Self::new(Size2D(128, 128), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
                 chunk.map.ground_layer.set_tile(x, y, 1);
@@ -114,8 +114,6 @@ impl Chunk {
         let npc = Actor::from_species(Coord2::xy(26, 40), &resources.species.id_of("species:spider"), species);
         chunk.npcs.push(npc);
 
-
-
         chunk.map.object_layer.set_tile(24,37, 1);
         chunk.map.object_layer.set_tile(25,37, 1);
         chunk.map.object_layer.set_tile(26,37, 1);
@@ -145,7 +143,7 @@ impl Chunk {
     }
 
     pub fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
-        let mut chunk = Self::new(Size2D(256, 256), player, resources);
+        let mut chunk = Self::new(Size2D(128, 128), player, resources);
         let mut rng = Rng::rand();
         let tile = world.map.tile(xy.x as usize, xy.y as usize);
         let noise = Perlin::new(rng.derive("terrain").seed());

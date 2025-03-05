@@ -4,6 +4,7 @@ use crate::{engine::geometry::{Coord2, Size2D}, game::actor::ActorType, resource
 
 use super::{action::{Action, ActionId, ActionType, DamageType}, actor::Actor, chunk::Chunk};
 
+#[derive(Clone)]
 pub struct AiRunner {
     pub actions: VecDeque<ActionId>,
     pub delay: f64,
