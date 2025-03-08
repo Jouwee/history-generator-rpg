@@ -30,9 +30,9 @@ impl DebugOverlay {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], Color::from_hex("00000080"));
-            context.text_small(format!("FPS: {:.2} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), 5, [0., 12.], Color::from_hex("ffffff"));
-            context.text_small(format!("TPS: {:.2} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), 5, [0., 20.], Color::from_hex("ffffff"));
-            context.text_small(format!("Inp: {:.2}", self.input_time.average()).as_str(), 5, [0., 28.], Color::from_hex("ffffff"));
+            context.text_small(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), 5, [0., 12.], Color::from_hex("ffffff"));
+            context.text_small(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), 5, [0., 20.], Color::from_hex("ffffff"));
+            context.text_small(format!("Inp: {:.0}", self.input_time.average()).as_str(), 5, [0., 28.], Color::from_hex("ffffff"));
         }
     }
 

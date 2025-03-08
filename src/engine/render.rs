@@ -23,6 +23,10 @@ pub struct RenderContext<'a, 'b> {
 impl<'a, 'b> RenderContext<'a, 'b> {
 
     pub fn pixel_art(&mut self, s: u8) {
+        self.scale(s as f64);
+    }
+
+    pub fn scale(&mut self, s: f64) {
         let s = s as f64;
         self.context.transform = self.context.transform.scale(s, s);
         self.layout_rect[2] = self.layout_rect[2] / s;
@@ -44,12 +48,6 @@ impl<'a, 'b> RenderContext<'a, 'b> {
     pub fn try_pop(&mut self) -> Result<(), ()> {
         self.context.transform = self.transform_queue.pop().ok_or(())?;
         return Ok(())
-    }
-
-    pub fn scale(&mut self, s: f64) {
-        self.context.transform = self.context.transform.scale(s, s);
-        self.layout_rect[2] = self.layout_rect[2] / s;
-        self.layout_rect[3] = self.layout_rect[3] / s;
     }
 
     pub fn rectangle_fill(&mut self, rect: [f64; 4], color: Color) {

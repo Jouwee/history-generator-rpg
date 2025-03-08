@@ -19,6 +19,7 @@ pub trait GUINode {
         match position {
             Position::Auto => p = [parent_rect[0], parent_rect[1]],
             Position::Anchored(Anchor::TopLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + *y],
+            Position::Anchored(Anchor::TopRight, x, y) => p = [parent_rect[0] + parent_rect[2] - size[0] - *x, parent_rect[1] + *y],
             Position::Anchored(Anchor::BottomLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomRight, x, y) => p = [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomCenter, x, y) => p = [parent_rect[0] + (parent_rect[2] / 2. - size[0] / 2.) + *x, parent_rect[1] + parent_rect[3] + *y],
@@ -45,6 +46,7 @@ pub enum Position {
 
 pub enum Anchor {
     TopLeft,
+    TopRight,
     BottomLeft,
     BottomRight,
     BottomCenter

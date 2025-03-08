@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "1. Planning.md",
+                "file": "2. Tech Debt & Perf.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "1. Planning"
+              "title": "2. Tech Debt & Perf"
             }
           },
           {
@@ -27,15 +27,16 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Rules.md",
+                "file": "1. Planning.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Rules"
+              "title": "1. Planning"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -177,13 +178,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "5304f4fc79498ce8",
+  "active": "d0aee29acf13f192",
   "lastOpenFiles": [
+    "Rules.md",
     "2. Tech Debt & Perf.md",
     "1. Planning.md",
     "0. Ideas.md",
     "3. Release Notes.md",
-    "Rules.md",
     "references.md",
     "release_checklist.md",
     "Welcome.md",

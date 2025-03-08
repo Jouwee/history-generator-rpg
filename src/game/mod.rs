@@ -9,7 +9,9 @@ use effect_layer::EffectLayer;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
+use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
+use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
 
@@ -22,7 +24,7 @@ pub mod effect_layer;
 pub mod hotbar;
 pub mod interact;
 pub mod inventory;
-pub mod log;
+pub mod map_modal;
 
 pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
@@ -32,6 +34,7 @@ pub struct InputEvent {
     pub mouse_pos_cam: [f64; 2],
     pub mouse_pos_gui: [f64; 2],
     pub button_args: ButtonArgs,
+    pub evt: NewInputEvent
 }
 
 enum TurnMode {
@@ -48,6 +51,7 @@ pub struct GameSceneState {
     turn_controller: TurnController,
     button_codex: Button,
     button_inventory: Button,
+    button_map: Button,
     button_end_turn: Button,
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
@@ -57,6 +61,7 @@ pub struct GameSceneState {
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
+    map_modal: Option<MapModal>
 }
 
 impl GameSceneState {
@@ -71,6 +76,7 @@ impl GameSceneState {
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
             button_codex: Button::new("Codex", Position::Anchored(Anchor::BottomLeft, 64.0, 32.0)),       
+            button_map: Button::new("Map", Position::Anchored(Anchor::BottomCenter, -108.0, -24.0)),       
             button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
             button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
             interact_dialog: InteractDialog::new(),
@@ -78,7 +84,8 @@ impl GameSceneState {
             inventory_dialog: CharacterDialog::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
-            effect_layer: EffectLayer::new()
+            effect_layer: EffectLayer::new(),
+            map_modal: None,
         }
     }
 
@@ -211,9 +218,12 @@ impl Scene for GameSceneState {
 
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.pixel_art(2);
-        let center = self.chunk.player.xy;
         ctx.push();
+        if let Some(map) = &mut self.map_modal {
+            return map.render(ctx, game_ctx);
+        }
         // Game
+        let center = self.chunk.player.xy;
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx, game_ctx);
 
@@ -227,6 +237,7 @@ impl Scene for GameSceneState {
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
         self.button_codex.render(ctx, game_ctx);
         self.button_inventory.render(ctx, game_ctx);
+        self.button_map.render(ctx, game_ctx);
         if self.can_end_turn() {
             self.button_end_turn.render(ctx, game_ctx);
         }
@@ -240,9 +251,14 @@ impl Scene for GameSceneState {
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
+        if let Some(map) = &mut self.map_modal {
+            return map.update(update, ctx);
+        }
+
         self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
         self.button_codex.update(update, ctx);
         self.button_inventory.update(update, ctx);
+        self.button_map.update(update, ctx);
         if self.can_end_turn() {
             self.button_end_turn.update(update, ctx);
         }
@@ -341,6 +357,13 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
+        if let Some(map) = &mut self.map_modal {
+            if let MapModalEvent::Close = map.input(evt, ctx) {
+                self.map_modal = None;
+            }
+            return
+        }
+
         self.hotbar.input(HotbarState::new(&self.chunk.player), evt, ctx);
         self.interact_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
         self.codex_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
@@ -369,6 +392,13 @@ impl Scene for GameSceneState {
             return;
         }
 
+        if let ButtonEvent::Click = self.button_map.event(evt) {
+            let mut map = MapModal::new();
+            map.init(&self.world, &self.world_pos);
+            self.map_modal = Some(map);
+            return;
+        }
+
         if let ButtonEvent::Click = self.button_inventory.event(evt) {
             self.inventory_dialog.start_dialog(&self.chunk.player, &ctx.resources);
             return;
@@ -390,6 +420,11 @@ impl Scene for GameSceneState {
                     if let TurnMode::TurnBased = self.turn_mode {
                         self.next_turn(ctx);
                     }
+                },
+                Btn::Keyboard(Key::M) => {
+                    let mut map = MapModal::new();
+                    map.init(&self.world, &self.world_pos);
+                    self.map_modal = Some(map);
                 },
                 Btn::Keyboard(Key::Up) => {
                     let action = ctx.resources.actions.find("act:move_up");  

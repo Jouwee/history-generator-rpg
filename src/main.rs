@@ -4,17 +4,17 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{collections::HashMap, fs::File, vec, io::Write};
+use std::{collections::{HashMap, HashSet}, fs::File, io::Write, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
-use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent};
+use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
+use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent as OldInputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
-use piston::{event_loop::{EventSettings, Events}, UpdateArgs};
+use piston::{event_loop::{EventSettings, Events}, ButtonArgs, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
@@ -49,6 +49,7 @@ pub struct GameContext {
     assets: Assets,
     resources: Resources,
     tooltips: TooltipRegistry,
+    display_context: DisplayContext
 }
 
 pub struct DisplayContext {
@@ -99,6 +100,8 @@ impl App {
         // TODO: This is really disconnected
         self.display_context.camera_rect = context.camera_rect;
         self.display_context.gui_rect = context.layout_rect;
+        self.context.display_context.camera_rect = context.camera_rect;
+        self.context.display_context.gui_rect = context.layout_rect;
         self.gl.draw_end();
 
     }
@@ -132,7 +135,7 @@ impl App {
         }
     }
 
-    fn input(&mut self, args: &InputEvent) {
+    fn input(&mut self, args: &OldInputEvent) {
         self.debug_overlay.input(args);
         match &mut self.scene {
             SceneEnum::None => {},
@@ -372,7 +375,6 @@ fn main() {
     // Create a Glutin window.
     let mut window: Window = WindowSettings::new("spinning-square", [200, 200])
         .graphics_api(opengl)
-        .exit_on_esc(true)
         .build()
         .unwrap();
 
@@ -387,7 +389,12 @@ fn main() {
             audio: Audio::new(),
             assets: Assets::new(),
             resources,
-            tooltips
+            tooltips,
+            display_context: DisplayContext {
+                scale: 2.,
+                camera_rect: [0.; 4],
+                gui_rect: [0.; 4]
+            }
         },
         scene: SceneEnum::None,
         assets: OldAssets::new(),
@@ -424,6 +431,11 @@ fn main() {
     event_settings.max_fps = 30;
     event_settings.ups = 30;
 
+    let mut input_state = InputState {
+        last_mouse: [0.; 2],
+        pressed: HashSet::new()
+    };
+
     let mut events = Events::new(event_settings);
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
@@ -440,16 +452,26 @@ fn main() {
 
         if let Some(k) = e.mouse_cursor_args() {
             last_mouse_pos = k;
+            // TODO: Fake event
+            let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
+            let input_event = OldInputEvent {
+                mouse_pos_cam: [k[0] / app.display_context.scale + app.display_context.camera_rect[0], k[1] / app.display_context.scale + app.display_context.camera_rect[1]],
+                mouse_pos_gui: [k[0] / app.display_context.scale, k[1] / app.display_context.scale],
+                button_args: b,
+                evt: InputEvent::from_mouse_move(k, &app.display_context, &mut input_state)
+            };
+            app.input(&input_event);
         }
 
         if let Some(k) = e.button_args() {
             let now: Instant = Instant::now();
-            if k.state == ButtonState::Press {
+            if k.state == ButtonState::Press || k.state == ButtonState::Release {
                 let p = last_mouse_pos;
-                let input_event = InputEvent {
+                let input_event = OldInputEvent {
                     mouse_pos_cam: [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]],
                     mouse_pos_gui: [p[0] / app.display_context.scale, p[1] / app.display_context.scale],
-                    button_args: k
+                    button_args: k,
+                    evt: InputEvent::from_button_args(&k, &mut input_state)
                 };
 
                 app.input(&input_event);

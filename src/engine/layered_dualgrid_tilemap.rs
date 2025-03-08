@@ -70,8 +70,8 @@ impl LayeredDualgridTilemap {
             (ctx.camera_rect[1] / self.cell_height as f64 - 1.).max(0.) as usize
         ];
         let cull_limit = [
-            cull_start[0] + ctx.camera_rect[2] as usize / self.cell_width,
-            cull_start[1] + ctx.camera_rect[3] as usize / self.cell_height
+            1 + cull_start[0] + ctx.camera_rect[2] as usize / self.cell_width,
+            1 + cull_start[1] + ctx.camera_rect[3] as usize / self.cell_height
         ];
         let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
         let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
