@@ -25,6 +25,7 @@ pub mod hotbar;
 pub mod interact;
 pub mod inventory;
 pub mod map_modal;
+pub mod options;
 
 pub trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
@@ -194,7 +195,7 @@ impl GameSceneState {
         }
         // Creates the new chunk
         // TODO: When out of bounds, make a special chunk gen
-        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, self.world_pos, player);
+        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, world_pos, player);
         // Switcheroo
         self.world_pos = world_pos;
         self.chunk = chunk;

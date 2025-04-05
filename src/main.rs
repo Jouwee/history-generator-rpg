@@ -7,7 +7,7 @@ extern crate piston;
 use std::{collections::{HashMap, HashSet}, fs::File, io::Write, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, GameSceneState, InputEvent as OldInputEvent};
+use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
@@ -382,11 +382,15 @@ fn main() {
 
     let tooltips = TooltipRegistry::new();
 
+    let options = GameOptions {
+        audio: game::options::AudioOptions { music_volume: 0.3 }
+    };
+
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
         context: GameContext {
-            audio: Audio::new(),
+            audio: Audio::new(options.audio.clone()),
             assets: Assets::new(),
             resources,
             tooltips,
@@ -487,7 +491,7 @@ fn main() {
                         }
                         let species_id = app.context.resources.species.id_of("species:human");
                         let species = app.context.resources.species.get(&species_id);
-                        let mut player = Actor::player(Coord2::xy(32, 32), &species_id, species);
+                        let mut player = Actor::player(Coord2::xy(16, 16), &species_id, species);
 
                         player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal,
                             app.context.resources.materials.id_of("mat:oak"),

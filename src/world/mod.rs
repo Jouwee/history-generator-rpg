@@ -6,6 +6,7 @@ pub mod faction;
 pub mod history_generator;
 pub mod item;
 pub mod material;
+pub mod map_features;
 pub mod person;
 pub mod region;
 pub mod settlement;

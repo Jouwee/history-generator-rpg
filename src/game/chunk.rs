@@ -209,6 +209,84 @@ impl Chunk {
             }
         }
 
+
+
+        // Roads
+        if world.map_features.has_road(xy) {
+            let road_north = world.map_features.has_road(xy + Coord2::xy(0, -1));
+            let road_south = world.map_features.has_road(xy + Coord2::xy(0, 1));
+            let road_east = world.map_features.has_road(xy + Coord2::xy(1, 0));
+            let road_west = world.map_features.has_road(xy + Coord2::xy(-1, 0));
+
+            let start_north = (Coord2::xy(chunk.size.x() as i32 / 2, 0), Vec2::xy(0., 1.));
+            let start_south = (Coord2::xy(chunk.size.x() as i32 / 2, chunk.size.y() as i32 - 1), Vec2::xy(0., -1.));
+            let start_east = (Coord2::xy(chunk.size.x() as i32 - 1, chunk.size.y() as i32 / 2), Vec2::xy(-1., 0.));
+            let start_west = (Coord2::xy(0, chunk.size.y() as i32 / 2), Vec2::xy(1., 0.));
+            let center = Coord2::xy((chunk.size.x() as f64 / 2.) as i32, (chunk.size.y() as f64 / 2.) as i32);
+
+            let vec = match (road_north, road_south, road_east, road_west) {
+                // 2 conections
+                (true, true, false, false) => vec!((start_north.0, start_south.0, start_north.1)),
+                (false, false, true, true) => vec!((start_east.0, start_west.0, start_east.1)),
+                (true, false, true, false) => vec!((start_north.0, start_east.0, start_north.1)),
+                (true, false, false, true) => vec!((start_north.0, start_west.0, start_north.1)),
+                (false, true, true, false) => vec!((start_south.0, start_east.0, start_south.1)),
+                (false, true, false, true) => vec!((start_south.0, start_west.0, start_south.1)),
+                // 3 or 4 connections
+                _ => {
+                    let mut vec = Vec::new();
+                    if road_north {
+                        vec.push((start_north.0, center, start_north.1));
+                    }
+                    if road_south {
+                        vec.push((start_south.0, center, start_south.1));
+                    }
+                    if road_east {
+                        vec.push((start_east.0, center, start_east.1));
+                    }
+                    if road_west {
+                        vec.push((start_west.0, center, start_west.1));
+                    }
+                    vec
+                }
+            };
+
+            for (start, target, velocity) in vec.iter() {
+                let mut position = start.to_vec2();
+                let target = target.to_vec2();
+                let mut velocity = velocity.clone();
+
+                let mut points = Vec::new();
+                points.push(position);
+
+                let max_speed: f32 = 1.;
+                let max_force = 0.1;
+
+                while position.dist_squared(&target) > (max_speed).powi(2) {
+                    position = position + velocity;
+
+                    let desired_velocity = (target - position).normalize(max_speed);
+                    let random_velocity = Vec2::xy(rng.randf_range(-0.3, 0.3), rng.randf_range(-0.3, 0.3));
+                    let steering = (desired_velocity - velocity) + random_velocity;
+                    let steering = steering.truncate(max_force);
+                    // steering = steering / mass
+                    velocity = (velocity + steering).truncate(max_speed);
+
+                    // Cobblestone
+                    let coord = Coord2::xy(position.x.round() as i32, position.y.round() as i32);
+                    for c in coord.neighbours_circle(chunk.size, 3).iter() {
+                        if rng.rand_chance(0.5) {
+                            chunk.map.ground_layer.set_tile(c.x as usize, c.y as usize, 5);
+                        }
+                        chunk.map.object_layer.set_tile(c.x as usize, c.y as usize, 0);
+                    }
+                }
+
+
+            }
+            
+        }
+
         let mut found_sett = None;
         for (_, settlement) in world.settlements.iter() {
             let settlement = settlement.borrow();
@@ -221,6 +299,7 @@ impl Chunk {
                 found_sett = Some(settlement);
             }
         }
+
         for (id, person) in world.people.iter() {
             let person = person.borrow();
             if person.position == xy {

@@ -53,6 +53,13 @@ impl Vec2 {
         Vec2::xy(self.x / factor, self.y / factor)
     }
 
+    pub fn truncate(&self, mag: f32) -> Vec2 {
+        if self.magnitude() > mag {
+            return self.normalize(mag)
+        }
+        return self.clone()
+    }
+
     pub fn magnitude(&self) -> f32 {
         let x = 0. - self.x;
         let y = 0. - self.y;
@@ -117,6 +124,19 @@ impl Coord2 {
 
     pub fn to_vec2(&self) -> Vec2 {
         return Vec2::xy(self.x as f32, self.y as f32)
+    }
+
+    pub fn neighbours_circle(&self, size: Size2D, r: i32) -> Vec<Coord2> {
+        let mut ret = Vec::new();
+        for x in (self.x - r)..(self.x + r) {
+            for y in (self.y - r)..(self.y + r) {
+                let coord = Coord2::xy(x, y);
+                if size.in_bounds(coord) && coord.dist(self) < r as f32 {
+                    ret.push(coord);
+                }
+            }
+        }
+        return ret;
     }
 
 }

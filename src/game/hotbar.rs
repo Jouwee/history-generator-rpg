@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
@@ -8,7 +10,7 @@ use super::{action::{Action, ActionId}, actor::Actor, inventory::inventory::Inve
 
 pub struct Hotbar {
     background: Texture,
-    available_actions: Vec<ActionId>,
+    available_actions: HashSet<ActionId>,
     equipped_actions: Vec<ActionId>,
     pub selected_action: Option<ActionId>,
     action_buttons: HList
@@ -20,7 +22,7 @@ impl Hotbar {
         let background = ImageReader::open("assets/sprites/gui/hotbar/background.png").unwrap().decode().unwrap();
         Hotbar {
             background: Texture::from_image(&background.to_rgba8(), &settings),
-            available_actions: Vec::new(),
+            available_actions: HashSet::new(),
             equipped_actions: Vec::new(),
             selected_action: None,
             action_buttons: HList::new(Position::Anchored(Anchor::BottomCenter, 0., -24.))
@@ -28,10 +30,10 @@ impl Hotbar {
     }
 
     pub fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
-        self.available_actions.push(ctx.resources.actions.id_of("act:talk"));
-        self.available_actions.push(ctx.resources.actions.id_of("act:pickup"));
-        self.available_actions.push(ctx.resources.actions.id_of("act:sleep"));
-        self.available_actions.push(ctx.resources.actions.id_of("act:punch"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:talk"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:pickup"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:sleep"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
         self.equip(inventory, ctx);
     }
 

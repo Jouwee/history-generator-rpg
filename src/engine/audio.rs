@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
 
-use crate::commons::rng::Rng;
+use crate::{commons::rng::Rng, game::options::AudioOptions};
 
 use super::{geometry::Vec2, scene::Update};
 
@@ -11,6 +11,7 @@ pub struct Audio {
     // Not directly used, but needs to have ownership otherwise the audio strea is dropped
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
+    options: AudioOptions,
     tracks: HashMap<TrackMood, (usize, Vec<SoundFile>)>,
     music_sink_a: Sink,
     music_sink_b: Sink,
@@ -34,13 +35,14 @@ pub enum TrackMood {
 
 impl Audio {
 
-    pub fn new() -> Audio {
+    pub fn new(options: AudioOptions) -> Audio {
         let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
         let music_sink_a = Sink::try_new(&stream_handle).unwrap();
         let music_sink_b = Sink::try_new(&stream_handle).unwrap();
         Audio {
             _stream: stream,
             stream_handle,
+            options,
             music_sink_a,
             music_sink_b,
             sink: MusicSink::SinkA,
@@ -53,7 +55,6 @@ impl Audio {
 
     pub fn update(&mut self, update: &Update) {
         if self.currently_playing != self.current_mood {
-            println!("change mood");
             self.transition = 0.;
             self.currently_playing = self.current_mood.clone();
             self.sink = match &self.sink {
@@ -71,11 +72,12 @@ impl Audio {
                 MusicSink::SinkA => &self.music_sink_a,
                 MusicSink::SinkB => &self.music_sink_b,
             };
-            sink_fadeout.set_volume(1. - self.transition);
-            sink_fadein.set_volume(self.transition);
+            let volume = self.options.music_volume;
+            sink_fadeout.set_volume(volume * (1. - self.transition));
+            sink_fadein.set_volume(volume * self.transition);
             if self.transition > 1. {
                 self.transition = -1.;
-                sink_fadein.set_volume(1.);
+                sink_fadein.set_volume(volume);
                 sink_fadeout.clear();
             }
         }

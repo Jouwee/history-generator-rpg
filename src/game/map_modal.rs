@@ -1,4 +1,4 @@
-use crate::{engine::{geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{TileMap, TileSet, TileSingle}, Color}, world::world::World, GameContext};
+use crate::{engine::{geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, world::World}, GameContext};
 use image::ImageReader;
 use piston::{Button as Btn, ButtonState, Key};
 
@@ -31,6 +31,9 @@ impl MapModal {
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/map_tiles/settlement.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = ImageReader::open("assets/sprites/map_tiles/road.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 16)));
+
 
         MapModal {
             tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 16, 16),
@@ -54,6 +57,11 @@ impl MapModal {
                     3 => self.tilemap.set_tile(x, y, 3),
                     4 => self.tilemap.set_tile(x, y, 4),
                     _ => ()
+                }
+                for feature in world.map_features.get_features(Coord2::xy(x as i32, y as i32)).iter() {
+                    match feature {
+                        MapFeature::Road => self.objects.set_tile(x, y, 2),
+                    }
                 }
             }
         }

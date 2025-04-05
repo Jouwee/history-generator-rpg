@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{astar::{AStar, MovementCost}, history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, map_features::WorldMapFeatures, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
 use super::{battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::SpeciesIntelligence, world::{ArtifactId, World}};
 
@@ -51,6 +51,7 @@ impl WorldHistoryGenerator {
 
         let mut world = World {
             map: world_map,
+            map_features: WorldMapFeatures::new(),
             cultures: HashMap::new(),
             regions,
             artifacts: IdVec::new(),
@@ -623,6 +624,42 @@ impl WorldHistoryGenerator {
                     (*spouse).position = position.to_coord();
                 }
                 person.position = position.to_coord();
+
+                // Generate road to nearby settlements
+                let mut settlements_to_connect = Vec::new();
+                for (sid, sett) in self.world.settlements.iter() {
+                    if let Ok(sett) = sett.try_borrow() {
+                        if sid != id && sett.xy.dist_squared(&position) < 10.*10. {
+                            settlements_to_connect.push(sett.xy.to_coord());
+                        }
+                    }
+                }
+                let from = position.to_coord();
+                for to in settlements_to_connect {
+                    let mut astar = AStar::new(self.world.map.size, to);
+                    astar.find_path(from, |p| {
+                        if !self.world.map.size.in_bounds(p) {
+                            return MovementCost::Impossible;
+                        }
+                        if self.world.map_features.has_road(p) {
+                            return MovementCost::Cost(0.);
+                        }
+                        let region = self.world.map.tile(p.x as usize, p.y as usize).region_id;
+                        match region {
+                            0 => MovementCost::Impossible, // Ocean
+                            1 => MovementCost::Cost(2.0), // Coastal
+                            2 => MovementCost::Cost(0.5), // Grassland
+                            3 => MovementCost::Cost(5.0), // Forest
+                            4 => MovementCost::Cost(2.0), // Desert
+                            _ => MovementCost::Cost(1.0)
+                        }
+                    });
+                    let path = astar.get_path(from);
+                    for point in path {
+                        self.world.map_features.add_road(point);
+                    }
+                }
+
             }
         }
     }

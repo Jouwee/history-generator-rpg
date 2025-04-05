@@ -1,3 +1,4 @@
+pub mod astar;
 pub mod damage_model;
 pub mod history_vec;
 pub mod id_vec;
