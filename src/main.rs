@@ -10,7 +10,7 @@ use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, 
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, world_scene::WorldScene, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -31,7 +31,6 @@ pub mod game;
 enum SceneEnum {
     None,
     WorldGen(WorldGenScene),
-    World(WorldScene),
     Game(GameSceneState)
 }
 
@@ -89,9 +88,6 @@ impl App {
             SceneEnum::WorldGen(game_state) => {
                 game_state.render(&mut context, &mut self.context);
             },
-            SceneEnum::World(game_state) => {
-                game_state.render(&mut context, &mut self.context);
-            },
             SceneEnum::Game(game_state) => {
                 game_state.render(&mut context, &mut self.context);
             },
@@ -126,9 +122,6 @@ impl App {
             SceneEnum::WorldGen(game_state) => {
                 game_state.update(&update, &mut self.context);
             },
-            SceneEnum::World(game_state) => {
-                game_state.update(&update, &mut self.context);
-            },
             SceneEnum::Game(game_state) => {
                 game_state.update(&update, &mut self.context);
             },
@@ -140,9 +133,6 @@ impl App {
         match &mut self.scene {
             SceneEnum::None => {},
             SceneEnum::WorldGen(game_state) => {
-                game_state.input(args, &mut self.context);
-            },
-            SceneEnum::World(game_state) => {
                 game_state.input(args, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
@@ -507,51 +497,26 @@ fn main() {
                         player.inventory.equip(1);
 
                         let codex = KnowledgeCodex::new();
-                        let mut scene = WorldScene::new(world, player, codex);
-                        scene.init(&mut app.context);
-                        app.scene = SceneEnum::World(scene);
-                        continue
-                    }
-                }
-
-                if let Button::Keyboard(Key::Return) = k.button {
-                    if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::from_world_tile(&scene.world, &app.context.resources, scene.cursor, scene.player);
-                        let mut scene = GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk);
+                        let cursor = Coord2::xy(128, 128);
+                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);
+                        let mut scene = GameSceneState::new(world, cursor, codex, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
+
                         continue
                     }
                 }
 
                 if let Button::Keyboard(Key::F4) = k.button {
-                    if let SceneEnum::World(scene) = app.scene {
-                        let chunk = Chunk::playground(&app.context.resources, scene.player);
-                        let mut scene = GameSceneState::new(scene.world, scene.cursor, scene.codex, chunk);
+                    if let SceneEnum::Game(scene) = app.scene {
+                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player);
+                        let mut scene = GameSceneState::new(scene.world, scene.world_pos, scene.codex, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
                         continue
                     }
                 }
 
-                if let Button::Keyboard(Key::W) = k.button {
-                    if let SceneEnum::Game(scene) = app.scene {
-                        // TODO:
-                        // let killed_npcs = scene.chunk.killed_people;
-                        // for id in killed_npcs {
-                            // let mut person = scene.world.people.get_mut(&id).unwrap();
-                            // person.death = scene.year;
-                            // scene.world.events.push(WorldEventDate { year: generator.year }, WorldEventEnum::PersonDeath(SimplePersonEvent { person_id: person.id }));
-                            // TODO: Inheritance
-                        // }
-                        let mut new_scene = WorldScene::new(scene.world, scene.chunk.player, scene.codex);
-                        new_scene.cursor = scene.world_pos;
-                        new_scene.init(&mut app.context);
-                        app.scene = SceneEnum::World(new_scene);
-                        continue
-                    }
-                }
-                
             }
             app.debug_overlay.input_time(now.elapsed());
 
