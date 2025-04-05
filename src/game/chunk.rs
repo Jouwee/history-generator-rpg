@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, GameContext, World};
+use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, GameContext, World};
 
 use super::{actor::Actor, Renderable};
 
@@ -501,6 +501,13 @@ impl Renderable for Chunk {
             ctx.texture_ref(&corner.texture, [self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.]);
             let corner = game_ctx.assets.image(ImageParams::new("gui/nav_corner.png").rotate(ImageRotate::R270));
             ctx.texture_ref(&corner.texture, [12., self.size.y() as f64 * 24. - 12.]);
+        }
+        // Renders some black bars outside the map to cover large tiles
+        {
+            ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], Color::from_hex("090714"));
+            ctx.rectangle_fill([-64., self.size.y() as f64 * 24., self.size.x() as f64 * 24. + 76., 76.], Color::from_hex("090714"));
+            ctx.rectangle_fill([-64., -64., 64., self.size.y() as f64 * 24. + 76.], Color::from_hex("090714"));
+            ctx.rectangle_fill([self.size.x() as f64 * 24., -64., 64., self.size.y() as f64 * 24. + 76.], Color::from_hex("090714"));
         }
     }
 }
