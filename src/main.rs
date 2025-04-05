@@ -4,7 +4,7 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{collections::{HashMap, HashSet}, fs::File, io::Write, vec};
+use std::{collections::HashMap, fs::File, io::Write, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
@@ -435,10 +435,7 @@ fn main() {
     event_settings.max_fps = 30;
     event_settings.ups = 30;
 
-    let mut input_state = InputState {
-        last_mouse: [0.; 2],
-        pressed: HashSet::new()
-    };
+    let mut input_state = InputState::new();
 
     let mut events = Events::new(event_settings);
     while let Some(e) = events.next(&mut window) {

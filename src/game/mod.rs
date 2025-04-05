@@ -359,8 +359,13 @@ impl Scene for GameSceneState {
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
         if let Some(map) = &mut self.map_modal {
-            if let MapModalEvent::Close = map.input(evt, ctx) {
-                self.map_modal = None;
+            match map.input(evt, ctx) {
+                MapModalEvent::Close => self.map_modal = None,
+                MapModalEvent::InstaTravelTo(coord) => {
+                    self.move_to_chunk(coord, ctx);
+                    self.map_modal = None;
+                },
+                MapModalEvent::None => ()
             }
             return
         }

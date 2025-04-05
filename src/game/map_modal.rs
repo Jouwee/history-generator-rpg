@@ -1,6 +1,6 @@
 use crate::{engine::{geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, world::World}, GameContext};
 use image::ImageReader;
-use piston::{Button as Btn, ButtonState, Key};
+use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
 
@@ -128,10 +128,17 @@ impl MapModal {
             [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
         ];
         match evt.evt {
-            InputEvent::Drag { offset, button: _ } => {
+            InputEvent::Drag { button: MouseButton::Left, offset } => {
                 self.offset.x = (self.offset.x - offset[0] as f32).clamp(clamp[0][0] as f32, clamp[0][1] as f32);
                 self.offset.y = (self.offset.y - offset[1] as f32).clamp(clamp[1][0] as f32, clamp[1][1] as f32);
             },
+            InputEvent::Click { button: MouseButton::Left, pos } => {
+                let coord = Coord2::xy(
+                    ((pos[0] + camera[0] as f64) / 16.) as i32, 
+                    ((pos[1] + camera[1] as f64) / 16.) as i32
+                );
+                return MapModalEvent::InstaTravelTo(coord)
+            }
             _ => ()
         }
         return MapModalEvent::None
@@ -141,5 +148,6 @@ impl MapModal {
 
 pub enum MapModalEvent {
     None,
-    Close
+    Close,
+    InstaTravelTo(Coord2)
 }

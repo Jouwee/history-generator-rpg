@@ -6,7 +6,8 @@ use crate::DisplayContext;
 
 pub enum InputEvent {
     None,
-    Drag { offset: [f64; 2], button: MouseButton }
+    Click { button: MouseButton, pos: [f64; 2] },
+    Drag { button: MouseButton, offset: [f64; 2] }
 }
 
 impl InputEvent {
@@ -15,7 +16,15 @@ impl InputEvent {
             state.pressed.insert(args.button);
         }
         if args.state == ButtonState::Release {
+            let was_dragging = state.dragging.contains(&args.button);
             state.pressed.remove(&args.button);
+            state.dragging.remove(&args.button);
+            if !was_dragging {
+                match args.button {
+                    Button::Mouse(btn) => return InputEvent::Click { pos: state.last_mouse, button: btn.clone() },
+                    _ => ()
+                }
+            }
         }
         return InputEvent::None
     }
@@ -27,6 +36,7 @@ impl InputEvent {
             state.last_mouse = mouse_pos;
             if state.pressed.contains(&Button::Mouse(MouseButton::Left)) {
                 let offset = [mouse_pos[0] - last_pos[0], mouse_pos[1] - last_pos[1]];
+                state.dragging.insert(Button::Mouse(MouseButton::Left));
                 return InputEvent::Drag { offset, button: MouseButton::Left }
             }
         }
@@ -35,6 +45,18 @@ impl InputEvent {
 }
 
 pub struct InputState {
-    pub last_mouse: [f64; 2],
-    pub pressed: HashSet<Button>
+    last_mouse: [f64; 2],
+    pressed: HashSet<Button>,
+    dragging: HashSet<Button>
+}
+
+impl InputState {
+
+    pub fn new() -> InputState {
+        InputState {
+            last_mouse: [0.; 2],
+            pressed: HashSet::new(),
+            dragging: HashSet::new()
+        }
+    }
 }
