@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use image::ImageReader;
+use image::{DynamicImage, ImageReader};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::spritesheet::Spritesheet;
 
 pub struct Assets {
-    images: HashMap<String, Asset<Image>>
+    images: HashMap<ImageParams, Asset<Image>>
 }
 
 impl Assets {
@@ -15,12 +15,12 @@ impl Assets {
         Assets { images: HashMap::new() }
     }
 
-    pub fn image(&mut self, path: &str) -> &Image {
-        if !self.images.contains_key(path) {
-            let image = Image::new(path);
-            self.images.insert(String::from(path), Asset { value: image });
+    pub fn image(&mut self, params: ImageParams) -> &Image {
+        if !self.images.contains_key(&params) {
+            let image = Image::new(&params);
+            self.images.insert(params.clone(), Asset { value: image });
         }
-        &self.images.get(path).expect(format!("Image {path} does not exist").as_str()).value
+        &self.images.get(&params).expect(format!("Image {} does not exist", params.path).as_str()).value
     }
 }
 
@@ -28,20 +28,57 @@ struct Asset<T> {
     value: T
 }
 
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
+pub struct ImageParams {
+    path: String,
+    rotate: ImageRotate
+}
+
+impl ImageParams {
+    pub fn new(path: &str) -> ImageParams {
+        ImageParams {
+            path: String::from(path),
+            rotate: ImageRotate::None
+        }
+    }
+
+    pub fn rotate(mut self, rotate: ImageRotate) -> ImageParams {
+        self.rotate = rotate;
+        return self
+    }
+}
+
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
+pub enum ImageRotate {
+    None,
+    R90,
+    R180,
+    R270
+}
+
 pub struct Image {
     pub size: (u32, u32),
+    pub image: DynamicImage,
     pub texture: Texture
 }
 
 impl Image {
 
-    pub fn new(path: &str) -> Image {
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let path = format!("./assets/sprites/{}", path.to_string());
+    pub fn new(params: &ImageParams) -> Image {
+        let path = format!("./assets/sprites/{}", params.path);
         let image = ImageReader::open(&path).unwrap().decode().unwrap();
+        let image = match params.rotate {
+            ImageRotate::None => image,
+            ImageRotate::R90 => image.rotate90(),
+            ImageRotate::R180 => image.rotate180(),
+            ImageRotate::R270 => image.rotate270(),
+        };
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        let texture = Texture::from_image(&image.to_rgba8(), &settings);
         Self {
             size: (image.width(), image.height()),
-            texture: Texture::from_image(&image.to_rgba8(), &settings)
+            image,
+            texture
         }
     }
 

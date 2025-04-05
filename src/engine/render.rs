@@ -35,6 +35,14 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         self.camera_rect[3] = self.camera_rect[3] / s;
     }
 
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.context.transform = self.context.transform.trans(x, y);
+    }
+
+    pub fn rotate90(&mut self) {
+        self.context.transform = self.context.transform.rot_deg(90.);
+    }
+
     pub fn center_camera_on(&mut self, pos: [f64; 2]) {
         self.camera_rect[0] = (pos[0] - self.camera_rect[2] / 2.).round();
         self.camera_rect[1] = (pos[1] - self.camera_rect[3] / 2.).round();
