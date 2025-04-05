@@ -2,7 +2,7 @@ use std::{cell::{Ref, RefCell, RefMut}, collections::{BTreeMap, HashMap}};
 
 use crate::{commons::{history_vec::{HistoryVec, Id}, id_vec::IdVec}, WorldEvents};
 
-use super::{culture::Culture, faction::Faction, item::Item, map_features::WorldMapFeatures, person::Person, region::Region, settlement::Settlement, topology::WorldTopology};
+use super::{culture::Culture, faction::Faction, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, person::Person, region::Region, settlement::Settlement, topology::WorldTopology};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -17,6 +17,7 @@ impl crate::commons::id_vec::Id for ArtifactId {
 }
 
 pub struct World {
+    pub generation_params: WorldGenerationParameters,
     pub map: WorldTopology,
     pub map_features: WorldMapFeatures,
     pub cultures: HashMap<Id, Culture>,

@@ -5,6 +5,7 @@ use crate::{commons::{astar::{AStar, MovementCost}, history_vec::{HistoryVec, Id
 use super::{battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::SpeciesIntelligence, world::{ArtifactId, World}};
 
 
+#[derive(Clone)]
 pub struct WorldGenerationParameters {
     pub seed: u32,
     pub cultures: Vec<Culture>,
@@ -50,6 +51,7 @@ impl WorldHistoryGenerator {
         }
 
         let mut world = World {
+            generation_params: parameters.clone(),
             map: world_map,
             map_features: WorldMapFeatures::new(),
             cultures: HashMap::new(),
