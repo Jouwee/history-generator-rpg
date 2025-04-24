@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
 
-use crate::{commons::{astar::{AStar, MovementCost}, history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, item::{Mace, Sword}, map_features::WorldMapFeatures, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{astar::{AStar, MovementCost}, history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{faction::{Faction, FactionRelation}, history_sim::{history_simulation::HistorySimulation, structs::WorldDate}, item::{Mace, Sword}, map_features::WorldMapFeatures, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
 
 use super::{battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::SpeciesIntelligence, world::{ArtifactId, World}};
 
@@ -70,6 +70,23 @@ impl WorldHistoryGenerator {
             culture.id = culture_id.next();
             world.cultures.insert(culture.id, culture);
         }
+
+        // TODO:
+
+        let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
+            rng: rng.derive("history"),
+            resources: resources.clone(),
+            number_of_seed_cities: 1,
+            seed_cities_population: 200
+        });
+        history_sim.seed();
+        for _ in 0..500 {
+            history_sim.simulate_step(WorldDate::year(1));
+        }
+
+        history_sim.dump_events("lore.log");
+
+
 
         let mut person_id = Id(0);
 

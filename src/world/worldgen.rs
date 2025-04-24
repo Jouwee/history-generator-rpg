@@ -149,7 +149,7 @@ impl Scene for WorldGenScene {
     }
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
-        let end_year = 500;
+        let end_year = 1;
         if self.generator.year >= end_year {
             return
         }

@@ -373,7 +373,7 @@ fn main() {
     let tooltips = TooltipRegistry::new();
 
     let options = GameOptions {
-        audio: game::options::AudioOptions { music_volume: 0.3 }
+        audio: game::options::AudioOptions { music_volume: 0.0 }
     };
 
     // Create a new game and run it.

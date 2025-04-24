@@ -14,3 +14,4 @@ pub mod species;
 pub mod topology;
 pub mod world;
 pub mod worldgen;
+pub mod history_sim;
