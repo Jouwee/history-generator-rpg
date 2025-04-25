@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, resources::resources::Resources, world::world::{ArtifactId, World}, GameContext};
+use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, resources::resources::Resources, world::{history_sim::structs::World, world::ArtifactId}, GameContext};
 
 use super::knowledge_codex::{ArtifactFact, KnowledgeCodex};
 
@@ -74,66 +74,72 @@ impl CodexDialog {
 
     fn click_creatures(container: &mut VList, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         container.clear();
-        let writer = BiographyWriter::new(world, resources);
-        for (id, _knowledge) in codex.known_creatures() {
-            let person = world.people.get(id).unwrap();
-            container.add_key(format!("creature:{}", id.0).as_str(), Button::new(writer.name(&person), Position::Auto));
-        }
+        // TODO:
+        // let writer = BiographyWriter::new(world, resources);
+        // for (id, _knowledge) in codex.known_creatures() {
+        //     let person = world.creatures.get(id).unwrap();
+        //     container.add_key(format!("creature:{}", id.0).as_str(), Button::new(writer.name(&person), Position::Auto));
+        // }
     }
 
     fn click_places(container: &mut VList, world: &World, codex: &KnowledgeCodex) {
         container.clear();
-        for (id, _knowledge) in codex.known_places() {
-            let place = world.settlements.get(id);
-            container.add_key(format!("place:{}", id.0).as_str(), Button::new(&place.name, Position::Auto));
-        }
+        // TODO:
+        // for (id, _knowledge) in codex.known_places() {
+        //     let place = world.units.get(id);
+        //     container.add_key(format!("place:{}", id.0).as_str(), Button::new(&place.name, Position::Auto));
+        // }
     }
 
     fn click_artifacts(container: &mut VList, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         container.clear();
-        for (id, _knowledge) in codex.known_artifacts() {
-            let item = world.artifacts.get(id);
-            container.add_key(format!("artifact:{}", id.as_usize()).as_str(), Button::new(&item.name(&resources.materials), Position::Auto));
-        }
+        // TODO:
+        // for (id, _knowledge) in codex.known_artifacts() {
+        //     let item = world.artifacts.get(id);
+        //     container.add_key(format!("artifact:{}", id.as_usize()).as_str(), Button::new(&item.name(&resources.materials), Position::Auto));
+        // }
     }
 
     fn click_creature(container: &mut VList, id: Id, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
-        let creature = world.people.get(&id).unwrap();
-        let knowledge = codex.creature(&id).unwrap();
-        let writer = BiographyWriter::new(world, resources);
-        container.clear();
-        container.add(Label::new(writer.name_with_title(&creature), Position::Auto));
-        for event in knowledge.events.iter() {
-            let event = world.events.get(*event).unwrap();
-            container.add(Label::new(writer.event(&event), Position::Auto));
-        }
+        // TODO:
+        // let creature = world.creatures.get(&id).unwrap();
+        // let knowledge = codex.creature(&id).unwrap();
+        // let writer = BiographyWriter::new(world, resources);
+        // container.clear();
+        // container.add(Label::new(writer.name_with_title(&creature), Position::Auto));
+        // for event in knowledge.events.iter() {
+        //     let event = world.events.get(*event).unwrap();
+        //     container.add(Label::new(writer.event(&event), Position::Auto));
+        // }
     }
 
     fn click_place(container: &mut VList, id: Id, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
-        let place = world.settlements.get(&id);
-        let knowledge = codex.place(&id).unwrap();
-        let writer = BiographyWriter::new(world, resources);
-        container.clear();
-        container.add(Label::new(&place.name, Position::Auto));
-        for event in knowledge.events.iter() {
-            let event = world.events.get(*event).unwrap();
-            container.add(Label::new(writer.event(&event), Position::Auto));
-        }
+        // TODO:
+        // let place = world.settlements.get(&id);
+        // let knowledge = codex.place(&id).unwrap();
+        // let writer = BiographyWriter::new(world, resources);
+        // container.clear();
+        // container.add(Label::new(&place.name, Position::Auto));
+        // for event in knowledge.events.iter() {
+        //     let event = world.events.get(*event).unwrap();
+        //     container.add(Label::new(writer.event(&event), Position::Auto));
+        // }
     }
 
     fn click_artifact(container: &mut VList, id: ArtifactId, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
-        let artifact = world.artifacts.get(&id);
-        let knowledge = codex.artifact(&id).unwrap();
-        let writer = BiographyWriter::new(world, resources);
-        container.clear();
-        container.add(Label::new(artifact.name(&resources.materials), Position::Auto));
-        if knowledge.facts.contains(&ArtifactFact::Description) {
-            container.add(Label::new(artifact.description(&resources.materials), Position::Auto));
-        }
-        for event in knowledge.events.iter() {
-            let event = world.events.get(*event).unwrap();
-            container.add(Label::new(writer.event(&event), Position::Auto));
-        }
+        // TODO:
+        // let artifact = world.artifacts.get(&id);
+        // let knowledge = codex.artifact(&id).unwrap();
+        // let writer = BiographyWriter::new(world, resources);
+        // container.clear();
+        // container.add(Label::new(artifact.name(&resources.materials), Position::Auto));
+        // if knowledge.facts.contains(&ArtifactFact::Description) {
+        //     container.add(Label::new(artifact.description(&resources.materials), Position::Auto));
+        // }
+        // for event in knowledge.events.iter() {
+        //     let event = world.events.get(*event).unwrap();
+        //     container.add(Label::new(writer.event(&event), Position::Auto));
+        // }
     }
 
 }

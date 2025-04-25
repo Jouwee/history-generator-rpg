@@ -13,7 +13,8 @@ use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 use crate::engine::input::InputEvent as NewInputEvent;
 
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, world::world::World, GameContext};
+use crate::world::history_sim::structs::World;
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub mod action;
 pub mod actor;
@@ -93,11 +94,12 @@ impl GameSceneState {
     fn save_creature_appearances(&mut self) {
         for npc in self.chunk.npcs.iter() {
             if let Some(id) = npc.person_id {
-                let mut creature = self.world.people.get_mut(&id).unwrap();
-                creature.appearance_hints = HashMap::new();
-                for (k, v) in npc.sprite.map.iter() {
-                    creature.appearance_hints.insert(k.clone(), v.0.clone());
-                }
+                // TODO:
+                // let mut creature = self.world.creatures.get_mut(&id).unwrap();
+                // creature.appearance_hints = HashMap::new();
+                // for (k, v) in npc.sprite.map.iter() {
+                //     creature.appearance_hints.insert(k.clone(), v.0.clone());
+                // }
             }
         }
     }

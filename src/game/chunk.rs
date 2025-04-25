@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::item::{Item, ItemMaker, ItemQuality}, GameContext, World};
+use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{history_sim::structs::{CreatureId, World}, item::{Item, ItemMaker, ItemQuality}}, GameContext};
 
 use super::{actor::Actor, Renderable};
 
@@ -13,7 +13,7 @@ pub struct Chunk {
     pub map: ChunkMap,
     pub player: Actor,
     pub npcs: Vec<Actor>,
-    pub killed_people: Vec<Id>,
+    pub killed_people: Vec<CreatureId>,
     pub items_on_ground: Vec<(Coord2, Item, Texture)>,
 }
 
@@ -288,26 +288,53 @@ impl Chunk {
         }
 
         let mut found_sett = None;
-        for (_, settlement) in world.settlements.iter() {
+        for settlement in world.units.iter() {
             let settlement = settlement.borrow();
-            if settlement.xy.0 as i32 == xy.x && settlement.xy.1 as i32 == xy.y {
-                let num_builds = (settlement.demographics.population / 20).clamp(1, 9) as usize;
-                let buildings = chunk.prepare_buildings(&mut rng, num_builds, 100);
-                for building in buildings {
-                    chunk.make_building(&mut rng, building);
+            if settlement.xy.x as i32 == xy.x && settlement.xy.y as i32 == xy.y {
+                // TODO:
+                // let num_builds = (settlement.demographics.population / 20).clamp(1, 9) as usize;
+                // let buildings = chunk.prepare_buildings(&mut rng, num_builds, 100);
+                // for building in buildings {
+                //     chunk.make_building(&mut rng, building);
+                // }
+
+                let mut x = 20;
+                let mut y = 20;
+
+                // TODO: can't handle more
+                let mut slice = &settlement.creatures[..];
+                if slice.len() > 1000 {
+                    slice = &settlement.creatures[0..1000];
                 }
+                for person_id in slice.iter() {
+                    let person = world.get_creature(person_id);
+                    // TODO:
+                    // let point = chunk.get_spawn_pos(&mut rng);
+                    let point = Coord2::xy(x, y);
+                    let species = resources.species.get(&person.species);
+                    chunk.npcs.push(Actor::from_person(point, *person_id, &person, &person.species, &species, world));
+                    x = x + 3;
+                    if x > 100 {
+                        y = y + 3;
+                        x = 20;
+                    }
+                }
+
                 found_sett = Some(settlement);
+
             }
         }
 
-        for (id, person) in world.people.iter() {
-            let person = person.borrow();
-            if person.position == xy {
-                let point = chunk.get_spawn_pos(&mut rng);
-                let species = resources.species.get(&person.species);
-                chunk.npcs.push(Actor::from_person(point, *id, &person, &person.species, &species, world));
-            }
-        }
+
+        // for person in world.creatures.iter() {
+        //     let person = person.borrow();
+            // TODO:
+            // if person.position == xy {
+            //     let point = chunk.get_spawn_pos(&mut rng);
+            //     let species = resources.species.get(&person.species);
+            //     chunk.npcs.push(Actor::from_person(point, *id, &person, &person.species, &species, world));
+            // }
+        // }
 
         if let Some(_settlement) = found_sett {
             if chunk.npcs.len() == 0 {
@@ -449,7 +476,18 @@ impl Renderable for Chunk {
 
         let mut actors_by_position = HashMap::new();
         actors_by_position.insert(&self.player.xy, vec!(&self.player));
+        let cull_start = [
+            (ctx.camera_rect[0] / 24. as f64 - 1.).max(0.) as i32,
+            (ctx.camera_rect[1] / 24. as f64 - 1.).max(0.) as i32
+        ];
+        let cull_limit = [
+            1 + cull_start[0] + ctx.camera_rect[2] as i32 / 24,
+            1 + cull_start[1] + ctx.camera_rect[3] as i32 / 24
+        ];
         for npc in self.npcs.iter() {
+            if npc.xy.x < cull_start[0] || npc.xy.y < cull_start[1] || npc.xy.x > cull_limit[0] || npc.xy.y > cull_limit[1] {
+                continue
+            }
             if !actors_by_position.contains_key(&npc.xy) {
                 actors_by_position.insert(&npc.xy, Vec::new());
             }

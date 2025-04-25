@@ -1,55 +1,45 @@
 // TODO: Break into files
 
-use std::{cell::{Ref, RefCell, RefMut}, ops::Add};
+use std::{cell::{Ref, RefCell, RefMut}, collections::HashMap, ops::Add};
 
-use crate::{commons::id_vec::Id, engine::geometry::Coord2, world::species::SpeciesId};
-
-#[derive(Clone)]
-pub struct WorldDate {
-    pub year: i32,
-}
-
-impl WorldDate {
-
-    pub fn year(year: i32) -> WorldDate {
-        WorldDate { year }
-    }
-
-    pub fn add(&self, another: &WorldDate) -> WorldDate {
-        return WorldDate {
-            year: self.year + another.year
-        }
-    }
-
-    pub fn subtract(&self, another: &WorldDate) -> WorldDate {
-        return WorldDate {
-            year: self.year - another.year
-        }
-    }
-
-}
-
-// ----------------------
+use crate::{commons::{history_vec::Id as HId, id_vec::{Id, IdVec}}, engine::geometry::Coord2, world::{date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, species::SpeciesId, topology::WorldTopology, world::ArtifactId}};
 
 pub struct World {
+    pub generation_params: WorldGenerationParameters,
+    pub map: WorldTopology,
+    pub map_features: WorldMapFeatures,
     pub units: Vec<RefCell<Unit>>,
     pub creatures: Vec<RefCell<Creature>>,
-    pub events: Vec<Event>
+    pub events: Vec<Event>,
+    // pub cultures: HashMap<Id, Culture>,
+    // pub factions: HistoryVec<Faction>,
+    pub artifacts: IdVec<Item>,
+    pub regions: HashMap<HId, Region>,
+
 }
 
 impl World {
 
-    pub fn new() -> World {
+    pub fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>) -> World {
         return World {
+            generation_params,
+            map,
+            map_features: WorldMapFeatures::new(),
             units: Vec::new(),
             creatures: Vec::new(),
+            artifacts: IdVec::new(),
             events: Vec::new(),
+            regions
         }
     }
 
     pub fn add_creature(&mut self, creature: Creature) -> CreatureId {
         self.creatures.push(RefCell::new(creature));
         return CreatureId(self.creatures.len() - 1)
+    }
+
+    pub fn add_artifact(&mut self, item: Item) -> ArtifactId {
+        return self.artifacts.add(item);
     }
 
     pub fn get_creature(&self, id: &CreatureId) -> Ref<Creature> {
@@ -69,6 +59,9 @@ pub enum Event {
     CreatureBirth { date: WorldDate, creature_id: CreatureId },
     CreatureMarriage { date: WorldDate, creature_id: CreatureId, spouse_id: CreatureId },
     CreatureProfessionChange { date: WorldDate, creature_id: CreatureId, new_profession: Profession },
+    ArtifactCreated { date: WorldDate, artifact: ArtifactId, creator: CreatureId },
+    InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ArtifactId },
+    BurriedWithPosessions { date: WorldDate, creature_id: CreatureId },
 }
 
 // ------------------
@@ -102,6 +95,7 @@ impl crate::commons::id_vec::Id for CreatureId {
     }
 }
 
+#[derive(Clone)]
 pub struct Creature {
     pub species: SpeciesId,
     pub birth: WorldDate,
@@ -115,8 +109,23 @@ pub struct Creature {
     pub details: Option<CreatureDetails>
 }
 
-pub struct CreatureDetails {
+impl Creature {
 
+
+    pub fn details(&mut self) -> &mut CreatureDetails {
+        if self.details.is_none() {
+            self.details = Some(CreatureDetails {
+                inventory: Vec::new()
+            })
+        }
+        return self.details.as_mut().expect("Already checked")
+    }
+
+}
+
+#[derive(Clone)]
+pub struct CreatureDetails {
+    pub inventory: Vec<ArtifactId>
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -248,7 +257,7 @@ impl Demographics {
     }
 
     pub fn count(&mut self, reference: &WorldDate, creature: &Creature) {
-        let age = reference.subtract(&creature.birth).year;
+        let age = (*reference - creature.birth).year();
         self.total += 1;
         if age < 18 {
             if creature.gender.is_male() {

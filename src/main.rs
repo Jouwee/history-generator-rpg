@@ -10,7 +10,7 @@ use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, 
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use literature::biography::BiographyWriter;
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, world::World, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -470,12 +470,13 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let world = scene.into_world();
+                        // TODO:
                         // Dumps the world history into a file
-                        let mut f = File::create("history.log").unwrap();
-                        let writer = BiographyWriter::new(&world, &app.context.resources);
-                        for event in world.events.iter() {
-                            writeln!(&mut f, "{}", writer.event(event)).unwrap();
-                        }
+                        // let mut f = File::create("history.log").unwrap();
+                        // let writer = BiographyWriter::new(&world, &app.context.resources);
+                        // for event in world.events.iter() {
+                        //     writeln!(&mut f, "{}", writer.event(event)).unwrap();
+                        // }
                         let species_id = app.context.resources.species.id_of("species:human");
                         let species = app.context.resources.species.get(&species_id);
                         let mut player = Actor::player(Coord2::xy(16, 16), &species_id, species);

@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{battle_simulator::BattleResult, world::{ArtifactId, World}};
+use super::{battle_simulator::BattleResult, history_sim::structs::World, world::ArtifactId};
 
 // Speed of rumor spread, in units per year
 const SPEED_OF_RUMORS: f32 = 5.;
@@ -123,12 +123,14 @@ impl WorldEvent {
     }
 
     fn person_importance(world: &World, id: Id) -> f32 {
-        let person = world.people.get(&id).unwrap();
-        match person.importance {
-            super::person::Importance::Important => 1.,
-            super::person::Importance::Unimportant => 0.5,
-            super::person::Importance::Unknown => 0.,
-        }
+        return 1.;
+        // TODO:
+        // let person = world.creatures.get(&id).unwrap();
+        // match person.importance {
+        //     super::person::Importance::Important => 1.,
+        //     super::person::Importance::Unimportant => 0.5,
+        //     super::person::Importance::Unknown => 0.,
+        // }
     }
 
 }

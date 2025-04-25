@@ -27,15 +27,15 @@ It is extremely important that the loop is constant, and split across the world.
 - [ ] Artifact/item creation
 	- [ ] Gift from artisans when someone becomes the reigning leader
 	- [ ] Upon defeating a great enemy
-	- [ ] Passion project of an artisan
+	- [x] Passion project of an artisan
 - [ ] Legendary creature spawning
 - [ ] Artifact transfer
-	- [ ] Inheritance
+	- [x] Inheritance
 	- [ ] Political gifts
 	- [ ] Stealing
 	- [ ] Purchase
 - [ ] Artifact loss/placement
-	- [ ] Keep possession on death (Buried or lost)
+	- [x] Keep possession on death (Buried or lost)
 - [ ] Clues generation
 	- [ ] Statues
 	- [ ] Corpses

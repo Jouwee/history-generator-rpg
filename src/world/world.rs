@@ -16,7 +16,7 @@ impl crate::commons::id_vec::Id for ArtifactId {
     }
 }
 
-pub struct World {
+pub struct OldWorld {
     pub generation_params: WorldGenerationParameters,
     pub map: WorldTopology,
     pub map_features: WorldMapFeatures,

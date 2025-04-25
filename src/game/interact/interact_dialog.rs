@@ -1,9 +1,9 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, resources::resources::Resources, world::{person::Person, world::World}, GameContext};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, literature::biography::BiographyWriter, resources::resources::Resources, world::{history_sim::structs::{Creature, CreatureId, World}, person::Person}, GameContext};
 
 pub struct InteractDialog {
     interact_dialog: Option<Dialog>,
     dialog_y: f64,
-    person: Option<Person>
+    person: Option<Creature>
 }
 
 impl InteractDialog {
@@ -15,10 +15,10 @@ impl InteractDialog {
         }
     }
 
-    pub fn start_dialog(&mut self, world: &World, creature: Id) {
+    pub fn start_dialog(&mut self, world: &World, creature: CreatureId) {
         let mut dialog = Dialog::new();
 
-        self.person = Some(world.people.get(&creature).unwrap().clone());
+        self.person = Some(world.get_creature(&creature).clone());
         self.dialog_y = 0.;
 
         dialog.add_key("btn_who", Button::new("Who are you?", Position::Anchored(Anchor::BottomLeft, 10., 34.)));
@@ -43,18 +43,20 @@ impl InteractDialog {
                     return
                 }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_rumor").unwrap().event(evt) {
-                    let rumor = world.events.find_rumor(&Rng::seeded(person.id), &world,  crate::WorldEventDate { year: 500 }, person.position);
-                    if let Some((id, rumor)) = rumor {
-                        codex.add_event(id, rumor);
-                        self.add_dialog_line(BiographyWriter::new(world, resources).rumor(rumor).as_str());
-                    } else {
-                        self.add_dialog_line("Sorry, I haven't heard anything.");
-                    }
+                    // TODO:
+                    // let rumor = world.events.find_rumor(&Rng::seeded(person.id), &world,  crate::WorldEventDate { year: 500 }, person.position);
+                    // if let Some((id, rumor)) = rumor {
+                    //     codex.add_event(id, rumor);
+                    //     self.add_dialog_line(BiographyWriter::new(world, resources).rumor(rumor).as_str());
+                    // } else {
+                    //     self.add_dialog_line("Sorry, I haven't heard anything.");
+                    // }
                     return
                 }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
-                    codex.add_creature_fact(&person.id, CreatureFact::Name);
-                    self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
+                    // TODO:
+                    // codex.add_creature_fact(&person.id, CreatureFact::Name);
+                    // self.add_dialog_line(format!("I am {}", person.name().unwrap()).as_str());
                 }
             }
         }

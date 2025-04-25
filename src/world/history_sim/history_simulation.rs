@@ -1,8 +1,8 @@
 use std::{cell::RefCell, fs::File, io::Write, time::Instant};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::history_sim::structs::CauseOfDeath};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{date::WorldDate, history_sim::structs::CauseOfDeath}};
 
-use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation, DeferredUnitSideEffect}, factories::CreatureFactory, structs::{Creature, CreatureGender, CreatureId, Demographics, Event, Profession, Unit, UnitType, World, WorldDate}};
+use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation, DeferredUnitSideEffect}, factories::{ArtifactFactory, CreatureFactory}, structs::{Creature, CreatureGender, CreatureId, Demographics, Event, Profession, Unit, UnitType, World}};
 
 pub struct HistorySimulation {
     world: World,
@@ -18,22 +18,29 @@ pub struct HistorySimParams {
 }
 
 impl HistorySimulation {
-    pub fn new(params: HistorySimParams) -> Self {
+    pub fn new(params: HistorySimParams, world: World) -> Self {
         HistorySimulation {
-            world: World::new(),
-            date: WorldDate::year(0),
+            world,
+            date: WorldDate::new(0, 0, 0),
             params
         }
+    }
+
+    pub fn into_world(self) -> World {
+        return self.world;
     }
 
     pub fn seed(&mut self) {
 
         let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
 
+        let mut x = 130;
+        let mut y = 130;
+
         for _ in 0..self.params.number_of_seed_cities {
             let mut unit = Unit {
                 // TODO:
-                xy: Coord2::xy(0, 0),
+                xy: Coord2::xy(x, y),
                 creatures: Vec::new(),
                 unit_type: UnitType::City,
                 resources: super::structs::UnitResources {
@@ -41,6 +48,12 @@ impl HistorySimulation {
                     food: self.params.seed_cities_population as f32
                 }
             };
+
+            x += 1;
+            if (x > 140) {
+                y +=1;
+                x = 130;
+            }
 
             while unit.creatures.len() < self.params.seed_cities_population as usize {
                 
@@ -57,7 +70,7 @@ impl HistorySimulation {
     }
 
     pub fn simulate_step(&mut self, step: WorldDate) {
-        self.date = self.date.add(&step);
+        self.date = self.date + step;
         let now = Instant::now();
 
         // let mut side_effects = Vec::new();
@@ -89,13 +102,13 @@ impl HistorySimulation {
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
         println!("Memory: {:?}b", stats.4);
-        println!("Year: {}", self.date.year);
-        println!("Units: {}", self.world.units.len());
-        println!("Creatures: {}", self.world.creatures.len());
-        println!("Processed creatures: {}", stats.0);
-        println!("Children: {}", stats.1);
-        println!("Men of age: {}", stats.2);
-        println!("Women of age: {}", stats.3);
+        println!("Year: {}", self.date.year());
+        // println!("Units: {}", self.world.units.len());
+        // println!("Creatures: {}", self.world.creatures.len());
+        // println!("Processed creatures: {}", stats.0);
+        // println!("Children: {}", stats.1);
+        // println!("Men of age: {}", stats.2);
+        // println!("Women of age: {}", stats.3);
 
         if stats.0 == 0 {
             println!("Dead world.");
@@ -138,7 +151,7 @@ impl HistorySimulation {
             let side_effect = CreatureSimulation::simulate_step_creature(&self.world, step, now, &mut rng, &unit, creature_id, &mut creature, &mut events);
             side_effects.push((*creature_id, side_effect));
 
-            let age = now.subtract(&creature.birth).year as f32;
+            let age = (*now - creature.birth).year() as f32;
 
             stats.0 += 1;
             if age < 18. {
@@ -178,30 +191,84 @@ impl HistorySimulation {
         // let mut deferred_side_effects = Vec::new();
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
+        // TODO: Move this to a impl
         for (creature_id, side_effect) in side_effects.into_iter() {
             match side_effect {
                 CreatureSideEffect::None => (),
                 CreatureSideEffect::Death(cause_of_death) => {
                     {
                         let mut creature = self.world.get_creature_mut(&creature_id);
-                        CreatureSimulation::kill_creature(&self.world, now, &mut creature, &cause_of_death);
+                        // CreatureSimulation::kill_creature(&self.world, now, &mut creature, &cause_of_death);
+                        creature.death = Some((now.clone(), cause_of_death));
+                        if let Some(spouse_id) = creature.spouse {
+                            let mut spouse = self.world.get_creature_mut(&spouse_id);
+                            spouse.spouse = None;
+                        }
                         let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
                         let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
                         unit.creatures.remove(i);
+
+                        let mut inheritor = None;
+                        let mut has_possession = false;
+
+                        if let Some(details) = &creature.details {
+                            println!("## inv {:?} {}", creature_id, details.inventory.len());
+                            if details.inventory.len() > 0 {
+                                has_possession = true;
+                                for candidate_id in creature.offspring.iter() {
+                                    let candidate = self.world.get_creature(&candidate_id);
+                                    if candidate.death.is_none() {
+                                        inheritor = Some((*candidate_id, details.inventory.clone()));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        drop(creature);
+                
+                        if has_possession {
+                            println!("## HASP OS {:?}", creature_id);
+                            if let Some((inheritor_id, inventory)) = inheritor {
+                                let mut inheritor = self.world.get_creature_mut(&inheritor_id);
+                                let mut creature = self.world.get_creature_mut(&creature_id);
+                                creature.details().inventory.clear();
+                                inheritor.details().inventory.append(&mut inventory.clone());
+                                drop(creature);
+                                drop(inheritor);
+                                for item in inventory.iter() {
+                                    self.world.events.push(Event::InheritedArtifact { date: now.clone(), creature_id: inheritor_id, from: creature_id, item: *item });
+                                }
+                            } else {
+                                self.world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id });
+                            }
+                        }
+
                     }
                     self.world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
                 },
                 CreatureSideEffect::HaveChild => {
+
                     let mut creature = self.world.get_creature_mut(&creature_id);
                     let child = CreatureSimulation::have_child_with_spouse(now, &mut rng, &creature_id, &mut creature);
                     drop(creature);
                     if let Some(child) = child {
-                        // TODO:
+                        let father = child.father;
+                        let mother = child.mother;
+                        // TODO: TODO what???
                         let creature_id = self.world.add_creature(child);
                         let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
                         unit.creatures.push(creature_id);
                         // deferred_side_effects.push(DeferredWorldSideEffect::AddCreature(unit_index, child));
-                        self.world.events.push(Event::CreatureBirth { date: now.clone(), creature_id: creature_id });
+                        self.world.events.push(Event::CreatureBirth { date: now.clone(), creature_id });
+                        {
+                            let mut father = self.world.get_creature_mut(&father);
+                            father.offspring.push(creature_id);
+                        }
+                        {
+                            let mut mother = self.world.get_creature_mut(&mother);
+                            mother.offspring.push(creature_id);
+                        }
                     }
                 },
                 CreatureSideEffect::LookForMarriage => {
@@ -212,7 +279,13 @@ impl HistorySimulation {
                     change_job_pool.push(creature_id);
                 },
                 CreatureSideEffect::MakeArtifact => {
-                    // TODO:
+                    let item = ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel"));
+                    let id = self.world.add_artifact(item);
+                    {
+                        let mut creature = self.world.get_creature_mut(&creature_id);             
+                        creature.details().inventory.push(id);
+                    }
+                    self.world.events.push(Event::ArtifactCreated { date: *now, artifact: id, creator: creature_id });
                 }
             }
 
@@ -296,6 +369,21 @@ impl HistorySimulation {
                     let name = self.creature_desc(creature_id, date);
                     writeln!(&mut f, "{}, {} became a {:?}", self.date_desc(date), name, new_profession).unwrap();
                 },
+                Event::ArtifactCreated { date, artifact, creator } => {
+                    let name = self.creature_desc(creator, date);
+                    let artifact = self.world.artifacts.get(artifact);
+                    writeln!(&mut f, "{}, {} created {:?}", self.date_desc(date), name, artifact.name(&self.params.resources.materials)).unwrap();
+                },
+                Event::BurriedWithPosessions { date, creature_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} was buried with their possessions", self.date_desc(date), name).unwrap();
+                },
+                Event::InheritedArtifact { date, creature_id, from, item } => {
+                    let name = self.creature_desc(creature_id, date);
+                    let name_b = self.creature_desc(from, date);
+                    let artifact = self.world.artifacts.get(item);
+                    writeln!(&mut f, "{}, {} inherited {} from {:?}", self.date_desc(date), name, artifact.name(&self.params.resources.materials), name_b).unwrap();
+                }
             }
             
         }
@@ -303,7 +391,7 @@ impl HistorySimulation {
 
     fn creature_desc(&self, creature_id: &CreatureId, date: &WorldDate) -> String {
         let creature = self.world.get_creature(creature_id);
-        let age = date.subtract(&creature.birth).year;
+        let age = (*date - creature.birth).year();
         let mut gender = "M";
         if creature.gender.is_female() {
             gender = "F";
@@ -313,7 +401,7 @@ impl HistorySimulation {
 
 
     fn date_desc(&self, date: &WorldDate) -> String {
-        return String::from(format!("{:?}", date.year))
+        return String::from(format!("{:?}", date.year()))
     }
 
 }

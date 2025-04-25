@@ -1,4 +1,4 @@
-use crate::{engine::{assets::ImageParams, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, world::World}, GameContext};
+use crate::{engine::{assets::ImageParams, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{history_sim::structs::World, map_features::MapFeature}, GameContext};
 use image::ImageReader;
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
@@ -66,11 +66,11 @@ impl MapModal {
             }
         }
 
-        for (_id, settlement) in world.settlements.iter() {
+        for settlement in world.units.iter() {
             let settlement = settlement.borrow();
-            self.objects.set_tile(settlement.xy.0, settlement.xy.1, 1);
+            self.objects.set_tile(settlement.xy.x as usize, settlement.xy.y as usize, 1);
             // Set grass as BG
-            self.tilemap.set_tile(settlement.xy.0, settlement.xy.1, 2);
+            self.tilemap.set_tile(settlement.xy.x as usize, settlement.xy.y as usize, 2);
         }
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, history_vec::Id, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}, world::World}, GameContext, Person};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, history_sim::structs::{Creature, CreatureId, Profession, World}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, GameContext, Person};
 
 use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
@@ -22,8 +22,8 @@ pub struct Actor {
     pub actor_type: ActorType,
     pub ai: AiRunner,
     pub sprite: CreatureAppearance,
-    pub person_id: Option<Id>,
-    pub person: Option<Person>,
+    pub person_id: Option<CreatureId>,
+    pub person: Option<Creature>,
     pub species: SpeciesId,
     pub xp: u32,
     pub level: u32,
@@ -79,17 +79,32 @@ impl Actor {
         }
     }
 
-    pub fn from_person(xy: Coord2, person_id: Id, person: &Person, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
+    pub fn from_person(xy: Coord2, person_id: CreatureId, person: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
         }
         let mut inventory = Inventory::new();
-        for id in person.possesions.iter() {
-            let item = world.artifacts.get(id);
-            inventory.add(item.clone());
-            inventory.equip(0);
+        // TODO:
+        if let Some(details) = &person.details {
+            for id in details.inventory.iter() {
+                let item = world.artifacts.get(id);
+                println!("ITEM at {:?}", xy);
+                inventory.add(item.clone());
+                inventory.equip(0);
+            }
         }
+
+        let mut hints = HashMap::new();
+        hints.insert(String::from("clothes"), String::from("peasant"));
+        match person.profession {
+            Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
+            // TODO:
+            Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("armor")); },
+            Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
+            _ => (),
+        }
+
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -103,7 +118,9 @@ impl Actor {
             species: *species_id,
             person: Some(person.clone()),
             person_id: Some(person_id),
-            sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
+            // TODO:
+            //sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
+            sprite: species.appearance.collapse(&Rng::rand(), &hints),
             actor_type,
             inventory,
             afflictions: Vec::new()

@@ -6,7 +6,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
 
-use super::{history_generator::{WorldHistoryGenerator, WorldGenerationParameters}, world::World};
+use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, history_sim::structs::World};
 
 pub struct WorldGenScene {
     generator: WorldHistoryGenerator,
@@ -122,17 +122,18 @@ impl Scene for WorldGenScene {
         let world = &self.generator.world;
         let ts = 4.;
         self.tilemap.render(ctx);
-        for (_, settlement) in world.settlements.iter() {
+        for settlement in world.units.iter() {
             let settlement = settlement.borrow();
 
-            if settlement.demographics.population > 0 {
-                let (bg, border) = self.faction_colors[settlement.faction_id.seq() % self.faction_colors.len()];
+            if settlement.creatures.len() > 0 {
+                // let (bg, border) = self.faction_colors[settlement.faction_id.seq() % self.faction_colors.len()];
+                let (bg, border) = self.faction_colors[0];
                 let mut transparent = bg.f32_arr();
                 transparent[3] = 0.4;
 
                 let mut rectangle = Rectangle::new(transparent);
                 rectangle = rectangle.border(Border { color: border.f32_arr(), radius: 0.5 });
-                let dims = square(settlement.xy.0 as f64 * ts, settlement.xy.1 as f64 * ts, ts);
+                let dims = square(settlement.xy.x as f64 * ts, settlement.xy.y as f64 * ts, ts);
                 rectangle.draw(dims, &DrawState::default(), ctx.context.transform, ctx.gl);
             }
 
@@ -156,7 +157,7 @@ impl Scene for WorldGenScene {
         let start = Instant::now();
         loop {
             if self.generator.year < end_year {
-                println!("Year {}, {} people to process", self.generator.year, self.generator.world.people.len());
+                println!("Year {}, {} people to process", self.generator.year, self.generator.world.creatures.len());
                 let now = Instant::now();
                 self.generator.simulate_year();
                 self.total_time = self.total_time + now.elapsed();

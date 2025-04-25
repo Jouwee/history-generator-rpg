@@ -80,7 +80,7 @@ impl AiSolver {
         };
 
         if actor.actor_type == ActorType::Passive {
-            println!("Actor is passive. skiping AI");
+            // println!("Actor is passive. skiping AI");
             let mut runner = AiRunner::new();
             runner.actions = VecDeque::from(ctx.actions.clone());
             return runner

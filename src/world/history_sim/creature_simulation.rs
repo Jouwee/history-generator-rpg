@@ -1,6 +1,6 @@
-use crate::commons::rng::Rng;
+use crate::{commons::rng::Rng, world::date::WorldDate};
 
-use super::structs::{CauseOfDeath, Creature, CreatureGender, CreatureId, Event, Profession, Unit, World, WorldDate};
+use super::structs::{CauseOfDeath, Creature, CreatureGender, CreatureId, Event, Profession, Unit, World};
 
 pub struct CreatureSimulation {}
 
@@ -26,14 +26,14 @@ const YEARLY_CHANCE_MARRY: f32 = 0.1;
 // 1.0 = exponential
 const YEARLY_CHANCE_CHILD_MULT: f32 = 1.;
 const CHANCE_TO_STARVE: f32 = 0.2;
-const BASE_DISEASE_CHANCE: f32 = 0.003;
-const CHANCE_NEW_JOB: f32 = 0.001;
-const CHANCE_MAKE_ARTIFACT: f32 = 0.005;
+const BASE_DISEASE_CHANCE: f32 = 0.002;
+const CHANCE_NEW_JOB: f32 = 0.005;
+const CHANCE_MAKE_ARTIFACT: f32 = 0.01;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
     pub fn simulate_step_creature(world: &World, step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &mut Creature, events: &mut Vec<Event>) -> CreatureSideEffect {
-        let age = now.subtract(&creature.birth).year;
+        let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
             return CreatureSideEffect::Death(CauseOfDeath::Starvation);
@@ -80,13 +80,9 @@ impl CreatureSimulation {
             _ => ()
         }
 
-        // TODO: Migrate:
-            // TODO: Comission artifact
-            // TODO: Possessions and inheritance
         // TODO: Important people
         // TODO: New settlements, migration
         // TODO: Lineages
-        // TODO: Events
 
         return CreatureSideEffect::None
     }
@@ -96,7 +92,7 @@ impl CreatureSimulation {
         let food_mult = (food_excess_pct - 1.).clamp(0.02, 1.);
         
         let children_mult = 1. - (creature.offspring.len() as f32 / 10.);
-        let age = now.subtract(&creature.birth).year as f32;
+        let age = (*now - creature.birth).year() as f32;
         
         // TODO: Fetch from species or remove from species
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
@@ -105,7 +101,7 @@ impl CreatureSimulation {
     }
 
     fn chance_of_disease(now: &WorldDate, creature: &Creature) -> f32 {
-        let age = now.subtract(&creature.birth).year as f32;
+        let age = (*now - creature.birth).year() as f32;
         // Children are more suceptible to disease
         if age < 18. {
             let boost = (age / 18.).powf(2.) + 1.;
@@ -143,18 +139,9 @@ impl CreatureSimulation {
                 spouse: None,
                 details: None,
             };
-            // TODO: Add to offspring of parents
             return Some(child)
         }
         return None
-    }
-
-    pub fn kill_creature(world: &World, now: &WorldDate, creature: &mut Creature, cause_of_death: &CauseOfDeath) {
-        creature.death = Some((now.clone(), *cause_of_death));
-        if let Some(spouse_id) = creature.spouse {
-            let mut spouse = world.get_creature_mut(&spouse_id);
-            spouse.spouse = None;
-        }
     }
 
 }

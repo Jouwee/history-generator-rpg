@@ -193,7 +193,10 @@ impl Resources {
                     ("shaved", "species/human/hair_shaved.png"),
                     ("bald", "system/transparent.png"),
                 )),
-                ("clothes", vec!(("default", "species/human/armor_placeholder.png"))),
+                ("clothes", vec!(
+                    ("peasant", "species/human/clothes_peasant.png"),
+                    ("armor", "species/human/armor_placeholder.png")
+                )),
             )
         )).innate_actions(vec!(self.actions.id_of("act:punch"))));
         self.species.add("species:leshen", Species::new("leshen", SpeciesApearance::single_sprite("leshen.png"))

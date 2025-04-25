@@ -1,6 +1,6 @@
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, resources::resources::Resources};
 
-use super::{person::Person, settlement::Settlement, species::Species, world::World};
+use super::{history_sim::structs::World, person::Person, settlement::Settlement, species::Species};
 
 pub struct BattleForce {
     belligerent_faction: Option<Id>,
@@ -38,16 +38,17 @@ impl BattleForce {
 
     pub fn from_defending_settlement(world: &World, resources: &Resources, settlement_id: Id, settlement: &Settlement) -> BattleForce {
         let mut units: Vec<Unit> = (0..settlement.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
-        for (id, creature) in world.people.iter() {
-            let creature = creature.try_borrow();
-            if let Ok(creature) = creature {
-                // TODO: Improve performance
-                if creature.position == settlement.xy.to_coord() {
-                    let species = resources.species.get(&creature.species);
-                    units.push(Unit::from_creature(id, species));
-                }
-            }
-        }
+        // TODO:
+        // for (id, creature) in world.creatures.iter() {
+        //     let creature = creature.try_borrow();
+        //     if let Ok(creature) = creature {
+        //         // TODO: Improve performance
+        //         if creature.position == settlement.xy.to_coord() {
+        //             let species = resources.species.get(&creature.species);
+        //             units.push(Unit::from_creature(id, species));
+        //         }
+        //     }
+        // }
         BattleForce::new(Some(settlement.faction_id), Some(settlement_id), units)
     }
 

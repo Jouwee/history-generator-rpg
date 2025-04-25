@@ -1,6 +1,7 @@
 pub mod attributes;
 pub mod battle_simulator;
 pub mod culture;
+pub mod date;
 pub mod event;
 pub mod faction;
 pub mod history_generator;
