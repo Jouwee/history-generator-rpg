@@ -1,14 +1,14 @@
 // TODO: Break into files
 
-use std::{cell::{Ref, RefCell, RefMut}, collections::HashMap, ops::Add};
+use std::{cell::{Ref, RefMut}, collections::HashMap};
 
-use crate::{commons::{history_vec::Id as HId, id_vec::{Id, IdVec}}, engine::geometry::Coord2, world::{creature::{CauseOfDeath, Creature, CreatureId, Creatures, Profession}, date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, species::SpeciesId, topology::WorldTopology, world::ArtifactId}};
+use crate::{commons::{history_vec::Id as HId, id_vec::IdVec}, world::{creature::{CauseOfDeath, Creature, CreatureId, Creatures, Profession}, date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, topology::WorldTopology, unit::{UnitId, Units}, world::ArtifactId}};
 
 pub struct World {
     pub generation_params: WorldGenerationParameters,
     pub map: WorldTopology,
     pub map_features: WorldMapFeatures,
-    pub units: Vec<RefCell<Unit>>,
+    pub units: Units,
     pub creatures: Creatures,
     pub events: Vec<Event>,
     // pub cultures: HashMap<Id, Culture>,
@@ -25,7 +25,7 @@ impl World {
             generation_params,
             map,
             map_features: WorldMapFeatures::new(),
-            units: Vec::new(),
+            units: Units::new(),
             creatures: Creatures::new(),
             artifacts: IdVec::new(),
             events: Vec::new(),
@@ -62,47 +62,8 @@ pub enum Event {
     InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ArtifactId },
     BurriedWithPosessions { date: WorldDate, creature_id: CreatureId },
     ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ArtifactId },
-    NewLeaderElected { date: WorldDate, unit_id: usize, creature_id: CreatureId },
+    NewLeaderElected { date: WorldDate, unit_id: UnitId, creature_id: CreatureId },
 }
-
-// ------------------
-
-pub struct Unit {
-    pub xy: Coord2,
-    pub creatures: Vec<CreatureId>,
-    pub cemetery: Vec<CreatureId>,
-    pub unit_type: UnitType,
-    pub resources: UnitResources,
-    pub leader: Option<CreatureId>,
-    pub artifacts: Vec<ArtifactId>
-}
-
-pub enum UnitType {
-    City,
-}
-
-// -----------------
-
-#[derive(Clone, Copy)]
-pub struct UnitResources {
-    // 1 unit = enough food for 1 adult for 1 year
-    pub food: f32,
-}
-
-impl Add for UnitResources {
-    type Output = UnitResources;
-
-    fn add(self, other: UnitResources) -> UnitResources {
-        return UnitResources {
-            food: self.food + other.food
-        }
-    }
-}
-
-// -------------
-
-
-// -----------------
 
 
 // ----------------

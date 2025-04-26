@@ -43,4 +43,8 @@ impl<V> IdVec<V> {
         return self.vector.iter()
     }
 
+    pub fn iter_ids<K>(&self) -> impl Iterator<Item = K> where K: Id {
+        return (0..self.len()).map(|idx| K::new(idx))
+    }
+
 }

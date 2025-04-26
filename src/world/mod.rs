@@ -13,6 +13,7 @@ pub mod region;
 pub mod settlement;
 pub mod species;
 pub mod topology;
+pub mod unit;
 pub mod world;
 pub mod worldgen;
 pub mod history_sim;

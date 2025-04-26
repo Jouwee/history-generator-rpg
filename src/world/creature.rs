@@ -1,6 +1,6 @@
 use crate::commons::id_vec::IdVec;
 
-use super::{date::WorldDate, history_sim::structs::UnitResources, species::SpeciesId, world::ArtifactId};
+use super::{date::WorldDate, species::SpeciesId, unit::UnitResources, world::ArtifactId};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]

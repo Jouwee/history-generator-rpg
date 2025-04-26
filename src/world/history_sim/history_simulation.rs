@@ -1,8 +1,8 @@
-use std::{cell::RefCell, fs::File, io::Write, time::Instant};
+use std::{fs::File, io::Write, time::Instant};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::Item}};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::Item, unit::{Unit, UnitId, UnitResources, UnitType}}};
 
-use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event, Unit, UnitType, World}};
+use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event, World}};
 
 pub struct HistorySimulation {
     world: World,
@@ -44,7 +44,7 @@ impl HistorySimulation {
                 creatures: Vec::new(),
                 cemetery: Vec::new(),
                 unit_type: UnitType::City,
-                resources: super::structs::UnitResources {
+                resources: UnitResources {
                     // Enough food for a year
                     food: self.params.seed_cities_population as f32
                 },
@@ -68,7 +68,7 @@ impl HistorySimulation {
 
             }
 
-            self.world.units.push(RefCell::new(unit));
+            self.world.units.add::<UnitId>(unit);
         }
     }
 
@@ -81,9 +81,9 @@ impl HistorySimulation {
 
         let mut stats = (0, 0, 0, 0, 0);
 
-        for i in 0..self.world.units.len() {
+        for id in self.world.units.iter_ids::<UnitId>() {
             // let mut unit = unit.borrow_mut();
-            self.simulate_step_unit(&step, &self.date.clone(), self.params.rng.clone(), i, &mut stats);
+            self.simulate_step_unit(&step, &self.date.clone(), self.params.rng.clone(), &id, &mut stats);
             // for side_effect in local_side_effects.into_iter() {
             //     side_effects.push(side_effect);
             // }
@@ -126,8 +126,8 @@ impl HistorySimulation {
 
     }
 
-    fn simulate_step_unit(&mut self, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_index: usize, stats: &mut (usize, usize, usize, usize, usize)) {
-        let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+    fn simulate_step_unit(&mut self, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, usize, usize, usize, usize)) {
+        let mut unit = self.world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
 
         let mut resources = unit.resources.clone();
@@ -198,7 +198,7 @@ impl HistorySimulation {
                             let mut spouse = self.world.get_creature_mut(&spouse_id);
                             spouse.spouse = None;
                         }
-                        let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+                        let mut unit = self.world.units.get_mut(unit_id);
                         let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
                         let id = unit.creatures.remove(i);
                         unit.cemetery.push(id);
@@ -252,7 +252,7 @@ impl HistorySimulation {
                         let mother = child.mother;
                         // TODO: TODO what???
                         let creature_id = self.world.add_creature(child);
-                        let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+                        let mut unit = self.world.units.get_mut(unit_id);
                         unit.creatures.push(creature_id);
                         self.world.events.push(Event::CreatureBirth { date: now.clone(), creature_id });
                         {
@@ -295,7 +295,7 @@ impl HistorySimulation {
 
 
         {
-            let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+            let mut unit = self.world.units.get_mut(unit_id);
             let need_election = match unit.leader {
                 None => true,
                 Some(creature_id) => {
@@ -326,7 +326,7 @@ impl HistorySimulation {
 
                 }
                 unit.leader = Some(new_leader);
-                self.world.events.push(Event::NewLeaderElected { date: now.clone(), unit_id: unit_index, creature_id: new_leader });
+                self.world.events.push(Event::NewLeaderElected { date: now.clone(), unit_id: *unit_id, creature_id: new_leader });
             }
             
         }
@@ -376,7 +376,7 @@ impl HistorySimulation {
                     // TODO: Actually a statue is not an item. It will be place in the city.
                     match &item {
                         Item::Statue { material: _, scene: _ } => {
-                            let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+                            let mut unit = self.world.units.get_mut(unit_id);
                             unit.artifacts.push(id);
                         },
                         Item::Sword(_) | Item::Mace(_) => {
@@ -461,7 +461,7 @@ impl HistorySimulation {
                 },
                 Event::NewLeaderElected { date, unit_id, creature_id } => {
                     let name = self.creature_desc(creature_id, date);
-                    writeln!(&mut f, "{}, {} was elected new leader of {}", self.date_desc(date), name, unit_id).unwrap();
+                    writeln!(&mut f, "{}, {} was elected new leader of {:?}", self.date_desc(date), name, *unit_id).unwrap();
                 }
             }
             
