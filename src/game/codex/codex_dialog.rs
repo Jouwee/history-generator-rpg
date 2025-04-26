@@ -1,6 +1,6 @@
-use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, literature::biography::BiographyWriter, resources::resources::Resources, world::{history_sim::structs::World, world::ArtifactId}, GameContext};
+use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, resources::resources::Resources, world::world::{ArtifactId, World}, GameContext};
 
-use super::knowledge_codex::{ArtifactFact, KnowledgeCodex};
+use super::knowledge_codex::KnowledgeCodex;
 
 pub(crate) struct CodexDialog {
     dialog: Option<Dialog>,

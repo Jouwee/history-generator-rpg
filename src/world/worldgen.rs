@@ -6,7 +6,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
 
-use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, history_sim::structs::World};
+use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 
 pub(crate) struct WorldGenScene {
     generator: WorldHistoryGenerator,

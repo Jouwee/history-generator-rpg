@@ -1,6 +1,6 @@
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, resources::resources::Resources};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{history_sim::structs::World, species::Species};
+use super::species::Species;
 
 pub(crate) struct BattleForce {
     belligerent_faction: Option<Id>,

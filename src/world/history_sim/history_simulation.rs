@@ -1,8 +1,8 @@
 use std::{fs::File, io::Write, time::Instant};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::Item, unit::{Unit, UnitId, UnitResources, UnitType}}};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::Item, unit::{Unit, UnitId, UnitResources, UnitType}, world::World}};
 
-use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event, World}};
+use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event}};
 
 pub(crate) struct HistorySimulation {
     world: World,

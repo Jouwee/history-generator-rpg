@@ -1,8 +1,8 @@
 use std::{collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::{history_simulation::HistorySimulation, structs::World}, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
 
-use super::{culture::Culture, region::Region};
+use super::{culture::Culture, region::Region, world::World};
 
 
 #[derive(Clone)]

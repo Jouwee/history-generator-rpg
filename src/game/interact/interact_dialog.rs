@@ -1,4 +1,4 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, resources::resources::Resources, world::{creature::{Creature, CreatureId}, history_sim::structs::World}, GameContext};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::KnowledgeCodex, resources::resources::Resources, world::{creature::{Creature, CreatureId}, world::World}, GameContext};
 
 pub(crate) struct InteractDialog {
     interact_dialog: Option<Dialog>,

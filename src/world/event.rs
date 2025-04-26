@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display};
 
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2};
 
-use super::{battle_simulator::BattleResult, history_sim::structs::World, world::ArtifactId};
+use super::{battle_simulator::BattleResult, world::{ArtifactId, World}};
 
 // Speed of rumor spread, in units per year
 const SPEED_OF_RUMORS: f32 = 5.;

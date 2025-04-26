@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use action::{ActionRunner, ActionType};
 use actor::ActorType;
 use ai::AiSolver;
@@ -13,7 +11,7 @@ use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 use crate::engine::input::InputEvent as NewInputEvent;
 
-use crate::world::history_sim::structs::World;
+use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub(crate) mod action;

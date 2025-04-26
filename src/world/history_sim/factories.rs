@@ -1,8 +1,6 @@
 // TODO: Break into files
 
-use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, material::MaterialId, species::SpeciesId}};
-
-use super::structs::World;
+use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, material::MaterialId, species::SpeciesId, world::World}};
 
 pub(crate) struct CreatureFactory {
     rng: Rng

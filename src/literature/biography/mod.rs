@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, resources::resources::Resources, world::{history_sim::structs::World, topology::WorldTileData}, WorldEvent};
+use crate::{commons::history_vec::Id, resources::resources::Resources, world::{topology::WorldTileData, world::World}, WorldEvent};
 
 pub(crate) struct BiographyWriter<'a> { 
     world: &'a World,
