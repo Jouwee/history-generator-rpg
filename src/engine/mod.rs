@@ -1,53 +1,53 @@
 use geometry::{Coord2, Vec2};
 use image::Rgba;
 
-pub mod animation;
-pub mod assets;
-pub mod audio;
-pub mod debug;
-pub mod geometry;
-pub mod gui;
-pub mod input;
-pub mod layered_dualgrid_tilemap;
-pub mod pallete_sprite;
-pub mod render;
-pub mod spritesheet;
-pub mod scene;
-pub mod sprite;
-pub mod tilemap;
+pub(crate) mod animation;
+pub(crate) mod assets;
+pub(crate) mod audio;
+pub(crate) mod debug;
+pub(crate) mod geometry;
+pub(crate) mod gui;
+pub(crate) mod input;
+pub(crate) mod layered_dualgrid_tilemap;
+pub(crate) mod pallete_sprite;
+pub(crate) mod render;
+pub(crate) mod spritesheet;
+pub(crate) mod scene;
+pub(crate) mod sprite;
+pub(crate) mod tilemap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Point2D(pub usize, pub usize);
+pub(crate) struct Point2D(pub(crate) usize, pub(crate) usize);
 
 impl Point2D {
 
-    pub fn dist_squared(&self, another: &Point2D) -> f32 {
+    pub(crate) fn dist_squared(&self, another: &Point2D) -> f32 {
         let x = another.0 as f32 - self.0 as f32;
         let y = another.1 as f32 - self.1 as f32;
         return x*x + y*y
     }
 
-    pub fn vec_between(&self, another: &Point2D) -> Vec2 {
+    pub(crate) fn vec_between(&self, another: &Point2D) -> Vec2 {
         Vec2::xy(self.0 as f32, self.1 as f32) - Vec2::xy(another.0 as f32, another.1 as f32)
     }
 
-    pub fn to_coord(&self) -> Coord2 {
+    pub(crate) fn to_coord(&self) -> Coord2 {
         Coord2 { x: self.0 as i32, y: self.1 as i32 }
     }
 
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-    pub a: f32,
+pub(crate) struct Color {
+    pub(crate) r: f32,
+    pub(crate) g: f32,
+    pub(crate) b: f32,
+    pub(crate) a: f32,
 }
 
 impl Color {
 
-    pub fn rgb(rgb: [f32; 3]) -> Color {
+    pub(crate) fn rgb(rgb: [f32; 3]) -> Color {
         Color {
             r: rgb[0],
             g: rgb[1],
@@ -56,7 +56,7 @@ impl Color {
         }
     }
 
-    pub fn from_hex(hex: &str) -> Color {
+    pub(crate) fn from_hex(hex: &str) -> Color {
         assert!(hex.len() == 6 || hex.len() == 8, "A hex color must be 6 or 8 characters long. I got {}", hex);
         let r = u8::from_str_radix(&hex[0..2], 16).expect("Wrong red channel");
         let g = u8::from_str_radix(&hex[2..4], 16).expect("Wrong green channel");
@@ -73,7 +73,7 @@ impl Color {
         };
     }
 
-    pub fn alpha(&self, alpha: f32) -> Color {
+    pub(crate) fn alpha(&self, alpha: f32) -> Color {
         Color {
             r: self.r,
             g: self.g,
@@ -82,11 +82,11 @@ impl Color {
         }
     }
 
-    pub fn f32_arr(&self) -> [f32; 4] {
+    pub(crate) fn f32_arr(&self) -> [f32; 4] {
         return [self.r, self.g, self.b, self.a]
     }
 
-    pub fn to_rgba8(&self) -> Rgba<u8> {
+    pub(crate) fn to_rgba8(&self) -> Rgba<u8> {
         Rgba::<u8>([
             (self.r * 255.) as u8,
             (self.g * 255.) as u8,
@@ -97,7 +97,7 @@ impl Color {
 
 }
 
-pub enum Palette {
+pub(crate) enum Palette {
     Green,
     Red,
     Gray
@@ -105,7 +105,7 @@ pub enum Palette {
 
 impl Palette {
 
-    pub fn color(&self) -> Color {
+    pub(crate) fn color(&self) -> Color {
         match self {
             Palette::Green => Color::from_hex("3c502d"),
             Palette::Red => Color::from_hex("882309"),

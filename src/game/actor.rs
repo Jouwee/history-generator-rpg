@@ -5,35 +5,35 @@ use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animat
 use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
 #[derive(Clone, PartialEq, Eq)]
-pub enum ActorType {
+pub(crate) enum ActorType {
     Player,
     Passive,
     Hostile
 }
 
 #[derive(Clone)]
-pub struct Actor {
-    pub xy: Coord2,
-    pub animation: AnimationTransform,
-    pub ap: ActionPointsComponent,
-    pub hp: HealthPointsComponent,
-    pub attributes: Attributes,
-    pub defence: DefenceComponent,
-    pub actor_type: ActorType,
-    pub ai: AiRunner,
-    pub sprite: CreatureAppearance,
-    pub creature_id: Option<CreatureId>,
-    pub creature: Option<Creature>,
-    pub species: SpeciesId,
-    pub xp: u32,
-    pub level: u32,
-    pub inventory: Inventory,
+pub(crate) struct Actor {
+    pub(crate) xy: Coord2,
+    pub(crate) animation: AnimationTransform,
+    pub(crate) ap: ActionPointsComponent,
+    pub(crate) hp: HealthPointsComponent,
+    pub(crate) attributes: Attributes,
+    pub(crate) defence: DefenceComponent,
+    pub(crate) actor_type: ActorType,
+    pub(crate) ai: AiRunner,
+    pub(crate) sprite: CreatureAppearance,
+    pub(crate) creature_id: Option<CreatureId>,
+    pub(crate) creature: Option<Creature>,
+    pub(crate) species: SpeciesId,
+    pub(crate) xp: u32,
+    pub(crate) level: u32,
+    pub(crate) inventory: Inventory,
     afflictions: Vec<RunningAffliction>
 }
 
 impl Actor {
 
-    pub fn player(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
+    pub(crate) fn player(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -54,7 +54,7 @@ impl Actor {
         }
     }
 
-    pub fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
+    pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
@@ -79,7 +79,7 @@ impl Actor {
         }
     }
 
-    pub fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
+    pub(crate) fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
@@ -128,14 +128,14 @@ impl Actor {
         }
     }
 
-    pub fn update(&mut self, delta: f64) {
+    pub(crate) fn update(&mut self, delta: f64) {
         self.animation.update(delta);
         // TODO: Why do this everytime?
         self.hp.update(&self.attributes);
         self.ap.update(&self.attributes);
     }
 
-    pub fn start_of_round(&mut self, effect_layer: &mut EffectLayer) {
+    pub(crate) fn start_of_round(&mut self, effect_layer: &mut EffectLayer) {
         for affliction in self.afflictions.iter_mut() {
             affliction.delta += 1;
             match affliction.affliction {
@@ -161,7 +161,7 @@ impl Actor {
         });
     }
 
-    pub fn add_affliction(&mut self, affliction: &Affliction) {
+    pub(crate) fn add_affliction(&mut self, affliction: &Affliction) {
         // Removes dupped
         self.afflictions.retain(|a| {
             let current = &a.affliction;
@@ -175,7 +175,7 @@ impl Actor {
         self.afflictions.push(RunningAffliction { affliction: affliction.clone(), delta: 0 });
     }
 
-    pub fn add_xp(&mut self, ammount: u32) {
+    pub(crate) fn add_xp(&mut self, ammount: u32) {
         self.xp += ammount;
         let mut new_level = 1;
         if self.xp >= 300 {
@@ -260,14 +260,14 @@ impl Renderable for Actor {
 }
 
 #[derive(Clone)]
-pub struct ActionPointsComponent {
-    pub action_points: i32,
-    pub max_action_points: u16,
+pub(crate) struct ActionPointsComponent {
+    pub(crate) action_points: i32,
+    pub(crate) max_action_points: u16,
 }
 
 impl ActionPointsComponent {
 
-    pub fn new(attributes: &Attributes) -> ActionPointsComponent {
+    pub(crate) fn new(attributes: &Attributes) -> ActionPointsComponent {
         let max_ap = Self::max_ap(attributes);
         ActionPointsComponent {
             action_points: max_ap as i32,
@@ -275,7 +275,7 @@ impl ActionPointsComponent {
         }
     }
 
-    pub fn update(&mut self, attributes: &Attributes) {
+    pub(crate) fn update(&mut self, attributes: &Attributes) {
         self.max_action_points = Self::max_ap(attributes);
         self.action_points = self.action_points.min(self.max_action_points as i32)
     }
@@ -286,29 +286,29 @@ impl ActionPointsComponent {
         return ap as u16
     }
 
-    pub fn can_use(&self, ap: u16) -> bool {
+    pub(crate) fn can_use(&self, ap: u16) -> bool {
         return self.action_points >= ap as i32;
     }
 
-    pub fn consume(&mut self, ap: u16) {
+    pub(crate) fn consume(&mut self, ap: u16) {
         self.action_points -= ap as i32;
     }
 
-    pub fn fill(&mut self) {
+    pub(crate) fn fill(&mut self) {
         self.action_points = self.max_action_points as i32;
     }
 
 }
 
 #[derive(Clone)]
-pub struct HealthPointsComponent {
-    pub health_points: f32,
-    pub max_health_points: u16,
+pub(crate) struct HealthPointsComponent {
+    pub(crate) health_points: f32,
+    pub(crate) max_health_points: u16,
 }
 
 impl HealthPointsComponent {
 
-    pub fn new(attributes: &Attributes) -> HealthPointsComponent {
+    pub(crate) fn new(attributes: &Attributes) -> HealthPointsComponent {
         let max_hp = Self::max_hp(attributes);
         HealthPointsComponent {
             health_points: max_hp as f32,
@@ -316,11 +316,11 @@ impl HealthPointsComponent {
         }
     }
 
-    pub fn refill(&mut self) {
+    pub(crate) fn refill(&mut self) {
         self.health_points = self.max_health_points as f32;
     }
 
-    pub fn update(&mut self, attributes: &Attributes) {
+    pub(crate) fn update(&mut self, attributes: &Attributes) {
         self.max_health_points = Self::max_hp(attributes);
         self.health_points = self.health_points.min(self.max_health_points as f32)
     }
@@ -331,7 +331,7 @@ impl HealthPointsComponent {
         return hp as u16
     }
 
-    pub fn damage(&mut self, damage: f32) {
+    pub(crate) fn damage(&mut self, damage: f32) {
         self.health_points = (self.health_points - damage).max(0.0);
     }
 }

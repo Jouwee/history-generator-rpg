@@ -9,7 +9,7 @@ use crate::{engine::{render::RenderContext, scene::Update, sprite::Sprite, sprit
 
 use super::{tooltip::Tooltip, GUINode, Position};
 
-pub struct Button {
+pub(crate) struct Button {
     text: String,
     background: Texture,
     frame: Spritesheet,
@@ -20,7 +20,7 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(text: impl Display, position: Position) -> Button {
+    pub(crate) fn new(text: impl Display, position: Position) -> Button {
         let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
         let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         Button {
@@ -34,7 +34,7 @@ impl Button {
         }
     }
 
-    pub fn new_icon(icon: Texture, position: Position) -> Button {
+    pub(crate) fn new_icon(icon: Texture, position: Position) -> Button {
         let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
         let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         Button {
@@ -48,7 +48,7 @@ impl Button {
         }
     }
 
-    pub fn new_bg(bg: Texture, position: Position) -> Button {
+    pub(crate) fn new_bg(bg: Texture, position: Position) -> Button {
         let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
         let spritesheet = Spritesheet::new(spritesheet, (8, 8));
         Button {
@@ -62,7 +62,7 @@ impl Button {
         }
     }
 
-    pub fn tooltip(mut self, tooltip: Tooltip) -> Self {
+    pub(crate) fn tooltip(mut self, tooltip: Tooltip) -> Self {
         let mut hasher = DefaultHasher::new();
         tooltip.hash(&mut hasher);
         let hash = hasher.finish();
@@ -70,11 +70,11 @@ impl Button {
         return self
     }
 
-    pub fn text(&mut self, text: impl Display) {
+    pub(crate) fn text(&mut self, text: impl Display) {
         self.text = text.to_string();
     }
 
-    pub fn event(&self, evt: &InputEvent) -> ButtonEvent {
+    pub(crate) fn event(&self, evt: &InputEvent) -> ButtonEvent {
         if let Btn::Mouse(_) = evt.button_args.button {
             let position = self.last_layout;
             if evt.mouse_pos_gui[0] >= position[0] && evt.mouse_pos_gui[1] >= position[1] && evt.mouse_pos_gui[0] <= position[0]+position[2] && evt.mouse_pos_gui[1] <= position[1]+position[3] {
@@ -155,7 +155,7 @@ impl GUINode for Button {
 
 }
 
-pub enum ButtonEvent {
+pub(crate) enum ButtonEvent {
     None,
     Click
 }

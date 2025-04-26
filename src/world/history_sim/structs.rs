@@ -4,23 +4,23 @@ use std::{cell::{Ref, RefMut}, collections::HashMap};
 
 use crate::{commons::{history_vec::Id as HId, id_vec::IdVec}, world::{creature::{CauseOfDeath, Creature, CreatureId, Creatures, Profession}, date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, topology::WorldTopology, unit::{UnitId, Units}, world::ArtifactId}};
 
-pub struct World {
-    pub generation_params: WorldGenerationParameters,
-    pub map: WorldTopology,
-    pub map_features: WorldMapFeatures,
-    pub units: Units,
-    pub creatures: Creatures,
-    pub events: Vec<Event>,
-    // pub cultures: HashMap<Id, Culture>,
-    // pub factions: HistoryVec<Faction>,
-    pub artifacts: IdVec<Item>,
-    pub regions: HashMap<HId, Region>,
+pub(crate) struct World {
+    pub(crate) generation_params: WorldGenerationParameters,
+    pub(crate) map: WorldTopology,
+    pub(crate) map_features: WorldMapFeatures,
+    pub(crate) units: Units,
+    pub(crate) creatures: Creatures,
+    pub(crate) events: Vec<Event>,
+    // pub(crate) cultures: HashMap<Id, Culture>,
+    // pub(crate) factions: HistoryVec<Faction>,
+    pub(crate) artifacts: IdVec<Item>,
+    pub(crate) regions: HashMap<HId, Region>,
 
 }
 
 impl World {
 
-    pub fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>) -> World {
+    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>) -> World {
         return World {
             generation_params,
             map,
@@ -33,19 +33,19 @@ impl World {
         }
     }
 
-    pub fn add_creature(&mut self, creature: Creature) -> CreatureId {
+    pub(crate) fn add_creature(&mut self, creature: Creature) -> CreatureId {
         self.creatures.add(creature)
     }
 
-    pub fn add_artifact(&mut self, item: Item) -> ArtifactId {
+    pub(crate) fn add_artifact(&mut self, item: Item) -> ArtifactId {
         return self.artifacts.add(item);
     }
 
-    pub fn get_creature(&self, id: &CreatureId) -> Ref<Creature> {
+    pub(crate) fn get_creature(&self, id: &CreatureId) -> Ref<Creature> {
         self.creatures.get(id)
     }
 
-    pub fn get_creature_mut(&self, id: &CreatureId) -> RefMut<Creature> {
+    pub(crate) fn get_creature_mut(&self, id: &CreatureId) -> RefMut<Creature> {
         self.creatures.get_mut(id)
     }
 
@@ -53,7 +53,7 @@ impl World {
 
 // ----------------------
 
-pub enum Event {
+pub(crate) enum Event {
     CreatureDeath { date: WorldDate, creature_id: CreatureId, cause_of_death: CauseOfDeath },
     CreatureBirth { date: WorldDate, creature_id: CreatureId },
     CreatureMarriage { date: WorldDate, creature_id: CreatureId, spouse_id: CreatureId },
@@ -68,7 +68,7 @@ pub enum Event {
 
 // ----------------
 
-pub struct Demographics {
+pub(crate) struct Demographics {
     total: u16,
     children_male: u16,
     children_female: u16,
@@ -86,7 +86,7 @@ pub struct Demographics {
 
 impl Demographics {
 
-    pub fn new() -> Demographics {
+    pub(crate) fn new() -> Demographics {
         return Demographics {
             total: 0,
             children_male: 0,
@@ -104,7 +104,7 @@ impl Demographics {
         }
     }
 
-    pub fn count(&mut self, reference: &WorldDate, creature: &Creature) {
+    pub(crate) fn count(&mut self, reference: &WorldDate, creature: &Creature) {
         let age = (*reference - creature.birth).year();
         self.total += 1;
         if age < 18 {
@@ -136,7 +136,7 @@ impl Demographics {
         }
     }
 
-    pub fn print_console(&self) {
+    pub(crate) fn print_console(&self) {
         println!("total: {}", self.total);
         println!("children_male: {} ({:.2?}%)", self.children_male, Self::pct(self.total, self.children_male));
         println!("children_female: {} ({:.2?}%)", self.children_female, Self::pct(self.total, self.children_female));

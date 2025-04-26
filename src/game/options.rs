@@ -1,9 +1,9 @@
 #[derive(Clone, Debug)]
-pub struct GameOptions {
-    pub audio: AudioOptions
+pub(crate) struct GameOptions {
+    pub(crate) audio: AudioOptions
 }
 
 #[derive(Clone, Debug)]
-pub struct AudioOptions {
-    pub music_volume: f32
+pub(crate) struct AudioOptions {
+    pub(crate) music_volume: f32
 }

@@ -3,15 +3,15 @@ use std::fmt::Display;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-pub struct Sprite {
-    pub path: String,
-    pub size: (u32, u32),
-    pub texture: Texture
+pub(crate) struct Sprite {
+    pub(crate) path: String,
+    pub(crate) size: (u32, u32),
+    pub(crate) texture: Texture
 }
 
 impl Sprite {
 
-    pub fn new(path: impl Display) -> Sprite {
+    pub(crate) fn new(path: impl Display) -> Sprite {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let path = format!("./assets/sprites/{}", path.to_string());
         let icon = ImageReader::open(&path).unwrap().decode().unwrap();

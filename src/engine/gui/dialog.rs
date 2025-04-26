@@ -5,13 +5,13 @@ use crate::{engine::{render::RenderContext, spritesheet::Spritesheet}, GameConte
 
 use super::{container::{Container, InnerContainer}, GUINode, Position};
 
-pub struct Dialog {
+pub(crate) struct Dialog {
     position: Position,
     inner: InnerContainer
 }
 
 impl Dialog {
-    pub fn new() -> Dialog {
+    pub(crate) fn new() -> Dialog {
         Dialog { position: Position::Centered, inner: InnerContainer::new() }
     }
 }
@@ -61,7 +61,7 @@ impl Container for Dialog {
 
 }
 
-pub enum ButtonEvent {
+pub(crate) enum ButtonEvent {
     None,
     Click
 }

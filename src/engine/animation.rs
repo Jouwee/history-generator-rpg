@@ -1,13 +1,13 @@
 #[derive(Clone)]
-pub struct AnimationTransform {
-    pub translate: [f64; 2],
+pub(crate) struct AnimationTransform {
+    pub(crate) translate: [f64; 2],
     current_animation: Option<Animation>,
     animation_progress: f64
 }
 
 impl AnimationTransform {
 
-    pub fn new() -> AnimationTransform {
+    pub(crate) fn new() -> AnimationTransform {
         AnimationTransform {
             translate: [0.; 2],
             current_animation: None,
@@ -15,14 +15,14 @@ impl AnimationTransform {
         }
     }
 
-    pub fn update(&mut self, delta: f64) {
+    pub(crate) fn update(&mut self, delta: f64) {
         if let Some(animation) = &self.current_animation {
             self.animation_progress += delta;
             self.translate = animation.get_translate(self.animation_progress);
         }
     }
 
-    pub fn play(&mut self, animation: &Animation) {
+    pub(crate) fn play(&mut self, animation: &Animation) {
         self.current_animation = Some(animation.clone());
         self.animation_progress = 0.;
     }
@@ -30,19 +30,19 @@ impl AnimationTransform {
 }
 
 #[derive(Clone, Debug)]
-pub struct Animation {
+pub(crate) struct Animation {
     translate_keyframes: Vec<KeyFrame>
 }
 
 impl Animation {
 
-    pub fn new() -> Animation {
+    pub(crate) fn new() -> Animation {
         return Animation {
             translate_keyframes: Vec::new()
         }
     }
 
-    pub fn translate(mut self, duration: f64, to: [f64; 2], smoothing: Smoothing) -> Animation {
+    pub(crate) fn translate(mut self, duration: f64, to: [f64; 2], smoothing: Smoothing) -> Animation {
         let mut start = 0.;
         let mut from = [0.; 2];
         if let Some(last) = self.translate_keyframes.last() {
@@ -59,7 +59,7 @@ impl Animation {
         return self
     }
 
-    pub fn get_translate(&self, progress: f64) -> [f64; 2] {
+    pub(crate) fn get_translate(&self, progress: f64) -> [f64; 2] {
         for kf in self.translate_keyframes.iter() {
             if progress >= kf.start && progress <= kf.end {
                 return [
@@ -83,14 +83,14 @@ struct KeyFrame {
 }
 
 #[derive(Clone, Debug)]
-pub enum Smoothing {
+pub(crate) enum Smoothing {
     Linear,
     EaseInOut
 }
 
 impl Smoothing {
 
-    pub fn interpolate(&self, progress: f64, time: [f64; 2], values: [f64; 2]) -> f64 {
+    pub(crate) fn interpolate(&self, progress: f64, time: [f64; 2], values: [f64; 2]) -> f64 {
         let normalized = (progress - time[0]) / (time[1] - time[0]);
         let dist = values[1] - values[0];
         let offset = match self {

@@ -4,19 +4,19 @@ use graphics::CharacterCache;
 
 use crate::{commons::rng::Rng, engine::{geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
-pub struct EffectLayer {
+pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>
 }
 
 impl EffectLayer {
 
-    pub fn new() -> EffectLayer {
+    pub(crate) fn new() -> EffectLayer {
         EffectLayer {
             damage_numbers: Vec::new()
         }
     }
 
-    pub fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
@@ -48,18 +48,18 @@ impl EffectLayer {
 
     }
 
-    pub fn update(&mut self, update: &Update, _ctx: &mut GameContext) {
+    pub(crate) fn update(&mut self, update: &Update, _ctx: &mut GameContext) {
         for damage_number in self.damage_numbers.iter_mut() {
             damage_number.lifetime = damage_number.lifetime + update.delta_time;
         }
         self.damage_numbers.retain(|n| n.lifetime < 1.);
     }
 
-    pub fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
+    pub(crate) fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
         self.add_text_indicator(pos, &format!("{:.1}", damage), Palette::Red);
     }
 
-    pub fn add_text_indicator(&mut self, pos: Coord2, text: &str, color: Palette) {
+    pub(crate) fn add_text_indicator(&mut self, pos: Coord2, text: &str, color: Palette) {
         let mut rng = Rng::rand();
         let speed = Vec2::xy(rng.randf() * 1.6 - 0.8, -3. + rng.randf());
         self.damage_numbers.push(DamageNumber {

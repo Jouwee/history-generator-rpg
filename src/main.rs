@@ -20,12 +20,12 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::WindowSettings;
 
-pub mod engine;
-pub mod commons;
-pub mod literature;
-pub mod resources;
-pub mod world;
-pub mod game;
+pub(crate) mod engine;
+pub(crate) mod commons;
+pub(crate) mod literature;
+pub(crate) mod resources;
+pub(crate) mod world;
+pub(crate) mod game;
 
 enum SceneEnum {
     None,
@@ -33,7 +33,7 @@ enum SceneEnum {
     Game(GameSceneState)
 }
 
-pub struct App {
+pub(crate) struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     context: GameContext,
     scene: SceneEnum,
@@ -42,7 +42,7 @@ pub struct App {
     display_context: DisplayContext
 }
 
-pub struct GameContext {
+pub(crate) struct GameContext {
     audio: Audio,
     assets: Assets,
     resources: Resources,
@@ -50,10 +50,10 @@ pub struct GameContext {
     display_context: DisplayContext
 }
 
-pub struct DisplayContext {
-    pub scale: f64,
-    pub camera_rect: [f64; 4],
-    pub gui_rect: [f64; 4],
+pub(crate) struct DisplayContext {
+    pub(crate) scale: f64,
+    pub(crate) camera_rect: [f64; 4],
+    pub(crate) gui_rect: [f64; 4],
 }
 
 impl App {

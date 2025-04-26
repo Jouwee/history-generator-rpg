@@ -4,7 +4,7 @@ use piston::{Button, ButtonState, Key};
 
 use crate::{engine::{render::RenderContext, scene::Update, Color}, game::InputEvent};
 
-pub struct DebugOverlay {
+pub(crate) struct DebugOverlay {
     active: bool,
     fps: CountingBlocks,
     render_time: TrackingBlocks,
@@ -15,7 +15,7 @@ pub struct DebugOverlay {
 
 impl DebugOverlay {
 
-    pub fn new() -> DebugOverlay {
+    pub(crate) fn new() -> DebugOverlay {
         DebugOverlay {
             active: false,
             fps: CountingBlocks::new(),
@@ -26,7 +26,7 @@ impl DebugOverlay {
         }
     }
 
-    pub fn render(&mut self, context: &mut RenderContext) {
+    pub(crate) fn render(&mut self, context: &mut RenderContext) {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], Color::from_hex("00000080"));
@@ -36,23 +36,23 @@ impl DebugOverlay {
         }
     }
 
-    pub fn update(&mut self, _update: &Update) {
+    pub(crate) fn update(&mut self, _update: &Update) {
         self.tps.count();
     }
 
-    pub fn render_time(&mut self, time: Duration) {
+    pub(crate) fn render_time(&mut self, time: Duration) {
         self.render_time.add(time.as_secs_f64());
     }
 
-    pub fn update_time(&mut self, time: Duration) {
+    pub(crate) fn update_time(&mut self, time: Duration) {
         self.update_time.add(time.as_secs_f64());
     }
 
-    pub fn input_time(&mut self, time: Duration) {
+    pub(crate) fn input_time(&mut self, time: Duration) {
         self.input_time.add(time.as_secs_f64());
     }
 
-    pub fn input(&mut self, input: &InputEvent) {
+    pub(crate) fn input(&mut self, input: &InputEvent) {
         if input.button_args.state == ButtonState::Press {
             if let Button::Keyboard(Key::F3) = input.button_args.button {
                 self.active = !self.active;

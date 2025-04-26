@@ -1,2 +1,2 @@
-pub mod inventory;
-pub mod character_dialog;
+pub(crate) mod inventory;
+pub(crate) mod character_dialog;

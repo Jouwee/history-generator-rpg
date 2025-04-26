@@ -1,13 +1,13 @@
 use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, resources::resources::Resources, world::{creature::{Creature, CreatureId}, history_sim::structs::World}, GameContext};
 
-pub struct InteractDialog {
+pub(crate) struct InteractDialog {
     interact_dialog: Option<Dialog>,
     dialog_y: f64,
     creature: Option<Creature>
 }
 
 impl InteractDialog {
-    pub fn new() -> InteractDialog {
+    pub(crate) fn new() -> InteractDialog {
         InteractDialog {
             interact_dialog: None,
             dialog_y: 0.,
@@ -15,7 +15,7 @@ impl InteractDialog {
         }
     }
 
-    pub fn start_dialog(&mut self, world: &World, creature: CreatureId) {
+    pub(crate) fn start_dialog(&mut self, world: &World, creature: CreatureId) {
         let mut dialog = Dialog::new();
 
         self.creature = Some(world.get_creature(&creature).clone());
@@ -29,13 +29,13 @@ impl InteractDialog {
         self.add_dialog_line("Hi, how can I help you?");
     }
 
-    pub fn add_dialog_line(&mut self, string: &str) {
+    pub(crate) fn add_dialog_line(&mut self, string: &str) {
         if let Some(dialog) = &mut self.interact_dialog {
             dialog.add(Label::new(string, Position::Anchored(Anchor::TopLeft, 10., self.dialog_y + 24.)));
             self.dialog_y = self.dialog_y + 16.;
         }
     }
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &mut KnowledgeCodex) {
+    pub(crate) fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &mut KnowledgeCodex) {
         if let Some(dialog) = &mut self.interact_dialog {
             if let Some(creature) = &self.creature {
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {

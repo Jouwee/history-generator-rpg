@@ -2,16 +2,16 @@ use crate::GameContext;
 
 use super::{container::{Container, InnerContainer}, GUINode, Position};
 
-pub struct HList {
+pub(crate) struct HList {
     position: Position,
     inner: InnerContainer,
     gap: f64,
-    pub size: Option<[f64; 2]>
+    pub(crate) size: Option<[f64; 2]>
 }
 
 impl HList {
     
-    pub fn new(position: Position) -> HList {
+    pub(crate) fn new(position: Position) -> HList {
         HList {
             position,
             inner: InnerContainer::new(),

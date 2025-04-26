@@ -8,7 +8,7 @@ use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgri
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, history_sim::structs::World};
 
-pub struct WorldGenScene {
+pub(crate) struct WorldGenScene {
     generator: WorldHistoryGenerator,
     total_time: Duration,
     tilemap: LayeredDualgridTilemap,
@@ -17,7 +17,7 @@ pub struct WorldGenScene {
 }
 
 impl WorldGenScene {
-    pub fn new(params: WorldGenerationParameters, resources: &Resources) -> WorldGenScene {
+    pub(crate) fn new(params: WorldGenerationParameters, resources: &Resources) -> WorldGenScene {
         let spritesheet = ImageReader::open("assets/sprites/banner.png").unwrap().decode().unwrap();
         let settings = TextureSettings::new().filter(Filter::Nearest);
 
@@ -87,7 +87,7 @@ impl WorldGenScene {
         return scene
     }
 
-    pub fn build_tilemap(&mut self) {
+    pub(crate) fn build_tilemap(&mut self) {
         let map = &self.generator.world.map;
         for x in 0..map.size.x() {
             for y in 0..map.size.y() {
@@ -104,7 +104,7 @@ impl WorldGenScene {
         }
     }
 
-    pub fn into_world(self) -> World {
+    pub(crate) fn into_world(self) -> World {
         return self.generator.world
     }
 }

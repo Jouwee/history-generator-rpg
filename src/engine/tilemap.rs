@@ -3,7 +3,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::render::RenderContext;
 
-pub struct TileMap {
+pub(crate) struct TileMap {
     tiles: Vec<usize>,
     tileset: TileSet,
     width: usize,
@@ -14,7 +14,7 @@ pub struct TileMap {
 
 impl TileMap {
 
-    pub fn new(tileset: TileSet, width: usize, height: usize, cell_width: usize, cell_height: usize) -> TileMap {
+    pub(crate) fn new(tileset: TileSet, width: usize, height: usize, cell_width: usize, cell_height: usize) -> TileMap {
         TileMap {
             tiles: vec![0; height * width],
             tileset,
@@ -25,22 +25,22 @@ impl TileMap {
         }
     }
 
-    pub fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
+    pub(crate) fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
         self.tiles[(y*self.width) + x] = tile;
     }
 
-    pub fn get_tile(&self, x: usize, y: usize) -> &Tile {
+    pub(crate) fn get_tile(&self, x: usize, y: usize) -> &Tile {
         let idx = (y * self.width) + x;
         let tile_i = self.tiles[idx];
         &self.tileset.tiles[tile_i]
     }
 
-    pub fn get_tile_idx(&self, x: usize, y: usize) -> usize {
+    pub(crate) fn get_tile_idx(&self, x: usize, y: usize) -> usize {
         let idx = (y * self.width) + x;
         return self.tiles[idx]
     }
 
-    pub fn render<F>(&self, ctx: &mut RenderContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, usize, usize) -> () {
+    pub(crate) fn render<F>(&self, ctx: &mut RenderContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, usize, usize) -> () {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (y * self.width) + x;
@@ -104,36 +104,36 @@ impl TileMap {
 
 }
 
-pub struct TileSet {
+pub(crate) struct TileSet {
     tiles: Vec<Tile>
 }
 
 impl TileSet {
-    pub fn new() -> TileSet {
+    pub(crate) fn new() -> TileSet {
         TileSet {
             tiles: vec!(Tile::Empty)
         }
     }
 
-    pub fn add(&mut self, tile: Tile) {
+    pub(crate) fn add(&mut self, tile: Tile) {
         self.tiles.push(tile);
     }
 }
 
-pub enum Tile {
+pub(crate) enum Tile {
     Empty,
     SingleTile(TileSingle),
     T16Subset(Tile16Subset)
 }
 
-pub struct TileSingle {
+pub(crate) struct TileSingle {
     tile_width: usize,
     tile_height: usize,
     texture: Texture,
 }
 
 impl TileSingle {
-    pub fn new(image: DynamicImage) -> TileSingle {
+    pub(crate) fn new(image: DynamicImage) -> TileSingle {
         let width = image.width() as usize;
         let height = image.height() as usize;
         let settings = TextureSettings::new().filter(Filter::Nearest);
@@ -145,14 +145,14 @@ impl TileSingle {
     }
 }
 
-pub struct Tile16Subset {
+pub(crate) struct Tile16Subset {
     tile_width: usize,
     tile_height: usize,
     textures: Vec<Texture>
 }
 
 impl Tile16Subset {
-    pub fn new(image: DynamicImage, tile_width: usize, tile_height: usize) -> Tile16Subset {
+    pub(crate) fn new(image: DynamicImage, tile_width: usize, tile_height: usize) -> Tile16Subset {
         let mut textures = Vec::new();
         for y in 0..4 {
             for x in 0..4 {

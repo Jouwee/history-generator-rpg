@@ -6,17 +6,17 @@ use crate::{engine::{render::RenderContext, Color}, GameContext};
 
 use super::{GUINode, Position};
 
-pub struct Label {
+pub(crate) struct Label {
     text: String,
     position: Position,
 }
 
 impl Label {
-    pub fn new(text: impl Display, position: Position) -> Label {
+    pub(crate) fn new(text: impl Display, position: Position) -> Label {
         Label { text: text.to_string(), position }
     }
 
-    pub fn text(&mut self, text: impl Display) {
+    pub(crate) fn text(&mut self, text: impl Display) {
         self.text = text.to_string();
     }
 }

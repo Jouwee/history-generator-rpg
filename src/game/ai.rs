@@ -5,15 +5,15 @@ use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, gam
 use super::{action::{Action, ActionId, ActionType, DamageType}, actor::Actor, chunk::Chunk};
 
 #[derive(Clone)]
-pub struct AiRunner {
-    pub actions: VecDeque<ActionId>,
-    pub delay: f64,
-    pub delay_target: f64,
+pub(crate) struct AiRunner {
+    pub(crate) actions: VecDeque<ActionId>,
+    pub(crate) delay: f64,
+    pub(crate) delay_target: f64,
 }
 
 impl AiRunner {
 
-    pub fn new() -> AiRunner {
+    pub(crate) fn new() -> AiRunner {
         return AiRunner {
             actions: VecDeque::new(),
             delay: 0.,
@@ -21,7 +21,7 @@ impl AiRunner {
         }
     }
 
-    pub fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<&'a Action> {
+    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<&'a Action> {
         let action = self.actions.pop_front();
         if let Some(action) = action {
             let action = actions.get(&action);
@@ -32,25 +32,25 @@ impl AiRunner {
         return None
     }
 
-    pub fn waiting_delay(&mut self, delta: f64) -> bool {
+    pub(crate) fn waiting_delay(&mut self, delta: f64) -> bool {
         self.delay += delta;
         return self.delay <= self.delay_target;
     }
 
 }
 
-pub struct AiSolver {
+pub(crate) struct AiSolver {
 
 }
 
 impl AiSolver {
 
-    pub fn new() -> AiSolver {
+    pub(crate) fn new() -> AiSolver {
         return AiSolver {
         }
     }
 
-    pub fn choose_actions(actions: &Actions, actor: &Actor, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
+    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
 
         let now = Instant::now();
 

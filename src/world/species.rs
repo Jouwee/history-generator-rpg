@@ -8,7 +8,7 @@ use crate::{commons::rng::Rng, game::action::ActionId};
 use super::{attributes::Attributes, material::MaterialId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct SpeciesId(usize);
+pub(crate) struct SpeciesId(usize);
 impl crate::commons::id_vec::Id for SpeciesId {
     fn new(id: usize) -> Self {
         SpeciesId(id)
@@ -19,20 +19,20 @@ impl crate::commons::id_vec::Id for SpeciesId {
 }
 
 #[derive(Debug, Clone)]
-pub struct Species {
-    pub name: String,
-    pub appearance: SpeciesApearance,
-    pub lifetime: SpeciesLifetime,
-    pub intelligence: SpeciesIntelligence,
-    pub fertility: SpeciesFertility,
-    pub attributes: Attributes,
-    pub innate_actions: Vec<ActionId>,
-    pub drops: Vec<(MaterialId, usize)>
+pub(crate) struct Species {
+    pub(crate) name: String,
+    pub(crate) appearance: SpeciesApearance,
+    pub(crate) lifetime: SpeciesLifetime,
+    pub(crate) intelligence: SpeciesIntelligence,
+    pub(crate) fertility: SpeciesFertility,
+    pub(crate) attributes: Attributes,
+    pub(crate) innate_actions: Vec<ActionId>,
+    pub(crate) drops: Vec<(MaterialId, usize)>
 }
 
 impl Species {
 
-    pub fn new(name: &str, appearance: SpeciesApearance) -> Species {
+    pub(crate) fn new(name: &str, appearance: SpeciesApearance) -> Species {
         Species {
             name: String::from(name),
             appearance,
@@ -45,32 +45,32 @@ impl Species {
         }
     }
 
-    pub fn innate_actions(mut self, innate_actions: Vec<ActionId>) -> Self {
+    pub(crate) fn innate_actions(mut self, innate_actions: Vec<ActionId>) -> Self {
         self.innate_actions = innate_actions;
         return self
     }
 
-    pub fn intelligence(mut self, intelligence: SpeciesIntelligence) -> Self {
+    pub(crate) fn intelligence(mut self, intelligence: SpeciesIntelligence) -> Self {
         self.intelligence = intelligence;
         self
     }
 
-    pub fn attributes(mut self, attributes: Attributes) -> Self {
+    pub(crate) fn attributes(mut self, attributes: Attributes) -> Self {
         self.attributes = attributes;
         self
     }
 
-    pub fn lifetime(mut self, max_age: u32) -> Self {
+    pub(crate) fn lifetime(mut self, max_age: u32) -> Self {
         self.lifetime = SpeciesLifetime::new(max_age);
         self
     }
 
-    pub fn fertility(mut self, fertility: f32) -> Self {
+    pub(crate) fn fertility(mut self, fertility: f32) -> Self {
         self.fertility = SpeciesFertility { male_drop: fertility, female_drop: fertility };
         self
     }
 
-    pub fn drops(mut self, drops: Vec<(MaterialId, usize)>) -> Self {
+    pub(crate) fn drops(mut self, drops: Vec<(MaterialId, usize)>) -> Self {
         self.drops = drops;
         self
     }
@@ -78,45 +78,45 @@ impl Species {
 }
 
 #[derive(Debug, Clone)]
-pub struct SpeciesLifetime {
-    pub max_age: u32,
-    pub adult_age: f32
+pub(crate) struct SpeciesLifetime {
+    pub(crate) max_age: u32,
+    pub(crate) adult_age: f32
 }
 
 impl SpeciesLifetime {
-    pub fn new(max_age: u32) -> SpeciesLifetime {
+    pub(crate) fn new(max_age: u32) -> SpeciesLifetime {
         SpeciesLifetime {
             max_age,
             adult_age: max_age as f32 * 0.15
         }
     }
 
-    pub fn is_adult(&self, age: f32) -> bool {
+    pub(crate) fn is_adult(&self, age: f32) -> bool {
         return age > self.adult_age;
     }
 
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-pub enum SpeciesIntelligence {
+pub(crate) enum SpeciesIntelligence {
     Instinctive,
     Civilized
 }
 
 #[derive(Debug, Clone)]
-pub struct SpeciesFertility {
-    pub male_drop: f32,
-    pub female_drop: f32
+pub(crate) struct SpeciesFertility {
+    pub(crate) male_drop: f32,
+    pub(crate) female_drop: f32
 }
 
 #[derive(Debug, Clone)]
-pub struct SpeciesApearance {
+pub(crate) struct SpeciesApearance {
     map: BTreeMap<String, HashMap<String, String>>
 }
 
 impl SpeciesApearance {
 
-    pub fn single_sprite(path: &str) -> SpeciesApearance {
+    pub(crate) fn single_sprite(path: &str) -> SpeciesApearance {
         let mut map = BTreeMap::new();
         let mut var = HashMap::new();
         var.insert(String::from("default"), String::from(path));
@@ -124,7 +124,7 @@ impl SpeciesApearance {
         Self { map }
     }
 
-    pub fn composite(parts: Vec<(&str, Vec<(&str, &str)>)>) -> SpeciesApearance {
+    pub(crate) fn composite(parts: Vec<(&str, Vec<(&str, &str)>)>) -> SpeciesApearance {
         let mut map = BTreeMap::new();
         for part in parts {
             let mut var = HashMap::new();
@@ -136,7 +136,7 @@ impl SpeciesApearance {
         Self { map }
     }
 
-    pub fn collapse(&self, rng: &Rng, hints: &HashMap<String, String>) -> CreatureAppearance {
+    pub(crate) fn collapse(&self, rng: &Rng, hints: &HashMap<String, String>) -> CreatureAppearance {
         let mut collapsed = CreatureAppearance {
             map: BTreeMap::new()
         };
@@ -157,12 +157,12 @@ impl SpeciesApearance {
 }
 
 #[derive(Debug, Clone)]
-pub struct CreatureAppearance {
-    pub map: BTreeMap<String, (String, String)>
+pub(crate) struct CreatureAppearance {
+    pub(crate) map: BTreeMap<String, (String, String)>
 }
 
 impl CreatureAppearance {
-    pub fn texture(&self) -> Vec<Texture> {
+    pub(crate) fn texture(&self) -> Vec<Texture> {
         let mut vec = Vec::new();
         for (_k, v) in self.map.iter() {
             // TODO: Don't load everytime

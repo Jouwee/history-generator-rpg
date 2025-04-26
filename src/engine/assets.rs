@@ -5,17 +5,17 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::spritesheet::Spritesheet;
 
-pub struct Assets {
+pub(crate) struct Assets {
     images: HashMap<ImageParams, Asset<Image>>
 }
 
 impl Assets {
 
-    pub fn new() -> Assets {
+    pub(crate) fn new() -> Assets {
         Assets { images: HashMap::new() }
     }
 
-    pub fn image(&mut self, params: ImageParams) -> &Image {
+    pub(crate) fn image(&mut self, params: ImageParams) -> &Image {
         if !self.images.contains_key(&params) {
             let image = Image::new(&params);
             self.images.insert(params.clone(), Asset { value: image });
@@ -29,42 +29,42 @@ struct Asset<T> {
 }
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
-pub struct ImageParams {
+pub(crate) struct ImageParams {
     path: String,
     rotate: ImageRotate
 }
 
 impl ImageParams {
-    pub fn new(path: &str) -> ImageParams {
+    pub(crate) fn new(path: &str) -> ImageParams {
         ImageParams {
             path: String::from(path),
             rotate: ImageRotate::None
         }
     }
 
-    pub fn rotate(mut self, rotate: ImageRotate) -> ImageParams {
+    pub(crate) fn rotate(mut self, rotate: ImageRotate) -> ImageParams {
         self.rotate = rotate;
         return self
     }
 }
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
-pub enum ImageRotate {
+pub(crate) enum ImageRotate {
     None,
     R90,
     R180,
     R270
 }
 
-pub struct Image {
-    pub size: (u32, u32),
-    pub image: DynamicImage,
-    pub texture: Texture
+pub(crate) struct Image {
+    pub(crate) size: (u32, u32),
+    pub(crate) image: DynamicImage,
+    pub(crate) texture: Texture
 }
 
 impl Image {
 
-    pub fn new(params: &ImageParams) -> Image {
+    pub(crate) fn new(params: &ImageParams) -> Image {
         let path = format!("./assets/sprites/{}", params.path);
         let image = ImageReader::open(&path).unwrap().decode().unwrap();
         let image = match params.rotate {
@@ -86,21 +86,21 @@ impl Image {
 
 /* ------------------------------------------- */
 
-pub struct OldAssets {
+pub(crate) struct OldAssets {
     textures: HashMap<String, OldAsset<Texture>>,
     spritesheets: HashMap<String, OldAsset<Spritesheet>>,
 }
 
 impl OldAssets {
 
-    pub fn new() -> OldAssets {
+    pub(crate) fn new() -> OldAssets {
         OldAssets {
             textures: HashMap::new(),
             spritesheets: HashMap::new()
         }
     }
 
-    pub fn texture(&mut self, name: &str) -> &Texture {
+    pub(crate) fn texture(&mut self, name: &str) -> &Texture {
         if !self.textures.contains_key(name) {
             let mut path = String::from("./assets/sprites/");
             path.push_str(name);
@@ -112,7 +112,7 @@ impl OldAssets {
         &self.textures.get(name).expect(format!("Image {name} does not exist").as_str()).value
     }
 
-    pub fn spritesheet(&mut self, name: &str, size: (u32, u32)) -> &Spritesheet {
+    pub(crate) fn spritesheet(&mut self, name: &str, size: (u32, u32)) -> &Spritesheet {
         if !self.spritesheets.contains_key(name) {
             let mut path = String::from("./assets/sprites/");
             path.push_str(name);
@@ -124,6 +124,6 @@ impl OldAssets {
 
 }
 
-pub struct OldAsset<T> {
+pub(crate) struct OldAsset<T> {
     value: T
 }

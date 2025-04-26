@@ -8,22 +8,22 @@ use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{Im
 
 use super::{actor::Actor, Renderable};
 
-pub struct Chunk {
-    pub size: Size2D,
-    pub map: ChunkMap,
-    pub player: Actor,
-    pub npcs: Vec<Actor>,
-    pub killed_people: Vec<CreatureId>,
+pub(crate) struct Chunk {
+    pub(crate) size: Size2D,
+    pub(crate) map: ChunkMap,
+    pub(crate) player: Actor,
+    pub(crate) npcs: Vec<Actor>,
+    pub(crate) killed_people: Vec<CreatureId>,
     // TODO: Should probably be on the map
-    pub tiles_metadata: HashMap<Coord2, TileMetadata>,
-    pub items_on_ground: Vec<(Coord2, Item, Texture)>,
+    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
+    pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
 }
 
-pub enum TileMetadata {
+pub(crate) enum TileMetadata {
     BurialPlace(CreatureId)
 }
 
-pub struct ChunkMap {
+pub(crate) struct ChunkMap {
     tiles_clone: ResourceMap<TileId, Tile>,
     ground_layer: LayeredDualgridTilemap,
     object_layer: TileMap,
@@ -31,22 +31,22 @@ pub struct ChunkMap {
 
 impl ChunkMap {
 
-    pub fn blocks_movement(&self, pos: Coord2) -> bool {
+    pub(crate) fn blocks_movement(&self, pos: Coord2) -> bool {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
             return false
         }
         return true
     }
 
-    pub fn get_object_idx(&self, pos: Coord2) -> usize {
+    pub(crate) fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
     }
 
-    pub fn remove_object(&mut self, pos: Coord2) {
+    pub(crate) fn remove_object(&mut self, pos: Coord2) {
         self.object_layer.set_tile(pos.x as usize, pos.y as usize, 0);
     }
 
-    pub fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
+    pub(crate) fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
         if let Some(tile) = self.ground_layer.tile(pos.x as usize, pos.y as usize) {
             let tile = self.tiles_clone.try_get(tile);
             if let Some(tile) = tile {
@@ -59,7 +59,7 @@ impl ChunkMap {
 }
 
 impl Chunk {
-    pub fn new(size: Size2D, player: Actor, resources: &Resources) -> Chunk {
+    pub(crate) fn new(size: Size2D, player: Actor, resources: &Resources) -> Chunk {
 
         let mut tileset = TileSet::new();
         let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
@@ -95,7 +95,7 @@ impl Chunk {
         }
     }
 
-    pub fn playground(resources: &Resources, player: Actor) -> Chunk {
+    pub(crate) fn playground(resources: &Resources, player: Actor) -> Chunk {
         let mut chunk = Self::new(Size2D(128, 128), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
@@ -155,7 +155,7 @@ impl Chunk {
         return chunk
     }
 
-    pub fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
+    pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
         let mut chunk = Self::new(Size2D(128, 128), player, resources);
         let mut rng = Rng::seeded(world.generation_params.seed).derive("chunk").derive(xy);
         let tile = world.map.tile(xy.x as usize, xy.y as usize);
@@ -411,7 +411,7 @@ impl Chunk {
         chunk
     }
 
-    pub fn get_spawn_pos(&self, rng: &mut Rng) -> Coord2 {
+    pub(crate) fn get_spawn_pos(&self, rng: &mut Rng) -> Coord2 {
         let mut point = Coord2::xy(
                 rng.randu_range(0, self.size.x()) as i32,
                 rng.randu_range(0, self.size.y()) as i32
@@ -428,7 +428,7 @@ impl Chunk {
         return point
     }
 
-    pub fn prepare_buildings(&self, rng: &mut Rng, num_buildings: usize, tries: u32) -> Vec<(Coord2, Coord2)> {
+    pub(crate) fn prepare_buildings(&self, rng: &mut Rng, num_buildings: usize, tries: u32) -> Vec<(Coord2, Coord2)> {
         let mut buildings = Vec::new();
         for _ in 0..num_buildings {
             let center = Vec2::xy(rng.randf_range(8., 56.), rng.randf_range(16., 56.));
@@ -485,7 +485,7 @@ impl Chunk {
         }).collect()
     }
 
-    pub fn make_building(&mut self, rng: &mut Rng, building: (Coord2, Coord2)) {
+    pub(crate) fn make_building(&mut self, rng: &mut Rng, building: (Coord2, Coord2)) {
         for x in building.0.x..building.1.x + 1 {
             for y in building.0.y..building.1.y + 1 {
                 // Floor

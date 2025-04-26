@@ -3,41 +3,41 @@ use std::{collections::HashMap, slice::Iter};
 use super::id_vec::Id;
 
 #[derive(Clone)]
-pub struct ResourceMap<I, V> where I: Id {
+pub(crate) struct ResourceMap<I, V> where I: Id {
     vector: Vec<V>,
     map: HashMap<String, I>
 }
 
 impl<I, V> ResourceMap<I, V> where I: Id {
 
-    pub fn new() -> ResourceMap<I, V> {
+    pub(crate) fn new() -> ResourceMap<I, V> {
         ResourceMap { vector: vec!(), map: HashMap::new() }
     }
 
-    pub fn add(&mut self, key: &str, value: V) -> I {
+    pub(crate) fn add(&mut self, key: &str, value: V) -> I {
         let id = I::new(self.vector.len());
         self.vector.push(value);
         self.map.insert(String::from(key), id.clone());
         return id
     }
 
-    pub fn get(&self, id: &I) -> &V {
+    pub(crate) fn get(&self, id: &I) -> &V {
         return self.vector.get(id.as_usize()).expect("Using ResourceMap should be safe to unwrap")
     }
 
-    pub fn try_get(&self, id: usize) -> Option<&V> {
+    pub(crate) fn try_get(&self, id: usize) -> Option<&V> {
         return self.vector.get(id)
     }
 
-    pub fn find(&self, key: &str) -> &V {
+    pub(crate) fn find(&self, key: &str) -> &V {
         return self.get(&self.id_of(key))
     }
 
-    pub fn id_of(&self, key: &str) -> I {
+    pub(crate) fn id_of(&self, key: &str) -> I {
         return self.map.get(key).expect(&format!("Resource {key} not found")).clone()
     }
 
-    pub fn iter(&self) -> Iter<V> {
+    pub(crate) fn iter(&self) -> Iter<V> {
         return self.vector.iter()
     }
 
@@ -61,7 +61,7 @@ mod tests {
         }
     }
 
-    pub struct Test {}
+    pub(crate) struct Test {}
 
     #[test]
     fn bench() {

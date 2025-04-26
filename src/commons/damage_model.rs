@@ -5,19 +5,19 @@ use crate::world::attributes::Attributes;
 use super::rng::Rng;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct DamageComponent {
-    pub slashing: f32,
-    pub piercing: f32,
-    pub bludgeoning: f32,
+pub(crate) struct DamageComponent {
+    pub(crate) slashing: f32,
+    pub(crate) piercing: f32,
+    pub(crate) bludgeoning: f32,
 }
 
 impl DamageComponent {
 
-    pub fn new(slashing: f32, piercing: f32, bludgeoning: f32) -> DamageComponent {
+    pub(crate) fn new(slashing: f32, piercing: f32, bludgeoning: f32) -> DamageComponent {
         DamageComponent { slashing, piercing, bludgeoning }
     }
 
-    pub fn from_attributes(attributes: &Attributes) -> DamageComponent {
+    pub(crate) fn from_attributes(attributes: &Attributes) -> DamageComponent {
         DamageComponent {
             slashing: 0.,
             piercing: 0.,
@@ -25,7 +25,7 @@ impl DamageComponent {
         }
     }
 
-    pub fn resolve(&self, defence: &DefenceComponent) -> DamageOutput {
+    pub(crate) fn resolve(&self, defence: &DefenceComponent) -> DamageOutput {
         let mut total_damage = 0.;
         let mut rng = Rng::rand();
 
@@ -51,7 +51,7 @@ impl DamageComponent {
         return DamageOutput::Hit(total_damage);
     }
 
-    pub fn multiply(&self, mult: f32) -> DamageComponent {
+    pub(crate) fn multiply(&self, mult: f32) -> DamageComponent {
         DamageComponent {
             slashing: self.slashing * mult,
             piercing: self.piercing * mult,
@@ -61,7 +61,7 @@ impl DamageComponent {
 
 }
 
-pub enum DamageOutput {
+pub(crate) enum DamageOutput {
     Dodged,
     Hit(f32)
 }
@@ -76,17 +76,17 @@ impl Add for DamageComponent {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct DefenceComponent {
-    pub dodge_chance: f32,
-    pub slashing: f32,
-    pub piercing: f32,
-    pub bludgeoning: f32,
+pub(crate) struct DefenceComponent {
+    pub(crate) dodge_chance: f32,
+    pub(crate) slashing: f32,
+    pub(crate) piercing: f32,
+    pub(crate) bludgeoning: f32,
 }
 
 
 impl DefenceComponent {
 
-    pub fn new(slashing: f32, piercing: f32, bludgeoning: f32, dodge_chance: f32) -> DefenceComponent {
+    pub(crate) fn new(slashing: f32, piercing: f32, bludgeoning: f32, dodge_chance: f32) -> DefenceComponent {
         DefenceComponent { slashing, piercing, bludgeoning, dodge_chance }
     }
 

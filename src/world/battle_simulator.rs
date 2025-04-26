@@ -2,7 +2,7 @@ use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, reso
 
 use super::{history_sim::structs::World, species::Species};
 
-pub struct BattleForce {
+pub(crate) struct BattleForce {
     belligerent_faction: Option<Id>,
     belligerent_unit: Option<Id>,
     units: Vec<Unit>,
@@ -32,11 +32,11 @@ impl Unit {
 
 impl BattleForce {
 
-    // pub fn from_attacking_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
+    // pub(crate) fn from_attacking_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
     //     return Self::from_defending_unit(world, resources, unit_id, unit)
     // }
 
-    // pub fn from_defending_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
+    // pub(crate) fn from_defending_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
     //     let mut units: Vec<Unit> = (0..unit.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
     //     // TODO:
     //     // for (id, creature) in world.creatures.iter() {
@@ -52,7 +52,7 @@ impl BattleForce {
     //     BattleForce::new(Some(unit.faction_id), Some(unit_id), units)
     // }
 
-    // pub fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
+    // pub(crate) fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
     //     BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, resources.species.get(&creature.species))).collect())
     // }
 
@@ -67,7 +67,7 @@ impl BattleForce {
         }
     }
 
-    pub fn battle(&mut self, another: &mut BattleForce, rng: &mut Rng, location: Coord2, location_unit: Id) -> (BattleResult, BattleResult) {
+    pub(crate) fn battle(&mut self, another: &mut BattleForce, rng: &mut Rng, location: Coord2, location_unit: Id) -> (BattleResult, BattleResult) {
         let mut result_self = BattleResult::new(location, location_unit);
         result_self.belligerent_faction = self.belligerent_faction;
         result_self.belligerent_unit = self.belligerent_unit;
@@ -167,17 +167,17 @@ impl BattleForce {
 
 
 #[derive(Debug, Clone)]
-pub struct BattleResult {
-    pub belligerent_faction: Option<Id>,
-    pub belligerent_unit: Option<Id>,
-    pub location: Coord2,
-    pub location_unit: Id,
-    pub result: FinalResult,
-    pub creature_participants: Vec<Id>,
+pub(crate) struct BattleResult {
+    pub(crate) belligerent_faction: Option<Id>,
+    pub(crate) belligerent_unit: Option<Id>,
+    pub(crate) location: Coord2,
+    pub(crate) location_unit: Id,
+    pub(crate) result: FinalResult,
+    pub(crate) creature_participants: Vec<Id>,
     // ID of creature killed, ID of killer (might be a generic creature)
-    pub creature_casualties: Vec<(Id, Option<Id>)>,
-    pub army_casualties: u32,
-    pub civilian_casualties: u32,
+    pub(crate) creature_casualties: Vec<(Id, Option<Id>)>,
+    pub(crate) army_casualties: u32,
+    pub(crate) civilian_casualties: u32,
 }
 
 impl BattleResult {
@@ -197,7 +197,7 @@ impl BattleResult {
 }
 
 #[derive(Debug, Clone)]
-pub enum FinalResult {
+pub(crate) enum FinalResult {
     Flee,
     Defeat,
     Victory

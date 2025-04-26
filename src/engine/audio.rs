@@ -7,7 +7,7 @@ use crate::{commons::rng::Rng, game::options::AudioOptions};
 use super::{geometry::Vec2, scene::Update};
 
 
-pub struct Audio {
+pub(crate) struct Audio {
     // Not directly used, but needs to have ownership otherwise the audio strea is dropped
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
@@ -27,7 +27,7 @@ enum MusicSink {
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub enum TrackMood {
+pub(crate) enum TrackMood {
     Silence,
     Regular,
     Battle
@@ -35,7 +35,7 @@ pub enum TrackMood {
 
 impl Audio {
 
-    pub fn new(options: AudioOptions) -> Audio {
+    pub(crate) fn new(options: AudioOptions) -> Audio {
         let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
         let music_sink_a = Sink::try_new(&stream_handle).unwrap();
         let music_sink_b = Sink::try_new(&stream_handle).unwrap();
@@ -53,7 +53,7 @@ impl Audio {
         }
     }
 
-    pub fn update(&mut self, update: &Update) {
+    pub(crate) fn update(&mut self, update: &Update) {
         if self.currently_playing != self.current_mood {
             self.transition = 0.;
             self.currently_playing = self.current_mood.clone();
@@ -94,7 +94,7 @@ impl Audio {
         }
     }
 
-    pub fn register_track(&mut self, mood: TrackMood, sound: SoundFile) {
+    pub(crate) fn register_track(&mut self, mood: TrackMood, sound: SoundFile) {
         if !self.tracks.contains_key(&mood) {
             self.tracks.insert(mood.clone(), (0, Vec::new()));
         }
@@ -102,17 +102,17 @@ impl Audio {
         vec.push(sound);
     }
 
-    pub fn switch_music(&mut self, mood: TrackMood) {
+    pub(crate) fn switch_music(&mut self, mood: TrackMood) {
         self.current_mood = mood;
     }
 
-    pub fn play_once(&self, sound: impl Sound) {
+    pub(crate) fn play_once(&self, sound: impl Sound) {
         if let Err(err) = self.stream_handle.play_raw(sound.source()) {
             println!("Error playing audio: {err}")
         }
     }
 
-    pub fn play_positional(&self, sound: impl Sound, sound_origin: Vec2, camera: Vec2) {
+    pub(crate) fn play_positional(&self, sound: impl Sound, sound_origin: Vec2, camera: Vec2) {
         let dist = sound_origin.dist_squared(&camera);
         let volume = (dist / (48.*48.)).clamp(0., 1.);
         let volume = 1. - volume;
@@ -123,20 +123,20 @@ impl Audio {
 
 }
 
-pub trait Sound {
+pub(crate) trait Sound {
 
     fn source(&self) -> impl Source<Item = f32> + Send + 'static;
 
 }
 
 #[derive(Clone)]
-pub struct SoundFile {
+pub(crate) struct SoundFile {
     path: String
 }
 
 impl SoundFile {
 
-    pub fn new(path: &str) -> SoundFile {
+    pub(crate) fn new(path: &str) -> SoundFile {
         SoundFile { path: format!("assets/sounds/{path}") }
     }
     
@@ -153,14 +153,14 @@ impl Sound for SoundFile {
 }
 
 #[derive(Clone)]
-pub struct SoundEffect {
+pub(crate) struct SoundEffect {
     files: Vec<SoundFile>,
     pitch_rand: [f32; 2]
 }
 
 impl SoundEffect {
 
-    pub fn new(paths: Vec<&str>) -> SoundEffect {
+    pub(crate) fn new(paths: Vec<&str>) -> SoundEffect {
         SoundEffect { files: paths.iter().map(|f| SoundFile::new(f)).collect(), pitch_rand: [0.8, 1.2] }
     }
 

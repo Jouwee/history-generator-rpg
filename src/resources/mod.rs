@@ -1,2 +1,2 @@
-pub mod resources;
-pub mod tile;
+pub(crate) mod resources;
+pub(crate) mod tile;

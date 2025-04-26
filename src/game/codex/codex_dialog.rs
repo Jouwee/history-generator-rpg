@@ -2,20 +2,20 @@ use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button
 
 use super::knowledge_codex::{ArtifactFact, KnowledgeCodex};
 
-pub struct CodexDialog {
+pub(crate) struct CodexDialog {
     dialog: Option<Dialog>,
     view: View
 }
 
 impl CodexDialog {
-    pub fn new() -> CodexDialog {
+    pub(crate) fn new() -> CodexDialog {
         CodexDialog {
             dialog: None,
             view: View::Creatures,
         }
     }
 
-    pub fn start_dialog(&mut self) {
+    pub(crate) fn start_dialog(&mut self) {
         let mut dialog = Dialog::new();
         dialog.add_key("btn_creatures", Button::new("People & Creatures", Position::Anchored(Anchor::TopLeft, 10., 10.)));
         dialog.add_key("btn_places", Button::new("Places", Position::Anchored(Anchor::TopLeft, 180., 10.)));
@@ -26,7 +26,7 @@ impl CodexDialog {
         self.dialog = Some(dialog);
     }
 
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
+    pub(crate) fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         if let Some(dialog) = &mut self.dialog {
             if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
                 self.dialog = None;

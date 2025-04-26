@@ -5,9 +5,9 @@ use crate::{commons::id_vec::IdVec, engine::geometry::Coord2};
 use super::{creature::CreatureId, world::ArtifactId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct UnitId(usize);
+pub(crate) struct UnitId(usize);
 impl UnitId {
-    pub fn ancients() -> UnitId {
+    pub(crate) fn ancients() -> UnitId {
         return UnitId(0);
     }
 }
@@ -20,26 +20,26 @@ impl crate::commons::id_vec::Id for UnitId {
     }
 }
 
-pub type Units = IdVec<Unit>;
+pub(crate) type Units = IdVec<Unit>;
 
-pub struct Unit {
-    pub xy: Coord2,
-    pub creatures: Vec<CreatureId>,
-    pub cemetery: Vec<CreatureId>,
-    pub unit_type: UnitType,
-    pub resources: UnitResources,
-    pub leader: Option<CreatureId>,
-    pub artifacts: Vec<ArtifactId>
+pub(crate) struct Unit {
+    pub(crate) xy: Coord2,
+    pub(crate) creatures: Vec<CreatureId>,
+    pub(crate) cemetery: Vec<CreatureId>,
+    pub(crate) unit_type: UnitType,
+    pub(crate) resources: UnitResources,
+    pub(crate) leader: Option<CreatureId>,
+    pub(crate) artifacts: Vec<ArtifactId>
 }
 
-pub enum UnitType {
+pub(crate) enum UnitType {
     City,
 }
 
 #[derive(Clone, Copy)]
-pub struct UnitResources {
+pub(crate) struct UnitResources {
     // 1 unit = enough food for 1 adult for 1 year
-    pub food: f32,
+    pub(crate) food: f32,
 }
 
 impl Add for UnitResources {

@@ -1,1 +1,1 @@
-pub mod interact_dialog;
+pub(crate) mod interact_dialog;

@@ -2,7 +2,7 @@ use crate::GameContext;
 
 use super::{container::{Container, InnerContainer}, GUINode, Position};
 
-pub struct VList {
+pub(crate) struct VList {
     position: Position,
     inner: InnerContainer,
     gap: f64
@@ -10,7 +10,7 @@ pub struct VList {
 
 impl VList {
     
-    pub fn new(position: Position) -> VList {
+    pub(crate) fn new(position: Position) -> VList {
         VList {
             position,
             inner: InnerContainer::new(),

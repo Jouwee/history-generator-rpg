@@ -16,27 +16,27 @@ use crate::engine::input::InputEvent as NewInputEvent;
 use crate::world::history_sim::structs::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
-pub mod action;
-pub mod actor;
-pub mod ai;
-pub mod chunk;
-pub mod codex;
-pub mod effect_layer;
-pub mod hotbar;
-pub mod interact;
-pub mod inventory;
-pub mod map_modal;
-pub mod options;
+pub(crate) mod action;
+pub(crate) mod actor;
+pub(crate) mod ai;
+pub(crate) mod chunk;
+pub(crate) mod codex;
+pub(crate) mod effect_layer;
+pub(crate) mod hotbar;
+pub(crate) mod interact;
+pub(crate) mod inventory;
+pub(crate) mod map_modal;
+pub(crate) mod options;
 
-pub trait Renderable {
+pub(crate) trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
 }
 
-pub struct InputEvent {
-    pub mouse_pos_cam: [f64; 2],
-    pub mouse_pos_gui: [f64; 2],
-    pub button_args: ButtonArgs,
-    pub evt: NewInputEvent
+pub(crate) struct InputEvent {
+    pub(crate) mouse_pos_cam: [f64; 2],
+    pub(crate) mouse_pos_gui: [f64; 2],
+    pub(crate) button_args: ButtonArgs,
+    pub(crate) evt: NewInputEvent
 }
 
 enum TurnMode {
@@ -44,11 +44,11 @@ enum TurnMode {
     RealTime
 }
 
-pub struct GameSceneState {
-    pub world: World,
-    pub codex: KnowledgeCodex,
-    pub world_pos: Coord2,
-    pub chunk: Chunk,
+pub(crate) struct GameSceneState {
+    pub(crate) world: World,
+    pub(crate) codex: KnowledgeCodex,
+    pub(crate) world_pos: Coord2,
+    pub(crate) chunk: Chunk,
     turn_mode: TurnMode,
     turn_controller: TurnController,
     button_codex: Button,
@@ -67,7 +67,7 @@ pub struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub fn new(world: World, world_pos: Coord2, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
+    pub(crate) fn new(world: World, world_pos: Coord2, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
         GameSceneState {
             world,
             codex,
@@ -104,7 +104,7 @@ impl GameSceneState {
         }
     }
 
-    pub fn next_turn(&mut self, ctx: &mut GameContext) {
+    pub(crate) fn next_turn(&mut self, ctx: &mut GameContext) {
         if self.turn_controller.is_player_turn() {
             self.chunk.player.ap.fill();
         } else {
@@ -144,7 +144,7 @@ impl GameSceneState {
         actor.ai = ai;
     }
 
-    pub fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
+    pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let id;
         {
             let npc = self.chunk.npcs.get(i).unwrap();
@@ -577,28 +577,28 @@ impl Scene for GameSceneState {
 
 }
 
-pub struct TurnController {
+pub(crate) struct TurnController {
     turn_idx: usize,
     initiative: Vec<usize>
 }
 
 impl TurnController {
 
-    pub fn new() -> TurnController {
+    pub(crate) fn new() -> TurnController {
         TurnController {
             initiative: vec!(),
             turn_idx: 0
         }
     }
 
-    pub fn roll_initiative(&mut self, len: usize) {
+    pub(crate) fn roll_initiative(&mut self, len: usize) {
         self.initiative = vec![0; len+1];
         for i in 0..len+1 {
             self.initiative[i] = i;
         }
     }
 
-    pub fn remove(&mut self, index: usize) {
+    pub(crate) fn remove(&mut self, index: usize) {
         self.initiative.retain_mut(|i| {
             if *i == index + 1 {
                 return false
@@ -611,15 +611,15 @@ impl TurnController {
         self.turn_idx = self.turn_idx % self.initiative.len();
     }
 
-    pub fn is_player_turn(&self) -> bool {
+    pub(crate) fn is_player_turn(&self) -> bool {
         return self.initiative[self.turn_idx] == 0
     }
 
-    pub fn npc_idx(&self) -> usize {
+    pub(crate) fn npc_idx(&self) -> usize {
         return self.initiative[self.turn_idx] - 1
     }
 
-    pub fn next_turn(&mut self) {
+    pub(crate) fn next_turn(&mut self) {
         self.turn_idx = (self.turn_idx + 1) % self.initiative.len();
     }
 

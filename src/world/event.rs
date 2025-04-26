@@ -8,8 +8,8 @@ use super::{battle_simulator::BattleResult, history_sim::structs::World, world::
 const SPEED_OF_RUMORS: f32 = 5.;
 
 #[derive(Debug, Clone, Copy)]
-pub struct WorldEventDate {
-    pub year: u32
+pub(crate) struct WorldEventDate {
+    pub(crate) year: u32
 }
 
 impl Display for WorldEventDate {
@@ -18,7 +18,7 @@ impl Display for WorldEventDate {
     }
 }
 
-pub struct WorldEvents {
+pub(crate) struct WorldEvents {
     base: Vec<WorldEvent>,
     by_unit: HashMap<Id, Vec<usize>>,
     empty_index: Vec<usize>
@@ -26,7 +26,7 @@ pub struct WorldEvents {
 
 impl WorldEvents {
 
-    pub fn new() -> WorldEvents {
+    pub(crate) fn new() -> WorldEvents {
         return WorldEvents {
             base: Vec::new(),
             by_unit: HashMap::new(),
@@ -34,7 +34,7 @@ impl WorldEvents {
         }
     }
 
-    pub fn push(&mut self, date: WorldEventDate, location: Coord2, event: WorldEventEnum) {
+    pub(crate) fn push(&mut self, date: WorldEventDate, location: Coord2, event: WorldEventEnum) {
         let i = self.base.len();
         for unit in event.get_units().iter() {
             let entry = self.by_unit.entry(*unit).or_insert(Vec::new());
@@ -43,11 +43,11 @@ impl WorldEvents {
         self.base.push(WorldEvent { date, location, event });
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WorldEvent> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &WorldEvent> {
         self.base.iter()
     }
 
-    pub fn iter_unit(&self, unit_id: &Id) -> impl Iterator<Item = &WorldEvent> {
+    pub(crate) fn iter_unit(&self, unit_id: &Id) -> impl Iterator<Item = &WorldEvent> {
         let idxs = self.by_unit.get(&unit_id);
         let vec;
         match idxs {
@@ -57,11 +57,11 @@ impl WorldEvents {
         vec.iter().map(|i| self.base.get(*i).unwrap())
     }
 
-    pub fn get(&self, i: usize) -> Option<&WorldEvent> {
+    pub(crate) fn get(&self, i: usize) -> Option<&WorldEvent> {
         self.base.get(i)
     }
 
-    pub fn find_rumor(&self, rng: &Rng, world: &World, date: WorldEventDate, position: Coord2) -> Option<(usize, &WorldEvent)> {
+    pub(crate) fn find_rumor(&self, rng: &Rng, world: &World, date: WorldEventDate, position: Coord2) -> Option<(usize, &WorldEvent)> {
         let mut rng = rng.derive("rumor");
         for (i, event) in self.base.iter().enumerate().rev() {
             let dist = event.location.dist_squared(&position).sqrt();
@@ -84,15 +84,15 @@ impl WorldEvents {
 }
 
 #[derive(Debug, Clone)]
-pub struct WorldEvent {
-    pub date: WorldEventDate,
-    pub location: Coord2,
-    pub event: WorldEventEnum,
+pub(crate) struct WorldEvent {
+    pub(crate) date: WorldEventDate,
+    pub(crate) location: Coord2,
+    pub(crate) event: WorldEventEnum,
 }
 
 impl WorldEvent {
     
-    pub fn importance_factor(&self, world: &World) -> f32 {
+    pub(crate) fn importance_factor(&self, world: &World) -> f32 {
         match &self.event {
             WorldEventEnum::ArtifactCreated(_evt) => 0.1,
             WorldEventEnum::ArtifactPossession(_evt) => 0.,
@@ -136,7 +136,7 @@ impl WorldEvent {
 }
 
 #[derive(Debug, Clone)]
-pub enum WorldEventEnum {
+pub(crate) enum WorldEventEnum {
     PersonBorn(SimplePersonEvent),
     PersonDeath(CreatureDeathEvent),
     Marriage(MarriageEvent),
@@ -150,7 +150,7 @@ pub enum WorldEventEnum {
 }
 
 impl WorldEventEnum {
-    pub fn get_units(&self) -> Vec<Id> {
+    pub(crate) fn get_units(&self) -> Vec<Id> {
         match self {
             Self::SettlementFounded(evt) => vec!(evt.unit_id),
             Self::NewSettlementLeader(evt) => vec!(evt.unit_id),
@@ -159,7 +159,7 @@ impl WorldEventEnum {
         }
     }
 
-    pub fn get_creatures(&self) -> Vec<Id> {
+    pub(crate) fn get_creatures(&self) -> Vec<Id> {
         let options = match self {
             Self::PersonBorn(evt) => vec!(Some(evt.creature_id)),
             Self::PersonDeath(evt) => {
@@ -176,7 +176,7 @@ impl WorldEventEnum {
         options.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
     }
 
-    pub fn get_artifacts(&self) -> Vec<ArtifactId> {
+    pub(crate) fn get_artifacts(&self) -> Vec<ArtifactId> {
         let options = match self {
             Self::PersonDeath(evt) => {
                 match evt.cause_of_death {
@@ -193,64 +193,64 @@ impl WorldEventEnum {
 }
 
 #[derive(Debug, Clone)]
-pub struct SimplePersonEvent {
-    pub creature_id: Id,
+pub(crate) struct SimplePersonEvent {
+    pub(crate) creature_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct CreatureDeathEvent {
-    pub creature: Id,
-    pub cause_of_death: CauseOfDeath 
+pub(crate) struct CreatureDeathEvent {
+    pub(crate) creature: Id,
+    pub(crate) cause_of_death: CauseOfDeath 
 }
 
 #[derive(Debug, Clone)]
-pub enum CauseOfDeath {
+pub(crate) enum CauseOfDeath {
     NaturalCauses,
     KilledInBattle(/* killer */ Option<Id>, /* Item used */ Option<ArtifactId>)
 }
 
 #[derive(Debug, Clone)]
-pub struct MarriageEvent {
-    pub creature1_id: Id,
-    pub creature2_id: Id,
+pub(crate) struct MarriageEvent {
+    pub(crate) creature1_id: Id,
+    pub(crate) creature2_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct SettlementFoundedEvent {
-    pub founder_id: Id,
-    pub unit_id: Id,
+pub(crate) struct SettlementFoundedEvent {
+    pub(crate) founder_id: Id,
+    pub(crate) unit_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct NewSettlementLeaderEvent {
-    pub new_leader_id: Id,
-    pub unit_id: Id,
+pub(crate) struct NewSettlementLeaderEvent {
+    pub(crate) new_leader_id: Id,
+    pub(crate) unit_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct WarDeclaredEvent {
-    pub faction1_id: Id,
-    pub faction2_id: Id,
+pub(crate) struct WarDeclaredEvent {
+    pub(crate) faction1_id: Id,
+    pub(crate) faction2_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct PeaceDeclaredEvent {
-    pub faction1_id: Id,
-    pub faction2_id: Id,
+pub(crate) struct PeaceDeclaredEvent {
+    pub(crate) faction1_id: Id,
+    pub(crate) faction2_id: Id,
 }
 
 #[derive(Debug, Clone)]
-pub struct BattleEvent {
-    pub battle_result: (BattleResult, BattleResult)
+pub(crate) struct BattleEvent {
+    pub(crate) battle_result: (BattleResult, BattleResult)
 }
 
 #[derive(Debug, Clone)]
-pub struct ArtifactEvent {
-    pub item: ArtifactId
+pub(crate) struct ArtifactEvent {
+    pub(crate) item: ArtifactId
 }
 
 #[derive(Debug, Clone)]
-pub struct ArtifactPossesionEvent {
-    pub item: ArtifactId,
-    pub creature: Id
+pub(crate) struct ArtifactPossesionEvent {
+    pub(crate) item: ArtifactId,
+    pub(crate) creature: Id
 }

@@ -1,15 +1,15 @@
 use crate::{game::InputEvent, GameContext};
 use super::{render::RenderContext, scene::Update};
 
-pub mod button;
-pub mod container;
-pub mod dialog;
-pub mod hlist;
-pub mod label;
-pub mod tooltip;
-pub mod vlist;
+pub(crate) mod button;
+pub(crate) mod container;
+pub(crate) mod dialog;
+pub(crate) mod hlist;
+pub(crate) mod label;
+pub(crate) mod tooltip;
+pub(crate) mod vlist;
 
-pub trait GUINode {
+pub(crate) trait GUINode {
     fn render(&mut self, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
     fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) {}
@@ -38,13 +38,13 @@ pub trait GUINode {
 
 }
 
-pub enum Position {
+pub(crate) enum Position {
     Auto,
     Anchored(Anchor, f64, f64),
     Centered
 }
 
-pub enum Anchor {
+pub(crate) enum Anchor {
     TopLeft,
     TopRight,
     BottomLeft,

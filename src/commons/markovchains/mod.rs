@@ -19,14 +19,14 @@ fn idx1(i: usize, j: usize) -> usize {
 }
 
 #[derive(Clone)]
-pub struct MarkovChainSingleWordModel {
+pub(crate) struct MarkovChainSingleWordModel {
     model_o1: Vec<f32>,
     model_o2: Option<Vec<f32>>,
     model_o3: Option<Vec<f32>>
 }
 
 impl MarkovChainSingleWordModel {
-    pub fn train(words: Vec<&str>, order: u8) -> MarkovChainSingleWordModel {
+    pub(crate) fn train(words: Vec<&str>, order: u8) -> MarkovChainSingleWordModel {
         assert!(order >= 1 && order <= 3, "Order must be between 1 and 3");
         let mut i_model: Vec<u32> = vec![0; SUPPORTED_CHARACTERS.pow(4)];
         for word in words {
@@ -98,7 +98,7 @@ impl MarkovChainSingleWordModel {
         return model
     }
 
-    pub fn generate(&self, rng: &Rng, min_length: u8, max_length: u8) -> String {
+    pub(crate) fn generate(&self, rng: &Rng, min_length: u8, max_length: u8) -> String {
         let mut rng = rng.clone();
         let mut string = String::new();
         let mut history = [NULL, NULL, START_OF];

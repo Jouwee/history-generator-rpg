@@ -2,16 +2,16 @@ use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, Creatu
 
 use super::structs::{Event, World};
 
-pub struct CreatureSimulation {}
+pub(crate) struct CreatureSimulation {}
 
-pub enum DeferredUnitSideEffect {
+pub(crate) enum DeferredUnitSideEffect {
     None,
     LookForMarriage(CreatureId, CreatureGender),
     RemoveCreature(CreatureId),
     AddCreature(Creature),
 }
 
-pub enum CreatureSideEffect {
+pub(crate) enum CreatureSideEffect {
     None,
     Death(CauseOfDeath),
     HaveChild,
@@ -35,7 +35,7 @@ const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 1.0;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
-    pub fn simulate_step_creature(world: &World, step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &mut Creature, events: &mut Vec<Event>) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(world: &World, step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &mut Creature, events: &mut Vec<Event>) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
@@ -132,7 +132,7 @@ impl CreatureSimulation {
         return ((age - 60.) / 60.).powf(4.0).clamp(0., 1.)
     }
 
-    pub fn have_child_with_spouse(now: &WorldDate, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
+    pub(crate) fn have_child_with_spouse(now: &WorldDate, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
         let father = creature.spouse;
         if let Some(father) = father {
             let mut gender = CreatureGender::Male;

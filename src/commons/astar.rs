@@ -3,7 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use crate::engine::geometry::{Coord2, Size2D};
 
 
-pub struct AStar {
+pub(crate) struct AStar {
     to: Coord2,
     came_from: HashMap<Coord2, Coord2>,
     cost_so_far: HashMap<Coord2, f32>,
@@ -13,7 +13,7 @@ pub struct AStar {
 
 impl AStar {
 
-    pub fn new(size: Size2D, to: Coord2) -> AStar {
+    pub(crate) fn new(size: Size2D, to: Coord2) -> AStar {
         let mut astar = AStar {
             to,
             came_from: HashMap::new(),
@@ -26,7 +26,7 @@ impl AStar {
         return astar
     }
 
-    pub fn find_path<F>(&mut self, from: Coord2, cost: F) where F: Fn(Coord2) -> MovementCost {
+    pub(crate) fn find_path<F>(&mut self, from: Coord2, cost: F) where F: Fn(Coord2) -> MovementCost {
         while !self.frontier.is_empty() {
             let current = self.frontier.pop_front().unwrap();
             
@@ -53,7 +53,7 @@ impl AStar {
         }
     }
 
-    pub fn get_path(&self, from: Coord2) -> Vec<Coord2> {
+    pub(crate) fn get_path(&self, from: Coord2) -> Vec<Coord2> {
 
         let mut current = from;
         let mut path = Vec::new();
@@ -72,7 +72,7 @@ impl AStar {
         // return came_from, cost_so_far
     }
 
-    pub fn neighbors(&self, point: Coord2) -> Vec<Coord2> {
+    pub(crate) fn neighbors(&self, point: Coord2) -> Vec<Coord2> {
         let mut neighbors = Vec::new();
         if point.x >= 1 {
             neighbors.push(point + Coord2::xy(-1, 0));
@@ -95,7 +95,7 @@ impl AStar {
     
 }
 
-pub enum MovementCost {
+pub(crate) enum MovementCost {
     Impossible,
     Cost(f32)
 }

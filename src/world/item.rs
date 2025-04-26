@@ -8,7 +8,7 @@ use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}
 use super::{creature::CreatureId, history_sim::structs::World, material::MaterialId, world::ArtifactId};
 
 #[derive(Clone, Debug)]
-pub enum Item {
+pub(crate) enum Item {
     Sword(Sword),
     Mace(Mace),
     Statue { material: MaterialId, scene: ArtworkScene }
@@ -16,7 +16,7 @@ pub enum Item {
 
 impl Item {
 
-    pub fn name(&self, materials: &Materials) -> String {
+    pub(crate) fn name(&self, materials: &Materials) -> String {
         match self {
             Item::Sword(sword) => {
                 if let Some(name) = &sword.name {
@@ -39,7 +39,7 @@ impl Item {
         }
     }
 
-    pub fn description(&self, materials: &Materials, world: &World) -> String {
+    pub(crate) fn description(&self, materials: &Materials, world: &World) -> String {
         let str;
         match self {
             Item::Sword(sword) => {
@@ -74,7 +74,7 @@ impl Item {
         return str
     }
 
-    pub fn actions(&self, actions: &Actions) -> Vec<ActionId> {
+    pub(crate) fn actions(&self, actions: &Actions) -> Vec<ActionId> {
         match self {
             Item::Sword(_sword) => {
                 return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut"))
@@ -90,7 +90,7 @@ impl Item {
     }
 
 
-    pub fn make_texture(&self, materials: &Materials) -> Texture {
+    pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {
         match self {
             Self::Sword(sword) => {
                 let image = ImageReader::open("./assets/sprites/sword.png").unwrap().decode().unwrap();
@@ -120,7 +120,7 @@ impl Item {
         }
     }
 
-    pub fn make_equipped_texture(&self, materials: &Materials) -> Texture {
+    pub(crate) fn make_equipped_texture(&self, materials: &Materials) -> Texture {
         match self {
             Self::Sword(sword) => {
                 let image = ImageReader::open("./assets/sprites/species/human/sword_equipped.png").unwrap().decode().unwrap();
@@ -151,7 +151,7 @@ impl Item {
         }
     }
 
-    pub fn damage_mult(&self) -> f32 { 
+    pub(crate) fn damage_mult(&self) -> f32 { 
         match self {
             Item::Sword(sword) => sword.damage_mult,
             Item::Mace(sword) => sword.damage_mult,
@@ -163,13 +163,13 @@ impl Item {
 }
 
 #[derive(Clone, Debug)]
-pub enum ArtworkScene {
+pub(crate) enum ArtworkScene {
     Bust { creature_id: CreatureId },
     FullBody { creature_id: CreatureId, artifact_id: Option<ArtifactId> }
 }
 
 #[derive(Clone, Debug)]
-pub enum ItemQuality {
+pub(crate) enum ItemQuality {
     Poor,
     Normal,
     Good,
@@ -178,7 +178,7 @@ pub enum ItemQuality {
 }
 
 impl ItemQuality {
-    pub fn main_stat_multiplier(&self) -> f32 {
+    pub(crate) fn main_stat_multiplier(&self) -> f32 {
         match self {
             Self::Poor => 0.7,
             Self::Normal => 1.0,
@@ -190,18 +190,18 @@ impl ItemQuality {
 }
 
 #[derive(Clone, Debug)]
-pub struct Sword {
-    pub quality: ItemQuality,
-    pub handle_mat: MaterialId,
-    pub blade_mat: MaterialId,
-    pub pommel_mat: MaterialId,
-    pub guard_mat: MaterialId,
-    pub damage_mult: f32,
-    pub name: Option<String>
+pub(crate) struct Sword {
+    pub(crate) quality: ItemQuality,
+    pub(crate) handle_mat: MaterialId,
+    pub(crate) blade_mat: MaterialId,
+    pub(crate) pommel_mat: MaterialId,
+    pub(crate) guard_mat: MaterialId,
+    pub(crate) damage_mult: f32,
+    pub(crate) name: Option<String>
 }
 
 impl Sword {
-    pub fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
+    pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
         let blade = materials.get(&blade_mat);
         let damage_mult = blade.sharpness * quality.main_stat_multiplier();
         Sword { quality, handle_mat, blade_mat, pommel_mat, guard_mat, damage_mult, name: None }
@@ -209,28 +209,28 @@ impl Sword {
 }
 
 #[derive(Clone, Debug)]
-pub struct Mace {
-    pub quality: ItemQuality,
-    pub handle_mat: MaterialId,
-    pub head_mat: MaterialId,
-    pub pommel_mat: MaterialId,
-    pub damage_mult: f32,
-    pub name: Option<String>
+pub(crate) struct Mace {
+    pub(crate) quality: ItemQuality,
+    pub(crate) handle_mat: MaterialId,
+    pub(crate) head_mat: MaterialId,
+    pub(crate) pommel_mat: MaterialId,
+    pub(crate) damage_mult: f32,
+    pub(crate) name: Option<String>
 }
 
 impl Mace {
-    pub fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
+    pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
         let head = materials.get(&head_mat);
         let damage_mult = head.sharpness * quality.main_stat_multiplier();
         Mace { quality, handle_mat, head_mat, pommel_mat, damage_mult, name: None }
     }
 }
 
-pub struct ItemMaker {}
+pub(crate) struct ItemMaker {}
 
 impl ItemMaker {
 
-    pub fn random(rng: &Rng, materials: &Materials, quality: ItemQuality) -> Item {
+    pub(crate) fn random(rng: &Rng, materials: &Materials, quality: ItemQuality) -> Item {
         let mut rng = rng.derive("random_item");
         let item = rng.randu_range(0, 3);
 

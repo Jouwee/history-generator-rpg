@@ -4,7 +4,7 @@ use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
 
-pub struct MapModal {
+pub(crate) struct MapModal {
     world_size: Size2D,
     tilemap: LayeredDualgridTilemap,
     objects: TileMap,
@@ -15,7 +15,7 @@ pub struct MapModal {
 
 impl MapModal {
 
-    pub fn new() -> MapModal {
+    pub(crate) fn new() -> MapModal {
         let mut dual_tileset = LayeredDualgridTileset::new();
         let image = ImageReader::open("assets/sprites/map_tiles/ocean.png").unwrap().decode().unwrap();
         dual_tileset.add(1, image, 16, 16);
@@ -45,7 +45,7 @@ impl MapModal {
         }
     }
 
-    pub fn init(&mut self, world: &World, player_pos: &Coord2) {
+    pub(crate) fn init(&mut self, world: &World, player_pos: &Coord2) {
         let map = &world.map;
         for x in 0..map.size.x() {
             for y in 0..map.size.y() {
@@ -81,7 +81,7 @@ impl MapModal {
     }
 
 
-    pub fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
         self.tilemap.render(ctx);
@@ -108,9 +108,9 @@ impl MapModal {
         self.close_button.render(ctx, game_ctx);
     }
 
-    pub fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
+    pub(crate) fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
 
-    pub fn input(&mut self, evt: &OldInputEvent, ctx: &mut GameContext) -> MapModalEvent {
+    pub(crate) fn input(&mut self, evt: &OldInputEvent, ctx: &mut GameContext) -> MapModalEvent {
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
                 Btn::Keyboard(Key::M) | Btn::Keyboard(Key::Escape) => {
@@ -146,7 +146,7 @@ impl MapModal {
 
 }
 
-pub enum MapModalEvent {
+pub(crate) enum MapModalEvent {
     None,
     Close,
     InstaTravelTo(Coord2)

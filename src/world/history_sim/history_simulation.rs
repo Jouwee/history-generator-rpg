@@ -4,21 +4,21 @@ use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::R
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event, World}};
 
-pub struct HistorySimulation {
+pub(crate) struct HistorySimulation {
     world: World,
     date: WorldDate,
     params: HistorySimParams
 }
 
-pub struct HistorySimParams {
-    pub rng: Rng,
-    pub resources: Resources,
-    pub number_of_seed_cities: u8,
-    pub seed_cities_population: u32,
+pub(crate) struct HistorySimParams {
+    pub(crate) rng: Rng,
+    pub(crate) resources: Resources,
+    pub(crate) number_of_seed_cities: u8,
+    pub(crate) seed_cities_population: u32,
 }
 
 impl HistorySimulation {
-    pub fn new(params: HistorySimParams, world: World) -> Self {
+    pub(crate) fn new(params: HistorySimParams, world: World) -> Self {
         HistorySimulation {
             world,
             date: WorldDate::new(0, 0, 0),
@@ -26,11 +26,11 @@ impl HistorySimulation {
         }
     }
 
-    pub fn into_world(self) -> World {
+    pub(crate) fn into_world(self) -> World {
         return self.world;
     }
 
-    pub fn seed(&mut self) {
+    pub(crate) fn seed(&mut self) {
 
         let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
 
@@ -72,7 +72,7 @@ impl HistorySimulation {
         }
     }
 
-    pub fn simulate_step(&mut self, step: WorldDate) {
+    pub(crate) fn simulate_step(&mut self, step: WorldDate) {
         self.date = self.date + step;
         let now = Instant::now();
 
@@ -411,7 +411,7 @@ impl HistorySimulation {
         // return deferred_side_effects
     }
 
-    pub fn dump_events(&self, filename: &str) {
+    pub(crate) fn dump_events(&self, filename: &str) {
         let mut f = File::create(filename).unwrap();
         println!("{:?} events", self.world.events.len());
         for event in self.world.events.iter() {

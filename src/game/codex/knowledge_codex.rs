@@ -2,7 +2,7 @@ use std::collections::{hash_map::Iter, HashMap, HashSet};
 
 use crate::{commons::history_vec::Id, world::world::ArtifactId, WorldEvent, WorldEventEnum};
 
-pub struct KnowledgeCodex {
+pub(crate) struct KnowledgeCodex {
     creatures: HashMap<Id, CreatureKnowledge>,
     places: HashMap<Id, PlaceKnowledge>,
     artifacts: HashMap<ArtifactId, ArtifactKnowledge>,
@@ -10,7 +10,7 @@ pub struct KnowledgeCodex {
 
 impl KnowledgeCodex {
 
-    pub fn new() -> KnowledgeCodex {
+    pub(crate) fn new() -> KnowledgeCodex {
         KnowledgeCodex {
             creatures: HashMap::new(),
             places: HashMap::new(),
@@ -18,12 +18,12 @@ impl KnowledgeCodex {
         }
     }
 
-    pub fn add_creature_fact(&mut self, id: &Id, fact: CreatureFact) {
+    pub(crate) fn add_creature_fact(&mut self, id: &Id, fact: CreatureFact) {
         let creature = self.creatures.entry(*id).or_insert(CreatureKnowledge::new());
         creature.facts.insert(fact);
     }
 
-    pub fn add_event(&mut self, id: usize, event: &WorldEvent) {
+    pub(crate) fn add_event(&mut self, id: usize, event: &WorldEvent) {
         for creature in event.event.get_creatures() {
             let creature = self.creatures.entry(creature).or_insert(CreatureKnowledge::new());
             creature.events.insert(id);
@@ -47,79 +47,79 @@ impl KnowledgeCodex {
         }
     }
 
-    pub fn known_creatures(&self) -> Iter<Id, CreatureKnowledge> {
+    pub(crate) fn known_creatures(&self) -> Iter<Id, CreatureKnowledge> {
         self.creatures.iter()
     }
 
-    pub fn creature(&self, id: &Id) -> Option<&CreatureKnowledge> {
+    pub(crate) fn creature(&self, id: &Id) -> Option<&CreatureKnowledge> {
         self.creatures.get(id)
     }
 
-    pub fn known_places(&self) -> Iter<Id, PlaceKnowledge> {
+    pub(crate) fn known_places(&self) -> Iter<Id, PlaceKnowledge> {
         self.places.iter()
     }
 
-    pub fn place(&self, id: &Id) -> Option<&PlaceKnowledge> {
+    pub(crate) fn place(&self, id: &Id) -> Option<&PlaceKnowledge> {
         self.places.get(id)
     }
 
-    pub fn known_artifacts(&self) -> Iter<ArtifactId, ArtifactKnowledge> {
+    pub(crate) fn known_artifacts(&self) -> Iter<ArtifactId, ArtifactKnowledge> {
         self.artifacts.iter()
     }
 
-    pub fn artifact(&self, id: &ArtifactId) -> Option<&ArtifactKnowledge> {
+    pub(crate) fn artifact(&self, id: &ArtifactId) -> Option<&ArtifactKnowledge> {
         self.artifacts.get(id)
     }
 
 }
 
-pub struct CreatureKnowledge {
-    pub facts: HashSet<CreatureFact>,
-    pub events: HashSet<usize>
+pub(crate) struct CreatureKnowledge {
+    pub(crate) facts: HashSet<CreatureFact>,
+    pub(crate) events: HashSet<usize>
 }
 
 impl CreatureKnowledge {
-    pub fn new() -> CreatureKnowledge {
+    pub(crate) fn new() -> CreatureKnowledge {
         CreatureKnowledge { facts: HashSet::new(), events: HashSet::new() } 
     }
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum CreatureFact {
+pub(crate) enum CreatureFact {
     Name,
     Birth,
     Death
 }
 
-pub struct PlaceKnowledge {
-    pub facts: HashSet<PlaceFact>,
-    pub events: HashSet<usize>
+pub(crate) struct PlaceKnowledge {
+    pub(crate) facts: HashSet<PlaceFact>,
+    pub(crate) events: HashSet<usize>
 }
 
 impl PlaceKnowledge {
-    pub fn new() -> PlaceKnowledge {
+    pub(crate) fn new() -> PlaceKnowledge {
         PlaceKnowledge { facts: HashSet::new(), events: HashSet::new() } 
     }
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum PlaceFact {
+pub(crate) enum PlaceFact {
     Name
 }
 
-pub struct ArtifactKnowledge {
-    pub facts: HashSet<ArtifactFact>,
-    pub events: HashSet<usize>
+pub(crate) struct ArtifactKnowledge {
+    pub(crate) facts: HashSet<ArtifactFact>,
+    pub(crate) events: HashSet<usize>
 }
 
 impl ArtifactKnowledge {
-    pub fn new() -> ArtifactKnowledge {
+    pub(crate) fn new() -> ArtifactKnowledge {
         ArtifactKnowledge { facts: HashSet::new(), events: HashSet::new() } 
     }
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum ArtifactFact {
+pub(crate) enum ArtifactFact {
     Name,
     Description
 }

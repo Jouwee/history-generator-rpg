@@ -8,16 +8,16 @@ use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, c
 
 use super::{action::{Action, ActionId}, actor::Actor, inventory::inventory::Inventory, InputEvent};
 
-pub struct Hotbar {
+pub(crate) struct Hotbar {
     background: Texture,
     available_actions: HashSet<ActionId>,
     equipped_actions: Vec<ActionId>,
-    pub selected_action: Option<ActionId>,
+    pub(crate) selected_action: Option<ActionId>,
     action_buttons: HList
 }
 
 impl Hotbar {
-    pub fn new() -> Hotbar {
+    pub(crate) fn new() -> Hotbar {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let background = ImageReader::open("assets/sprites/gui/hotbar/background.png").unwrap().decode().unwrap();
         Hotbar {
@@ -29,7 +29,7 @@ impl Hotbar {
         }
     }
 
-    pub fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
+    pub(crate) fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.available_actions.insert(ctx.resources.actions.id_of("act:talk"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:inspect"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:pickup"));
@@ -39,7 +39,7 @@ impl Hotbar {
         self.equip(inventory, ctx);
     }
 
-    pub fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
+    pub(crate) fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.equipped_actions = Vec::new();
         if let Some(equipped) = inventory.equipped() {
             self.equipped_actions = equipped.actions(&ctx.resources.actions);
@@ -127,18 +127,18 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
 }
 
 
-pub struct HotbarState<'a> {
+pub(crate) struct HotbarState<'a> {
     player: &'a Actor
 }
 
 
 impl<'a> HotbarState<'a> {
-    pub fn new(player: &'a Actor) -> HotbarState<'a> {
+    pub(crate) fn new(player: &'a Actor) -> HotbarState<'a> {
         HotbarState { player }
     }
 }
 
-pub trait NodeWithState<T> {
+pub(crate) trait NodeWithState<T> {
     fn render(&mut self, _state: T, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
     fn update(&mut self, _state: T, _update: &Update, _ctx: &mut GameContext) {}
     fn input(&mut self, _state: T, _evt: &InputEvent, _ctx: &mut GameContext) {}

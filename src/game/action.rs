@@ -3,7 +3,7 @@ use crate::{commons::damage_model::{DamageComponent, DamageOutput}, engine::{ani
 use super::{actor::Actor, chunk::ChunkMap, effect_layer::EffectLayer};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct ActionId(usize);
+pub(crate) struct ActionId(usize);
 impl crate::commons::id_vec::Id for ActionId {
     fn new(id: usize) -> Self {
         ActionId(id)
@@ -14,17 +14,17 @@ impl crate::commons::id_vec::Id for ActionId {
 }
 
 #[derive(Clone)]
-pub struct Action {
-    pub name: String,
-    pub icon: String,
-    pub description: String,
-    pub sound_effect: Option<SoundEffect>,
-    pub ap_cost: u16,
-    pub action_type: ActionType
+pub(crate) struct Action {
+    pub(crate) name: String,
+    pub(crate) icon: String,
+    pub(crate) description: String,
+    pub(crate) sound_effect: Option<SoundEffect>,
+    pub(crate) ap_cost: u16,
+    pub(crate) action_type: ActionType
 }
 
 #[derive(Clone)]
-pub enum ActionType {
+pub(crate) enum ActionType {
     Move { offset: Coord2 },
     Targeted {
         damage: Option<DamageType>,
@@ -38,31 +38,31 @@ pub enum ActionType {
 }
 
 #[derive(Clone)]
-pub enum DamageType {
+pub(crate) enum DamageType {
     FromWeapon(DamageComponent),
     Fixed(DamageComponent)
 }
 
 #[derive(Clone)]
-pub struct Infliction {
-    pub chance: AfflictionChance,
-    pub affliction: Affliction,
+pub(crate) struct Infliction {
+    pub(crate) chance: AfflictionChance,
+    pub(crate) affliction: Affliction,
 }
 
 #[derive(Clone)]
-pub enum AfflictionChance {
+pub(crate) enum AfflictionChance {
     OnHit
 }
 
 #[derive(Clone)]
-pub enum Affliction {
+pub(crate) enum Affliction {
     Bleeding { duration: usize },
     Poisoned { duration: usize },
     Stunned { duration: usize }
 }
 
 impl Affliction {
-    pub fn name_color(&self) -> (&str, Palette) {
+    pub(crate) fn name_color(&self) -> (&str, Palette) {
         match self {
             Affliction::Bleeding { duration: _ } => ("Bleeding", Palette::Red),
             Affliction::Poisoned { duration: _ } => ("Poisoned", Palette::Green),
@@ -71,10 +71,10 @@ impl Affliction {
     }
 }
 
-pub struct ActionRunner { }
+pub(crate) struct ActionRunner { }
 
 impl ActionRunner {
-    pub fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
+    pub(crate) fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
         match &action.action_type {
             ActionType::Move { offset } => {
                 if actor.ap.can_use(action.ap_cost) {
@@ -97,7 +97,7 @@ impl ActionRunner {
         return false
     }
 
-    pub fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, ctx: &GameContext) -> bool {
+    pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, ctx: &GameContext) -> bool {
         match &action.action_type {
             ActionType::Targeted { damage, inflicts } => {
                 if actor.ap.can_use(action.ap_cost) {

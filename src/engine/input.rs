@@ -4,14 +4,14 @@ use piston::{Button, ButtonArgs, ButtonState, MouseButton};
 
 use crate::DisplayContext;
 
-pub enum InputEvent {
+pub(crate) enum InputEvent {
     None,
     Click { button: MouseButton, pos: [f64; 2] },
     Drag { button: MouseButton, offset: [f64; 2] }
 }
 
 impl InputEvent {
-    pub fn from_button_args(args: &ButtonArgs, state:  &mut InputState) -> InputEvent {
+    pub(crate) fn from_button_args(args: &ButtonArgs, state:  &mut InputState) -> InputEvent {
         if args.state == ButtonState::Press {
             state.pressed.insert(args.button);
         }
@@ -29,7 +29,7 @@ impl InputEvent {
         return InputEvent::None
     }
 
-    pub fn from_mouse_move(mouse_pos: [f64; 2], display_ctx: &DisplayContext, state:  &mut InputState) -> InputEvent {
+    pub(crate) fn from_mouse_move(mouse_pos: [f64; 2], display_ctx: &DisplayContext, state:  &mut InputState) -> InputEvent {
         let mouse_pos = [mouse_pos[0] / display_ctx.scale, mouse_pos[1] / display_ctx.scale];
         if mouse_pos != state.last_mouse {
             let last_pos = state.last_mouse;
@@ -44,7 +44,7 @@ impl InputEvent {
     }
 }
 
-pub struct InputState {
+pub(crate) struct InputState {
     last_mouse: [f64; 2],
     pressed: HashSet<Button>,
     dragging: HashSet<Button>
@@ -52,7 +52,7 @@ pub struct InputState {
 
 impl InputState {
 
-    pub fn new() -> InputState {
+    pub(crate) fn new() -> InputState {
         InputState {
             last_mouse: [0.; 2],
             pressed: HashSet::new(),

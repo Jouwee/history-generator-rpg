@@ -3,16 +3,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::commons::{history_vec::Id, rng::Rng};
 
 #[derive(Clone, Debug)]
-pub struct Faction {
-    pub name: String,
-    pub relations: BTreeMap<Id, f32>,
-    pub leader: Id,
-    pub units: BTreeSet<Id>,
+pub(crate) struct Faction {
+    pub(crate) name: String,
+    pub(crate) relations: BTreeMap<Id, f32>,
+    pub(crate) leader: Id,
+    pub(crate) units: BTreeSet<Id>,
 }
 
 impl Faction {
 
-    pub fn new(rng: &Rng, leader: Id) -> Faction {
+    pub(crate) fn new(rng: &Rng, leader: Id) -> Faction {
         let mut rng = rng.derive("faction");
         let prefixes = ["Red", "Blue", "Green", "Yellow", "Axial", "Allied", "Destructive", "Peaceful"];
         let suffixes = ["Coallition", "Legion", "Peregrins", "Colonials", "Axis", "Movement"];
@@ -28,7 +28,7 @@ impl Faction {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum FactionRelation {
+pub(crate) enum FactionRelation {
     Leader,
     Member
 }

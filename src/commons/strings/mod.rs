@@ -1,7 +1,7 @@
-pub struct Strings {}
+pub(crate) struct Strings {}
 
 impl Strings {
-    pub fn capitalize(string: &str) -> String {
+    pub(crate) fn capitalize(string: &str) -> String {
         let mut capitalized = String::new();
         for (i, char) in string.chars().enumerate() {
             if i == 0 {

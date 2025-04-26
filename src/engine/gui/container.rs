@@ -4,14 +4,14 @@ use crate::{engine::{render::RenderContext, scene::Update}, GameContext};
 
 use super::{button::Button, dialog::Dialog, label::Label, vlist::VList, GUINode};
 
-pub struct InnerContainer {
-    pub keys: BTreeMap<String, usize>,
-    pub children: Vec<Box<dyn Any>>
+pub(crate) struct InnerContainer {
+    pub(crate) keys: BTreeMap<String, usize>,
+    pub(crate) children: Vec<Box<dyn Any>>
 }
 
 impl InnerContainer {
 
-    pub fn new() -> InnerContainer {
+    pub(crate) fn new() -> InnerContainer {
         InnerContainer { 
             keys: BTreeMap::new(),
             children: Vec::new(),
@@ -20,7 +20,7 @@ impl InnerContainer {
 
 }
 
-pub trait Container {
+pub(crate) trait Container {
 
     fn container(&self) -> &InnerContainer;
 

@@ -2,18 +2,18 @@ use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, 
 
 use super::inventory::Inventory;
 
-pub struct CharacterDialog {
+pub(crate) struct CharacterDialog {
     dialog: Option<Dialog>
 }
 
 impl CharacterDialog {
-    pub fn new() -> CharacterDialog {
+    pub(crate) fn new() -> CharacterDialog {
         CharacterDialog {
             dialog: None
         }
     }
 
-    pub fn start_dialog(&mut self, actor: &Actor, resources: &Resources) {
+    pub(crate) fn start_dialog(&mut self, actor: &Actor, resources: &Resources) {
         let mut dialog = Dialog::new();
         let mut inventory = VList::new(Position::Anchored(Anchor::TopLeft, 10., 10.));
         Self::build_inventory(&mut inventory, &actor.inventory, resources);
@@ -25,7 +25,7 @@ impl CharacterDialog {
         self.dialog = Some(dialog);
     }
 
-    pub fn build_attributes(container: &mut impl Container, attributes: &Attributes) {
+    pub(crate) fn build_attributes(container: &mut impl Container, attributes: &Attributes) {
         container.clear();
         let unspent = attributes.unallocated;
         let has_unspent = unspent > 0;
@@ -44,7 +44,7 @@ impl CharacterDialog {
         }
     }
 
-    pub fn build_inventory(container: &mut impl Container, inventory: &Inventory, resources: &Resources) {
+    pub(crate) fn build_inventory(container: &mut impl Container, inventory: &Inventory, resources: &Resources) {
         container.clear();
         for (i, item, equip) in inventory.iter() {
             let mut name = item.name(&resources.materials);
@@ -55,7 +55,7 @@ impl CharacterDialog {
         }
     }
 
-    pub fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, resources: &Resources) -> CharacterDialogOutput {
+    pub(crate) fn input_state(&mut self, evt: &crate::game::InputEvent, actor: &mut Actor, resources: &Resources) -> CharacterDialogOutput {
         if let Some(dialog) = &mut self.dialog {
             if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
                 self.dialog = None;
@@ -99,7 +99,7 @@ impl CharacterDialog {
 
 }
 
-pub enum CharacterDialogOutput {
+pub(crate) enum CharacterDialogOutput {
     None,
     EquipmentChanged
 }

@@ -7,14 +7,14 @@ use crate::{engine::{render::RenderContext, scene::Update, spritesheet::Spritesh
 
 use super::GUINode;
 
-pub struct TooltipOverlay {
+pub(crate) struct TooltipOverlay {
 
 }
 
 
 impl TooltipOverlay {
 
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {  }
     }
 
@@ -89,19 +89,19 @@ impl GUINode for TooltipOverlay {
     }
 }
 
-pub struct TooltipRegistry {
+pub(crate) struct TooltipRegistry {
     current_tooltip: Option<(u64, Tooltip, [f64; 2], f64)>,
 }
 
 impl TooltipRegistry {
 
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { 
             current_tooltip: None
         }
     }
     
-    pub fn show_delayed_prehash(&mut self, hash: u64, tooltip: &Tooltip, position: [f64; 2]) {
+    pub(crate) fn show_delayed_prehash(&mut self, hash: u64, tooltip: &Tooltip, position: [f64; 2]) {
         match &mut self.current_tooltip {
             Some(tuple) => {
                 if hash != tuple.0 {
@@ -121,7 +121,7 @@ impl TooltipRegistry {
         }
     }
 
-    pub fn hide_prehash(&mut self, hash: u64) {
+    pub(crate) fn hide_prehash(&mut self, hash: u64) {
         if let Some((current_hash, _, _, _)) = &self.current_tooltip {
             if hash == *current_hash {
                 self.current_tooltip = None;
@@ -133,17 +133,17 @@ impl TooltipRegistry {
 
 
 #[derive(Clone, Hash)]
-pub struct Tooltip {
+pub(crate) struct Tooltip {
     lines: Vec<TooltipLine>
 }
 
 impl Tooltip {
 
-    pub fn new(title: String) -> Self {
+    pub(crate) fn new(title: String) -> Self {
         Self { lines: vec!(TooltipLine::Title(title)) }
     }
 
-    pub fn add_line(&mut self, line: TooltipLine) {
+    pub(crate) fn add_line(&mut self, line: TooltipLine) {
         self.lines.push(line);
     }
 
@@ -151,7 +151,7 @@ impl Tooltip {
 
 
 #[derive(Clone)]
-pub enum TooltipLine {
+pub(crate) enum TooltipLine {
     Title(String),
     Body(String),
     ApCost(u16),

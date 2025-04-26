@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use image::DynamicImage;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-pub struct Spritesheet {
+pub(crate) struct Spritesheet {
     textures: HashMap<(u32, u32), Texture>
 }
 
 impl Spritesheet {
 
-    pub fn new(img: DynamicImage, sprite_size: (u32, u32)) -> Spritesheet {
+    pub(crate) fn new(img: DynamicImage, sprite_size: (u32, u32)) -> Spritesheet {
         let mut sheet = Spritesheet {
             textures: HashMap::new()
         };
@@ -24,7 +24,7 @@ impl Spritesheet {
         sheet
     }
 
-    pub fn sprite(&self, x: u32, y: u32) -> &Texture {
+    pub(crate) fn sprite(&self, x: u32, y: u32) -> &Texture {
         self.textures.get(&(x, y)).unwrap()
     }
 }

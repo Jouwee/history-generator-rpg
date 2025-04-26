@@ -5,16 +5,16 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::Color;
 
-pub struct PalleteSprite {
+pub(crate) struct PalleteSprite {
     image: DynamicImage
 }
 
 impl PalleteSprite {
-    pub fn new(image: DynamicImage) -> PalleteSprite {
+    pub(crate) fn new(image: DynamicImage) -> PalleteSprite {
         PalleteSprite { image }
     }
 
-    pub fn remap(&self, color_map: HashMap<ColorMap, [Color; 4]>) -> Texture {
+    pub(crate) fn remap(&self, color_map: HashMap<ColorMap, [Color; 4]>) -> Texture {
         let original = self.image.as_rgba8().unwrap();
         let color_map = Self::expand_map(color_map);
         let mut remapped = RgbaImage::new(self.image.width(), self.image.height());
@@ -68,7 +68,7 @@ impl PalleteSprite {
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum ColorMap {
+pub(crate) enum ColorMap {
     Blue,
     Red,
     Green,

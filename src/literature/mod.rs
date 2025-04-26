@@ -1,1 +1,1 @@
-pub mod biography;
+pub(crate) mod biography;

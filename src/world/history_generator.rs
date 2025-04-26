@@ -6,25 +6,25 @@ use super::{culture::Culture, region::Region};
 
 
 #[derive(Clone)]
-pub struct WorldGenerationParameters {
-    pub seed: u32,
-    pub cultures: Vec<Culture>,
-    pub regions: Vec<Region>,
-    pub great_beasts_yearly_spawn_chance: f32,
-    pub legendary_artifact_comission_chance: f32
+pub(crate) struct WorldGenerationParameters {
+    pub(crate) seed: u32,
+    pub(crate) cultures: Vec<Culture>,
+    pub(crate) regions: Vec<Region>,
+    pub(crate) great_beasts_yearly_spawn_chance: f32,
+    pub(crate) legendary_artifact_comission_chance: f32
 }
 
-pub struct WorldHistoryGenerator {
+pub(crate) struct WorldHistoryGenerator {
     rng: Rng,
-    pub year: u32,
+    pub(crate) year: u32,
     parameters: WorldGenerationParameters,
-    pub world: World,
+    pub(crate) world: World,
     resources: Resources
 }
 
 impl WorldHistoryGenerator {
 
-    pub fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
+    pub(crate) fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
         let rng = Rng::seeded(parameters.seed);
        
         let mut params = WorldTopologyGenerationParameters {
@@ -89,7 +89,7 @@ impl WorldHistoryGenerator {
         return generator;
     }
 
-    pub fn simulate_year(&mut self) {
+    pub(crate) fn simulate_year(&mut self) {
         // TODO:
     }
 

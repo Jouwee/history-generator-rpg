@@ -1,7 +1,7 @@
 use crate::engine::Color;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct MaterialId(usize);
+pub(crate) struct MaterialId(usize);
 impl crate::commons::id_vec::Id for MaterialId {
     fn new(id: usize) -> Self {
         MaterialId(id)
@@ -12,17 +12,17 @@ impl crate::commons::id_vec::Id for MaterialId {
 }
 
 #[derive(Clone, Debug)]
-pub struct Material {
-    pub name: String,
-    pub material_type: MaterialType,
-    pub density: f32,
-    pub sharpness: f32,
-    pub color_pallete: [Color; 4]
+pub(crate) struct Material {
+    pub(crate) name: String,
+    pub(crate) material_type: MaterialType,
+    pub(crate) density: f32,
+    pub(crate) sharpness: f32,
+    pub(crate) color_pallete: [Color; 4]
 }
 
 impl Material {
 
-    pub fn new_metal(name: &str) -> Material {
+    pub(crate) fn new_metal(name: &str) -> Material {
         Material {
             name: name.to_string(),
             material_type: MaterialType::Metal,
@@ -32,7 +32,7 @@ impl Material {
         }
     }
 
-    pub fn new_wood(name: &str) -> Material {
+    pub(crate) fn new_wood(name: &str) -> Material {
         Material {
             name: name.to_string(),
             material_type: MaterialType::Wood,
@@ -42,7 +42,7 @@ impl Material {
         }
     }
 
-    pub fn new_bone(name: &str) -> Material {
+    pub(crate) fn new_bone(name: &str) -> Material {
         Material {
             name: name.to_string(),
             material_type: MaterialType::Bone,
@@ -55,7 +55,7 @@ impl Material {
 }
 
 #[derive(Clone, Debug)]
-pub enum MaterialType {
+pub(crate) enum MaterialType {
     Metal,
     Wood,
     Bone,

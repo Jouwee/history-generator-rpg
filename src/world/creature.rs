@@ -4,9 +4,9 @@ use super::{date::WorldDate, species::SpeciesId, unit::UnitResources, world::Art
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct CreatureId(usize);
+pub(crate) struct CreatureId(usize);
 impl CreatureId {
-    pub fn ancients() -> CreatureId {
+    pub(crate) fn ancients() -> CreatureId {
         return CreatureId(0);
     }
 }
@@ -19,25 +19,25 @@ impl crate::commons::id_vec::Id for CreatureId {
     }
 }
 
-pub type Creatures = IdVec<Creature>;
+pub(crate) type Creatures = IdVec<Creature>;
 
 #[derive(Clone)]
-pub struct Creature {
-    pub species: SpeciesId,
-    pub birth: WorldDate,
-    pub gender: CreatureGender,
-    pub death: Option<(WorldDate, CauseOfDeath)>,
-    pub profession: Profession,
-    pub father: CreatureId,
-    pub mother: CreatureId,
-    pub spouse: Option<CreatureId>,
-    pub offspring: Vec<CreatureId>,
-    pub details: Option<CreatureDetails>
+pub(crate) struct Creature {
+    pub(crate) species: SpeciesId,
+    pub(crate) birth: WorldDate,
+    pub(crate) gender: CreatureGender,
+    pub(crate) death: Option<(WorldDate, CauseOfDeath)>,
+    pub(crate) profession: Profession,
+    pub(crate) father: CreatureId,
+    pub(crate) mother: CreatureId,
+    pub(crate) spouse: Option<CreatureId>,
+    pub(crate) offspring: Vec<CreatureId>,
+    pub(crate) details: Option<CreatureDetails>
 }
 
 impl Creature {
 
-    pub fn details(&mut self) -> &mut CreatureDetails {
+    pub(crate) fn details(&mut self) -> &mut CreatureDetails {
         if self.details.is_none() {
             self.details = Some(CreatureDetails {
                 inventory: Vec::new()
@@ -49,25 +49,25 @@ impl Creature {
 }
 
 #[derive(Clone)]
-pub struct CreatureDetails {
-    pub inventory: Vec<ArtifactId>
+pub(crate) struct CreatureDetails {
+    pub(crate) inventory: Vec<ArtifactId>
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub enum CreatureGender {
+pub(crate) enum CreatureGender {
     Male, Female
 }
 
 impl CreatureGender {
 
-    pub fn is_male(&self) -> bool {
+    pub(crate) fn is_male(&self) -> bool {
         if let CreatureGender::Male = self {
             return true
         }
         return false
     }
 
-    pub fn is_female(&self) -> bool {
+    pub(crate) fn is_female(&self) -> bool {
         if let CreatureGender::Female = self {
             return true
         }
@@ -77,7 +77,7 @@ impl CreatureGender {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum CauseOfDeath {
+pub(crate) enum CauseOfDeath {
     OldAge,
     Starvation,
     Disease,
@@ -85,7 +85,7 @@ pub enum CauseOfDeath {
 
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum Profession {
+pub(crate) enum Profession {
     // Someone that doesn't work. Usually children and elders, but could be reserved for nitwits.
     None,
     // Workers
@@ -103,7 +103,7 @@ pub enum Profession {
 
 impl Profession {
 
-    pub fn base_resource_production(&self) -> UnitResources {
+    pub(crate) fn base_resource_production(&self) -> UnitResources {
         match self {
             Profession::None => UnitResources { food: 0. },
             Profession::Peasant => UnitResources { food: 1.5 },
@@ -115,7 +115,7 @@ impl Profession {
         }
     }
 
-    pub fn is_for_life(&self) -> bool {
+    pub(crate) fn is_for_life(&self) -> bool {
         match self {
             Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
             Profession::Ruler => true,

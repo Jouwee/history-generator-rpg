@@ -4,17 +4,17 @@ use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resourc
 
 use super::structs::World;
 
-pub struct CreatureFactory {
+pub(crate) struct CreatureFactory {
     rng: Rng
 }
 
 impl CreatureFactory {
 
-    pub fn new(rng: Rng) -> CreatureFactory {
+    pub(crate) fn new(rng: Rng) -> CreatureFactory {
         CreatureFactory { rng }
     }
 
-    pub fn make_family_or_single(&mut self, now: &WorldDate, species: SpeciesId, world: &mut World) -> Vec<CreatureId> {
+    pub(crate) fn make_family_or_single(&mut self, now: &WorldDate, species: SpeciesId, world: &mut World) -> Vec<CreatureId> {
         let age = self.rng.randi_range(20, 50);
         // Single
         if self.rng.rand_chance(0.5) {
@@ -75,13 +75,13 @@ impl CreatureFactory {
     }
 }
 
-pub struct ArtifactFactory {
+pub(crate) struct ArtifactFactory {
 
 }
 
 impl ArtifactFactory {
 
-    pub fn create_artifact(rng: &mut Rng, resources: &Resources, material_id: &MaterialId) -> Item {
+    pub(crate) fn create_artifact(rng: &mut Rng, resources: &Resources, material_id: &MaterialId) -> Item {
         let material_id = material_id.clone();
         let item;
         match rng.randu_range(0, 2) {
@@ -121,7 +121,7 @@ impl ArtifactFactory {
         return item;
     }
 
-    pub fn create_statue(rng: &mut Rng, resources: &Resources, material_id: &MaterialId, subject: CreatureId, world: &World) -> Item {
+    pub(crate) fn create_statue(rng: &mut Rng, resources: &Resources, material_id: &MaterialId, subject: CreatureId, world: &World) -> Item {
         let material = resources.materials.id_of("mat:bronze");
         let creature = world.get_creature(&subject);
         if let Some(details) = &creature.details {

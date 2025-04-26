@@ -2,21 +2,21 @@ use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap},
 
 use super::tile::{Tile, TileId};
 
-pub type Actions = ResourceMap<ActionId, Action>;
-pub type Materials = ResourceMap<MaterialId, Material>;
-pub type SpeciesMap = ResourceMap<SpeciesId, Species>;
+pub(crate) type Actions = ResourceMap<ActionId, Action>;
+pub(crate) type Materials = ResourceMap<MaterialId, Material>;
+pub(crate) type SpeciesMap = ResourceMap<SpeciesId, Species>;
 
 #[derive(Clone)]
-pub struct Resources {
-    pub actions: Actions,
-    pub materials: Materials,
-    pub species: SpeciesMap,
-    pub tiles: ResourceMap<TileId, Tile>
+pub(crate) struct Resources {
+    pub(crate) actions: Actions,
+    pub(crate) materials: Materials,
+    pub(crate) species: SpeciesMap,
+    pub(crate) tiles: ResourceMap<TileId, Tile>
 }
 
 impl Resources {
 
-    pub fn new() -> Resources {
+    pub(crate) fn new() -> Resources {
         Resources {
             actions: ResourceMap::new(),
             materials: ResourceMap::new(),
@@ -25,14 +25,14 @@ impl Resources {
         }
     }
 
-    pub fn load(&mut self) {
+    pub(crate) fn load(&mut self) {
         self.load_materials();
         self.load_actions();
         self.load_species();
         self.load_tiles();
     }
 
-    pub fn load_materials(&mut self) {
+    pub(crate) fn load_materials(&mut self) {
         self.materials.add("mat:steel", Material::new_metal("steel"));
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
@@ -46,7 +46,7 @@ impl Resources {
         self.materials.add("mat:copper", copper);
     }
 
-    pub fn load_actions(&mut self) {
+    pub(crate) fn load_actions(&mut self) {
         self.actions.add("act:sword:slash", Action {
             name: String::from("Slash"),
             description: String::from("A slashing strike"),
@@ -196,7 +196,7 @@ impl Resources {
         });
     }
 
-    pub fn load_species(&mut self) {
+    pub(crate) fn load_species(&mut self) {
         self.species.add("species:human", Species::new("human", SpeciesApearance::composite(
             vec!(
                 ("base", vec!(
@@ -238,7 +238,7 @@ impl Resources {
         );
     }
 
-    pub fn load_tiles(&mut self) {
+    pub(crate) fn load_tiles(&mut self) {
         let mut tile = Tile::new(0, "assets/sprites/chunk_tiles/stone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:stone", tile);
@@ -257,11 +257,11 @@ impl Resources {
         self.tiles.add("tile:cobblestone", tile);
     }
 
-    pub fn tile(&self, id: &TileId) -> &Tile {
+    pub(crate) fn tile(&self, id: &TileId) -> &Tile {
         return self.tiles.get(id);
     }
 
-    pub fn find_tile(&self, key: &str) -> &Tile {
+    pub(crate) fn find_tile(&self, key: &str) -> &Tile {
         return self.tiles.find(key);
     }
 

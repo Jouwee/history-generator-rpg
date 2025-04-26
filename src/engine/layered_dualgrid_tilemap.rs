@@ -20,7 +20,7 @@ const IDX_BR: usize = 13;
 const IDX_TR_BL: usize = 14;
 const IDX_TL: usize = 15;
 
-pub struct LayeredDualgridTilemap {
+pub(crate) struct LayeredDualgridTilemap {
     tiles: Vec<Option<usize>>,
     collapsed_tiles: Vec<Option<Vec<(usize, usize)>>>,
     tileset: LayeredDualgridTileset,
@@ -32,7 +32,7 @@ pub struct LayeredDualgridTilemap {
 
 impl LayeredDualgridTilemap {
 
-    pub fn new(tileset: LayeredDualgridTileset, width: usize, height: usize, cell_width: usize, cell_height: usize) -> LayeredDualgridTilemap {
+    pub(crate) fn new(tileset: LayeredDualgridTileset, width: usize, height: usize, cell_width: usize, cell_height: usize) -> LayeredDualgridTilemap {
         LayeredDualgridTilemap {
             tiles: vec![None; width * height],
             collapsed_tiles: vec![None; width * height],
@@ -44,11 +44,11 @@ impl LayeredDualgridTilemap {
         }
     }
 
-    pub fn tile(&self, x: usize, y: usize) -> Option<usize> {
+    pub(crate) fn tile(&self, x: usize, y: usize) -> Option<usize> {
         return self.tiles[x + y * self.width]
     }
 
-    pub fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
+    pub(crate) fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
         self.tiles[x + y * self.width] = Some(tile);
         self.collapse_tile(x, y);
         if x > 0 {
@@ -62,7 +62,7 @@ impl LayeredDualgridTilemap {
         }
     }
 
-    pub fn render(&self, ctx: &mut RenderContext) {
+    pub(crate) fn render(&self, ctx: &mut RenderContext) {
         let hw = self.cell_width as f64 / 2.;
         let hh = self.cell_height as f64 / 2.;
         let cull_start = [
@@ -87,7 +87,7 @@ impl LayeredDualgridTilemap {
         }
     }
 
-    pub fn collapse_tile(&mut self, x: usize, y: usize) {
+    pub(crate) fn collapse_tile(&mut self, x: usize, y: usize) {
         let i = x + y * self.width;
         if let Some(tile_idx) = self.tiles[x + y * self.width] {
             let mut grid = [tile_idx; 4];
@@ -152,18 +152,18 @@ impl LayeredDualgridTilemap {
 
 }
 
-pub struct LayeredDualgridTileset {
+pub(crate) struct LayeredDualgridTileset {
     tiles: Vec<DualgridTile>,
 }
 
 impl LayeredDualgridTileset {
-    pub fn new() -> LayeredDualgridTileset {
+    pub(crate) fn new() -> LayeredDualgridTileset {
         LayeredDualgridTileset {
             tiles: Vec::new()
         }
     }
 
-    pub fn add(&mut self, layer: u16, image: DynamicImage, tile_width: u32, tile_height: u32) {
+    pub(crate) fn add(&mut self, layer: u16, image: DynamicImage, tile_width: u32, tile_height: u32) {
         let mut textures = Vec::new();
         for y in 0..4 {
             for x in 0..4 {

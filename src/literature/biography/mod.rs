@@ -1,24 +1,24 @@
 use crate::{commons::history_vec::Id, resources::resources::Resources, world::{history_sim::structs::World, topology::WorldTileData}, WorldEvent};
 
-pub struct BiographyWriter<'a> { 
+pub(crate) struct BiographyWriter<'a> { 
     world: &'a World,
     resources: &'a Resources,
 }
 
 impl<'a> BiographyWriter<'a> {
 
-    pub fn new(world: &'a World, resources: &'a Resources) -> BiographyWriter<'a> {
+    pub(crate) fn new(world: &'a World, resources: &'a Resources) -> BiographyWriter<'a> {
         return BiographyWriter {
             world,
             resources
         }
     }
 
-    pub fn tile(&self, tile: &WorldTileData) -> String {
+    pub(crate) fn tile(&self, tile: &WorldTileData) -> String {
         return format!("{:?}, el {}, {}, growth: {}", tile.xy, tile.elevation, tile.region_id, (tile.soil_fertility - 0.5) * 0.01);
     }
 
-    pub fn unit(&self, id: &Id) -> String {
+    pub(crate) fn unit(&self, id: &Id) -> String {
         // TODO:
         // let unit = self.world.units.get(id);
         // let faction = self.world.factions.get(&unit.faction_id);
@@ -41,7 +41,7 @@ impl<'a> BiographyWriter<'a> {
         return String::new()
     }
 
-    pub fn rumor(&self, event: &WorldEvent) -> String {
+    pub(crate) fn rumor(&self, event: &WorldEvent) -> String {
         // TODO:
         // let date = &event.date;
         // match &event.event {
@@ -149,7 +149,7 @@ impl<'a> BiographyWriter<'a> {
         return String::new()
     }
 
-    pub fn event(&self, event: &WorldEvent) -> String {
+    pub(crate) fn event(&self, event: &WorldEvent) -> String {
         // TODO:
         // let date = &event.date;
         // match &event.event {
@@ -299,7 +299,7 @@ impl<'a> BiographyWriter<'a> {
         return String::new()
     }
 
-    // pub fn name_with_title(&self, figure: &Person) -> String {
+    // pub(crate) fn name_with_title(&self, figure: &Person) -> String {
     //     let name = self.name(figure);
     //     // TODO:
     //     // if let Some(civ) = &figure.civ {
@@ -311,21 +311,21 @@ impl<'a> BiographyWriter<'a> {
     //     return name
     // }
 
-    // pub fn name(&self, figure: &Person) -> String {
+    // pub(crate) fn name(&self, figure: &Person) -> String {
     //     match figure.name() {
     //         Some(name) => format!("{} ({})", name, figure.id.0),
     //         None => format!("{} ({})", self.descriptor(figure), figure.id.0)
     //     }
     // }
 
-    // pub fn birth_name(&self, figure: &Person) -> String {
+    // pub(crate) fn birth_name(&self, figure: &Person) -> String {
     //     match figure.birth_name() {
     //         Some(name) => format!("{} ({})", name, figure.id.0),
     //         None => format!("{} ({})", self.descriptor(figure), figure.id.0)
     //     }
     // }
 
-    // pub fn descriptor(&self, figure: &Person) -> String {
+    // pub(crate) fn descriptor(&self, figure: &Person) -> String {
     //     let species = self.resources.species.get(&figure.species);
     //     return format!("a {}", species.name)
     // }

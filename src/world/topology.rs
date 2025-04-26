@@ -5,19 +5,19 @@ use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{
 
 use super::region::Region;
 
-pub struct WorldTopology {
-    pub size: Size2D,
-    pub elevation: Vec<i32>,
-    pub precipitation: Vec<u8>,
-    pub temperature: Vec<u8>,
-    pub vegetation: Vec<f32>,
-    pub soil_ferility: Vec<f32>,
-    pub region_id: Vec<u8>
+pub(crate) struct WorldTopology {
+    pub(crate) size: Size2D,
+    pub(crate) elevation: Vec<i32>,
+    pub(crate) precipitation: Vec<u8>,
+    pub(crate) temperature: Vec<u8>,
+    pub(crate) vegetation: Vec<f32>,
+    pub(crate) soil_ferility: Vec<f32>,
+    pub(crate) region_id: Vec<u8>
 }
 
 impl WorldTopology {
 
-    pub fn new(size: Size2D) -> WorldTopology {
+    pub(crate) fn new(size: Size2D) -> WorldTopology {
         let len = size.area();
         WorldTopology { 
             size,
@@ -30,7 +30,7 @@ impl WorldTopology {
         }
     }
 
-    pub fn tile(&self, x: usize, y: usize) -> WorldTileData {
+    pub(crate) fn tile(&self, x: usize, y: usize) -> WorldTileData {
         let i = (y * self.size.x()) + x;
         return WorldTileData {
             xy: Point2D(x, y),
@@ -43,7 +43,7 @@ impl WorldTopology {
         }
     }
 
-    pub fn plate_tectonics(&mut self, params: &mut WorldTopologyGenerationParameters) {
+    pub(crate) fn plate_tectonics(&mut self, params: &mut WorldTopologyGenerationParameters) {
         let idx = MatrixIndex::new((self.size.0, self.size.1));
         let noise = Perlin::new(params.rng.derive("noise").seed());
         let mut plate_map = vec![0; self.size.area()];
@@ -199,7 +199,7 @@ impl WorldTopology {
         }
     }
 
-    pub fn precipitation(&mut self, params: &mut WorldTopologyGenerationParameters) {
+    pub(crate) fn precipitation(&mut self, params: &mut WorldTopologyGenerationParameters) {
         let idx = MatrixIndex::new((self.size.0, self.size.1));
         let noise = Perlin::new(params.rng.derive("noise").seed());
         for y in 0..self.size.y() {
@@ -212,7 +212,7 @@ impl WorldTopology {
         }
     }
 
-    pub fn erosion(&mut self, params: &mut WorldTopologyGenerationParameters) {
+    pub(crate) fn erosion(&mut self, params: &mut WorldTopologyGenerationParameters) {
         let idx = MatrixIndex::new((self.size.0, self.size.1));
         // Temporary f32 elevation map
         let mut elevation = vec![0.; self.size.area()];
@@ -294,7 +294,7 @@ impl WorldTopology {
         }
     }
 
-    pub fn noise(&mut self, rng: &Rng, regions: &Vec<Region>) {
+    pub(crate) fn noise(&mut self, rng: &Rng, regions: &Vec<Region>) {
         let rng = rng.derive("world_map");
         let n_temp = Perlin::new(rng.derive("temperature").seed());
         let n_reg = Perlin::new(rng.derive("region").seed());
@@ -347,20 +347,20 @@ impl WorldTopology {
 
 }
 
-pub struct WorldTopologyGenerationParameters {
-    pub rng: Rng,
-    pub num_plate_tectonics: u8
+pub(crate) struct WorldTopologyGenerationParameters {
+    pub(crate) rng: Rng,
+    pub(crate) num_plate_tectonics: u8
 }
 
 #[derive(Debug)]
-pub struct WorldTileData {
-    pub xy: Point2D,
-    pub elevation: i32,
-    pub precipitation: u8,
-    pub temperature: u8,
-    pub vegetation: f32,
-    pub soil_fertility: f32,
-    pub region_id: u8
+pub(crate) struct WorldTileData {
+    pub(crate) xy: Point2D,
+    pub(crate) elevation: i32,
+    pub(crate) precipitation: u8,
+    pub(crate) temperature: u8,
+    pub(crate) vegetation: f32,
+    pub(crate) soil_fertility: f32,
+    pub(crate) region_id: u8
 }
 
 
