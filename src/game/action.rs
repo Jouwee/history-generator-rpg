@@ -31,6 +31,8 @@ pub enum ActionType {
         inflicts: Option<Infliction>
     },
     Talk,
+    Inspect,
+    Dig,
     PickUp,
     Sleep
 }

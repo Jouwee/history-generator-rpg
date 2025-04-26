@@ -5,12 +5,13 @@ use opengl_graphics::Texture;
 
 use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
 
-use super::material::MaterialId;
+use super::{history_sim::structs::{CreatureId, World}, material::MaterialId, world::ArtifactId};
 
 #[derive(Clone, Debug)]
 pub enum Item {
     Sword(Sword),
     Mace(Mace),
+    Statue { material: MaterialId, scene: ArtworkScene }
 }
 
 impl Item {
@@ -31,10 +32,14 @@ impl Item {
                 let head = materials.get(&mace.head_mat).name.clone();
                 return format!("{head} mace")
             },
+            Item::Statue { material, scene: _} => {
+                let head = materials.get(material).name.clone();
+                return format!("{head} statue")
+            },
         }
     }
 
-    pub fn description(&self, materials: &Materials) -> String {
+    pub fn description(&self, materials: &Materials, world: &World) -> String {
         let str;
         match self {
             Item::Sword(sword) => {
@@ -50,6 +55,21 @@ impl Item {
                 let pommel = materials.get(&mace.pommel_mat).name.clone();
                 str = format!("It's a mace. It's head is made of {head}. The handle, made of {handle} is topped by a pomel of {pommel}.");
             },
+            Item::Statue { material, scene} => {
+                let head = materials.get(material).name.clone();
+                match scene {
+                    ArtworkScene::Bust { creature_id } => {
+                        return format!("A {head} statue. It depicts a bust of ({:?})", creature_id);
+                    },
+                    ArtworkScene::FullBody { creature_id, artifact_id } => {
+                        if let Some(artifact_id) = artifact_id {
+                            let artifact = world.artifacts.get(artifact_id);
+                            return format!("A {head} statue. It depicts a full-body image of ({:?}) holding {}", creature_id, artifact.name(materials));    
+                        }
+                        return format!("A {head} statue. It depicts a full-body image of ({:?})", creature_id);
+                    }
+                }
+            },
         }
         return str
     }
@@ -62,6 +82,10 @@ impl Item {
             Item::Mace(_mace) => {
                 return vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike"))
             },
+            // TODO: Kinda dumb
+            Item::Statue { material: _, scene: _ } => {
+                return vec!()
+            }
         }
     }
 
@@ -87,6 +111,12 @@ impl Item {
                 map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
+            // TODO: Kinda dumb
+            Item::Statue { material: _, scene: _ } => {
+                let image = ImageReader::open("./assets/sprites/chunk_tiles/stone_statue.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                return pallete_sprite.remap(HashMap::new())
+            }
         }
     }
 
@@ -111,6 +141,13 @@ impl Item {
                 map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
                 return pallete_sprite.remap(map)
             },
+            // TODO: Kinda dumb
+            Self::Statue { material: _, scene: _} => {
+                let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
+                let pallete_sprite = PalleteSprite::new(image);
+                let mut map = HashMap::new();
+                return pallete_sprite.remap(map)
+            },
         }
     }
 
@@ -118,9 +155,17 @@ impl Item {
         match self {
             Item::Sword(sword) => sword.damage_mult,
             Item::Mace(sword) => sword.damage_mult,
+            // TODO: Kinda dumb
+            Item::Statue { material: _, scene: _} => 0.,
         }
     }
 
+}
+
+#[derive(Clone, Debug)]
+pub enum ArtworkScene {
+    Bust { creature_id: CreatureId },
+    FullBody { creature_id: CreatureId, artifact_id: Option<ArtifactId> }
 }
 
 #[derive(Clone, Debug)]

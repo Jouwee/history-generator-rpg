@@ -18,6 +18,8 @@ pub enum CreatureSideEffect {
     LookForMarriage,
     LookForNewJob,
     MakeArtifact,
+    ComissionArtifact,
+    ArtisanLookingForComission,
 }
 
 const YEARLY_CHANCE_MARRY: f32 = 0.1;
@@ -28,7 +30,8 @@ const YEARLY_CHANCE_CHILD_MULT: f32 = 1.;
 const CHANCE_TO_STARVE: f32 = 0.2;
 const BASE_DISEASE_CHANCE: f32 = 0.002;
 const CHANCE_NEW_JOB: f32 = 0.005;
-const CHANCE_MAKE_ARTIFACT: f32 = 0.01;
+const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
+const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 1.0;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
@@ -69,13 +72,24 @@ impl CreatureSimulation {
             if !creature.profession.is_for_life() && rng.rand_chance(CHANCE_NEW_JOB) {
                 return CreatureSideEffect::LookForNewJob;
             }
+            
+            if creature.profession == Profession::Ruler && age % 10 == 0 {
+                if rng.rand_chance(CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY) {
+                    return CreatureSideEffect::ComissionArtifact;
+                }
+            }
+
         }
 
         match creature.profession {
             Profession::Blacksmith => {
-                if rng.rand_chance(CHANCE_MAKE_ARTIFACT) {
+                if rng.rand_chance(CHANCE_MAKE_INSPIRED_ARTIFACT) {
                     return CreatureSideEffect::MakeArtifact;
                 }
+                return CreatureSideEffect::ArtisanLookingForComission;
+            },
+            Profession::Sculptor => {
+                return CreatureSideEffect::ArtisanLookingForComission;
             },
             _ => ()
         }

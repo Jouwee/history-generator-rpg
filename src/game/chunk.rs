@@ -14,7 +14,13 @@ pub struct Chunk {
     pub player: Actor,
     pub npcs: Vec<Actor>,
     pub killed_people: Vec<CreatureId>,
+    // TODO: Should probably be on the map
+    pub tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub items_on_ground: Vec<(Coord2, Item, Texture)>,
+}
+
+pub enum TileMetadata {
+    BurialPlace(CreatureId)
 }
 
 pub struct ChunkMap {
@@ -34,6 +40,10 @@ impl ChunkMap {
 
     pub fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
+    }
+
+    pub fn remove_object(&mut self, pos: Coord2) {
+        self.object_layer.set_tile(pos.x as usize, pos.y as usize, 0);
     }
 
     pub fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
@@ -62,6 +72,8 @@ impl Chunk {
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut dual_tileset = LayeredDualgridTileset::new();
         for tile in resources.tiles.iter() {
@@ -79,6 +91,7 @@ impl Chunk {
             npcs: Vec::new(),
             killed_people: Vec::new(),
             items_on_ground: Vec::new(),
+            tiles_metadata: HashMap::new(),
         }
     }
 
@@ -320,6 +333,44 @@ impl Chunk {
                     }
                 }
 
+                let mut x = 10;
+                let mut y = 20;
+
+                for item in settlement.artifacts.iter() {
+
+
+                    let item = world.artifacts.get(item);
+                    let texture = item.make_texture(&resources.materials);
+                    chunk.items_on_ground.push((Coord2::xy(x, y), item.clone(), texture));
+
+                    x = x + 2;
+                    if x > 18 {
+                        y = y + 2;
+                        x = 10;
+                    }
+                }
+
+                let mut x = 3;
+                let mut y = 30;
+
+                let mut slice = &settlement.cemetery[..];
+                if slice.len() > 700 {
+                    slice = &settlement.cemetery[0..700];
+                }
+
+                for creature in slice.iter() {
+                    chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
+                    chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
+
+                    x = x + 1;
+                    if x > 18 {
+                        y = y + 2;
+                        x = 3;
+                    }
+                }
+
+
+                
                 found_sett = Some(settlement);
 
             }
@@ -354,6 +405,7 @@ impl Chunk {
                 let texture = item.make_texture(&resources.materials);
                 chunk.items_on_ground.push((point, item, texture));
             }
+
         }
 
         chunk

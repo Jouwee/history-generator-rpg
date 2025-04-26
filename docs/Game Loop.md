@@ -37,10 +37,11 @@ It is extremely important that the loop is constant, and split across the world.
 - [ ] Artifact loss/placement
 	- [x] Keep possession on death (Buried or lost)
 - [ ] Clues generation
-	- [ ] Statues
+	- [x] Statues
 	- [ ] Corpses
 - [ ] Interesting and messy lore
 	- [x] Diseases
+	- [ ] Use materials for artifacts that are native
 	- [ ] See Crusader Kings for inspiration
 
 How can I generate the lore necessary for exploration, investigation and acquisition?

@@ -1,6 +1,6 @@
 // TODO: Break into files
 
-use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{date::WorldDate, item::{Item, ItemQuality, Mace, Sword}, material::MaterialId, species::SpeciesId}};
+use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, material::MaterialId, species::SpeciesId}};
 
 use super::structs::{Creature, CreatureGender, CreatureId, Profession, World};
 
@@ -119,6 +119,18 @@ impl ArtifactFactory {
             }
         }
         return item;
+    }
+
+    pub fn create_statue(rng: &mut Rng, resources: &Resources, material_id: &MaterialId, subject: CreatureId, world: &World) -> Item {
+        let material = resources.materials.id_of("mat:bronze");
+        let creature = world.get_creature(&subject);
+        if let Some(details) = &creature.details {
+            if let Some(item) = details.inventory.first() {
+                return Item::Statue { material: material, scene: ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) } }        
+            }
+        }
+
+        return Item::Statue { material: material, scene: ArtworkScene::Bust { creature_id: subject } }
     }
 
     fn artifact_name(mut rng: Rng, suffixes: Vec<&str>) -> String {

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use action::{ActionRunner, ActionType};
 use actor::ActorType;
 use ai::AiSolver;
-use chunk::Chunk;
+use chunk::{Chunk, TileMetadata};
 use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use effect_layer::EffectLayer;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
@@ -486,6 +486,66 @@ impl Scene for GameSceneState {
                                         if let Some(target) = target {
                                             self.interact_dialog.start_dialog(&self.world, target.person_id.unwrap());
                                         }
+                                    }
+                                }
+                                ActionType::Inspect => {
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                        println!("Inspect at {:?}", tile_pos);
+                                        let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
+                                        if let Some(target) = target {
+                                            println!("target");
+                                        }
+                                        let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);
+                                        if let Some(item) = item {
+                                            println!("{}", item.1.description(&ctx.resources.materials, &self.world));
+                                        }
+                                        let tile = self.chunk.map.get_object_idx(tile_pos);
+                                        let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
+                                        match tile {
+                                            1 => println!("A wall."),
+                                            2 => println!("A tree."),
+                                            3 => println!("A bed."),
+                                            4 => println!("A table."),
+                                            5 => println!("A stool."),
+                                            6 => println!("A tombstone."),            
+                                            _ => ()                                
+                                        };
+
+                                        if let Some(meta) = tile_meta {
+                                            match meta {
+                                                TileMetadata::BurialPlace(creature_id) => {
+                                                    let creature = self.world.get_creature(creature_id);
+                                                    if let Some(death) = creature.death {
+                                                        println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
+                                                    }
+                                                    
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                },
+                                ActionType::Dig => {
+                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                        let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
+                                        if let Some(meta) = tile_meta {
+                                            match meta {
+                                                TileMetadata::BurialPlace(creature_id) => {
+                                                    let creature = self.world.get_creature(creature_id);
+                                                    if let Some(details) = &creature.details {
+                                                        self.chunk.map.remove_object(tile_pos);
+                                                        self.chunk.tiles_metadata.remove(&tile_pos);
+                                                        for item in details.inventory.iter() {
+                                                            let item = self.world.artifacts.get(item);
+                                                            self.chunk.items_on_ground.push((tile_pos, item.clone(), item.make_texture(&ctx.resources.materials)));
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
                                     }
                                 }
                                 ActionType::PickUp => {

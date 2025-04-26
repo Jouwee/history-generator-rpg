@@ -130,6 +130,22 @@ impl Resources {
             ap_cost: 0,
             action_type: ActionType::Talk
         });
+        self.actions.add("act:inspect", Action {
+            name: String::from("Inspect"),
+            description: String::from("Inspect something"),
+            icon: String::from("gui/icons/actions/inspect.png"),
+            sound_effect: None,
+            ap_cost: 0,
+            action_type: ActionType::Inspect
+        });
+        self.actions.add("act:dig", Action {
+            name: String::from("Dig"),
+            description: String::from("Dig the ground"),
+            icon: String::from("gui/icons/actions/dig.png"),
+            sound_effect: None,
+            ap_cost: 0,
+            action_type: ActionType::Dig
+        });
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
             description: String::from("Pick up something from the ground"),

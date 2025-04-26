@@ -62,6 +62,8 @@ pub enum Event {
     ArtifactCreated { date: WorldDate, artifact: ArtifactId, creator: CreatureId },
     InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ArtifactId },
     BurriedWithPosessions { date: WorldDate, creature_id: CreatureId },
+    ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ArtifactId },
+    NewLeaderElected { date: WorldDate, unit_id: usize, creature_id: CreatureId },
 }
 
 // ------------------
@@ -69,8 +71,11 @@ pub enum Event {
 pub struct Unit {
     pub xy: Coord2,
     pub creatures: Vec<CreatureId>,
+    pub cemetery: Vec<CreatureId>,
     pub unit_type: UnitType,
-    pub resources: UnitResources
+    pub resources: UnitResources,
+    pub leader: Option<CreatureId>,
+    pub artifacts: Vec<ArtifactId>
 }
 
 pub enum UnitType {
@@ -183,6 +188,7 @@ pub enum Profession {
     Guard,
     // Artisans
     Blacksmith,
+    Sculptor,
     // Political
     Ruler
 }
@@ -196,13 +202,14 @@ impl Profession {
             Profession::Farmer => UnitResources { food: 3.0 },
             Profession::Guard => UnitResources { food: 0. },
             Profession::Blacksmith => UnitResources { food: 0. },
+            Profession::Sculptor => UnitResources { food: 0. },
             Profession::Ruler => UnitResources { food: 0. },
         }
     }
 
     pub fn is_for_life(&self) -> bool {
         match self {
-            Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith => false,
+            Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
             Profession::Ruler => true,
         }
     }
@@ -282,7 +289,7 @@ impl Demographics {
             Profession::None => self.employed -= 1,
             Profession::Peasant => self.peasants += 1,
             Profession::Farmer => self.farmers += 1,
-            Profession::Blacksmith => self.artisans += 1,
+            Profession::Blacksmith | Profession::Sculptor => self.artisans += 1,
             Profession::Guard => self.army += 1,
             Profession::Ruler => self.politicians += 1,
         }

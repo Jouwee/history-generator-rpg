@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fs::File, io::Write, time::Instant};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{date::WorldDate, history_sim::structs::CauseOfDeath}};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{date::WorldDate, history_sim::structs::CauseOfDeath, item::Item}};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation, DeferredUnitSideEffect}, factories::{ArtifactFactory, CreatureFactory}, structs::{Creature, CreatureGender, CreatureId, Demographics, Event, Profession, Unit, UnitType, World}};
 
@@ -34,7 +34,7 @@ impl HistorySimulation {
 
         let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
 
-        let mut x = 130;
+        let mut x = 110;
         let mut y = 130;
 
         for _ in 0..self.params.number_of_seed_cities {
@@ -42,16 +42,19 @@ impl HistorySimulation {
                 // TODO:
                 xy: Coord2::xy(x, y),
                 creatures: Vec::new(),
+                cemetery: Vec::new(),
                 unit_type: UnitType::City,
                 resources: super::structs::UnitResources {
                     // Enough food for a year
                     food: self.params.seed_cities_population as f32
-                }
+                },
+                leader: None,
+                artifacts: Vec::new()
             };
 
-            x += 1;
-            if (x > 140) {
-                y +=1;
+            x += 2;
+            if x > 140 {
+                y +=2;
                 x = 130;
             }
 
@@ -87,17 +90,6 @@ impl HistorySimulation {
             self.params.rng.next();
         }
 
-        // for side_effect in side_effects.into_iter() {
-        //     match side_effect {
-        //         DeferredWorldSideEffect::None => (),
-        //         DeferredWorldSideEffect::AddCreature(unit_index, creature) => {
-        //             let creature_id = self.world.add_creature(creature);
-        //             // TODO: Add to offspring of parents
-        //             let mut unit = self.world.units[unit_index].borrow_mut();
-        //             unit.creatures.push(creature_id);
-        //         },
-        //     }
-        // }
 
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
@@ -191,6 +183,8 @@ impl HistorySimulation {
         // let mut deferred_side_effects = Vec::new();
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
+        let mut artisan_pool = Vec::new();
+        let mut comissions_pool = Vec::new();
         // TODO: Move this to a impl
         for (creature_id, side_effect) in side_effects.into_iter() {
             match side_effect {
@@ -206,13 +200,13 @@ impl HistorySimulation {
                         }
                         let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
                         let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
-                        unit.creatures.remove(i);
+                        let id = unit.creatures.remove(i);
+                        unit.cemetery.push(id);
 
                         let mut inheritor = None;
                         let mut has_possession = false;
 
                         if let Some(details) = &creature.details {
-                            println!("## inv {:?} {}", creature_id, details.inventory.len());
                             if details.inventory.len() > 0 {
                                 has_possession = true;
                                 for candidate_id in creature.offspring.iter() {
@@ -228,7 +222,6 @@ impl HistorySimulation {
                         drop(creature);
                 
                         if has_possession {
-                            println!("## HASP OS {:?}", creature_id);
                             if let Some((inheritor_id, inventory)) = inheritor {
                                 let mut inheritor = self.world.get_creature_mut(&inheritor_id);
                                 let mut creature = self.world.get_creature_mut(&creature_id);
@@ -243,6 +236,8 @@ impl HistorySimulation {
                                 self.world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id });
                             }
                         }
+
+                        // TODO: Inherit leadership
 
                     }
                     self.world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
@@ -259,7 +254,6 @@ impl HistorySimulation {
                         let creature_id = self.world.add_creature(child);
                         let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
                         unit.creatures.push(creature_id);
-                        // deferred_side_effects.push(DeferredWorldSideEffect::AddCreature(unit_index, child));
                         self.world.events.push(Event::CreatureBirth { date: now.clone(), creature_id });
                         {
                             let mut father = self.world.get_creature_mut(&father);
@@ -286,19 +280,55 @@ impl HistorySimulation {
                         creature.details().inventory.push(id);
                     }
                     self.world.events.push(Event::ArtifactCreated { date: *now, artifact: id, creator: creature_id });
+                },
+                CreatureSideEffect::ArtisanLookingForComission => {
+                    artisan_pool.push(creature_id);
+                }
+                CreatureSideEffect::ComissionArtifact => {
+                    comissions_pool.push(creature_id);
                 }
             }
+            
 
 
+        }
 
-            // match side_effect {
-            //     DeferredUnitSideEffect::None => (),
-            //     DeferredUnitSideEffect::RemoveCreature(creature_id) => unit.creatures.retain(|id| *id != creature_id),
-            //     DeferredUnitSideEffect::AddCreature(creature) => {
-            //         deferred_side_effects.push(DeferredWorldSideEffect::AddCreature(unit_index, creature));
-            //     },
-            //     DeferredUnitSideEffect::LookForMarriage(creature, gender) => marriage_pool.push((creature, gender)),
-            // }
+
+        {
+            let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+            let need_election = match unit.leader {
+                None => true,
+                Some(creature_id) => {
+                    let creature = self.world.get_creature(&creature_id);
+                    creature.death.is_some()
+                }
+            } && unit.creatures.len() > 0;
+            if need_election {
+                let mut candidates_pool = Vec::new();
+                for creature_id in unit.creatures.iter() {
+                    let creature = self.world.get_creature(creature_id);
+                    let age = (*now - creature.birth).year();
+                    if age > 18 {
+                        candidates_pool.push(creature_id);
+                    }
+                }
+                // TODO: Voting algorithm
+                let new_leader = match candidates_pool.len() {
+                    0 => unit.creatures[rng.randu_range(0, unit.creatures.len())],
+                    _ => *candidates_pool[rng.randu_range(0, candidates_pool.len())],
+                };
+                // TODO: Can it maybe have no leader?                
+                {
+                    let mut leader = self.world.get_creature_mut(&new_leader);
+                    leader.profession = Profession::Ruler;
+
+                    // TODO: Spouse / children of leader being peasant is weird
+
+                }
+                unit.leader = Some(new_leader);
+                self.world.events.push(Event::NewLeaderElected { date: now.clone(), unit_id: unit_index, creature_id: new_leader });
+            }
+            
         }
         
         while marriage_pool.len() > 0 {
@@ -323,14 +353,51 @@ impl HistorySimulation {
             }
         }
 
+        for comission_creature_id in comissions_pool {
+            if artisan_pool.len() == 0 {
+                break;
+            }
+            let artisan_id = artisan_pool.remove(rng.randu_range(0, artisan_pool.len()));
+            let artisan = self.world.get_creature(&artisan_id);
+            let item = match artisan.profession {
+                Profession::Blacksmith => {
+                    Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel")))
+                },
+                Profession::Sculptor => {
+                    Some(ArtifactFactory::create_statue(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel"), comission_creature_id, &self.world))
+                },
+                _ => None
+            };
+            drop(artisan);
+            if let Some(item) = item {
+                let id = self.world.add_artifact(item.clone());
+                {
+                    let mut creature = self.world.get_creature_mut(&comission_creature_id);
+                    // TODO: Actually a statue is not an item. It will be place in the city.
+                    match &item {
+                        Item::Statue { material: _, scene: _ } => {
+                            let mut unit = self.world.units.get(unit_index).unwrap().borrow_mut();
+                            unit.artifacts.push(id);
+                        },
+                        Item::Sword(_) | Item::Mace(_) => {
+                            creature.details().inventory.push(id);
+                        },
+                    }
+                }
+                self.world.events.push(Event::ArtifactComission { date: now.clone(), creature_id: comission_creature_id, creator_id: artisan_id, item_id: id });
+            }
+        }
+
         for creature_id in change_job_pool {
             let mut creature = self.world.get_creature_mut(&creature_id);
             // Ideally this would look at what the city needs
             let rand_job = rng.randf();
             if rand_job < 0.8 {
                 creature.profession = Profession::Peasant;
-            } else if rand_job < 0.9 {
+            } else if rand_job < 0.88 {
                 creature.profession = Profession::Farmer;
+            } else if rand_job < 0.90 {
+                creature.profession = Profession::Sculptor;
             } else if rand_job < 0.95 {
                 creature.profession = Profession::Blacksmith;
             } else {
@@ -383,6 +450,18 @@ impl HistorySimulation {
                     let name_b = self.creature_desc(from, date);
                     let artifact = self.world.artifacts.get(item);
                     writeln!(&mut f, "{}, {} inherited {} from {:?}", self.date_desc(date), name, artifact.name(&self.params.resources.materials), name_b).unwrap();
+                },
+                Event::ArtifactComission { date, creature_id, creator_id, item_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    let name_b = self.creature_desc(creator_id, date);
+                    let artifact = self.world.artifacts.get(item_id);
+                    let creature = self.world.get_creature(creature_id);
+                    let age = (*date - creature.birth).year();
+                    writeln!(&mut f, "{}, {} commissioned {} from {:?} for his {}th birthday", self.date_desc(date), name, artifact.name(&self.params.resources.materials), name_b, age).unwrap();
+                },
+                Event::NewLeaderElected { date, unit_id, creature_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} was elected new leader of {}", self.date_desc(date), name, unit_id).unwrap();
                 }
             }
             
@@ -404,9 +483,4 @@ impl HistorySimulation {
         return String::from(format!("{:?}", date.year()))
     }
 
-}
-
-enum DeferredWorldSideEffect {
-    None,
-    AddCreature(/* Unit index */ usize, Creature),
 }
