@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 
 pub trait Id: Clone + Copy {
 
@@ -27,6 +27,20 @@ impl<V> IdVec<V> {
         return self.vector.get(id.as_usize())
             .expect("Using IdVec should be safe to unwrap")
             .borrow()
+    }
+
+    pub fn get_mut<K>(&self, id: &K) -> RefMut<V> where K: Id {
+        return self.vector.get(id.as_usize())
+            .expect("Using IdVec should be safe to unwrap")
+            .borrow_mut()
+    }
+
+    pub fn len(&self) -> usize {
+        return self.vector.len()
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, RefCell<V>>{
+        return self.vector.iter()
     }
 
 }

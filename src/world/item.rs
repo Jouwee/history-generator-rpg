@@ -5,7 +5,7 @@ use opengl_graphics::Texture;
 
 use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
 
-use super::{history_sim::structs::{CreatureId, World}, material::MaterialId, world::ArtifactId};
+use super::{creature::CreatureId, history_sim::structs::World, material::MaterialId, world::ArtifactId};
 
 #[derive(Clone, Debug)]
 pub enum Item {

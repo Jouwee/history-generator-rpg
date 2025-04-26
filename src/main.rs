@@ -4,13 +4,12 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{collections::HashMap, fs::File, io::Write, vec};
+use std::{collections::HashMap, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
-use literature::biography::BiographyWriter;
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, person::{Person, Relative}, region::Region, worldgen::WorldGenScene};
+use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, region::Region, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};

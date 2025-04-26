@@ -2,14 +2,14 @@
 
 use std::{cell::{Ref, RefCell, RefMut}, collections::HashMap, ops::Add};
 
-use crate::{commons::{history_vec::Id as HId, id_vec::{Id, IdVec}}, engine::geometry::Coord2, world::{date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, species::SpeciesId, topology::WorldTopology, world::ArtifactId}};
+use crate::{commons::{history_vec::Id as HId, id_vec::{Id, IdVec}}, engine::geometry::Coord2, world::{creature::{CauseOfDeath, Creature, CreatureId, Creatures, Profession}, date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, species::SpeciesId, topology::WorldTopology, world::ArtifactId}};
 
 pub struct World {
     pub generation_params: WorldGenerationParameters,
     pub map: WorldTopology,
     pub map_features: WorldMapFeatures,
     pub units: Vec<RefCell<Unit>>,
-    pub creatures: Vec<RefCell<Creature>>,
+    pub creatures: Creatures,
     pub events: Vec<Event>,
     // pub cultures: HashMap<Id, Culture>,
     // pub factions: HistoryVec<Faction>,
@@ -26,7 +26,7 @@ impl World {
             map,
             map_features: WorldMapFeatures::new(),
             units: Vec::new(),
-            creatures: Vec::new(),
+            creatures: Creatures::new(),
             artifacts: IdVec::new(),
             events: Vec::new(),
             regions
@@ -34,8 +34,7 @@ impl World {
     }
 
     pub fn add_creature(&mut self, creature: Creature) -> CreatureId {
-        self.creatures.push(RefCell::new(creature));
-        return CreatureId(self.creatures.len() - 1)
+        self.creatures.add(creature)
     }
 
     pub fn add_artifact(&mut self, item: Item) -> ArtifactId {
@@ -43,11 +42,11 @@ impl World {
     }
 
     pub fn get_creature(&self, id: &CreatureId) -> Ref<Creature> {
-        self.creatures.get(id.as_usize()).expect("Invalid ID").borrow()
+        self.creatures.get(id)
     }
 
     pub fn get_creature_mut(&self, id: &CreatureId) -> RefMut<Creature> {
-        self.creatures.get(id.as_usize()).expect("Invalid ID").borrow_mut()
+        self.creatures.get_mut(id)
     }
 
 }
@@ -82,80 +81,6 @@ pub enum UnitType {
     City,
 }
 
-// --------------------------
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub struct CreatureId(usize);
-impl CreatureId {
-    pub fn ancients() -> CreatureId {
-        return CreatureId(0);
-    }
-}
-impl crate::commons::id_vec::Id for CreatureId {
-    fn new(id: usize) -> Self {
-        CreatureId(id)
-    }
-    fn as_usize(&self) -> usize {
-        self.0
-    }
-}
-
-#[derive(Clone)]
-pub struct Creature {
-    pub species: SpeciesId,
-    pub birth: WorldDate,
-    pub gender: CreatureGender,
-    pub death: Option<(WorldDate, CauseOfDeath)>,
-    pub profession: Profession,
-    pub father: CreatureId,
-    pub mother: CreatureId,
-    pub spouse: Option<CreatureId>,
-    pub offspring: Vec<CreatureId>,
-    pub details: Option<CreatureDetails>
-}
-
-impl Creature {
-
-
-    pub fn details(&mut self) -> &mut CreatureDetails {
-        if self.details.is_none() {
-            self.details = Some(CreatureDetails {
-                inventory: Vec::new()
-            })
-        }
-        return self.details.as_mut().expect("Already checked")
-    }
-
-}
-
-#[derive(Clone)]
-pub struct CreatureDetails {
-    pub inventory: Vec<ArtifactId>
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum CreatureGender {
-    Male, Female
-}
-
-impl CreatureGender {
-
-    pub fn is_male(&self) -> bool {
-        if let CreatureGender::Male = self {
-            return true
-        }
-        return false
-    }
-
-    pub fn is_female(&self) -> bool {
-        if let CreatureGender::Female = self {
-            return true
-        }
-        return false
-    }
-
-}
-
 // -----------------
 
 #[derive(Clone, Copy)]
@@ -176,54 +101,9 @@ impl Add for UnitResources {
 
 // -------------
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum Profession {
-    // Someone that doesn't work. Usually children and elders, but could be reserved for nitwits.
-    None,
-    // Workers
-    // A peasant is someone trying to make the ends meet. Usually poor, they produce enough food to feed themselves and maybe a child, and pay a little in taxes.
-    Peasant,
-    Farmer,
-    // Military
-    Guard,
-    // Artisans
-    Blacksmith,
-    Sculptor,
-    // Political
-    Ruler
-}
-
-impl Profession {
-
-    pub fn base_resource_production(&self) -> UnitResources {
-        match self {
-            Profession::None => UnitResources { food: 0. },
-            Profession::Peasant => UnitResources { food: 1.5 },
-            Profession::Farmer => UnitResources { food: 3.0 },
-            Profession::Guard => UnitResources { food: 0. },
-            Profession::Blacksmith => UnitResources { food: 0. },
-            Profession::Sculptor => UnitResources { food: 0. },
-            Profession::Ruler => UnitResources { food: 0. },
-        }
-    }
-
-    pub fn is_for_life(&self) -> bool {
-        match self {
-            Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
-            Profession::Ruler => true,
-        }
-    }
-
-}
 
 // -----------------
 
-#[derive(Clone, Copy, Debug)]
-pub enum CauseOfDeath {
-    OldAge,
-    Starvation,
-    Disease,
-}
 
 // ----------------
 

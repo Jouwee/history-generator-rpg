@@ -101,7 +101,7 @@ impl WorldEvent {
             WorldEventEnum::WarDeclared(_evt) => 0.3,
             WorldEventEnum::SettlementFounded(_evt) => 0.01,
             WorldEventEnum::NewSettlementLeader(_evt) => 0.1,
-            WorldEventEnum::Marriage(evt) => 0.01 * Self::person_importance(world, evt.person1_id).max(Self::person_importance(world, evt.person2_id)),
+            WorldEventEnum::Marriage(evt) => 0.01 * Self::creature_importance(world, evt.creature1_id).max(Self::creature_importance(world, evt.creature2_id)),
             WorldEventEnum::PersonBorn(_) => 0.0,
             WorldEventEnum::PersonDeath(evt) => {
                 let cause_of_death_multiplier = match evt.cause_of_death {
@@ -109,7 +109,7 @@ impl WorldEvent {
                     CauseOfDeath::KilledInBattle(killer, weapon) => {
                         let mut mult = 0.6;
                         if let Some(killer) = killer {
-                            mult += 0.2 * Self::person_importance(world, killer);
+                            mult += 0.2 * Self::creature_importance(world, killer);
                         }
                         if weapon.is_some() {
                             mult += 0.2;
@@ -117,19 +117,19 @@ impl WorldEvent {
                         return mult
                     }
                 };
-                cause_of_death_multiplier * Self::person_importance(world, evt.creature)
+                cause_of_death_multiplier * Self::creature_importance(world, evt.creature)
             },
         }
     }
 
-    fn person_importance(world: &World, id: Id) -> f32 {
+    fn creature_importance(world: &World, id: Id) -> f32 {
         return 1.;
         // TODO:
-        // let person = world.creatures.get(&id).unwrap();
-        // match person.importance {
-        //     super::person::Importance::Important => 1.,
-        //     super::person::Importance::Unimportant => 0.5,
-        //     super::person::Importance::Unknown => 0.,
+        // let creature = world.creatures.get(&id).unwrap();
+        // match creature.importance {
+        //     super::creature::Importance::Important => 1.,
+        //     super::creature::Importance::Unimportant => 0.5,
+        //     super::creature::Importance::Unknown => 0.,
         // }
     }
 
@@ -161,15 +161,15 @@ impl WorldEventEnum {
 
     pub fn get_creatures(&self) -> Vec<Id> {
         let options = match self {
-            Self::PersonBorn(evt) => vec!(Some(evt.person_id)),
+            Self::PersonBorn(evt) => vec!(Some(evt.creature_id)),
             Self::PersonDeath(evt) => {
                 match evt.cause_of_death {
                     CauseOfDeath::NaturalCauses => vec!(Some(evt.creature)),
                     CauseOfDeath::KilledInBattle(killer, _) => vec!(Some(evt.creature), killer)
                 }
             },
-            Self::ArtifactPossession(evt) => vec!(Some(evt.person)),
-            Self::Marriage(evt) => vec!(Some(evt.person1_id), Some(evt.person2_id)),
+            Self::ArtifactPossession(evt) => vec!(Some(evt.creature)),
+            Self::Marriage(evt) => vec!(Some(evt.creature1_id), Some(evt.creature2_id)),
             Self::NewSettlementLeader(evt) => vec!(Some(evt.new_leader_id)),
             _ => vec!()
         };
@@ -194,7 +194,7 @@ impl WorldEventEnum {
 
 #[derive(Debug, Clone)]
 pub struct SimplePersonEvent {
-    pub person_id: Id,
+    pub creature_id: Id,
 }
 
 #[derive(Debug, Clone)]
@@ -211,8 +211,8 @@ pub enum CauseOfDeath {
 
 #[derive(Debug, Clone)]
 pub struct MarriageEvent {
-    pub person1_id: Id,
-    pub person2_id: Id,
+    pub creature1_id: Id,
+    pub creature2_id: Id,
 }
 
 #[derive(Debug, Clone)]
@@ -252,5 +252,5 @@ pub struct ArtifactEvent {
 #[derive(Debug, Clone)]
 pub struct ArtifactPossesionEvent {
     pub item: ArtifactId,
-    pub person: Id
+    pub creature: Id
 }

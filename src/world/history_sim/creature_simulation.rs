@@ -1,6 +1,6 @@
-use crate::{commons::rng::Rng, world::date::WorldDate};
+use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate}};
 
-use super::structs::{CauseOfDeath, Creature, CreatureGender, CreatureId, Event, Profession, Unit, World};
+use super::structs::{Event, Unit, World};
 
 pub struct CreatureSimulation {}
 
@@ -94,7 +94,6 @@ impl CreatureSimulation {
             _ => ()
         }
 
-        // TODO: Important people
         // TODO: New settlements, migration
         // TODO: Lineages
 

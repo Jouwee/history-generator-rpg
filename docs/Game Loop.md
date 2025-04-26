@@ -27,7 +27,9 @@ It is extremely important that the loop is constant, and split across the world.
 - [ ] Artifact/item creation
 	- [ ] Gift from artisans when someone becomes the reigning leader
 	- [ ] Upon defeating a great enemy
+	- [ ] Celebrating the birth of a child
 	- [x] Passion project of an artisan
+	- [x] Comission for birthday
 - [ ] Legendary creature spawning
 - [ ] Artifact transfer
 	- [x] Inheritance
@@ -36,9 +38,13 @@ It is extremely important that the loop is constant, and split across the world.
 	- [ ] Purchase
 - [ ] Artifact loss/placement
 	- [x] Keep possession on death (Buried or lost)
+	- [ ] Drop possessions on death outside of city
 - [ ] Clues generation
 	- [x] Statues
+	- [x] Gravestones
 	- [ ] Corpses
+	- [ ] Books
+	- [ ] Diaries
 - [ ] Interesting and messy lore
 	- [x] Diseases
 	- [ ] Use materials for artifacts that are native
@@ -78,7 +84,7 @@ This is a un-exhaustive, un-prioritized list of ideas.
 	- Crime and bounties
 
 ## Role-playing
-....
+....\
 
 ## Combat
 .....

@@ -1,4 +1,4 @@
-use crate::{commons::history_vec::Id, resources::resources::Resources, world::{battle_simulator::FinalResult, history_sim::structs::World, person::Person, topology::WorldTileData}, Relative, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, resources::resources::Resources, world::{history_sim::structs::World, topology::WorldTileData}, WorldEvent};
 
 pub struct BiographyWriter<'a> { 
     world: &'a World,
@@ -46,12 +46,12 @@ impl<'a> BiographyWriter<'a> {
         // let date = &event.date;
         // match &event.event {
         //     WorldEventEnum::PersonBorn(event) => {
-        //         let person = self.world.people.get(&event.person_id).unwrap();
-        //         if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
-        //             let parent = self.world.people.get(person_id).unwrap();
-        //             return format!("In {}, {} fathered {}", date, self.name_with_title(&parent), self.name_with_title(&person))
+        //         let creature = self.world.people.get(&event.creature_id).unwrap();
+        //         if let Some(creature_id) = creature.find_next_of_kin(Relative::Parent) {
+        //             let parent = self.world.people.get(creature_id).unwrap();
+        //             return format!("In {}, {} fathered {}", date, self.name_with_title(&parent), self.name_with_title(&creature))
         //         } else {
-        //             return format!("In {}, {} was born", date, self.name_with_title(&person))
+        //             return format!("In {}, {} was born", date, self.name_with_title(&creature))
         //         }
         //     },
         //     WorldEventEnum::PersonDeath(event) => {
@@ -80,7 +80,7 @@ impl<'a> BiographyWriter<'a> {
         //         return format!("In {}, {} became the new leader of {}", date, self.name_with_title(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name)
         //     },
         //     WorldEventEnum::Marriage(event) => {
-        //         return format!("In {}, {} and {} married", date, self.name_with_title(&self.world.people.get(&event.person1_id).unwrap()), self.birth_name(&self.world.people.get(&event.person2_id).unwrap()))
+        //         return format!("In {}, {} and {} married", date, self.name_with_title(&self.world.people.get(&event.creature1_id).unwrap()), self.birth_name(&self.world.people.get(&event.creature2_id).unwrap()))
         //     },
         //     WorldEventEnum::WarDeclared(event) => {
         //         let faction = self.world.factions.get(&event.faction1_id);
@@ -141,9 +141,9 @@ impl<'a> BiographyWriter<'a> {
         //         return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}."));
         //     }
         //     WorldEventEnum::ArtifactPossession(evt) => {
-        //         let person = self.world.people.get(&evt.person).unwrap();
+        //         let creature = self.world.people.get(&evt.creature).unwrap();
         //         let artifact = self.world.artifacts.get(&evt.item);
-        //         return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(&self.resources.materials))
+        //         return format!("In {}, {} became the wielder of {}", date, self.name(&creature), artifact.name(&self.resources.materials))
         //     }
         // }
         return String::new()
@@ -154,12 +154,12 @@ impl<'a> BiographyWriter<'a> {
         // let date = &event.date;
         // match &event.event {
         //     WorldEventEnum::PersonBorn(event) => {
-        //         let person = self.world.people.get(&event.person_id).unwrap();
-        //         if let Some(person_id) = person.find_next_of_kin(Relative::Parent) {
-        //             let parent = self.world.people.get(person_id).unwrap();
-        //             return format!("In {}, {} fathered {}", date, self.name(&parent), self.name(&person))
+        //         let creature = self.world.people.get(&event.creature_id).unwrap();
+        //         if let Some(creature_id) = creature.find_next_of_kin(Relative::Parent) {
+        //             let parent = self.world.people.get(creature_id).unwrap();
+        //             return format!("In {}, {} fathered {}", date, self.name(&parent), self.name(&creature))
         //         } else {
-        //             return format!("In {}, {} was born", date, self.name(&person))
+        //             return format!("In {}, {} was born", date, self.name(&creature))
         //         }
         //     },
         //     WorldEventEnum::PersonDeath(event) => {
@@ -188,7 +188,7 @@ impl<'a> BiographyWriter<'a> {
         //         return format!("In {}, {} became the new leader of {} {:?}", date, self.name(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name, self.world.settlements.get(&event.settlement_id).xy)
         //     },
         //     WorldEventEnum::Marriage(event) => {
-        //         return format!("In {}, {} and {} married", date, self.name(&self.world.people.get(&event.person1_id).unwrap()), self.birth_name(&self.world.people.get(&event.person2_id).unwrap()))
+        //         return format!("In {}, {} and {} married", date, self.name(&self.world.people.get(&event.creature1_id).unwrap()), self.birth_name(&self.world.people.get(&event.creature2_id).unwrap()))
         //     },
         //     WorldEventEnum::WarDeclared(event) => {
         //         let faction = self.world.factions.get(&event.faction1_id);
@@ -291,43 +291,43 @@ impl<'a> BiographyWriter<'a> {
         //         return String::from(format!("In {date}, {attacker_name} attacked {defender_name} at {location_name}, {battle_result}.\n{kill_description}"));
         //     }
         //     WorldEventEnum::ArtifactPossession(evt) => {
-        //         let person = self.world.people.get(&evt.person).unwrap();
+        //         let creature = self.world.people.get(&evt.creature).unwrap();
         //         let artifact = self.world.artifacts.get(&evt.item);
-        //         return format!("In {}, {} became the wielder of {}", date, self.name(&person), artifact.name(&self.resources.materials))
+        //         return format!("In {}, {} became the wielder of {}", date, self.name(&creature), artifact.name(&self.resources.materials))
         //     }
         // }
         return String::new()
     }
 
-    pub fn name_with_title(&self, figure: &Person) -> String {
-        let name = self.name(figure);
-        // TODO:
-        // if let Some(civ) = &figure.civ {
-        //     if let Some(settlement) = civ.leader_of_settlement {
-        //         let settlement = self.world.settlements.get(&settlement);
-        //         return format!("{name}, leader of {}", settlement.name)
-        //     }
-        // }
-        return name
-    }
+    // pub fn name_with_title(&self, figure: &Person) -> String {
+    //     let name = self.name(figure);
+    //     // TODO:
+    //     // if let Some(civ) = &figure.civ {
+    //     //     if let Some(settlement) = civ.leader_of_settlement {
+    //     //         let settlement = self.world.settlements.get(&settlement);
+    //     //         return format!("{name}, leader of {}", settlement.name)
+    //     //     }
+    //     // }
+    //     return name
+    // }
 
-    pub fn name(&self, figure: &Person) -> String {
-        match figure.name() {
-            Some(name) => format!("{} ({})", name, figure.id.0),
-            None => format!("{} ({})", self.descriptor(figure), figure.id.0)
-        }
-    }
+    // pub fn name(&self, figure: &Person) -> String {
+    //     match figure.name() {
+    //         Some(name) => format!("{} ({})", name, figure.id.0),
+    //         None => format!("{} ({})", self.descriptor(figure), figure.id.0)
+    //     }
+    // }
 
-    pub fn birth_name(&self, figure: &Person) -> String {
-        match figure.birth_name() {
-            Some(name) => format!("{} ({})", name, figure.id.0),
-            None => format!("{} ({})", self.descriptor(figure), figure.id.0)
-        }
-    }
+    // pub fn birth_name(&self, figure: &Person) -> String {
+    //     match figure.birth_name() {
+    //         Some(name) => format!("{} ({})", name, figure.id.0),
+    //         None => format!("{} ({})", self.descriptor(figure), figure.id.0)
+    //     }
+    // }
 
-    pub fn descriptor(&self, figure: &Person) -> String {
-        let species = self.resources.species.get(&figure.species);
-        return format!("a {}", species.name)
-    }
+    // pub fn descriptor(&self, figure: &Person) -> String {
+    //     let species = self.resources.species.get(&figure.species);
+    //     return format!("a {}", species.name)
+    // }
 
 }

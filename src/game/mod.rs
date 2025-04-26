@@ -93,7 +93,7 @@ impl GameSceneState {
 
     fn save_creature_appearances(&mut self) {
         for npc in self.chunk.npcs.iter() {
-            if let Some(id) = npc.person_id {
+            if let Some(id) = npc.creature_id {
                 // TODO:
                 // let mut creature = self.world.creatures.get_mut(&id).unwrap();
                 // creature.appearance_hints = HashMap::new();
@@ -148,7 +148,7 @@ impl GameSceneState {
         let id;
         {
             let npc = self.chunk.npcs.get(i).unwrap();
-            id = npc.person_id;
+            id = npc.creature_id;
             for (_i, item, _equipped) in npc.inventory.iter() {
                 self.chunk.items_on_ground.push((npc.xy, item.clone(), item.make_texture(&ctx.resources.materials)));
             }
@@ -484,7 +484,7 @@ impl Scene for GameSceneState {
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         let target = self.chunk.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
                                         if let Some(target) = target {
-                                            self.interact_dialog.start_dialog(&self.world, target.person_id.unwrap());
+                                            self.interact_dialog.start_dialog(&self.world, target.creature_id.unwrap());
                                         }
                                     }
                                 }

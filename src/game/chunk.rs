@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{history_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{history_sim::structs::{CreatureId, World}, item::{Item, ItemMaker, ItemQuality}}, GameContext};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, history_sim::structs::World, item::{Item, ItemMaker, ItemQuality}}, GameContext};
 
 use super::{actor::Actor, Renderable};
 
@@ -319,13 +319,13 @@ impl Chunk {
                 if slice.len() > 1000 {
                     slice = &settlement.creatures[0..1000];
                 }
-                for person_id in slice.iter() {
-                    let person = world.get_creature(person_id);
+                for creature_id in slice.iter() {
+                    let creature = world.get_creature(creature_id);
                     // TODO:
                     // let point = chunk.get_spawn_pos(&mut rng);
                     let point = Coord2::xy(x, y);
-                    let species = resources.species.get(&person.species);
-                    chunk.npcs.push(Actor::from_person(point, *person_id, &person, &person.species, &species, world));
+                    let species = resources.species.get(&creature.species);
+                    chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
                     x = x + 3;
                     if x > 100 {
                         y = y + 3;
@@ -377,13 +377,13 @@ impl Chunk {
         }
 
 
-        // for person in world.creatures.iter() {
-        //     let person = person.borrow();
+        // for creature in world.creatures.iter() {
+        //     let creature = creature.borrow();
             // TODO:
-            // if person.position == xy {
+            // if creature.position == xy {
             //     let point = chunk.get_spawn_pos(&mut rng);
-            //     let species = resources.species.get(&person.species);
-            //     chunk.npcs.push(Actor::from_person(point, *id, &person, &person.species, &species, world));
+            //     let species = resources.species.get(&creature.species);
+            //     chunk.npcs.push(Actor::from_creature(point, *id, &creature, &creature.species, &species, world));
             // }
         // }
 

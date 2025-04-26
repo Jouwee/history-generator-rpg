@@ -1,8 +1,8 @@
 use std::{cell::RefCell, fs::File, io::Write, time::Instant};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{date::WorldDate, history_sim::structs::CauseOfDeath, item::Item}};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::Item}};
 
-use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation, DeferredUnitSideEffect}, factories::{ArtifactFactory, CreatureFactory}, structs::{Creature, CreatureGender, CreatureId, Demographics, Event, Profession, Unit, UnitType, World}};
+use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event, Unit, UnitType, World}};
 
 pub struct HistorySimulation {
     world: World,
@@ -480,7 +480,7 @@ impl HistorySimulation {
 
 
     fn date_desc(&self, date: &WorldDate) -> String {
-        return String::from(format!("{:?}", date.year()))
+        return String::from(format!("{}-{}-{}", date.year(), date.month(), date.day()))
     }
 
 }

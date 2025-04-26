@@ -77,8 +77,8 @@ impl CodexDialog {
         // TODO:
         // let writer = BiographyWriter::new(world, resources);
         // for (id, _knowledge) in codex.known_creatures() {
-        //     let person = world.creatures.get(id).unwrap();
-        //     container.add_key(format!("creature:{}", id.0).as_str(), Button::new(writer.name(&person), Position::Auto));
+        //     let creature = world.creatures.get(id).unwrap();
+        //     container.add_key(format!("creature:{}", id.0).as_str(), Button::new(writer.name(&creature), Position::Auto));
         // }
     }
 

@@ -1,6 +1,6 @@
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, resources::resources::Resources};
 
-use super::{history_sim::structs::World, person::Person, settlement::Settlement, species::Species};
+use super::{history_sim::structs::World, settlement::Settlement, species::Species};
 
 pub struct BattleForce {
     belligerent_faction: Option<Id>,
@@ -13,7 +13,7 @@ pub struct BattleForce {
 
 #[derive(Clone)]
 struct Unit {
-    person_id: Option<Id>,
+    creature_id: Option<Id>,
     combat_power: f32,
     health: f32,
 }
@@ -21,11 +21,11 @@ struct Unit {
 impl Unit {
 
     fn new(combat_power: f32, health: f32) -> Unit {
-        Unit { person_id: None, combat_power, health }
+        Unit { creature_id: None, combat_power, health }
     }
 
     fn from_creature(id: &Id, species: &Species) -> Unit {
-        Unit { person_id: Some(id.clone()), combat_power: species.attributes.simplified_offensive_power(), health: species.attributes.simplified_health() }
+        Unit { creature_id: Some(id.clone()), combat_power: species.attributes.simplified_offensive_power(), health: species.attributes.simplified_health() }
     }
 
 }
@@ -52,9 +52,9 @@ impl BattleForce {
         BattleForce::new(Some(settlement.faction_id), Some(settlement_id), units)
     }
 
-    pub fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
-        BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, resources.species.get(&creature.species))).collect())
-    }
+    // pub fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
+    //     BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, resources.species.get(&creature.species))).collect())
+    // }
 
     fn new(belligerent_faction: Option<Id>, belligerent_settlement: Option<Id>, units: Vec<Unit>) -> BattleForce {
         let total_combat_force = units.iter().fold(0., |acc, unit| acc + unit.combat_power);
@@ -71,11 +71,11 @@ impl BattleForce {
         let mut result_self = BattleResult::new(location, location_settlement);
         result_self.belligerent_faction = self.belligerent_faction;
         result_self.belligerent_settlement = self.belligerent_settlement;
-        result_self.creature_participants = self.units.iter().filter_map(|unit| unit.person_id).collect();
+        result_self.creature_participants = self.units.iter().filter_map(|unit| unit.creature_id).collect();
         let mut result_another = BattleResult::new(location, location_settlement);
         result_another.belligerent_faction = another.belligerent_faction;
         result_another.belligerent_settlement = another.belligerent_settlement;
-        result_another.creature_participants = another.units.iter().filter_map(|unit| unit.person_id).collect();
+        result_another.creature_participants = another.units.iter().filter_map(|unit| unit.creature_id).collect();
         loop {
             if self.units.len() == 0 {
                 result_self.result = FinalResult::Defeat;
@@ -108,8 +108,8 @@ impl BattleForce {
                     if killed {
                         another.units.remove(target_i);
                         another.morale -= target.combat_power / another.total_combat_force;
-                        if let Some(id) = target.person_id {
-                            result_another.creature_casualties.push((id.clone(), unit.person_id));
+                        if let Some(id) = target.creature_id {
+                            result_another.creature_casualties.push((id.clone(), unit.creature_id));
                         } else {
                             result_another.army_casualties += 1;
                         }
@@ -133,8 +133,8 @@ impl BattleForce {
                     if killed {
                         self.units.remove(target_i);
                         self.morale -= target.combat_power / self.total_combat_force;
-                        if let Some(id) = target.person_id {
-                            result_self.creature_casualties.push((id.clone(), unit.person_id));
+                        if let Some(id) = target.creature_id {
+                            result_self.creature_casualties.push((id.clone(), unit.creature_id));
                         } else {
                             result_self.army_casualties += 1;
                         }
@@ -174,7 +174,7 @@ pub struct BattleResult {
     pub location_settlement: Id,
     pub result: FinalResult,
     pub creature_participants: Vec<Id>,
-    // ID of creature killed, ID of killer (might be a generic person)
+    // ID of creature killed, ID of killer (might be a generic creature)
     pub creature_casualties: Vec<(Id, Option<Id>)>,
     pub army_casualties: u32,
     pub civilian_casualties: u32,

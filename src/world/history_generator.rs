@@ -1,8 +1,8 @@
-use std::{borrow::BorrowMut, cell::RefMut, collections::HashMap, time::Instant};
+use std::{collections::HashMap, time::Instant};
 
-use crate::{commons::{astar::{AStar, MovementCost}, history_vec::{HistoryVec, Id}, id_vec::IdVec, rng::Rng, strings::Strings}, engine::{geometry::{Coord2, Size2D}, Point2D}, resources::resources::Resources, world::{date::WorldDate, faction::{Faction, FactionRelation}, history_sim::{history_simulation::HistorySimulation, structs::World}, item::{Mace, Sword}, map_features::WorldMapFeatures, person::{Importance, NextOfKin, Person, PersonSex, Relative}, topology::{WorldTopology, WorldTopologyGenerationParameters}, world::People}, ArtifactPossesionEvent, CauseOfDeath, MarriageEvent, NewSettlementLeaderEvent, PeaceDeclaredEvent, SettlementFoundedEvent, SimplePersonEvent, WarDeclaredEvent, WorldEventDate, WorldEventEnum, WorldEvents};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::{history_simulation::HistorySimulation, structs::World}, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
 
-use super::{battle_simulator::{BattleForce, BattleResult}, culture::Culture, item::{Item, ItemQuality}, material::MaterialId, person::CivilizedComponent, region::Region, settlement::{Settlement, SettlementBuilder}, species::SpeciesIntelligence, world::ArtifactId};
+use super::{culture::Culture, region::Region};
 
 
 #[derive(Clone)]
@@ -144,7 +144,7 @@ impl WorldHistoryGenerator {
     //     return Strings::capitalize(format!("{prefix}{suffix}").as_str());
     // }
 
-    // fn name_person(&self, mut figure: Person, surname: &Option<String>) -> Person {
+    // fn name_creature(&self, mut figure: Person, surname: &Option<String>) -> Person {
     //     if let Some(civ) = &figure.civ {
     //         let culture = self.world.cultures.get(&civ.culture).unwrap();
     //         let first_name;
@@ -187,14 +187,14 @@ impl WorldHistoryGenerator {
     //         break;
     //     }
     //     if let Some(xy) = suitable_location {
-    //         let id = self.next_person_id.next();
+    //         let id = self.next_creature_id.next();
     //         self.world.people.insert(Person::new(id, &species, Importance::Important, year, xy));
-    //         self.world.events.push(WorldEventDate { year }, xy, WorldEventEnum::PersonBorn(SimplePersonEvent { person_id: id }))
+    //         self.world.events.push(WorldEventDate { year }, xy, WorldEventEnum::PersonBorn(SimplePersonEvent { creature_id: id }))
     //     }
     // }
 
-    // fn beast_hunt_nearby(&mut self, date: WorldEventDate, person_id: &Id) {
-    //     let beast = self.world.people.get(&person_id).unwrap();
+    // fn beast_hunt_nearby(&mut self, date: WorldEventDate, creature_id: &Id) {
+    //     let beast = self.world.people.get(&creature_id).unwrap();
     //     let mut rng = self.rng.derive("beast_attack");
     //     let xy = beast.position + Coord2::xy(rng.randi_range(-15, 15), rng.randi_range(-15, 15));
     //     let mut result = None;
@@ -216,15 +216,15 @@ impl WorldHistoryGenerator {
     //     let mut creature = self.world.people.get_mut(&creature_id).unwrap();
     //     creature.possesions.push(artifact_id);
     //     creature.importance = creature.importance.at_least(&Importance::Unimportant);
-    //     self.world.events.push(date, position, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, person: *creature_id }));
+    //     self.world.events.push(date, position, WorldEventEnum::ArtifactPossession(ArtifactPossesionEvent { item: artifact_id, creature: *creature_id }));
 
     // }
 
 
     // fn colonize_new_settlement(&mut self, date: WorldEventDate, id: Id) {
-    //     let mut person = self.world.people.get_mut(&id).unwrap();
-    //     let xy = person.position.clone();
-    //     if let Some(civ) = &mut person.civ {
+    //     let mut creature = self.world.people.get_mut(&id).unwrap();
+    //     let xy = creature.position.clone();
+    //     if let Some(civ) = &mut creature.civ {
     //         let culture = self.world.cultures.get(&civ.culture).unwrap();
     //         let settlement = generate_settlement(&self.rng, date.year, xy, id.clone(), culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
     //         if let Some(settlement) = settlement {
@@ -234,12 +234,12 @@ impl WorldHistoryGenerator {
     //             let mut faction = self.world.factions.get_mut(&civ.faction);
     //             faction.settlements.insert(id);
     //             civ.leader_of_settlement = Some(id);
-    //             if let Some(spouse) = person.spouse() {
+    //             if let Some(spouse) = creature.spouse() {
     //                 let mut spouse = self.world.people.get_mut(spouse).unwrap();
     //                 let spouse = spouse.borrow_mut();
     //                 (*spouse).position = position.to_coord();
     //             }
-    //             person.position = position.to_coord();
+    //             creature.position = position.to_coord();
 
     //             // Generate road to nearby settlements
     //             let mut settlements_to_connect = Vec::new();

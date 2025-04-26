@@ -19,6 +19,14 @@ impl WorldDate {
         return self.timestamp / DAYS_IN_YEAR;
     }
 
+    pub fn month(&self) -> i32 {
+        return self.timestamp % DAYS_IN_YEAR / DAYS_IN_MONTH;
+    }
+
+    pub fn day(&self) -> i32 {
+        return self.timestamp % DAYS_IN_MONTH;
+    }
+
 }
 
 impl Add for WorldDate {
@@ -39,6 +47,28 @@ impl Sub for WorldDate {
         return WorldDate {
             timestamp: self.timestamp - rhs.timestamp
         }
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn base() {
+        let date = WorldDate::new(200, 3, 17);
+        assert_eq!(date.year(), 200);
+        assert_eq!(date.month(), 3);
+        assert_eq!(date.day(), 17);
+    }
+
+    #[test]
+    pub fn add() {
+        let date = WorldDate::new(200, 3, 17) + WorldDate::new(1, 2, 21);
+        assert_eq!(date.year(), 201);
+        assert_eq!(date.month(), 6);
+        assert_eq!(date.day(), 10);
     }
 
 }

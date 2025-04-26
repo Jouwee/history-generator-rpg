@@ -24,8 +24,8 @@ impl KnowledgeCodex {
     }
 
     pub fn add_event(&mut self, id: usize, event: &WorldEvent) {
-        for person in event.event.get_creatures() {
-            let creature = self.creatures.entry(person).or_insert(CreatureKnowledge::new());
+        for creature in event.event.get_creatures() {
+            let creature = self.creatures.entry(creature).or_insert(CreatureKnowledge::new());
             creature.events.insert(id);
             creature.facts.insert(CreatureFact::Name);
             if let WorldEventEnum::PersonBorn(_) = event.event {

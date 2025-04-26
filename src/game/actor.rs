@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, history_sim::structs::{Creature, CreatureId, Profession, World}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, GameContext, Person};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, history_sim::structs::World, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, GameContext};
 
 use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
@@ -22,8 +22,8 @@ pub struct Actor {
     pub actor_type: ActorType,
     pub ai: AiRunner,
     pub sprite: CreatureAppearance,
-    pub person_id: Option<CreatureId>,
-    pub person: Option<Creature>,
+    pub creature_id: Option<CreatureId>,
+    pub creature: Option<Creature>,
     pub species: SpeciesId,
     pub xp: u32,
     pub level: u32,
@@ -45,8 +45,8 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            person: None,
-            person_id: None,
+            creature: None,
+            creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type: ActorType::Player,
             inventory: Inventory::new(),
@@ -70,8 +70,8 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            person: None,
-            person_id: None,
+            creature: None,
+            creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type,
             inventory: Inventory::new(),
@@ -79,14 +79,14 @@ impl Actor {
         }
     }
 
-    pub fn from_person(xy: Coord2, person_id: CreatureId, person: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
+    pub fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
         }
         let mut inventory = Inventory::new();
         // TODO:
-        if let Some(details) = &person.details {
+        if let Some(details) = &creature.details {
             for id in details.inventory.iter() {
                 let item = world.artifacts.get(id);
                 println!("ITEM at {:?}", xy);
@@ -97,10 +97,11 @@ impl Actor {
 
         let mut hints = HashMap::new();
         hints.insert(String::from("clothes"), String::from("peasant"));
-        match person.profession {
+        match creature.profession {
             Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
             // TODO:
             Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("armor")); },
+            Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
             Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
             _ => (),
         }
@@ -116,10 +117,10 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            person: Some(person.clone()),
-            person_id: Some(person_id),
+            creature: Some(creature.clone()),
+            creature_id: Some(creature_id),
             // TODO:
-            //sprite: species.appearance.collapse(&Rng::rand(), &person.appearance_hints),
+            //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),
             sprite: species.appearance.collapse(&Rng::rand(), &hints),
             actor_type,
             inventory,
