@@ -84,7 +84,7 @@ This is a un-exhaustive, un-prioritized list of ideas.
 	- Crime and bounties
 
 ## Role-playing
-....\
+....
 
 ## Combat
 .....

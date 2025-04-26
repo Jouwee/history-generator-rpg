@@ -1,9 +1,6 @@
 // TODO: Break into files
 
-use std::{cell::{Ref, RefMut}, collections::HashMap};
-
-use crate::{commons::{history_vec::Id as HId, id_vec::IdVec}, world::{creature::{CauseOfDeath, Creature, CreatureId, Creatures, Profession}, date::WorldDate, history_generator::WorldGenerationParameters, item::Item, map_features::WorldMapFeatures, region::Region, topology::WorldTopology, unit::{UnitId, Units}, world::ArtifactId}};
-
+use crate::world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::WorldDate, unit::UnitId, world::ArtifactId};
 
 // ----------------------
 

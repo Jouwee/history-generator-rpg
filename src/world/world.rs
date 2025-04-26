@@ -1,8 +1,8 @@
-use std::{cell::{Ref, RefMut}, collections::HashMap};
+use std::{fs::File, io::Write, cell::{Ref, RefMut}, collections::HashMap};
 
-use crate::{Item, Region, WorldGenerationParameters};
+use crate::{Item, Region, Resources, WorldGenerationParameters};
 
-use super::{creature::{Creature, CreatureId, Creatures}, history_sim::structs::Event, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{Creature, CreatureId, Creatures}, date::WorldDate, history_sim::structs::Event, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
 
 use crate::commons::{history_vec::Id as HId, id_vec::IdVec};
 
@@ -66,6 +66,78 @@ impl World {
 
     pub(crate) fn get_creature_mut(&self, id: &CreatureId) -> RefMut<Creature> {
         self.creatures.get_mut(id)
+    }
+
+    pub(crate) fn dump_events(&self, filename: &str, resources: &Resources) {
+        let mut f = File::create(filename).unwrap();
+        println!("{:?} events", self.events.len());
+        for event in self.events.iter() {
+            match event {
+                Event::CreatureBirth { date, creature_id } => {
+                    let creature = self.get_creature(creature_id);
+                    let name = self.creature_desc(creature_id, date);
+                    let father = self.creature_desc(&creature.father, date);
+                    let mother = self.creature_desc(&creature.mother, date);
+                    writeln!(&mut f, "{}, {} was born. Father: {:?}, Mother: {:?}", self.date_desc(date), name, father, mother).unwrap();
+                },
+                Event::CreatureDeath { date, creature_id, cause_of_death } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} died of {:?}", self.date_desc(date), name, cause_of_death).unwrap();
+                },
+                Event::CreatureMarriage { date, creature_id, spouse_id } => {
+                    let name_a = self.creature_desc(creature_id, date);
+                    let name_b = self.creature_desc(spouse_id, date);
+                    writeln!(&mut f, "{}, {} and {} married", self.date_desc(date), name_a, name_b).unwrap();
+                },
+                Event::CreatureProfessionChange { date, creature_id, new_profession } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} became a {:?}", self.date_desc(date), name, new_profession).unwrap();
+                },
+                Event::ArtifactCreated { date, artifact, creator } => {
+                    let name = self.creature_desc(creator, date);
+                    let artifact = self.artifacts.get(artifact);
+                    writeln!(&mut f, "{}, {} created {:?}", self.date_desc(date), name, artifact.name(&resources.materials)).unwrap();
+                },
+                Event::BurriedWithPosessions { date, creature_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} was buried with their possessions", self.date_desc(date), name).unwrap();
+                },
+                Event::InheritedArtifact { date, creature_id, from, item } => {
+                    let name = self.creature_desc(creature_id, date);
+                    let name_b = self.creature_desc(from, date);
+                    let artifact = self.artifacts.get(item);
+                    writeln!(&mut f, "{}, {} inherited {} from {:?}", self.date_desc(date), name, artifact.name(&resources.materials), name_b).unwrap();
+                },
+                Event::ArtifactComission { date, creature_id, creator_id, item_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    let name_b = self.creature_desc(creator_id, date);
+                    let artifact = self.artifacts.get(item_id);
+                    let creature = self.get_creature(creature_id);
+                    let age = (*date - creature.birth).year();
+                    writeln!(&mut f, "{}, {} commissioned {} from {:?} for his {}th birthday", self.date_desc(date), name, artifact.name(&resources.materials), name_b, age).unwrap();
+                },
+                Event::NewLeaderElected { date, unit_id, creature_id } => {
+                    let name = self.creature_desc(creature_id, date);
+                    writeln!(&mut f, "{}, {} was elected new leader of {:?}", self.date_desc(date), name, *unit_id).unwrap();
+                }
+            }
+            
+        }
+    }
+
+    fn creature_desc(&self, creature_id: &CreatureId, date: &WorldDate) -> String {
+        let creature = self.get_creature(creature_id);
+        let age = (*date - creature.birth).year();
+        let mut gender = "M";
+        if creature.gender.is_female() {
+            gender = "F";
+        }
+        return String::from(format!("[{:?}, {:?} {:?}]", creature_id, age, gender))
+    }
+
+
+    fn date_desc(&self, date: &WorldDate) -> String {
+        return String::from(format!("{}-{}-{}", date.year(), date.month(), date.day()))
     }
 
 }

@@ -4,7 +4,6 @@ pub(crate) mod culture;
 pub(crate) mod date;
 pub(crate) mod creature;
 pub(crate) mod event;
-pub(crate) mod faction;
 pub(crate) mod history_generator;
 pub(crate) mod item;
 pub(crate) mod material;

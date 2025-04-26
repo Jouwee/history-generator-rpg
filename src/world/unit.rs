@@ -6,11 +6,6 @@ use super::{creature::CreatureId, world::ArtifactId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct UnitId(usize);
-impl UnitId {
-    pub(crate) fn ancients() -> UnitId {
-        return UnitId(0);
-    }
-}
 impl crate::commons::id_vec::Id for UnitId {
     fn new(id: usize) -> Self {
         UnitId(id)

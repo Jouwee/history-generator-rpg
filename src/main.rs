@@ -409,9 +409,7 @@ fn main() {
     app.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
             seed: 1234567,
             cultures: vec!(nords, khajit),
-            regions: regions,            
-            great_beasts_yearly_spawn_chance: 0.3,
-            legendary_artifact_comission_chance: 0.01,
+            regions: regions,
         }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
@@ -469,13 +467,8 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let world = scene.into_world();
-                        // TODO:
-                        // Dumps the world history into a file
-                        // let mut f = File::create("history.log").unwrap();
-                        // let writer = BiographyWriter::new(&world, &app.context.resources);
-                        // for event in world.events.iter() {
-                        //     writeln!(&mut f, "{}", writer.event(event)).unwrap();
-                        // }
+                        world.dump_events("lore.log", &app.context.resources);
+
                         let species_id = app.context.resources.species.id_of("species:human");
                         let species = app.context.resources.species.get(&species_id);
                         let mut player = Actor::player(Coord2::xy(16, 16), &species_id, species);
