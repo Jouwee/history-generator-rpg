@@ -301,11 +301,11 @@ impl Chunk {
         }
 
         let mut found_sett = None;
-        for settlement in world.units.iter() {
-            let settlement = settlement.borrow();
-            if settlement.xy.x as i32 == xy.x && settlement.xy.y as i32 == xy.y {
+        for unit in world.units.iter() {
+            let unit = unit.borrow();
+            if unit.xy.x as i32 == xy.x && unit.xy.y as i32 == xy.y {
                 // TODO:
-                // let num_builds = (settlement.demographics.population / 20).clamp(1, 9) as usize;
+                // let num_builds = (unit.demographics.population / 20).clamp(1, 9) as usize;
                 // let buildings = chunk.prepare_buildings(&mut rng, num_builds, 100);
                 // for building in buildings {
                 //     chunk.make_building(&mut rng, building);
@@ -315,9 +315,9 @@ impl Chunk {
                 let mut y = 20;
 
                 // TODO: can't handle more
-                let mut slice = &settlement.creatures[..];
+                let mut slice = &unit.creatures[..];
                 if slice.len() > 1000 {
-                    slice = &settlement.creatures[0..1000];
+                    slice = &unit.creatures[0..1000];
                 }
                 for creature_id in slice.iter() {
                     let creature = world.get_creature(creature_id);
@@ -336,7 +336,7 @@ impl Chunk {
                 let mut x = 10;
                 let mut y = 20;
 
-                for item in settlement.artifacts.iter() {
+                for item in unit.artifacts.iter() {
 
 
                     let item = world.artifacts.get(item);
@@ -353,9 +353,9 @@ impl Chunk {
                 let mut x = 3;
                 let mut y = 30;
 
-                let mut slice = &settlement.cemetery[..];
+                let mut slice = &unit.cemetery[..];
                 if slice.len() > 700 {
-                    slice = &settlement.cemetery[0..700];
+                    slice = &unit.cemetery[0..700];
                 }
 
                 for creature in slice.iter() {
@@ -371,7 +371,7 @@ impl Chunk {
 
 
                 
-                found_sett = Some(settlement);
+                found_sett = Some(unit);
 
             }
         }
@@ -387,7 +387,7 @@ impl Chunk {
             // }
         // }
 
-        if let Some(_settlement) = found_sett {
+        if let Some(_unit) = found_sett {
             if chunk.npcs.len() == 0 {
                 for _ in 0..rng.randu_range(3, 7) {
                     let point = chunk.get_spawn_pos(&mut rng);

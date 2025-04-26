@@ -20,7 +20,7 @@ impl Display for WorldEventDate {
 
 pub struct WorldEvents {
     base: Vec<WorldEvent>,
-    by_settlement: HashMap<Id, Vec<usize>>,
+    by_unit: HashMap<Id, Vec<usize>>,
     empty_index: Vec<usize>
 }
 
@@ -29,15 +29,15 @@ impl WorldEvents {
     pub fn new() -> WorldEvents {
         return WorldEvents {
             base: Vec::new(),
-            by_settlement: HashMap::new(),
+            by_unit: HashMap::new(),
             empty_index: Vec::new()
         }
     }
 
     pub fn push(&mut self, date: WorldEventDate, location: Coord2, event: WorldEventEnum) {
         let i = self.base.len();
-        for settlement in event.get_settlements().iter() {
-            let entry = self.by_settlement.entry(*settlement).or_insert(Vec::new());
+        for unit in event.get_units().iter() {
+            let entry = self.by_unit.entry(*unit).or_insert(Vec::new());
             entry.push(i)
         }
         self.base.push(WorldEvent { date, location, event });
@@ -47,8 +47,8 @@ impl WorldEvents {
         self.base.iter()
     }
 
-    pub fn iter_settlement(&self, settlement_id: &Id) -> impl Iterator<Item = &WorldEvent> {
-        let idxs = self.by_settlement.get(&settlement_id);
+    pub fn iter_unit(&self, unit_id: &Id) -> impl Iterator<Item = &WorldEvent> {
+        let idxs = self.by_unit.get(&unit_id);
         let vec;
         match idxs {
             Some(idxs) => vec = idxs,
@@ -150,11 +150,11 @@ pub enum WorldEventEnum {
 }
 
 impl WorldEventEnum {
-    pub fn get_settlements(&self) -> Vec<Id> {
+    pub fn get_units(&self) -> Vec<Id> {
         match self {
-            Self::SettlementFounded(evt) => vec!(evt.settlement_id),
-            Self::NewSettlementLeader(evt) => vec!(evt.settlement_id),
-            Self::Battle(evt) => vec!(evt.battle_result.0.location_settlement),
+            Self::SettlementFounded(evt) => vec!(evt.unit_id),
+            Self::NewSettlementLeader(evt) => vec!(evt.unit_id),
+            Self::Battle(evt) => vec!(evt.battle_result.0.location_unit),
             _ => vec!()
         }
     }
@@ -218,13 +218,13 @@ pub struct MarriageEvent {
 #[derive(Debug, Clone)]
 pub struct SettlementFoundedEvent {
     pub founder_id: Id,
-    pub settlement_id: Id,
+    pub unit_id: Id,
 }
 
 #[derive(Debug, Clone)]
 pub struct NewSettlementLeaderEvent {
     pub new_leader_id: Id,
-    pub settlement_id: Id,
+    pub unit_id: Id,
 }
 
 #[derive(Debug, Clone)]

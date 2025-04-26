@@ -115,7 +115,7 @@ impl CodexDialog {
 
     fn click_place(container: &mut VList, id: Id, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         // TODO:
-        // let place = world.settlements.get(&id);
+        // let place = world.units.get(&id);
         // let knowledge = codex.place(&id).unwrap();
         // let writer = BiographyWriter::new(world, resources);
         // container.clear();

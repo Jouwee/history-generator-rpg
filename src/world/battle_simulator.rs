@@ -1,10 +1,10 @@
 use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Coord2, resources::resources::Resources};
 
-use super::{history_sim::structs::World, settlement::Settlement, species::Species};
+use super::{history_sim::structs::World, species::Species};
 
 pub struct BattleForce {
     belligerent_faction: Option<Id>,
-    belligerent_settlement: Option<Id>,
+    belligerent_unit: Option<Id>,
     units: Vec<Unit>,
     /* Ranges from 0.0 to 1.0. Morale of 0 means they'll flee, morale of 1. means fighting to the death. */
     morale: f32,
@@ -32,49 +32,49 @@ impl Unit {
 
 impl BattleForce {
 
-    pub fn from_attacking_settlement(world: &World, resources: &Resources, settlement_id: Id, settlement: &Settlement) -> BattleForce {
-        return Self::from_defending_settlement(world, resources, settlement_id, settlement)
-    }
+    // pub fn from_attacking_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
+    //     return Self::from_defending_unit(world, resources, unit_id, unit)
+    // }
 
-    pub fn from_defending_settlement(world: &World, resources: &Resources, settlement_id: Id, settlement: &Settlement) -> BattleForce {
-        let mut units: Vec<Unit> = (0..settlement.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
-        // TODO:
-        // for (id, creature) in world.creatures.iter() {
-        //     let creature = creature.try_borrow();
-        //     if let Ok(creature) = creature {
-        //         // TODO: Improve performance
-        //         if creature.position == settlement.xy.to_coord() {
-        //             let species = resources.species.get(&creature.species);
-        //             units.push(Unit::from_creature(id, species));
-        //         }
-        //     }
-        // }
-        BattleForce::new(Some(settlement.faction_id), Some(settlement_id), units)
-    }
+    // pub fn from_defending_unit(world: &World, resources: &Resources, unit_id: Id, unit: &Settlement) -> BattleForce {
+    //     let mut units: Vec<Unit> = (0..unit.military.trained_soldiers).map(|_| Unit::new(10., 20.)).collect();
+    //     // TODO:
+    //     // for (id, creature) in world.creatures.iter() {
+    //     //     let creature = creature.try_borrow();
+    //     //     if let Ok(creature) = creature {
+    //     //         // TODO: Improve performance
+    //     //         if creature.position == unit.xy.to_coord() {
+    //     //             let species = resources.species.get(&creature.species);
+    //     //             units.push(Unit::from_creature(id, species));
+    //     //         }
+    //     //     }
+    //     // }
+    //     BattleForce::new(Some(unit.faction_id), Some(unit_id), units)
+    // }
 
     // pub fn from_creatures(resources: &Resources, creatures: Vec<&Person>) -> BattleForce {
     //     BattleForce::new(None, None, creatures.iter().map(|creature| Unit::from_creature(&creature.id, resources.species.get(&creature.species))).collect())
     // }
 
-    fn new(belligerent_faction: Option<Id>, belligerent_settlement: Option<Id>, units: Vec<Unit>) -> BattleForce {
+    fn new(belligerent_faction: Option<Id>, belligerent_unit: Option<Id>, units: Vec<Unit>) -> BattleForce {
         let total_combat_force = units.iter().fold(0., |acc, unit| acc + unit.combat_power);
         BattleForce {
             belligerent_faction,
-            belligerent_settlement,
+            belligerent_unit,
             units,
             morale: 0.6,
             total_combat_force
         }
     }
 
-    pub fn battle(&mut self, another: &mut BattleForce, rng: &mut Rng, location: Coord2, location_settlement: Id) -> (BattleResult, BattleResult) {
-        let mut result_self = BattleResult::new(location, location_settlement);
+    pub fn battle(&mut self, another: &mut BattleForce, rng: &mut Rng, location: Coord2, location_unit: Id) -> (BattleResult, BattleResult) {
+        let mut result_self = BattleResult::new(location, location_unit);
         result_self.belligerent_faction = self.belligerent_faction;
-        result_self.belligerent_settlement = self.belligerent_settlement;
+        result_self.belligerent_unit = self.belligerent_unit;
         result_self.creature_participants = self.units.iter().filter_map(|unit| unit.creature_id).collect();
-        let mut result_another = BattleResult::new(location, location_settlement);
+        let mut result_another = BattleResult::new(location, location_unit);
         result_another.belligerent_faction = another.belligerent_faction;
-        result_another.belligerent_settlement = another.belligerent_settlement;
+        result_another.belligerent_unit = another.belligerent_unit;
         result_another.creature_participants = another.units.iter().filter_map(|unit| unit.creature_id).collect();
         loop {
             if self.units.len() == 0 {
@@ -146,14 +146,14 @@ impl BattleForce {
             }
 
             // Every turn the battle drags, there's a chance of killing civilians
-            if let Some(settlement) = another.belligerent_settlement {
-                if location_settlement == settlement && rng.rand_chance(0.5) {
+            if let Some(unit) = another.belligerent_unit {
+                if location_unit == unit && rng.rand_chance(0.5) {
                     result_another.civilian_casualties += 1;
                 }
             }
 
-            if let Some(settlement) = self.belligerent_settlement {
-                if location_settlement == settlement && rng.rand_chance(0.5) {
+            if let Some(unit) = self.belligerent_unit {
+                if location_unit == unit && rng.rand_chance(0.5) {
                     result_self.civilian_casualties += 1;
                 }
             }
@@ -169,9 +169,9 @@ impl BattleForce {
 #[derive(Debug, Clone)]
 pub struct BattleResult {
     pub belligerent_faction: Option<Id>,
-    pub belligerent_settlement: Option<Id>,
+    pub belligerent_unit: Option<Id>,
     pub location: Coord2,
-    pub location_settlement: Id,
+    pub location_unit: Id,
     pub result: FinalResult,
     pub creature_participants: Vec<Id>,
     // ID of creature killed, ID of killer (might be a generic creature)
@@ -181,12 +181,12 @@ pub struct BattleResult {
 }
 
 impl BattleResult {
-    fn new(location: Coord2, location_settlement: Id) -> BattleResult {
+    fn new(location: Coord2, location_unit: Id) -> BattleResult {
         BattleResult {
             belligerent_faction: None,
-            belligerent_settlement: None,
+            belligerent_unit: None,
             location,
-            location_settlement,
+            location_unit,
             result: FinalResult::Victory,
             creature_participants: Vec::new(),
             creature_casualties: Vec::new(),

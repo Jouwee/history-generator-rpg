@@ -94,7 +94,7 @@ impl CreatureSimulation {
             _ => ()
         }
 
-        // TODO: New settlements, migration
+        // TODO: New units, migration
         // TODO: Lineages
 
         return CreatureSideEffect::None

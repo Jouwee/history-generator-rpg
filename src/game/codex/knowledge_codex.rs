@@ -40,7 +40,7 @@ impl KnowledgeCodex {
             artifact.events.insert(id);
             artifact.facts.insert(ArtifactFact::Name);
         }
-        for place in event.event.get_settlements() {
+        for place in event.event.get_units() {
             let place = self.places.entry(place).or_insert(PlaceKnowledge::new());
             place.events.insert(id);
             place.facts.insert(PlaceFact::Name);

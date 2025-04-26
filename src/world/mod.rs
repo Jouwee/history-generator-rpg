@@ -10,7 +10,6 @@ pub mod item;
 pub mod material;
 pub mod map_features;
 pub mod region;
-pub mod settlement;
 pub mod species;
 pub mod topology;
 pub mod unit;

@@ -7,7 +7,7 @@ pub struct Faction {
     pub name: String,
     pub relations: BTreeMap<Id, f32>,
     pub leader: Id,
-    pub settlements: BTreeSet<Id>,
+    pub units: BTreeSet<Id>,
 }
 
 impl Faction {
@@ -22,7 +22,7 @@ impl Faction {
             name: String::from(name),
             relations: BTreeMap::new(),
             leader,
-            settlements: BTreeSet::new()
+            units: BTreeSet::new()
         }
     }
 }

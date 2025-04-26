@@ -29,7 +29,7 @@ impl MapModal {
         dual_tileset.add(3, image, 16, 16);
 
         let mut tileset = TileSet::new();
-        let image = ImageReader::open("assets/sprites/map_tiles/settlement.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("assets/sprites/map_tiles/unit.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = ImageReader::open("assets/sprites/map_tiles/road.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 16)));
@@ -66,11 +66,11 @@ impl MapModal {
             }
         }
 
-        for settlement in world.units.iter() {
-            let settlement = settlement.borrow();
-            self.objects.set_tile(settlement.xy.x as usize, settlement.xy.y as usize, 1);
+        for unit in world.units.iter() {
+            let unit = unit.borrow();
+            self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, 1);
             // Set grass as BG
-            self.tilemap.set_tile(settlement.xy.x as usize, settlement.xy.y as usize, 2);
+            self.tilemap.set_tile(unit.xy.x as usize, unit.xy.y as usize, 2);
         }
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);

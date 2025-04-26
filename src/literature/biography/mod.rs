@@ -18,22 +18,22 @@ impl<'a> BiographyWriter<'a> {
         return format!("{:?}, el {}, {}, growth: {}", tile.xy, tile.elevation, tile.region_id, (tile.soil_fertility - 0.5) * 0.01);
     }
 
-    pub fn settlement(&self, id: &Id) -> String {
+    pub fn unit(&self, id: &Id) -> String {
         // TODO:
-        // let settlement = self.world.settlements.get(id);
-        // let faction = self.world.factions.get(&settlement.faction_id);
+        // let unit = self.world.units.get(id);
+        // let faction = self.world.factions.get(&unit.faction_id);
         // let mut description = format!(
         //     "{} {:?}\nPart of the {}\nPopulation: {}\nFounded in: {}\nMilitary: {}\nGold: {}",
-        //     settlement.name,
+        //     unit.name,
         //     id,
         //     faction.name,
-        //     settlement.demographics.population,
-        //     settlement.founding_year,
-        //     settlement.military.conscripts + settlement.military.trained_soldiers,
-        //     settlement.gold
+        //     unit.demographics.population,
+        //     unit.founding_year,
+        //     unit.military.conscripts + unit.military.trained_soldiers,
+        //     unit.gold
         // );
         // description.push_str("\n\nHistory:\n");
-        // for event in self.world.events.iter_settlement(id) {
+        // for event in self.world.events.iter_unit(id) {
         //     description.push_str(&self.event(event));        
         //     description.push_str("\n");
         // }
@@ -73,11 +73,11 @@ impl<'a> BiographyWriter<'a> {
         //         return format!("In {}, {} died {}", date, self.name_with_title(&self.world.people.get(&event.creature).unwrap()), cause_of_death)
         //     },
         //     WorldEventEnum::SettlementFounded(event) => {
-        //         let settlement = self.world.settlements.get(&event.settlement_id);
-        //         return format!("In {}, {} found the city of {}", date, self.name_with_title(&self.world.people.get(&event.founder_id).unwrap()), settlement.name)
+        //         let unit = self.world.units.get(&event.unit_id);
+        //         return format!("In {}, {} found the city of {}", date, self.name_with_title(&self.world.people.get(&event.founder_id).unwrap()), unit.name)
         //     },
         //     WorldEventEnum::NewSettlementLeader(event) => {
-        //         return format!("In {}, {} became the new leader of {}", date, self.name_with_title(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name)
+        //         return format!("In {}, {} became the new leader of {}", date, self.name_with_title(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.units.get(&event.unit_id).name)
         //     },
         //     WorldEventEnum::Marriage(event) => {
         //         return format!("In {}, {} and {} married", date, self.name_with_title(&self.world.people.get(&event.creature1_id).unwrap()), self.birth_name(&self.world.people.get(&event.creature2_id).unwrap()))
@@ -125,8 +125,8 @@ impl<'a> BiographyWriter<'a> {
         //             }
         //         }
 
-        //         let settlement = self.world.settlements.get(&attacker.location_settlement);
-        //         let location_name = settlement.name.clone();
+        //         let unit = self.world.units.get(&attacker.location_unit);
+        //         let location_name = unit.name.clone();
 
         //         let battle_result;
 
@@ -181,11 +181,11 @@ impl<'a> BiographyWriter<'a> {
         //         return format!("In {}, {} died {}", date, self.name_with_title(&self.world.people.get(&event.creature).unwrap()), cause_of_death)
         //     },
         //     WorldEventEnum::SettlementFounded(event) => {
-        //         let settlement = self.world.settlements.get(&event.settlement_id);
-        //         return format!("In {}, {} found the city of {}", date, self.name(&self.world.people.get(&event.founder_id).unwrap()), settlement.name)
+        //         let unit = self.world.units.get(&event.unit_id);
+        //         return format!("In {}, {} found the city of {}", date, self.name(&self.world.people.get(&event.founder_id).unwrap()), unit.name)
         //     },
         //     WorldEventEnum::NewSettlementLeader(event) => {
-        //         return format!("In {}, {} became the new leader of {} {:?}", date, self.name(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.settlements.get(&event.settlement_id).name, self.world.settlements.get(&event.settlement_id).xy)
+        //         return format!("In {}, {} became the new leader of {} {:?}", date, self.name(&self.world.people.get(&event.new_leader_id).unwrap()), self.world.units.get(&event.unit_id).name, self.world.units.get(&event.unit_id).xy)
         //     },
         //     WorldEventEnum::Marriage(event) => {
         //         return format!("In {}, {} and {} married", date, self.name(&self.world.people.get(&event.creature1_id).unwrap()), self.birth_name(&self.world.people.get(&event.creature2_id).unwrap()))
@@ -233,8 +233,8 @@ impl<'a> BiographyWriter<'a> {
         //             }
         //         }
 
-        //         let settlement = self.world.settlements.get(&attacker.location_settlement);
-        //         let location_name = settlement.name.clone();
+        //         let unit = self.world.units.get(&attacker.location_unit);
+        //         let location_name = unit.name.clone();
 
         //         let battle_result;
 
@@ -303,9 +303,9 @@ impl<'a> BiographyWriter<'a> {
     //     let name = self.name(figure);
     //     // TODO:
     //     // if let Some(civ) = &figure.civ {
-    //     //     if let Some(settlement) = civ.leader_of_settlement {
-    //     //         let settlement = self.world.settlements.get(&settlement);
-    //     //         return format!("{name}, leader of {}", settlement.name)
+    //     //     if let Some(unit) = civ.leader_of_unit {
+    //     //         let unit = self.world.units.get(&unit);
+    //     //         return format!("{name}, leader of {}", unit.name)
     //     //     }
     //     // }
     //     return name

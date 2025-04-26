@@ -178,8 +178,8 @@ impl WorldHistoryGenerator {
     //         if tile.region_id == 0 {// Ocean
     //             continue;
     //         }
-    //         for (_, settlement) in self.world.settlements.iter() {
-    //             if settlement.borrow().xy.to_coord().dist_squared(&txy) < 3.0_f32.powi(2) {
+    //         for (_, unit) in self.world.units.iter() {
+    //             if unit.borrow().xy.to_coord().dist_squared(&txy) < 3.0_f32.powi(2) {
     //                 continue 'candidates;
     //             }
     //         }
@@ -198,10 +198,10 @@ impl WorldHistoryGenerator {
     //     let mut rng = self.rng.derive("beast_attack");
     //     let xy = beast.position + Coord2::xy(rng.randi_range(-15, 15), rng.randi_range(-15, 15));
     //     let mut result = None;
-    //     if let Some((sett_id, settlement)) = self.world.settlements.iter().find(|(_, sett)| sett.borrow().xy.to_coord() == xy) {
+    //     if let Some((sett_id, unit)) = self.world.units.iter().find(|(_, sett)| sett.borrow().xy.to_coord() == xy) {
     //         let mut creature_force = BattleForce::from_creatures(&self.resources, vec!(&beast));
-    //         let mut settlement_force = BattleForce::from_defending_settlement(&self.world, &self.resources, sett_id, &settlement.borrow());
-    //         let battle = creature_force.battle(&mut settlement_force, &mut rng, settlement.borrow().xy.to_coord(), sett_id);
+    //         let mut unit_force = BattleForce::from_defending_unit(&self.world, &self.resources, sett_id, &unit.borrow());
+    //         let battle = creature_force.battle(&mut unit_force, &mut rng, unit.borrow().xy.to_coord(), sett_id);
     //         result = Some(battle);
     //     }
     //     drop(beast);
@@ -221,19 +221,19 @@ impl WorldHistoryGenerator {
     // }
 
 
-    // fn colonize_new_settlement(&mut self, date: WorldEventDate, id: Id) {
+    // fn colonize_new_unit(&mut self, date: WorldEventDate, id: Id) {
     //     let mut creature = self.world.people.get_mut(&id).unwrap();
     //     let xy = creature.position.clone();
     //     if let Some(civ) = &mut creature.civ {
     //         let culture = self.world.cultures.get(&civ.culture).unwrap();
-    //         let settlement = generate_settlement(&self.rng, date.year, xy, id.clone(), culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
-    //         if let Some(settlement) = settlement {
-    //             let position = settlement.xy;
-    //             let id = self.world.settlements.insert(settlement);
-    //             self.world.events.push(date, position.to_coord(), WorldEventEnum::SettlementFounded(SettlementFoundedEvent { settlement_id: id, founder_id: id }));
+    //         let unit = generate_unit(&self.rng, date.year, xy, id.clone(), culture, civ.faction, &self.world, &self.world.map, &self.parameters.regions).clone();
+    //         if let Some(unit) = unit {
+    //             let position = unit.xy;
+    //             let id = self.world.units.insert(unit);
+    //             self.world.events.push(date, position.to_coord(), WorldEventEnum::SettlementFounded(SettlementFoundedEvent { unit_id: id, founder_id: id }));
     //             let mut faction = self.world.factions.get_mut(&civ.faction);
-    //             faction.settlements.insert(id);
-    //             civ.leader_of_settlement = Some(id);
+    //             faction.units.insert(id);
+    //             civ.leader_of_unit = Some(id);
     //             if let Some(spouse) = creature.spouse() {
     //                 let mut spouse = self.world.people.get_mut(spouse).unwrap();
     //                 let spouse = spouse.borrow_mut();
@@ -241,17 +241,17 @@ impl WorldHistoryGenerator {
     //             }
     //             creature.position = position.to_coord();
 
-    //             // Generate road to nearby settlements
-    //             let mut settlements_to_connect = Vec::new();
-    //             for (sid, sett) in self.world.settlements.iter() {
+    //             // Generate road to nearby units
+    //             let mut units_to_connect = Vec::new();
+    //             for (sid, sett) in self.world.units.iter() {
     //                 if let Ok(sett) = sett.try_borrow() {
     //                     if sid != id && sett.xy.dist_squared(&position) < 10.*10. {
-    //                         settlements_to_connect.push(sett.xy.to_coord());
+    //                         units_to_connect.push(sett.xy.to_coord());
     //                     }
     //                 }
     //             }
     //             let from = position.to_coord();
-    //             for to in settlements_to_connect {
+    //             for to in units_to_connect {
     //                 let mut astar = AStar::new(self.world.map.size, to);
     //                 astar.find_path(from, |p| {
     //                     if !self.world.map.size.in_bounds(p) {
@@ -282,8 +282,8 @@ impl WorldHistoryGenerator {
 
 }
 
-// fn generate_settlement(rng: &Rng, founding_year: u32, seed_pos: Coord2, leader: Id, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
-//     let mut rng = rng.derive("settlement");
+// fn generate_unit(rng: &Rng, founding_year: u32, seed_pos: Coord2, leader: Id, culture: &Culture, faction: Id, world_graph: &World, world_map: &WorldTopology, regions: &Vec<Region>) -> Option<Settlement> {
+//     let mut rng = rng.derive("unit");
 //     let mut xy = None;
 //     let dist = 25;
 //     let x = ((seed_pos.x - dist).clamp(0, world_map.size.x() as i32 - 1))..((seed_pos.x + dist).clamp(0, world_map.size.x() as i32 - 1));
@@ -294,8 +294,8 @@ impl WorldHistoryGenerator {
 //         if tile.region_id == 0 {// Ocean
 //             continue;
 //         }
-//         for (_, settlement) in world_graph.settlements.iter() {
-//             if settlement.borrow().xy.dist_squared(&txy) <= 2_f32.powi(2) {
+//         for (_, unit) in world_graph.units.iter() {
+//             if unit.borrow().xy.dist_squared(&txy) <= 2_f32.powi(2) {
 //                 continue 'candidates;
 //             }
 //         }
