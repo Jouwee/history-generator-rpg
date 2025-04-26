@@ -1,8 +1,8 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, Profession}, date::WorldDate, item::Item, unit::{Unit, UnitId, UnitResources, UnitType}, world::World}};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
-use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}, structs::{Demographics, Event}};
+use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
 pub(crate) struct HistorySimulation {
     pub(crate) date: WorldDate,
@@ -70,31 +70,21 @@ impl HistorySimulation {
         self.date = self.date + step;
         let now = Instant::now();
 
-        // let mut side_effects = Vec::new();
-
-
-        let mut stats = (0, 0, 0, 0, 0);
+        let mut stats = (0, Demographics::new());
 
         for id in world.units.iter_ids::<UnitId>() {
-            // let mut unit = unit.borrow_mut();
             self.simulate_step_unit(world, &step, &self.date.clone(), self.params.rng.clone(), &id, &mut stats);
-            // for side_effect in local_side_effects.into_iter() {
-            //     side_effects.push(side_effect);
-            // }
             self.params.rng.next();
         }
 
 
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
-        println!("Memory: {:?}b", stats.4);
+        println!("Memory: {:?}b", stats.0);
         println!("Year: {}", self.date.year());
-        // println!("Units: {}", world.units.len());
-        // println!("Creatures: {}", world.creatures.len());
-        // println!("Processed creatures: {}", stats.0);
-        // println!("Children: {}", stats.1);
-        // println!("Men of age: {}", stats.2);
-        // println!("Women of age: {}", stats.3);
+        println!("Total creatures: {}", world.creatures.len());
+        println!("Total events: {}", world.events.len());
+        stats.1.print_console();
 
         if stats.0 == 0 {
             println!("Dead world.");
@@ -120,36 +110,21 @@ impl HistorySimulation {
 
     }
 
-    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, usize, usize, usize, usize)) {
+    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, Demographics)) {
         let mut unit = world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
 
         let mut resources = unit.resources.clone();
 
-        let mut demographics = Demographics::new();
 
         for creature_id in unit.creatures.iter() {
             let mut creature = world.get_creature_mut(creature_id);
-            demographics.count(now, &creature);
+            stats.1.count(now, &creature);
 
-            let mut events = Vec::new();
-
-            let side_effect = CreatureSimulation::simulate_step_creature(&world, step, now, &mut rng, &unit, creature_id, &mut creature, &mut events);
+            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &mut creature);
             side_effects.push((*creature_id, side_effect));
 
-            let age = (*now - creature.birth).year() as f32;
-
-            stats.0 += 1;
-            if age < 18. {
-                stats.1 += 1;
-            } else {
-                if creature.gender == CreatureGender::Male {
-                    stats.2 += 1;
-                } else {
-                    stats.3 += 1;
-                }
-            }
-            stats.4 += std::mem::size_of_val(&creature.species) +
+            stats.0 += std::mem::size_of_val(&creature.species) +
                     std::mem::size_of_val(&creature.birth) +
                     std::mem::size_of_val(&creature.gender) +
                     std::mem::size_of_val(&creature.death) +
@@ -166,8 +141,6 @@ impl HistorySimulation {
             }
 
         }
-
-        demographics.print_console();
 
         unit.resources = resources;
 
@@ -358,7 +331,7 @@ impl HistorySimulation {
                     Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel")))
                 },
                 Profession::Sculptor => {
-                    Some(ArtifactFactory::create_statue(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel"), comission_creature_id, &world))
+                    Some(ArtifactFactory::create_statue(&self.params.resources, comission_creature_id, &world))
                 },
                 _ => None
             };
@@ -367,7 +340,6 @@ impl HistorySimulation {
                 let id = world.add_artifact(item.clone());
                 {
                     let mut creature = world.get_creature_mut(&comission_creature_id);
-                    // TODO: Actually a statue is not an item. It will be place in the city.
                     match &item {
                         Item::Statue { material: _, scene: _ } => {
                             let mut unit = world.units.get_mut(unit_id);

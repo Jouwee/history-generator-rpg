@@ -1,8 +1,8 @@
 use std::{fs::File, io::Write, cell::{Ref, RefMut}, collections::HashMap};
 
-use crate::{Item, Region, Resources, WorldGenerationParameters};
+use crate::{Event, Item, Region, Resources, WorldGenerationParameters};
 
-use super::{creature::{Creature, CreatureId, Creatures}, date::WorldDate, history_sim::structs::Event, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{Creature, CreatureId, Creatures}, date::WorldDate, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
 
 use crate::commons::{history_vec::Id as HId, id_vec::IdVec};
 

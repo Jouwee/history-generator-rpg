@@ -145,7 +145,7 @@ impl Item {
             Self::Statue { material: _, scene: _} => {
                 let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
                 let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
+                let map = HashMap::new();
                 return pallete_sprite.remap(map)
             },
         }

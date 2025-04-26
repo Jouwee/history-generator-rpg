@@ -119,7 +119,7 @@ impl ArtifactFactory {
         return item;
     }
 
-    pub(crate) fn create_statue(rng: &mut Rng, resources: &Resources, material_id: &MaterialId, subject: CreatureId, world: &World) -> Item {
+    pub(crate) fn create_statue(resources: &Resources, subject: CreatureId, world: &World) -> Item {
         let material = resources.materials.id_of("mat:bronze");
         let creature = world.get_creature(&subject);
         if let Some(details) = &creature.details {

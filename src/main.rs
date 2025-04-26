@@ -22,7 +22,6 @@ use piston::window::WindowSettings;
 
 pub(crate) mod engine;
 pub(crate) mod commons;
-pub(crate) mod literature;
 pub(crate) mod resources;
 pub(crate) mod world;
 pub(crate) mod game;

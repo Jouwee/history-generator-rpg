@@ -1,5 +1,4 @@
 pub(crate) mod attributes;
-pub(crate) mod battle_simulator;
 pub(crate) mod culture;
 pub(crate) mod date;
 pub(crate) mod creature;

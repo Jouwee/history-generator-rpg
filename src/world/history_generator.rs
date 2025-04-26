@@ -13,11 +13,8 @@ pub(crate) struct WorldGenerationParameters {
 }
 
 pub(crate) struct WorldHistoryGenerator {
-    rng: Rng,
     pub(crate) year: u32,
-    parameters: WorldGenerationParameters,
     pub(crate) world: World,
-    resources: Resources,
     history_sim: HistorySimulation,
 }
 
@@ -58,8 +55,6 @@ impl WorldHistoryGenerator {
         //     world.cultures.insert(culture.id, culture);
         // }
 
-        // TODO:
-
 
         let mut world = World::new(parameters.clone(), world_map, regions);
 
@@ -73,9 +68,6 @@ impl WorldHistoryGenerator {
 
 
         let generator = WorldHistoryGenerator {
-            parameters: parameters,
-            resources: resources.clone(),
-            rng,
             history_sim,
             world,
             year: 1

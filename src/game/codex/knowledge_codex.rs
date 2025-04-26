@@ -1,9 +1,9 @@
 use std::collections::{hash_map::Iter, HashMap, HashSet};
 
-use crate::{commons::history_vec::Id, world::world::ArtifactId, WorldEvent, WorldEventEnum};
+use crate::{commons::history_vec::Id, world::{creature::CreatureId, world::ArtifactId}, Event};
 
 pub(crate) struct KnowledgeCodex {
-    creatures: HashMap<Id, CreatureKnowledge>,
+    creatures: HashMap<CreatureId, CreatureKnowledge>,
     places: HashMap<Id, PlaceKnowledge>,
     artifacts: HashMap<ArtifactId, ArtifactKnowledge>,
 }
@@ -18,40 +18,41 @@ impl KnowledgeCodex {
         }
     }
 
-    pub(crate) fn add_creature_fact(&mut self, id: &Id, fact: CreatureFact) {
+    pub(crate) fn add_creature_fact(&mut self, id: &CreatureId, fact: CreatureFact) {
         let creature = self.creatures.entry(*id).or_insert(CreatureKnowledge::new());
         creature.facts.insert(fact);
     }
 
-    pub(crate) fn add_event(&mut self, id: usize, event: &WorldEvent) {
-        for creature in event.event.get_creatures() {
-            let creature = self.creatures.entry(creature).or_insert(CreatureKnowledge::new());
-            creature.events.insert(id);
-            creature.facts.insert(CreatureFact::Name);
-            if let WorldEventEnum::PersonBorn(_) = event.event {
-                creature.facts.insert(CreatureFact::Birth);
-            }
-            if let WorldEventEnum::PersonBorn(_) = event.event {
-                creature.facts.insert(CreatureFact::Death);
-            }
-        }
-        for artifact in event.event.get_artifacts() {
-            let artifact = self.artifacts.entry(artifact).or_insert(ArtifactKnowledge::new());
-            artifact.events.insert(id);
-            artifact.facts.insert(ArtifactFact::Name);
-        }
-        for place in event.event.get_units() {
-            let place = self.places.entry(place).or_insert(PlaceKnowledge::new());
-            place.events.insert(id);
-            place.facts.insert(PlaceFact::Name);
-        }
+    pub(crate) fn add_event(&mut self, id: usize, event: &Event) {
+        // TODO:
+        // for creature in event.event.get_creatures() {
+        //     let creature = self.creatures.entry(creature).or_insert(CreatureKnowledge::new());
+        //     creature.events.insert(id);
+        //     creature.facts.insert(CreatureFact::Name);
+        //     if let WorldEventEnum::PersonBorn(_) = event.event {
+        //         creature.facts.insert(CreatureFact::Birth);
+        //     }
+        //     if let WorldEventEnum::PersonBorn(_) = event.event {
+        //         creature.facts.insert(CreatureFact::Death);
+        //     }
+        // }
+        // for artifact in event.event.get_artifacts() {
+        //     let artifact = self.artifacts.entry(artifact).or_insert(ArtifactKnowledge::new());
+        //     artifact.events.insert(id);
+        //     artifact.facts.insert(ArtifactFact::Name);
+        // }
+        // for place in event.event.get_units() {
+        //     let place = self.places.entry(place).or_insert(PlaceKnowledge::new());
+        //     place.events.insert(id);
+        //     place.facts.insert(PlaceFact::Name);
+        // }
     }
 
-    pub(crate) fn known_creatures(&self) -> Iter<Id, CreatureKnowledge> {
+    pub(crate) fn known_creatures(&self) -> Iter<CreatureId, CreatureKnowledge> {
         self.creatures.iter()
     }
 
-    pub(crate) fn creature(&self, id: &Id) -> Option<&CreatureKnowledge> {
+    pub(crate) fn creature(&self, id: &CreatureId) -> Option<&CreatureKnowledge> {
         self.creatures.get(id)
     }
 

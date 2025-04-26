@@ -1,4 +1,4 @@
-use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, resources::resources::Resources, world::world::{ArtifactId, World}, GameContext};
+use crate::{commons::{history_vec::Id, id_vec::Id as VId}, engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, resources::resources::Resources, world::{creature::CreatureId, world::{ArtifactId, World}}, GameContext};
 
 use super::knowledge_codex::KnowledgeCodex;
 
@@ -49,8 +49,8 @@ impl CodexDialog {
             }
             if let View::Creatures = self.view {
                 for (id, _knowledge) in codex.known_creatures() {
-                    if let ButtonEvent::Click = dialog.get_mut::<VList>("entry_list").unwrap().get_mut::<Button>(format!("creature:{}", id.0).as_str()).unwrap().event(evt) {
-                        Self::click_creature(dialog.get_mut::<VList>("selected_info").unwrap(), *id, world, resources, codex);
+                    if let ButtonEvent::Click = dialog.get_mut::<VList>("entry_list").unwrap().get_mut::<Button>(format!("creature:{}", id.as_usize()).as_str()).unwrap().event(evt) {
+                        Self::click_creature(dialog.get_mut::<VList>("selected_info").unwrap(), id, world, resources, codex);
                     }
                 }
             }
@@ -75,11 +75,10 @@ impl CodexDialog {
     fn click_creatures(container: &mut VList, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         container.clear();
         // TODO:
-        // let writer = BiographyWriter::new(world, resources);
-        // for (id, _knowledge) in codex.known_creatures() {
-        //     let creature = world.creatures.get(id).unwrap();
-        //     container.add_key(format!("creature:{}", id.0).as_str(), Button::new(writer.name(&creature), Position::Auto));
-        // }
+        for (id, _knowledge) in codex.known_creatures() {
+            // let creature = world.creatures.get(id);
+            container.add_key(format!("creature:{}", id.as_usize()).as_str(), Button::new(format!("{:?}", id), Position::Auto));
+        }
     }
 
     fn click_places(container: &mut VList, world: &World, codex: &KnowledgeCodex) {
@@ -100,16 +99,16 @@ impl CodexDialog {
         // }
     }
 
-    fn click_creature(container: &mut VList, id: Id, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
+    fn click_creature(container: &mut VList, id: &CreatureId, world: &World, resources: &Resources, codex: &KnowledgeCodex) {
         // TODO:
-        // let creature = world.creatures.get(&id).unwrap();
+        // let creature = world.creatures.get(id);
         // let knowledge = codex.creature(&id).unwrap();
         // let writer = BiographyWriter::new(world, resources);
-        // container.clear();
-        // container.add(Label::new(writer.name_with_title(&creature), Position::Auto));
+        container.clear();
+        container.add(Label::new(format!("{:?}", id), Position::Auto));
         // for event in knowledge.events.iter() {
-        //     let event = world.events.get(*event).unwrap();
-        //     container.add(Label::new(writer.event(&event), Position::Auto));
+            // let event = world.events.get(*event).unwrap();
+            // container.add(Label::new(writer.event(&event), Position::Auto));
         // }
     }
 

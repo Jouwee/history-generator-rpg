@@ -1,9 +1,9 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::KnowledgeCodex, resources::resources::Resources, world::{creature::{Creature, CreatureId}, world::World}, GameContext};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, resources::resources::Resources, world::{creature::{Creature, CreatureId}, world::World}, GameContext};
 
 pub(crate) struct InteractDialog {
     interact_dialog: Option<Dialog>,
     dialog_y: f64,
-    creature: Option<Creature>
+    creature: Option<(CreatureId, Creature)>
 }
 
 impl InteractDialog {
@@ -15,10 +15,10 @@ impl InteractDialog {
         }
     }
 
-    pub(crate) fn start_dialog(&mut self, world: &World, creature: CreatureId) {
+    pub(crate) fn start_dialog(&mut self, world: &World, creature_id: CreatureId) {
         let mut dialog = Dialog::new();
 
-        self.creature = Some(world.get_creature(&creature).clone());
+        self.creature = Some((creature_id, world.get_creature(&creature_id).clone()));
         self.dialog_y = 0.;
 
         dialog.add_key("btn_who", Button::new("Who are you?", Position::Anchored(Anchor::BottomLeft, 10., 34.)));
@@ -55,7 +55,7 @@ impl InteractDialog {
                 }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
                     // TODO:
-                    // codex.add_creature_fact(&creature.id, CreatureFact::Name);
+                    codex.add_creature_fact(&creature.0, CreatureFact::Name);
                     // self.add_dialog_line(format!("I am {}", creature.name().unwrap()).as_str());
                 }
             }

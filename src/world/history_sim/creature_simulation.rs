@@ -1,15 +1,6 @@
-use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, unit::Unit, world::World}};
-
-use super::structs::Event;
+use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, unit::Unit}};
 
 pub(crate) struct CreatureSimulation {}
-
-pub(crate) enum DeferredUnitSideEffect {
-    None,
-    LookForMarriage(CreatureId, CreatureGender),
-    RemoveCreature(CreatureId),
-    AddCreature(Creature),
-}
 
 pub(crate) enum CreatureSideEffect {
     None,
@@ -35,7 +26,7 @@ const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 1.0;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(world: &World, step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &mut Creature, events: &mut Vec<Event>) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &mut Creature) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
