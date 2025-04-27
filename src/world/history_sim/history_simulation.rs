@@ -28,13 +28,19 @@ impl HistorySimulation {
 
         let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
 
-        let mut x = 110;
-        let mut y = 130;
+        for i in 0..self.params.number_of_seed_cities {
 
-        for _ in 0..self.params.number_of_seed_cities {
+            let pos = self.find_unit_suitable_pos(&mut self.params.rng.clone(), &world);
+            let pos = match pos {
+                None => {
+                    println!("## BREAK {}", i);
+                    break
+                },
+                Some(candidate) => candidate,
+            };
+
             let mut unit = Unit {
-                // TODO:
-                xy: Coord2::xy(x, y),
+                xy: pos,
                 creatures: Vec::new(),
                 cemetery: Vec::new(),
                 unit_type: UnitType::City,
@@ -46,21 +52,16 @@ impl HistorySimulation {
                 artifacts: Vec::new()
             };
 
-            x += 2;
-            if x > 140 {
-                y +=2;
-                x = 130;
-            }
-
             while unit.creatures.len() < self.params.seed_cities_population as usize {
                 
                 let family = factory.make_family_or_single(&self.date, self.params.resources.species.id_of("species:human"), world);
                 for creature_id in family {
-                //     let creature_id = world.add_creature(creature);
                     unit.creatures.push(creature_id);
                 }
 
             }
+
+            self.params.rng.next();
 
             world.units.add::<UnitId>(unit);
         }
@@ -375,6 +376,31 @@ impl HistorySimulation {
         }
 
         // return deferred_side_effects
+    }
+
+    fn find_unit_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
+        for _ in 0..20 {
+            let x = rng.randu_range(0, world.map.size.x());
+            let y = rng.randu_range(0, world.map.size.y());
+            let tile = world.map.tile(x, y);
+            match tile.region_id {
+                // Ocean
+                0 => continue,
+                // Desert
+                4 => continue,
+                _ => ()
+            }
+            let candidate = Coord2::xy(x as i32, y as i32);
+            let too_close = world.units.iter().any(|unit| {
+                let unit = unit.borrow();
+                return unit.xy.dist_squared(&candidate) < 5. * 5.
+            });
+            if too_close {
+                continue;
+            }
+            return Some(candidate)
+        }
+        return None;
     }
 
 }

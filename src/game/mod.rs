@@ -2,7 +2,6 @@ use action::{ActionRunner, ActionType};
 use actor::ActorType;
 use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
-use codex::{codex_dialog::CodexDialog, knowledge_codex::KnowledgeCodex};
 use effect_layer::EffectLayer;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
@@ -18,7 +17,6 @@ pub(crate) mod action;
 pub(crate) mod actor;
 pub(crate) mod ai;
 pub(crate) mod chunk;
-pub(crate) mod codex;
 pub(crate) mod effect_layer;
 pub(crate) mod hotbar;
 pub(crate) mod interact;
@@ -44,19 +42,16 @@ enum TurnMode {
 
 pub(crate) struct GameSceneState {
     pub(crate) world: World,
-    pub(crate) codex: KnowledgeCodex,
     pub(crate) world_pos: Coord2,
     pub(crate) chunk: Chunk,
     turn_mode: TurnMode,
     turn_controller: TurnController,
-    button_codex: Button,
     button_inventory: Button,
     button_map: Button,
     button_end_turn: Button,
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
     interact_dialog: InteractDialog,
-    codex_dialog: CodexDialog,
     inventory_dialog: CharacterDialog,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
@@ -65,22 +60,19 @@ pub(crate) struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub(crate) fn new(world: World, world_pos: Coord2, codex: KnowledgeCodex, chunk: Chunk) -> GameSceneState {
+    pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
         GameSceneState {
             world,
-            codex,
             chunk,
             world_pos,
             turn_mode: TurnMode::RealTime,
             turn_controller: TurnController::new(),
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
-            button_codex: Button::new("Codex", Position::Anchored(Anchor::BottomLeft, 64.0, 32.0)),       
             button_map: Button::new("Map", Position::Anchored(Anchor::BottomCenter, -108.0, -24.0)),       
             button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
             button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
             interact_dialog: InteractDialog::new(),
-            codex_dialog: CodexDialog::new(),
             inventory_dialog: CharacterDialog::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
@@ -236,7 +228,6 @@ impl Scene for GameSceneState {
         // UI
         let _ = ctx.try_pop();
         self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
-        self.button_codex.render(ctx, game_ctx);
         self.button_inventory.render(ctx, game_ctx);
         self.button_map.render(ctx, game_ctx);
         if self.can_end_turn() {
@@ -246,7 +237,6 @@ impl Scene for GameSceneState {
             self.button_toggle_turn_based.render(ctx, game_ctx);
         }
         self.interact_dialog.render(ctx, game_ctx);
-        self.codex_dialog.render(ctx, game_ctx);
         self.inventory_dialog.render(ctx, game_ctx);       
         self.tooltip_overlay.render(ctx, game_ctx); 
     }
@@ -257,7 +247,6 @@ impl Scene for GameSceneState {
         }
 
         self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
-        self.button_codex.update(update, ctx);
         self.button_inventory.update(update, ctx);
         self.button_map.update(update, ctx);
         if self.can_end_turn() {
@@ -271,7 +260,6 @@ impl Scene for GameSceneState {
             self.button_toggle_turn_based.update(update, ctx);
         }
         self.interact_dialog.update(update, ctx);
-        self.codex_dialog.update(update, ctx);
         self.inventory_dialog.update(update, ctx);
         self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
@@ -371,8 +359,7 @@ impl Scene for GameSceneState {
         }
 
         self.hotbar.input(HotbarState::new(&self.chunk.player), evt, ctx);
-        self.interact_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
-        self.codex_dialog.input_state(evt, &self.world, &ctx.resources, &mut self.codex);
+        self.interact_dialog.input_state(evt);
         let dialog_evt = self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
         match dialog_evt {
             CharacterDialogOutput::EquipmentChanged => self.hotbar.equip(&self.chunk.player.inventory, &ctx),
@@ -391,11 +378,6 @@ impl Scene for GameSceneState {
                     TurnMode::TurnBased => self.turn_mode = TurnMode::RealTime,
                 }
             }
-        }
-
-        if let ButtonEvent::Click = self.button_codex.event(evt) {
-            self.codex_dialog.start_dialog();
-            return;
         }
 
         if let ButtonEvent::Click = self.button_map.event(evt) {

@@ -7,7 +7,7 @@ extern crate piston;
 use std::{collections::HashMap, vec};
 use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
 use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::Actor, chunk::Chunk, codex::knowledge_codex::KnowledgeCodex, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
+use game::{actor::Actor, chunk::Chunk, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
 use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, region::Region, worldgen::WorldGenScene};
 
@@ -488,10 +488,9 @@ fn main() {
 
                         player.inventory.equip(1);
 
-                        let codex = KnowledgeCodex::new();
                         let cursor = Coord2::xy(128, 128);
                         let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);
-                        let mut scene = GameSceneState::new(world, cursor, codex, chunk);
+                        let mut scene = GameSceneState::new(world, cursor, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
 
@@ -502,7 +501,7 @@ fn main() {
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
                         let chunk = Chunk::playground(&app.context.resources, scene.chunk.player);
-                        let mut scene = GameSceneState::new(scene.world, scene.world_pos, scene.codex, chunk);
+                        let mut scene = GameSceneState::new(scene.world, scene.world_pos, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
                         continue

@@ -1,4 +1,4 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, game::codex::knowledge_codex::{CreatureFact, KnowledgeCodex}, resources::resources::Resources, world::{creature::{Creature, CreatureId}, world::World}, GameContext};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, Anchor, GUINode, Position}, render::RenderContext}, world::{creature::{Creature, CreatureId}, world::World}, GameContext};
 
 pub(crate) struct InteractDialog {
     interact_dialog: Option<Dialog>,
@@ -35,28 +35,17 @@ impl InteractDialog {
             self.dialog_y = self.dialog_y + 16.;
         }
     }
-    pub(crate) fn input_state(&mut self, evt: &crate::game::InputEvent, world: &World, resources: &Resources, codex: &mut KnowledgeCodex) {
+    
+    pub(crate) fn input_state(&mut self, evt: &crate::game::InputEvent) {
         if let Some(dialog) = &mut self.interact_dialog {
             if let Some(creature) = &self.creature {
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_close").unwrap().event(evt) {
                     self.interact_dialog = None;
                     return
                 }
-                if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_rumor").unwrap().event(evt) {
-                    // TODO:
-                    // let rumor = world.events.find_rumor(&Rng::seeded(creature.id), &world,  crate::WorldEventDate { year: 500 }, creature.position);
-                    // if let Some((id, rumor)) = rumor {
-                    //     codex.add_event(id, rumor);
-                    //     self.add_dialog_line(BiographyWriter::new(world, resources).rumor(rumor).as_str());
-                    // } else {
-                    //     self.add_dialog_line("Sorry, I haven't heard anything.");
-                    // }
-                    return
-                }
                 if let ButtonEvent::Click = dialog.get_mut::<Button>("btn_who").unwrap().event(evt) {
                     // TODO:
-                    codex.add_creature_fact(&creature.0, CreatureFact::Name);
-                    // self.add_dialog_line(format!("I am {}", creature.name().unwrap()).as_str());
+                    self.add_dialog_line(format!("I am {:?}", creature.0).as_str());
                 }
             }
         }
