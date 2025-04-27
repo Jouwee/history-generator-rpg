@@ -1,10 +1,10 @@
-use std::{fs::File, io::Write, cell::{Ref, RefMut}, collections::HashMap};
+use std::{fs::File, io::Write, cell::{Ref, RefMut}};
 
-use crate::{commons::id_vec::Id, Event, Item, Region, Resources, WorldGenerationParameters};
+use crate::{commons::id_vec::Id, Event, Item, Resources, WorldGenerationParameters};
 
-use super::{creature::{Creature, CreatureId, Creatures}, culture::Cultures, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{Creature, CreatureId, Creatures}, culture::Cultures, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, region::Regions, topology::WorldTopology, unit::Units};
 
-use crate::commons::{history_vec::Id as HId, id_vec::IdVec};
+use crate::commons::id_vec::IdVec;
 
 // TODO:
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -29,13 +29,13 @@ pub(crate) struct World {
     pub(crate) events: Vec<Event>,
     pub(crate) cultures: Cultures,
     pub(crate) artifacts: IdVec<Item>,
-    pub(crate) regions: HashMap<HId, Region>,
+    pub(crate) regions: Regions,
 
 }
 
 impl World {
 
-    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>, cultures: Cultures) -> World {
+    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: Regions, cultures: Cultures) -> World {
         return World {
             generation_params,
             map,

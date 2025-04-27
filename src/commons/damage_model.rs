@@ -17,14 +17,6 @@ impl DamageComponent {
         DamageComponent { slashing, piercing, bludgeoning }
     }
 
-    pub(crate) fn from_attributes(attributes: &Attributes) -> DamageComponent {
-        DamageComponent {
-            slashing: 0.,
-            piercing: 0.,
-            bludgeoning: attributes.strength as f32 / 2.
-        }
-    }
-
     pub(crate) fn resolve(&self, defence: &DefenceComponent) -> DamageOutput {
         let mut total_damage = 0.;
         let mut rng = Rng::rand();

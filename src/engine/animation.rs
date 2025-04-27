@@ -84,7 +84,6 @@ struct KeyFrame {
 
 #[derive(Clone, Debug)]
 pub(crate) enum Smoothing {
-    Linear,
     EaseInOut
 }
 
@@ -94,7 +93,6 @@ impl Smoothing {
         let normalized = (progress - time[0]) / (time[1] - time[0]);
         let dist = values[1] - values[0];
         let offset = match self {
-            Self::Linear => normalized,
             Self::EaseInOut => {
                 if normalized < 0.5 {
                     2. * normalized * normalized

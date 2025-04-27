@@ -170,20 +170,20 @@ pub(crate) enum ArtworkScene {
 
 #[derive(Clone, Debug)]
 pub(crate) enum ItemQuality {
-    Poor,
+    // Poor,
     Normal,
-    Good,
-    Excelent,
+    // Good,
+    // Excelent,
     Legendary
 }
 
 impl ItemQuality {
     pub(crate) fn main_stat_multiplier(&self) -> f32 {
         match self {
-            Self::Poor => 0.7,
+            // Self::Poor => 0.7,
             Self::Normal => 1.0,
-            Self::Good => 1.2,
-            Self::Excelent => 1.4,
+            // Self::Good => 1.2,
+            // Self::Excelent => 1.4,
             Self::Legendary => 2.0,
         }
     }
@@ -191,7 +191,7 @@ impl ItemQuality {
 
 #[derive(Clone, Debug)]
 pub(crate) struct Sword {
-    pub(crate) quality: ItemQuality,
+    // pub(crate) quality: ItemQuality,
     pub(crate) handle_mat: MaterialId,
     pub(crate) blade_mat: MaterialId,
     pub(crate) pommel_mat: MaterialId,
@@ -204,13 +204,13 @@ impl Sword {
     pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
         let blade = materials.get(&blade_mat);
         let damage_mult = blade.sharpness * quality.main_stat_multiplier();
-        Sword { quality, handle_mat, blade_mat, pommel_mat, guard_mat, damage_mult, name: None }
+        Sword { handle_mat, blade_mat, pommel_mat, guard_mat, damage_mult, name: None }
     }
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct Mace {
-    pub(crate) quality: ItemQuality,
+    // pub(crate) quality: ItemQuality,
     pub(crate) handle_mat: MaterialId,
     pub(crate) head_mat: MaterialId,
     pub(crate) pommel_mat: MaterialId,
@@ -222,7 +222,7 @@ impl Mace {
     pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
         let head = materials.get(&head_mat);
         let damage_mult = head.sharpness * quality.main_stat_multiplier();
-        Mace { quality, handle_mat, head_mat, pommel_mat, damage_mult, name: None }
+        Mace { handle_mat, head_mat, pommel_mat, damage_mult, name: None }
     }
 }
 

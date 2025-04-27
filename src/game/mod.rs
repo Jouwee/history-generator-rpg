@@ -83,7 +83,7 @@ impl GameSceneState {
 
     fn save_creature_appearances(&mut self) {
         for npc in self.chunk.npcs.iter() {
-            if let Some(id) = npc.creature_id {
+            if let Some(_id) = npc.creature_id {
                 // TODO:
                 // let mut creature = self.world.creatures.get_mut(&id).unwrap();
                 // creature.appearance_hints = HashMap::new();
@@ -473,7 +473,7 @@ impl Scene for GameSceneState {
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         println!("Inspect at {:?}", tile_pos);
                                         let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
-                                        if let Some(target) = target {
+                                        if let Some(_target) = target {
                                             println!("target");
                                         }
                                         let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);

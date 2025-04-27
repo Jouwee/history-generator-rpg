@@ -1,4 +1,3 @@
-use geometry::{Coord2, Vec2};
 use image::Rgba;
 
 pub(crate) mod animation;
@@ -25,14 +24,6 @@ impl Point2D {
         let x = another.0 as f32 - self.0 as f32;
         let y = another.1 as f32 - self.1 as f32;
         return x*x + y*y
-    }
-
-    pub(crate) fn vec_between(&self, another: &Point2D) -> Vec2 {
-        Vec2::xy(self.0 as f32, self.1 as f32) - Vec2::xy(another.0 as f32, another.1 as f32)
-    }
-
-    pub(crate) fn to_coord(&self) -> Coord2 {
-        Coord2 { x: self.0 as i32, y: self.1 as i32 }
     }
 
 }
@@ -71,15 +62,6 @@ impl Color {
             b: b as f32 / 255.0,
             a: a as f32 / 255.0
         };
-    }
-
-    pub(crate) fn alpha(&self, alpha: f32) -> Color {
-        Color {
-            r: self.r,
-            g: self.g,
-            b: self.b,
-            a: alpha
-        }
     }
 
     pub(crate) fn f32_arr(&self) -> [f32; 4] {

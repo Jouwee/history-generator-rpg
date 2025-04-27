@@ -23,11 +23,6 @@ impl WorldMapFeatures {
         &self.empty_set
     }
 
-    pub(crate) fn add_road(&mut self, coord: Coord2) {
-        let features = self.features.entry(coord).or_insert(HashSet::new());
-        features.insert(MapFeature::Road);
-    }
-
     pub(crate) fn has_road(&self, coord: Coord2) -> bool {
         if let Some(features) = self.features.get(&coord) {
             return features.contains(&MapFeature::Road)

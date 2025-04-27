@@ -42,12 +42,6 @@ impl Vec2 {
         Vec2 { x, y }
     }
 
-    pub(crate) fn direction(&self) -> f32 {
-        let y = 0. - self.x;
-        let x = 0. - self.y;
-        f32::atan2(y,x)
-    }
-
     pub(crate) fn normalize(&self, mag: f32) -> Vec2 {
         let factor = self.magnitude() / mag;
         Vec2::xy(self.x / factor, self.y / factor)
@@ -64,10 +58,6 @@ impl Vec2 {
         let x = 0. - self.x;
         let y = 0. - self.y;
         (x * x + y * y).sqrt()
-    }
-
-    pub(crate) fn dist(&self, another: &Vec2) -> f32 {
-        return self.dist_squared(another).sqrt();
     }
 
     pub(crate) fn dist_squared(&self, another: &Vec2) -> f32 {

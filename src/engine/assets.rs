@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use image::{DynamicImage, ImageReader};
+use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
-
-use super::spritesheet::Spritesheet;
 
 pub(crate) struct Assets {
     images: HashMap<ImageParams, Asset<Image>>
@@ -57,8 +55,6 @@ pub(crate) enum ImageRotate {
 }
 
 pub(crate) struct Image {
-    pub(crate) size: (u32, u32),
-    pub(crate) image: DynamicImage,
     pub(crate) texture: Texture
 }
 
@@ -76,8 +72,6 @@ impl Image {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let texture = Texture::from_image(&image.to_rgba8(), &settings);
         Self {
-            size: (image.width(), image.height()),
-            image,
             texture
         }
     }
@@ -88,7 +82,6 @@ impl Image {
 
 pub(crate) struct OldAssets {
     textures: HashMap<String, OldAsset<Texture>>,
-    spritesheets: HashMap<String, OldAsset<Spritesheet>>,
 }
 
 impl OldAssets {
@@ -96,7 +89,6 @@ impl OldAssets {
     pub(crate) fn new() -> OldAssets {
         OldAssets {
             textures: HashMap::new(),
-            spritesheets: HashMap::new()
         }
     }
 
@@ -110,16 +102,6 @@ impl OldAssets {
             self.textures.insert(String::from(name), OldAsset { value: texture });
         }
         &self.textures.get(name).expect(format!("Image {name} does not exist").as_str()).value
-    }
-
-    pub(crate) fn spritesheet(&mut self, name: &str, size: (u32, u32)) -> &Spritesheet {
-        if !self.spritesheets.contains_key(name) {
-            let mut path = String::from("./assets/sprites/");
-            path.push_str(name);
-            let spritesheet = ImageReader::open(path).unwrap().decode().unwrap();
-            self.spritesheets.insert(String::from(name), OldAsset { value: Spritesheet::new(spritesheet, size) });
-        }
-        &self.spritesheets.get(name).expect(format!("Image {name} does not exist").as_str()).value
     }
 
 }

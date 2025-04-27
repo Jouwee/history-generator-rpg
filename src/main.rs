@@ -4,12 +4,12 @@ extern crate opengl_graphics;
 extern crate piston;
 
 
-use std::{collections::HashMap, vec};
-use commons::{history_vec::Id, markovchains::MarkovChainSingleWordModel};
+use std::vec;
+use commons::markovchains::MarkovChainSingleWordModel;
 use engine::{assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
-use world::{culture::{Culture, LanguagePrefab}, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, region::Region, worldgen::WorldGenScene};
+use world::{culture::Culture, event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, region::Region, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -146,26 +146,6 @@ fn main() {
     let now = Instant::now();
 
     let nords = Culture {
-        id: Id(0),
-        language: LanguagePrefab {
-            dictionary: HashMap::from([
-                (String::from("birch"), String::from("borch")),
-                (String::from("pine"), String::from("pin")),
-                (String::from("elk"), String::from("skog")),
-                (String::from("boar"), String::from("vevel")),
-                (String::from("fortress"), String::from("stad")),
-                (String::from("sea"), String::from("so")),
-                (String::from("port"), String::from("por")),
-                (String::from("fish"), String::from("fisk")),
-                (String::from("whale"), String::from("vale")),
-                (String::from("kelp"), String::from("kjel")),
-                (String::from("coral"), String::from("krall")),
-                (String::from("scorpion"), String::from("skor")),
-                (String::from("vulture"), String::from("vol")),
-                (String::from("cactus"), String::from("kak")),
-                (String::from("palm"), String::from("polm")),
-            ])
-        },
         first_name_male_model: MarkovChainSingleWordModel::train(vec!(
             "Alald", "Alan", "Alar", "Alarik", "Alarke", "Alarne", "Aleld", "Alen", "Alens",
             "Aler", "Alik", "Alis", "Alorn", "Asgald", "Asgan", "Asgar", "Asgarik", "Asgarke",
@@ -233,26 +213,6 @@ fn main() {
     };
 
     let khajit = Culture {
-        id: Id(1),
-        language: LanguagePrefab {
-            dictionary: HashMap::from([
-                (String::from("birch"), String::from("has")),
-                (String::from("pine"), String::from("apa'")),
-                (String::from("elk"), String::from("liz")),
-                (String::from("boar"), String::from("skish")),
-                (String::from("sea"), String::from("shas")),
-                (String::from("fish"), String::from("rah")),
-                (String::from("whale"), String::from("shin")),
-                (String::from("kelp"), String::from("klash")),
-                (String::from("coral"), String::from("fal")),
-                (String::from("fortress"), String::from("'kanash")),
-                (String::from("port"), String::from("'kapor")),
-                (String::from("scorpion"), String::from("sacrah")),
-                (String::from("vulture"), String::from("va'al")),
-                (String::from("cactus"), String::from("kazh")),
-                (String::from("palm"), String::from("pahz")),
-            ])
-        },
         first_name_male_model: MarkovChainSingleWordModel::train(vec!(
             "Ab'ar", "Ab'bar", "Ab'bil", "Ab'der", "Ab'dul", "Ab'gh", "Ab'ir", "Ab'kir", "Ab'med", "Ab'nir", "Ab'noud", "Ab'sien", "Ab'soud", "Ab'taba", "Ab'tabe", "Ab'urabi", "Ak'ar", "Ak'bar", "Ak'bil", "Ak'der", "Ak'dul", "Ak'gh", "Ak'ir", "Ak'kir", "Ak'med", "Ak'nir", "Ak'noud", "Ak'sien", "Ak'soud", "Ak'taba", "Ak'tabe", "Ak'urabi", "Akh'ar", "Akh'bar", "Akh'bil", "Akh'der", "Akh'dul", "Akh'gh", "Akh'ir", "Akh'kir", "Akh'med", "Akh'nir", "Akh'noud", "Akh'sien", "Akh'soud", "Akh'taba", "Akh'tabe", "Akh'urabi", "Amar", "Ambar", "Ambil", "Amder", "Amdul", "Amgh", "Amir", "Amkir", "Ammed", "Amnir", "Amnoud", "Amsien", "Amsoud", "Amtaba", "Amtabe", "Amurabi", "Fa'ar", "Fa'bar", "Fa'bil", "Fa'der", "Fa'dul", "Fa'gh", "Fa'ir", "Fa'kir", "Fa'med", "Fa'nir", "Fa'noud", "Fa'sien", "Fa'soud", "Fa'taba", "Fa'tabe", "Fa'urabi", "Husar", "Husbar", "Husbil", "Husder", "Husdul", "Husgh", "Husir", "Huskir", "Husmed", "Husnir", "Husnoud", "Hussien", "Hussoud", "Hustaba", "Hustabe", "Husurabi", "Moar", "Mobar", "Mobil", "Moder", "Modul", "Mogh", "Moir", "Mokir", "Momed", "Monir", "Monoud", "Mosien", "Mosoud", "Motaba", "Motabe", "Mourabi", "Mohamar", "Mohambar", "Mohambil", "Mohamder", "Mohamdul", "Mohamgh", "Mohamir", "Mohamkir", "Mohammed", "Mohamnir", "Mohamnoud", "Mohamsien", "Mohamsoud", "Mohamtaba", "Mohamtabe", "Mohamurabi", "Mojar", "Mojbar", "Mojbil", "Mojder", "Mojdul", "Mojgh", "Mojir", "Mojkir", "Mojmed", "Mojnir", "Mojnoud", "Mojsien", "Mojsoud", "Mojtaba", "Mojtabe", "Mojurabi", "Naar", "Nabar", "Nabil", "Nader", "Nadul", "Nagh", "Nair", "Nakir", "Named", "Nanir", "Nanoud", "Nasien", "Nasoud", "Nataba", "Natabe", "Naurabi", "Omar", "Ombar", "Ombil", "Omder", "Omdul", "Omgh", "Omir", "Omkir", "Ommed", "Omnir", "Omnoud", "Omsien", "Omsoud", "Omtaba", "Omtabe", "Omurabi", "Shaar", "Shabar", "Shabil", "Shader", "Shadul", "Shagh", "Shair", "Shakir", "Shamed", "Shanir", "Shanoud", "Shasien", "Shasoud", "Shataba", "Shatabe", "Shaurabi", "Sinar", "Sinbar", "Sinbil", "Sinder", "Sindul", "Singh", "Sinir", "Sinkir", "Sinmed", "Sinnir", "Sinnoud", "Sinsien", "Sinsoud", "Sintaba", "Sintabe", "Sinurabi", "Za'ar", "Za'bar", "Za'bil", "Za'der", "Za'dul", "Za'gh", "Za'ir", "Za'kir", "Za'med", "Za'nir", "Za'noud", "Za'sien", "Za'soud", "Za'taba", "Za'tabe", "Za'urabi", "Zan'ar", "Zan'bar", "Zan'bil", "Zan'der", "Zan'dul", "Zan'gh", "Zan'ir", "Zan'kir", "Zan'med", "Zan'nir", "Zan'noud", "Zan'sien", "Zan'soud", "Zan'taba", "Zan'tabe", "Zan'urabi",
         ), 3),
@@ -266,89 +226,39 @@ fn main() {
 
     let regions = vec!(
         Region {
-            id: 0,
-            name: String::from("Ocean"),
+            // name: String::from("Ocean"),
             elevation: (-2000, 0),
             temperature: (0, 5),
             vegetation: (0.0, 0.0),
             soil_fertility_range: (0.8, 1.2),
-            gold_generation_range: (0.8, 1.2),
-            fauna: Vec::from([
-                String::from("whale"),
-                String::from("fish")
-            ]),
-            flora: Vec::from([
-                String::from("kelp"),
-                String::from("coral")
-            ])
         },
         Region {
-            id: 1,
-            name: String::from("Coastal"),
+            // name: String::from("Coastal"),
             elevation: (0, 16),
             temperature: (0, 5),
             vegetation: (0.0, 0.1),
             soil_fertility_range: (0.8, 1.2),
-            gold_generation_range: (0.8, 1.2),
-            fauna: Vec::from([
-                String::from("whale"),
-                String::from("fish")
-            ]),
-            flora: Vec::from([
-                String::from("kelp"),
-                String::from("coral")
-            ])
         },
         Region {
-            id: 2,
-            name: String::from("Grassland"),
+            // name: String::from("Grassland"),
             elevation: (16, 255),
             temperature: (0, 2),
             vegetation: (0.5, 1.),
             soil_fertility_range: (1.0, 1.4),
-            gold_generation_range: (0.7, 1.1),
-            fauna: Vec::from([
-                String::from("elk"),
-                String::from("boar")
-            ]),
-            flora: Vec::from([
-                String::from("pine"),
-                String::from("birch")
-            ])
         },
         Region {
-            id: 3,
-            name: String::from("Forest"),
+            // name: String::from("Forest"),
             elevation: (16, 255),
             temperature: (0, 2),
             vegetation: (0.5, 1.),
             soil_fertility_range: (1.0, 1.4),
-            gold_generation_range: (0.7, 1.1),
-            fauna: Vec::from([
-                String::from("elk"),
-                String::from("boar")
-            ]),
-            flora: Vec::from([
-                String::from("pine"),
-                String::from("birch")
-            ])
         },
         Region {
-            id: 4,
-            name: String::from("Desert"),
+            // name: String::from("Desert"),
             elevation: (16, 255),
             temperature: (3, 6),
             vegetation: (0.0, 0.1),
             soil_fertility_range: (0.5, 0.9),
-            gold_generation_range: (0.6, 1.0),
-            fauna: Vec::from([
-                String::from("scorpion"),
-                String::from("vulture")
-            ]),
-            flora: Vec::from([
-                String::from("cactus"),
-                String::from("palm")
-            ])
         },
     );
 

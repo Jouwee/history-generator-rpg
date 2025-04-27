@@ -1,6 +1,5 @@
 pub(crate) mod astar;
 pub(crate) mod damage_model;
-pub(crate) mod history_vec;
 pub(crate) mod id_vec;
 pub(crate) mod markovchains;
 pub(crate) mod matrix_index;

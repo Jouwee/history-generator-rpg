@@ -34,20 +34,6 @@ impl Button {
         }
     }
 
-    pub(crate) fn new_icon(icon: Texture, position: Position) -> Button {
-        let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
-        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
-        Button {
-            text: String::new(),
-            background: Sprite::new("gui/button/background.png").texture,
-            frame: spritesheet,
-            position,
-            last_layout: [0.; 4],
-            icon: Some(icon),
-            tooltip: None,
-        }
-    }
-
     pub(crate) fn new_bg(bg: Texture, position: Position) -> Button {
         let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
         let spritesheet = Spritesheet::new(spritesheet, (8, 8));

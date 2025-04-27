@@ -116,10 +116,4 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         image(texture, transform, self.gl);
     }
 
-    pub(crate) fn spritesheet(&mut self, texture_name: &str, sprite: (u32, u32), position: [f64; 2]) {
-        let spritesheet = self.assets.spritesheet(texture_name, (16, 16));
-        let transform = self.context.transform.trans(position[0], position[1]);
-        image(spritesheet.sprite(sprite.0, sprite.1), transform, self.gl);
-    }
-
 }

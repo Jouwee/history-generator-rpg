@@ -20,7 +20,7 @@ impl crate::commons::id_vec::Id for SpeciesId {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Species {
-    pub(crate) name: String,
+    // pub(crate) name: String,
     pub(crate) appearance: SpeciesApearance,
     pub(crate) lifetime: SpeciesLifetime,
     pub(crate) intelligence: SpeciesIntelligence,
@@ -32,9 +32,9 @@ pub(crate) struct Species {
 
 impl Species {
 
-    pub(crate) fn new(name: &str, appearance: SpeciesApearance) -> Species {
+    pub(crate) fn new(_name: &str, appearance: SpeciesApearance) -> Species {
         Species {
-            name: String::from(name),
+            // name: String::from(name),
             appearance,
             intelligence: SpeciesIntelligence::Civilized,
             lifetime: SpeciesLifetime::new(120),

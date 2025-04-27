@@ -16,9 +16,6 @@ impl Label {
         Label { text: text.to_string(), position }
     }
 
-    pub(crate) fn text(&mut self, text: impl Display) {
-        self.text = text.to_string();
-    }
 }
 
 impl GUINode for Label {

@@ -1,7 +1,7 @@
 use std::{collections::{BTreeMap, VecDeque}, f32::consts::PI};
 
 use noise::{NoiseFn, Perlin};
-use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vec2, Vector2}, Point2D}};
+use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vector2}, Point2D}};
 
 use super::region::Region;
 
@@ -33,12 +33,12 @@ impl WorldTopology {
     pub(crate) fn tile(&self, x: usize, y: usize) -> WorldTileData {
         let i = (y * self.size.x()) + x;
         return WorldTileData {
-            xy: Point2D(x, y),
-            elevation: self.elevation[i],
-            precipitation: self.precipitation[i],
-            temperature: self.temperature[i],
-            vegetation: self.vegetation[i],
-            soil_fertility: self.soil_ferility[i],
+            // xy: Point2D(x, y),
+            // elevation: self.elevation[i],
+            // precipitation: self.precipitation[i],
+            // temperature: self.temperature[i],
+            // vegetation: self.vegetation[i],
+            // soil_fertility: self.soil_ferility[i],
             region_id: self.region_id[i],
         }
     }
@@ -212,88 +212,6 @@ impl WorldTopology {
         }
     }
 
-    pub(crate) fn erosion(&mut self, params: &mut WorldTopologyGenerationParameters) {
-        let idx = MatrixIndex::new((self.size.0, self.size.1));
-        // Temporary f32 elevation map
-        let mut elevation = vec![0.; self.size.area()];
-        for i in 0..self.size.area() {
-            elevation[i] = self.elevation[i] as f32;
-        }
-
-        for i in 0..100000 {
-            let mut xy = Vec2::xy(params.rng.randf_range(0., self.size.0 as f32), params.rng.randf_range(0., self.size.1 as f32));
-            let mut momentum = Vec2::xy(params.rng.randf_range(-1., 1.), params.rng.randf_range(-1., 1.));
-            let mut carrying = 0.;
-
-            let pickup = 0.5;
-            let drop_off = pickup * 0.1;
-            let max_carry = 5.;
-
-            for _ in 0..100 {
-                let xyp = Point2D(xy.x as usize, xy.y as usize);
-                let neighbours = idx.p2d_neighbours8(xyp);
-
-                // println!("{:?}", xyp);
-
-                if neighbours.len() == 0 {
-                    panic!("{:?} {:?}", xy, xyp);
-                }
-
-                let mut lowest = neighbours[0];
-                for neighbour in neighbours {
-                    if elevation[neighbour] < elevation[lowest] {
-                        lowest = neighbour;
-                    } else if elevation[neighbour] == elevation[lowest] && i % 2 == 0 { // "Randomness" without actual randomness for speed
-                        lowest = neighbour;
-                    }
-                }
-
-                let lowestp = idx.to_p2d(lowest);
-                let slope = Vec2::xy(lowestp.0 as f32, lowestp.1 as f32) - xy;
-                //slope.magnitude = elevation[idx.p2d(xy)] as f32 - elevation[lowest] as f32;
-                momentum = momentum + slope;
-
-                // println!("from: {:?} to: {:?} slope: {:?}", xy, Vec2::xy(lowestp.0 as f32, lowestp.1 as f32), slope);
-
-                // println!("momentum: {:?}, slope: {:?}", momentum, slope);
-                
-                momentum = Vec2::xy(momentum.x * 0.9, momentum.y * 0.9);
-
-                if momentum.magnitude() < 0.01 {
-                    elevation[idx.p2d(xyp)] += carrying * 0.5;
-                    break;
-                }
-
-                let limited = Vec2::xy(momentum.x.clamp(-1., 1.), momentum.y.clamp(-1., 1.));
-
-                let new_xy = xy + limited;
-
-                // carrying += pickup;
-                // elevation[idx.p2d(xyp)] -= pickup;
-
-                let drop = f32::min(drop_off, carrying);
-                carrying -= drop;
-                elevation[idx.p2d(xyp)] += drop;
-                if new_xy.x < 0. || new_xy.y < 0. || new_xy.x >= self.size.x() as f32 || new_xy.y >= self.size.y() as f32 {
-                    break;
-                }
-                // if new_xy != xy {
-                    let pick = f32::min(pickup, max_carry - carrying);
-                    carrying += pick;
-                    elevation[idx.p2d(xyp)] -= pick;
-                // }
-                // if carrying == 0. {
-                //     break;
-                // }
-                xy = new_xy;
-            }
-        }
-        // Saves the f32 vector back
-        for i in 0..self.size.area() {
-            self.elevation[i] = elevation[i] as i32;
-        }
-    }
-
     pub(crate) fn noise(&mut self, rng: &Rng, regions: &Vec<Region>) {
         let rng = rng.derive("world_map");
         let n_temp = Perlin::new(rng.derive("temperature").seed());
@@ -354,12 +272,12 @@ pub(crate) struct WorldTopologyGenerationParameters {
 
 #[derive(Debug)]
 pub(crate) struct WorldTileData {
-    pub(crate) xy: Point2D,
-    pub(crate) elevation: i32,
-    pub(crate) precipitation: u8,
-    pub(crate) temperature: u8,
-    pub(crate) vegetation: f32,
-    pub(crate) soil_fertility: f32,
+    // pub(crate) xy: Point2D,
+    // pub(crate) elevation: i32,
+    // pub(crate) precipitation: u8,
+    // pub(crate) temperature: u8,
+    // pub(crate) vegetation: f32,
+    // pub(crate) soil_fertility: f32,
     pub(crate) region_id: u8
 }
 
@@ -395,38 +313,18 @@ mod tests {
         compare(&world_a, &world_b);
 
         let regions = vec!(Region {
-            id: 0,
-            name: String::from("Ocean"),
+            // name: String::from("Ocean"),
             elevation: (-2000, 0),
             temperature: (0, 5),
             vegetation: (0.0, 0.0),
             soil_fertility_range: (0.8, 1.2),
-            gold_generation_range: (0.8, 1.2),
-            fauna: Vec::from([
-                String::from("whale"),
-                String::from("fish")
-            ]),
-            flora: Vec::from([
-                String::from("kelp"),
-                String::from("coral")
-            ])
         },
         Region {
-            id: 1,
-            name: String::from("Coastal"),
+            // name: String::from("Coastal"),
             elevation: (0, 2000),
             temperature: (0, 5),
             vegetation: (0.0, 0.1),
             soil_fertility_range: (0.8, 1.2),
-            gold_generation_range: (0.8, 1.2),
-            fauna: Vec::from([
-                String::from("whale"),
-                String::from("fish")
-            ]),
-            flora: Vec::from([
-                String::from("kelp"),
-                String::from("coral")
-            ])
         });
 
         world_a.noise(&params_a.rng, &regions);

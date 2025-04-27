@@ -60,8 +60,3 @@ impl Container for Dialog {
     }
 
 }
-
-pub(crate) enum ButtonEvent {
-    None,
-    Click
-}

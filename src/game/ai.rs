@@ -45,11 +45,6 @@ pub(crate) struct AiSolver {
 
 impl AiSolver {
 
-    pub(crate) fn new() -> AiSolver {
-        return AiSolver {
-        }
-    }
-
     pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
 
         let now = Instant::now();

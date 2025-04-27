@@ -1,6 +1,6 @@
-use std::{collections::HashMap, time::Instant};
+use std::time::Instant;
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{culture::{CultureId, Cultures}, date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
+use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{culture::{CultureId, Cultures}, date::WorldDate, history_sim::history_simulation::HistorySimulation, region::{RegionId, Regions}, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
 
 use super::{culture::Culture, region::Region, world::World};
 
@@ -40,9 +40,9 @@ impl WorldHistoryGenerator {
         // println!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &parameters.regions);
 
-        let mut regions = HashMap::new();
+        let mut regions = Regions::new();
         for region in parameters.regions.iter() {
-            regions.insert(Id(region.id), region.clone());
+            regions.add::<RegionId>(region.clone());
         }
 
         let mut cultures = Cultures::new();
