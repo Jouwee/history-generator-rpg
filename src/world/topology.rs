@@ -38,7 +38,7 @@ impl WorldTopology {
             // precipitation: self.precipitation[i],
             // temperature: self.temperature[i],
             // vegetation: self.vegetation[i],
-            // soil_fertility: self.soil_ferility[i],
+            soil_fertility: self.soil_ferility[i],
             region_id: self.region_id[i],
         }
     }
@@ -277,7 +277,7 @@ pub(crate) struct WorldTileData {
     // pub(crate) precipitation: u8,
     // pub(crate) temperature: u8,
     // pub(crate) vegetation: f32,
-    // pub(crate) soil_fertility: f32,
+    pub(crate) soil_fertility: f32,
     pub(crate) region_id: u8
 }
 

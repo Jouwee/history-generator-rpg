@@ -23,7 +23,6 @@ pub(crate) struct Actor {
     pub(crate) ai: AiRunner,
     pub(crate) sprite: CreatureAppearance,
     pub(crate) creature_id: Option<CreatureId>,
-    pub(crate) creature: Option<Creature>,
     pub(crate) species: SpeciesId,
     pub(crate) xp: u32,
     pub(crate) level: u32,
@@ -45,7 +44,6 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            creature: None,
             creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type: ActorType::Player,
@@ -70,7 +68,6 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            creature: None,
             creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type,
@@ -85,11 +82,9 @@ impl Actor {
             actor_type = ActorType::Hostile;
         }
         let mut inventory = Inventory::new();
-        // TODO:
         if let Some(details) = &creature.details {
             for id in details.inventory.iter() {
                 let item = world.artifacts.get(id);
-                println!("ITEM at {:?}", xy);
                 inventory.add(item.clone());
                 inventory.equip(0);
             }
@@ -117,7 +112,6 @@ impl Actor {
             level: 1,
             ai: AiRunner::new(),
             species: *species_id,
-            creature: Some(creature.clone()),
             creature_id: Some(creature_id),
             // TODO:
             //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),

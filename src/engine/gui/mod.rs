@@ -1,4 +1,4 @@
-use crate::{game::InputEvent, GameContext};
+use crate::GameContext;
 use super::{render::RenderContext, scene::Update};
 
 pub(crate) mod button;
@@ -12,7 +12,6 @@ pub(crate) mod vlist;
 pub(crate) trait GUINode {
     fn render(&mut self, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
-    fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) {}
 
     fn compute_position(&self, position: &Position, parent_rect: [f64; 4], size: [f64; 2]) -> [f64; 2] {
         let p;

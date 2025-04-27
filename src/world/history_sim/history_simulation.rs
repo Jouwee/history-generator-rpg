@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -40,7 +40,6 @@ impl HistorySimulation {
                 xy: pos,
                 creatures: Vec::new(),
                 cemetery: Vec::new(),
-                unit_type: UnitType::City,
                 resources: UnitResources {
                     // Enough food for a year
                     food: self.params.seed_cities_population as f32
@@ -114,6 +113,7 @@ impl HistorySimulation {
 
         let mut resources = unit.resources.clone();
 
+        let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
         for creature_id in unit.creatures.iter() {
             let mut creature = world.get_creature_mut(creature_id);
@@ -132,9 +132,10 @@ impl HistorySimulation {
                     std::mem::size_of_val(&creature.spouse) +
                     std::mem::size_of_val(&creature.offspring);
 
-            // TODO: Take Tile params in consideration
             if creature.death.is_none() {
-                resources = creature.profession.base_resource_production() + resources;
+                let mut production = creature.profession.base_resource_production();
+                production.food = production.food * unit_tile.soil_fertility;
+                resources = production + resources;
                 resources.food -= 1.0;
             }
 

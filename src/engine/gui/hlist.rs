@@ -23,10 +23,6 @@ impl HList {
 }
 
 impl Container for HList {
-    
-    fn container(&self) -> &InnerContainer {
-        &self.inner
-    }
 
     fn container_mut(&mut self) -> &mut InnerContainer {
         &mut self.inner

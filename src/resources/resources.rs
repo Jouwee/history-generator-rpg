@@ -219,16 +219,12 @@ impl Resources {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
             .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
-            .lifetime(300)
-            .fertility(0.)
             .drops(vec!((self.materials.id_of("mat:bone_leshen"), 1)))
         );
         self.species.add("species:fiend", Species::new("fiend", SpeciesApearance::single_sprite("fiend.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
             .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
-            .lifetime(200)
-            .fertility(0.)
             .drops(vec!((self.materials.id_of("mat:bone_fiend"), 1)))
         );
         self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
@@ -255,14 +251,6 @@ impl Resources {
         let mut tile = Tile::new(2, "assets/sprites/chunk_tiles/cobblestone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:cobblestone", tile);
-    }
-
-    pub(crate) fn tile(&self, id: &TileId) -> &Tile {
-        return self.tiles.get(id);
-    }
-
-    pub(crate) fn find_tile(&self, key: &str) -> &Tile {
-        return self.tiles.find(key);
     }
 
 }

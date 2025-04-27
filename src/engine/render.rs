@@ -1,13 +1,10 @@
-use graphics::{ellipse, image, rectangle, Context, Text};
+use graphics::{image, rectangle, Context, Text};
 use opengl_graphics::{GlGraphics, GlyphCache, Texture};
-use piston::RenderArgs;
 use crate::graphics::Transformed;
 
 use super::{assets::OldAssets, Color};
 
 pub(crate) struct RenderContext<'a, 'b> {
-    pub(crate) args: &'a RenderArgs,
-    pub(crate) original_transform: [[f64; 3]; 2],
     pub(crate) context: Context,
     pub(crate) gl: &'a mut GlGraphics,
     pub(crate) assets: &'b mut OldAssets,
@@ -35,14 +32,6 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         self.camera_rect[3] = self.camera_rect[3] / s;
     }
 
-    pub(crate) fn translate(&mut self, x: f64, y: f64) {
-        self.context.transform = self.context.transform.trans(x, y);
-    }
-
-    pub(crate) fn rotate90(&mut self) {
-        self.context.transform = self.context.transform.rot_deg(90.);
-    }
-
     pub(crate) fn center_camera_on(&mut self, pos: [f64; 2]) {
         self.camera_rect[0] = (pos[0] - self.camera_rect[2] / 2.).round();
         self.camera_rect[1] = (pos[1] - self.camera_rect[3] / 2.).round();
@@ -60,10 +49,6 @@ impl<'a, 'b> RenderContext<'a, 'b> {
 
     pub(crate) fn rectangle_fill(&mut self, rect: [f64; 4], color: Color) {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
-    }
-
-    pub(crate) fn circle(&mut self, rect: [f64; 4], color: Color) {
-        ellipse(color.f32_arr(), rect, self.context.transform, self.gl);
     }
 
     //pub(crate) fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {

@@ -69,11 +69,9 @@ impl App {
         // Clear the screen.
         clear(Color::from_hex("090714").f32_arr(), &mut self.gl);
         let mut context = RenderContext {
-            args,
             context: c,
             layout_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
             camera_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
-            original_transform: c.transform.clone(),
             transform_queue: vec!(c.transform.clone()),
             gl: &mut self.gl,
             assets: &mut self.assets,
@@ -104,7 +102,6 @@ impl App {
         let mut update = Update {
             delta_time: 0.,
             max_update_time: (1. / event_settings.ups as f64),
-            updates_per_second: event_settings.ups as u32,
             mouse_pos_cam: [0., 0.],
             mouse_pos_gui: [0., 0.]
         };

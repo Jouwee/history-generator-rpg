@@ -1,7 +1,5 @@
 use std::ops::Add;
 
-use crate::world::attributes::Attributes;
-
 use super::rng::Rng;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

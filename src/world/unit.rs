@@ -21,14 +21,9 @@ pub(crate) struct Unit {
     pub(crate) xy: Coord2,
     pub(crate) creatures: Vec<CreatureId>,
     pub(crate) cemetery: Vec<CreatureId>,
-    pub(crate) unit_type: UnitType,
     pub(crate) resources: UnitResources,
     pub(crate) leader: Option<CreatureId>,
     pub(crate) artifacts: Vec<ArtifactId>
-}
-
-pub(crate) enum UnitType {
-    City,
 }
 
 #[derive(Clone, Copy)]

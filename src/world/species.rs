@@ -22,9 +22,7 @@ impl crate::commons::id_vec::Id for SpeciesId {
 pub(crate) struct Species {
     // pub(crate) name: String,
     pub(crate) appearance: SpeciesApearance,
-    pub(crate) lifetime: SpeciesLifetime,
     pub(crate) intelligence: SpeciesIntelligence,
-    pub(crate) fertility: SpeciesFertility,
     pub(crate) attributes: Attributes,
     pub(crate) innate_actions: Vec<ActionId>,
     pub(crate) drops: Vec<(MaterialId, usize)>
@@ -37,8 +35,6 @@ impl Species {
             // name: String::from(name),
             appearance,
             intelligence: SpeciesIntelligence::Civilized,
-            lifetime: SpeciesLifetime::new(120),
-            fertility: SpeciesFertility { male_drop: 0.96, female_drop: 0.92 },
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },
             innate_actions: Vec::new(),
             drops: Vec::new()
@@ -60,39 +56,9 @@ impl Species {
         self
     }
 
-    pub(crate) fn lifetime(mut self, max_age: u32) -> Self {
-        self.lifetime = SpeciesLifetime::new(max_age);
-        self
-    }
-
-    pub(crate) fn fertility(mut self, fertility: f32) -> Self {
-        self.fertility = SpeciesFertility { male_drop: fertility, female_drop: fertility };
-        self
-    }
-
     pub(crate) fn drops(mut self, drops: Vec<(MaterialId, usize)>) -> Self {
         self.drops = drops;
         self
-    }
-
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct SpeciesLifetime {
-    pub(crate) max_age: u32,
-    pub(crate) adult_age: f32
-}
-
-impl SpeciesLifetime {
-    pub(crate) fn new(max_age: u32) -> SpeciesLifetime {
-        SpeciesLifetime {
-            max_age,
-            adult_age: max_age as f32 * 0.15
-        }
-    }
-
-    pub(crate) fn is_adult(&self, age: f32) -> bool {
-        return age > self.adult_age;
     }
 
 }
@@ -101,12 +67,6 @@ impl SpeciesLifetime {
 pub(crate) enum SpeciesIntelligence {
     Instinctive,
     Civilized
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct SpeciesFertility {
-    pub(crate) male_drop: f32,
-    pub(crate) female_drop: f32
 }
 
 #[derive(Debug, Clone)]

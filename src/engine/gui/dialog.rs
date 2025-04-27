@@ -50,11 +50,7 @@ impl GUINode for Dialog {
 }
 
 impl Container for Dialog {
-
-    fn container(&self) -> &InnerContainer {
-        &self.inner
-    }
-
+    
     fn container_mut(&mut self) -> &mut InnerContainer {
         &mut self.inner
     }

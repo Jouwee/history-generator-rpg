@@ -25,10 +25,3 @@ impl Attributes {
     }
 
 }
-
-#[derive(Clone)]
-pub(crate) enum AttributeEnum {
-    Strength,
-    Agility,
-    Constitution
-}

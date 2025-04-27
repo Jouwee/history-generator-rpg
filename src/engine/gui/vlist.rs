@@ -21,10 +21,6 @@ impl VList {
 }
 
 impl Container for VList {
-    
-    fn container(&self) -> &InnerContainer {
-        &self.inner
-    }
 
     fn container_mut(&mut self) -> &mut InnerContainer {
         &mut self.inner

@@ -22,8 +22,6 @@ impl InnerContainer {
 
 pub(crate) trait Container {
 
-    fn container(&self) -> &InnerContainer;
-
     fn container_mut(&mut self) -> &mut InnerContainer;
 
     fn add<T>(&mut self, node: T) where T: GUINode + 'static {

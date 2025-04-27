@@ -4,7 +4,6 @@ use super::render::RenderContext;
 pub(crate) struct Update {
     pub(crate) delta_time: f64,
     pub(crate) max_update_time: f64,
-    pub(crate) updates_per_second: u32,
     pub(crate) mouse_pos_cam: [f64; 2],
     pub(crate) mouse_pos_gui: [f64; 2]
 }
