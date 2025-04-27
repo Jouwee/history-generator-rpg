@@ -1,4 +1,4 @@
-use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, unit::Unit}};
+use crate::{commons::rng::Rng, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, unit::Unit, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -86,7 +86,6 @@ impl CreatureSimulation {
         }
 
         // TODO: New units, migration
-        // TODO: Lineages
 
         return CreatureSideEffect::None
     }
@@ -123,9 +122,11 @@ impl CreatureSimulation {
         return ((age - 60.) / 60.).powf(4.0).clamp(0., 1.)
     }
 
-    pub(crate) fn have_child_with_spouse(now: &WorldDate, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
-        let father = creature.spouse;
-        if let Some(father) = father {
+    pub(crate) fn have_child_with_spouse(now: &WorldDate, world: &World, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
+        let father_id = creature.spouse;
+        if let Some(father_id) = father_id {
+            let father = world.creatures.get(&father_id);
+            let lineage = father.lineage.clone();
             let mut gender = CreatureGender::Male;
             // TODO: Actual distribution
             if rng.rand_chance(0.5) {
@@ -135,8 +136,9 @@ impl CreatureSimulation {
                 birth: now.clone(),
                 death: None,
                 profession: Profession::None,
+                lineage,
                 mother: *creature_id,
-                father,
+                father: father_id,
                 gender,
                 offspring: Vec::new(),
                 species: creature.species,

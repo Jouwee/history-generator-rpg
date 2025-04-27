@@ -304,12 +304,6 @@ impl Chunk {
         for unit in world.units.iter() {
             let unit = unit.borrow();
             if unit.xy.x as i32 == xy.x && unit.xy.y as i32 == xy.y {
-                // TODO:
-                // let num_builds = (unit.demographics.population / 20).clamp(1, 9) as usize;
-                // let buildings = chunk.prepare_buildings(&mut rng, num_builds, 100);
-                // for building in buildings {
-                //     chunk.make_building(&mut rng, building);
-                // }
 
                 let mut x = 20;
                 let mut y = 20;
@@ -321,8 +315,6 @@ impl Chunk {
                 }
                 for creature_id in slice.iter() {
                     let creature = world.get_creature(creature_id);
-                    // TODO:
-                    // let point = chunk.get_spawn_pos(&mut rng);
                     let point = Coord2::xy(x, y);
                     let species = resources.species.get(&creature.species);
                     chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
@@ -368,24 +360,11 @@ impl Chunk {
                         x = 3;
                     }
                 }
-
-
                 
                 found_sett = Some(unit);
 
             }
         }
-
-
-        // for creature in world.creatures.iter() {
-        //     let creature = creature.borrow();
-            // TODO:
-            // if creature.position == xy {
-            //     let point = chunk.get_spawn_pos(&mut rng);
-            //     let species = resources.species.get(&creature.species);
-            //     chunk.npcs.push(Actor::from_creature(point, *id, &creature, &creature.species, &species, world));
-            // }
-        // }
 
         if let Some(_unit) = found_sett {
             if chunk.npcs.len() == 0 {
@@ -426,98 +405,6 @@ impl Chunk {
             );
         }
         return point
-    }
-
-    pub(crate) fn prepare_buildings(&self, rng: &mut Rng, num_buildings: usize, tries: u32) -> Vec<(Coord2, Coord2)> {
-        let mut buildings = Vec::new();
-        for _ in 0..num_buildings {
-            let center = Vec2::xy(rng.randf_range(8., 56.), rng.randf_range(16., 56.));
-            let radius = rng.randf_range(3., 8.);
-            buildings.push((center, radius));           
-        }
-        // Separation
-        for i in 0..tries {
-            let mut v = Vec2::xy(0., 0.);
-            let mut neighbor_count = 0;
-            let mut overlapping = false;
-            let mut new_buildings = buildings.clone();
-            for building in new_buildings.iter_mut() {
-                for building_2 in buildings.iter() {
-                    if building == building_2 {
-                        continue
-                    }
-                    if building.0.dist(&building_2.0) < (building.1 + building_2.1) * 1.42 + 1. {
-                        v.x += building_2.0.x - building.0.x;
-                        v.y += building_2.0.y - building.0.y;
-                        neighbor_count += 1;
-                        overlapping = true;
-                    }
-
-                }
-                if neighbor_count == 0 {
-                    continue;
-                }
-                v.x = -v.x / neighbor_count as f32;
-                v.y = -v.y / neighbor_count as f32;
-                v = v.normalize(1.);
-                building.0.x = (building.0.x + v.x).clamp(building.1, self.size.x() as f32 - building.1 - 1.);
-                building.0.y = (building.0.y + v.y).clamp(building.1, self.size.y() as f32 - building.1 - 1.);
-            }
-            if !overlapping {
-                break;
-            }
-            if i == tries - 1 {
-            }
-            buildings = new_buildings;
-        }
-        return buildings.iter().map(|building| {
-            let size = Coord2::xy(
-                rng.randu_range(6, building.1 as usize * 2) as i32,
-                rng.randu_range(6, building.1 as usize * 2) as i32
-            );
-            let mut xy1 = Coord2::xy(building.0.x as i32, building.0.y as i32) - Coord2::xy(building.1 as i32, building.1 as i32);
-            let mut xy2 = xy1 + size;
-            xy1.x = xy1.x.clamp(0, self.size.x() as i32 - 1);
-            xy1.y = xy1.y.clamp(0, self.size.y() as i32 - 1);
-            xy2.x = xy2.x.clamp(0, self.size.x() as i32 - 1);
-            xy2.y = xy2.y.clamp(0, self.size.y() as i32 - 1);
-            return (xy1, xy2)
-        }).collect()
-    }
-
-    pub(crate) fn make_building(&mut self, rng: &mut Rng, building: (Coord2, Coord2)) {
-        for x in building.0.x..building.1.x + 1 {
-            for y in building.0.y..building.1.y + 1 {
-                // Floor
-                self.map.ground_layer.set_tile(x as usize, y as usize, 4);
-                if x == building.0.x || y == building.0.y || x == building.1.x || y == building.1.y {
-                    // Leaves 1 block out for doors
-                    if y == building.1.y && x == building.0.x + (building.1.x-building.0.x) / 2 {
-                        self.map.object_layer.set_tile(x as usize, y as usize, 0);
-                        continue;
-                    }
-                    self.map.object_layer.set_tile(x as usize, y as usize, 1);
-                } else {
-                    self.map.object_layer.set_tile(x as usize, y as usize, 0);
-                }
-            }
-        }
-
-        // Bed
-        if rng.rand_chance(0.7) {
-            let x = rng.randu_range(building.0.x as usize + 1, building.1.x as usize - 2);
-            self.map.object_layer.set_tile(x, building.0.y as usize + 1, 3);
-        }
-
-        // Table and stools
-        if rng.rand_chance(0.6) {
-            let x = rng.randu_range(building.0.x as usize + 2, building.1.x as usize - 3);
-            let y = rng.randu_range(building.0.y as usize + 2, building.1.y as usize - 2);
-            self.map.object_layer.set_tile(x, y, 4);
-            self.map.object_layer.set_tile(x + 1, y, 5);
-            self.map.object_layer.set_tile(x - 1, y, 5);
-        }
-
     }
 
 }

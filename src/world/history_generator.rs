@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Instant};
 
-use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
+use crate::{commons::{history_vec::Id, rng::Rng}, engine::geometry::Size2D, resources::resources::Resources, world::{culture::{CultureId, Cultures}, date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
 
 use super::{culture::Culture, region::Region, world::World};
 
@@ -45,18 +45,13 @@ impl WorldHistoryGenerator {
             regions.insert(Id(region.id), region.clone());
         }
 
+        let mut cultures = Cultures::new();
+        for culture in parameters.cultures.iter() {
+            let culture = culture.clone();
+            cultures.add::<CultureId>(culture);
+        }
 
-
-        // TODO:
-        // let mut culture_id = Id(0);
-        // for culture in parameters.cultures.iter() {
-        //     let mut culture = culture.clone();
-        //     culture.id = culture_id.next();
-        //     world.cultures.insert(culture.id, culture);
-        // }
-
-
-        let mut world = World::new(parameters.clone(), world_map, regions);
+        let mut world = World::new(parameters.clone(), world_map, regions, cultures);
 
         let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
             rng: rng.derive("history"),

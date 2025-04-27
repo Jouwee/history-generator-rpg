@@ -28,14 +28,11 @@ impl HistorySimulation {
 
         let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
 
-        for i in 0..self.params.number_of_seed_cities {
+        for _ in 0..self.params.number_of_seed_cities {
 
             let pos = self.find_unit_suitable_pos(&mut self.params.rng.clone(), &world);
             let pos = match pos {
-                None => {
-                    println!("## BREAK {}", i);
-                    break
-                },
+                None => break,
                 Some(candidate) => candidate,
             };
 
@@ -213,7 +210,7 @@ impl HistorySimulation {
                 CreatureSideEffect::HaveChild => {
 
                     let mut creature = world.get_creature_mut(&creature_id);
-                    let child = CreatureSimulation::have_child_with_spouse(now, &mut rng, &creature_id, &mut creature);
+                    let child = CreatureSimulation::have_child_with_spouse(now, &world, &mut rng, &creature_id, &mut creature);
                     drop(creature);
                     if let Some(child) = child {
                         let father = child.father;

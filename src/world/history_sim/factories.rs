@@ -1,6 +1,4 @@
-// TODO: Break into files
-
-use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, material::MaterialId, species::SpeciesId, world::World}};
+use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, lineage::Lineage, material::MaterialId, species::SpeciesId, world::World}};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -14,6 +12,12 @@ impl CreatureFactory {
 
     pub(crate) fn make_family_or_single(&mut self, now: &WorldDate, species: SpeciesId, world: &mut World) -> Vec<CreatureId> {
         let age = self.rng.randi_range(20, 50);
+
+        let culture_id = world.cultures.random();
+        let culture = world.cultures.get(&culture_id);
+        let lineage = world.lineages.add(Lineage::new(world.cultures.random(), &culture));
+        drop(culture);
+
         // Single
         if self.rng.rand_chance(0.5) {
             let mut gender = CreatureGender::Male;
@@ -23,6 +27,7 @@ impl CreatureFactory {
             let creature_id = world.add_creature(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
+                lineage,
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,
@@ -41,6 +46,7 @@ impl CreatureFactory {
             let father_id = world.add_creature(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
+                lineage,
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,
@@ -56,6 +62,7 @@ impl CreatureFactory {
             let mother_id = world.add_creature(Creature {
                 birth: *now - WorldDate::new(age + self.rng.randi_range(-5, 5), 0 ,0),
                 death: None,
+                lineage,
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,

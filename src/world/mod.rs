@@ -5,6 +5,7 @@ pub(crate) mod creature;
 pub(crate) mod event;
 pub(crate) mod history_generator;
 pub(crate) mod item;
+pub(crate) mod lineage;
 pub(crate) mod material;
 pub(crate) mod map_features;
 pub(crate) mod region;

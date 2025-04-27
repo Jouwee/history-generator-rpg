@@ -1,12 +1,10 @@
 use std::{fs::File, io::Write, cell::{Ref, RefMut}, collections::HashMap};
 
-use crate::{Event, Item, Region, Resources, WorldGenerationParameters};
+use crate::{commons::id_vec::Id, Event, Item, Region, Resources, WorldGenerationParameters};
 
-use super::{creature::{Creature, CreatureId, Creatures}, date::WorldDate, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{Creature, CreatureId, Creatures}, culture::Cultures, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
 
 use crate::commons::{history_vec::Id as HId, id_vec::IdVec};
-
-
 
 // TODO:
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -26,10 +24,10 @@ pub(crate) struct World {
     pub(crate) map: WorldTopology,
     pub(crate) map_features: WorldMapFeatures,
     pub(crate) units: Units,
+    pub(crate) lineages: Lineages,
     pub(crate) creatures: Creatures,
     pub(crate) events: Vec<Event>,
-    // pub(crate) cultures: HashMap<Id, Culture>,
-    // pub(crate) factions: HistoryVec<Faction>,
+    pub(crate) cultures: Cultures,
     pub(crate) artifacts: IdVec<Item>,
     pub(crate) regions: HashMap<HId, Region>,
 
@@ -37,16 +35,18 @@ pub(crate) struct World {
 
 impl World {
 
-    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>) -> World {
+    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, regions: HashMap<HId, Region>, cultures: Cultures) -> World {
         return World {
             generation_params,
             map,
             map_features: WorldMapFeatures::new(),
             units: Units::new(),
             creatures: Creatures::new(),
+            lineages: Lineages::new(),
             artifacts: IdVec::new(),
             events: Vec::new(),
-            regions
+            regions,
+            cultures
         }
     }
 
@@ -132,7 +132,7 @@ impl World {
         if creature.gender.is_female() {
             gender = "F";
         }
-        return String::from(format!("[{:?}, {:?} {:?}]", creature_id, age, gender))
+        return String::from(format!("{} [{}, {} {}]", creature.name(creature_id, &self), creature_id.as_usize(), age, gender))
     }
 
 
