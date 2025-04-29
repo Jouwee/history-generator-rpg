@@ -97,7 +97,6 @@ impl CreatureSimulation {
         let children_mult = 1. - (creature.offspring.len() as f32 / 10.);
         let age = (*now - creature.birth).year() as f32;
         
-        // TODO: Fetch from species or remove from species
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
         return YEARLY_CHANCE_CHILD_MULT * fertility_mult * food_mult * children_mult;
@@ -128,7 +127,6 @@ impl CreatureSimulation {
             let father = world.creatures.get(&father_id);
             let lineage = father.lineage.clone();
             let mut gender = CreatureGender::Male;
-            // TODO: Actual distribution
             if rng.rand_chance(0.5) {
                 gender = CreatureGender::Female;
             }

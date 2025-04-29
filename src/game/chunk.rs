@@ -4,7 +4,7 @@ use image::ImageReader;
 use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
 
 use super::{actor::Actor, Renderable};
 
@@ -24,9 +24,9 @@ pub(crate) enum TileMetadata {
 }
 
 pub(crate) struct ChunkMap {
-    tiles_clone: ResourceMap<TileId, Tile>,
-    ground_layer: LayeredDualgridTilemap,
-    object_layer: TileMap,
+    pub(crate) tiles_clone: ResourceMap<TileId, Tile>,
+    pub(crate) ground_layer: LayeredDualgridTilemap,
+    pub(crate) object_layer: TileMap,
 }
 
 impl ChunkMap {
@@ -156,6 +156,8 @@ impl Chunk {
     }
 
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
+        let generator = ChunkGenerator {};
+        //return generator.generate(resources, player);
         let mut chunk = Self::new(Size2D(128, 128), player, resources);
         let mut rng = Rng::seeded(world.generation_params.seed).derive("chunk").derive(xy);
         let tile = world.map.tile(xy.x as usize, xy.y as usize);
