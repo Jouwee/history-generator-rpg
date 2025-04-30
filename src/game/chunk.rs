@@ -156,8 +156,10 @@ impl Chunk {
     }
 
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
-        let generator = ChunkGenerator {};
-        //return generator.generate(resources, player);
+        // TODO: From params
+        let mut generator = ChunkGenerator::new(resources, player, Size2D(128, 128));
+        generator.generate(world, xy, resources);
+        return generator.into_chunk();
         let mut chunk = Self::new(Size2D(128, 128), player, resources);
         let mut rng = Rng::seeded(world.generation_params.seed).derive("chunk").derive(xy);
         let tile = world.map.tile(xy.x as usize, xy.y as usize);

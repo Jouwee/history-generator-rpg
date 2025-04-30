@@ -216,7 +216,6 @@ impl HistorySimulation {
                     if let Some(child) = child {
                         let father = child.father;
                         let mother = child.mother;
-                        // TODO: TODO what???
                         let creature_id = world.add_creature(child);
                         let mut unit = world.units.get_mut(unit_id);
                         unit.creatures.push(creature_id);

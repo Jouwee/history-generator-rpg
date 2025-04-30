@@ -473,8 +473,12 @@ impl Scene for GameSceneState {
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         println!("Inspect at {:?}", tile_pos);
                                         let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
-                                        if let Some(_target) = target {
-                                            println!("target");
+                                        if let Some(target) = target {
+                                            let creature_id = target.creature_id;
+                                            if let Some(creature_id) = creature_id {
+                                                let creature = self.world.creatures.get(&creature_id);
+                                                println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &self.world), creature.profession, creature.gender, creature.birth.year());
+                                            }
                                         }
                                         let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);
                                         if let Some(item) = item {

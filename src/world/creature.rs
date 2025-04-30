@@ -65,7 +65,7 @@ pub(crate) struct CreatureDetails {
     pub(crate) inventory: Vec<ArtifactId>
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub(crate) enum CreatureGender {
     Male, Female
 }

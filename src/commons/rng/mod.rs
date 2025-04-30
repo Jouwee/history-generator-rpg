@@ -69,6 +69,16 @@ impl Rng {
         return self.randf() < chance
     }
 
+    pub (crate) fn shuffle<U>(&mut self, mut array: Vec<U>) -> Vec<U> {
+        let mut new = Vec::new();
+        while array.len() > 0 {
+            let item = array.remove(self.randu_range(0, array.len()));
+            new.push(item);
+        }
+        return new;
+    }
+
+
     pub(crate) fn xor_shift(&mut self, v: u32) -> u32 {
         let mut x: u32 = v;
         x ^= x << 13;
