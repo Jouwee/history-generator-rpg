@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use image::ImageReader;
-use noise::{NoiseFn, Perlin};
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D, Vec2}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{ImageParams, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
 
 use super::{actor::Actor, Renderable};
 
@@ -15,13 +13,13 @@ pub(crate) struct Chunk {
     pub(crate) npcs: Vec<Actor>,
     pub(crate) killed_people: Vec<CreatureId>,
     // TODO: Should probably be on the map
-    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
+    // pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
 }
 
-pub(crate) enum TileMetadata {
-    BurialPlace(CreatureId)
-}
+// pub(crate) enum TileMetadata {
+//     BurialPlace(CreatureId)
+// }
 
 pub(crate) struct ChunkMap {
     pub(crate) tiles_clone: ResourceMap<TileId, Tile>,
@@ -35,15 +33,15 @@ impl ChunkMap {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
             return false
         }
+        // TODO: Resources
+        if self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize) == 9 {
+            return false
+        }
         return true
     }
 
     pub(crate) fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
-    }
-
-    pub(crate) fn remove_object(&mut self, pos: Coord2) {
-        self.object_layer.set_tile(pos.x as usize, pos.y as usize, 0);
     }
 
     pub(crate) fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
@@ -62,18 +60,9 @@ impl Chunk {
     pub(crate) fn new(size: Size2D, player: Actor, resources: &Resources) -> Chunk {
 
         let mut tileset = TileSet::new();
-        let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 24, 48)));
-        let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageReader::open("assets/sprites/bed.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageReader::open("assets/sprites/table.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        for tile in resources.object_tiles.iter() {
+            tileset.add(tile.tile.clone());    
+        }
 
         let mut dual_tileset = LayeredDualgridTileset::new();
         for tile in resources.tiles.iter() {
@@ -91,7 +80,7 @@ impl Chunk {
             npcs: Vec::new(),
             killed_people: Vec::new(),
             items_on_ground: Vec::new(),
-            tiles_metadata: HashMap::new(),
+            // tiles_metadata: HashMap::new(),
         }
     }
 
@@ -160,255 +149,40 @@ impl Chunk {
         let mut generator = ChunkGenerator::new(resources, player, Size2D(128, 128));
         generator.generate(world, xy, resources);
         return generator.into_chunk();
-        let mut chunk = Self::new(Size2D(128, 128), player, resources);
-        let mut rng = Rng::seeded(world.generation_params.seed).derive("chunk").derive(xy);
-        let tile = world.map.tile(xy.x as usize, xy.y as usize);
-        let noise = Perlin::new(rng.derive("terrain").seed());
-        for x in 0..chunk.size.x() {
-            for y in 0..chunk.size.y() {
-                let n = noise.get([x as f64 / 10.0, y as f64 / 10.0]);
-                match tile.region_id {
-                    0 => { // Ocean
-                        chunk.map.ground_layer.set_tile(x, y, 3);
-                        // water
-                    },
-                    1 => { // Coastal
-                        if n < -0.5 {
-                            chunk.map.ground_layer.set_tile(x, y, 3);
-                            // water
-                        } else {
-                            chunk.map.ground_layer.set_tile(x, y, 2);
-                            // sand
-                        }
-                    },
-                    2 => { // Grassland
-                        if n < 0.5 {
-                            chunk.map.ground_layer.set_tile(x, y, 1);
-                            // grass
-                        } else {
-                            chunk.map.ground_layer.set_tile(x, y, 0);
-                            // stone
-                        }
-                    },
-                    3 => { // Forest
-                        if n < 0.5 {
-                            chunk.map.ground_layer.set_tile(x, y, 1);
-                            // grass
-                        } else {
-                            chunk.map.ground_layer.set_tile(x, y, 0);
-                            // stone
-                        }
-                    },
-                    4 => { // Desert - Sand
-                        if n < 0.5 {
-                            chunk.map.ground_layer.set_tile(x, y, 2);
-                            // sand
-                        } else {
-                            chunk.map.ground_layer.set_tile(x, y, 0);
-                            // stone
-                        }
-                    },
-                    _ => ()
-                }
-            }
-        }
+       
 
-        let noise = Perlin::new(rng.derive("trees").seed());
-        for x in 1..chunk.size.x()-1 {
-            for y in 1..chunk.size.y()-1 {
-                if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
-                    if let Some(ground) = chunk.map.ground_layer.tile(x, y) {
-                        if ground == 1 && rng.rand_chance(0.1) {
-                            chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
-                        }
-                    }
-                }
-            }
-        }
+                // for item in unit.artifacts.iter() {
 
 
+                //     let item = world.artifacts.get(item);
+                //     let texture = item.make_texture(&resources.materials);
+                //     chunk.items_on_ground.push((Coord2::xy(x, y), item.clone(), texture));
 
-        // Roads
-        if world.map_features.has_road(xy) {
-            let road_north = world.map_features.has_road(xy + Coord2::xy(0, -1));
-            let road_south = world.map_features.has_road(xy + Coord2::xy(0, 1));
-            let road_east = world.map_features.has_road(xy + Coord2::xy(1, 0));
-            let road_west = world.map_features.has_road(xy + Coord2::xy(-1, 0));
+                //     x = x + 2;
+                //     if x > 18 {
+                //         y = y + 2;
+                //         x = 10;
+                //     }
+                // }
 
-            let start_north = (Coord2::xy(chunk.size.x() as i32 / 2, 0), Vec2::xy(0., 1.));
-            let start_south = (Coord2::xy(chunk.size.x() as i32 / 2, chunk.size.y() as i32 - 1), Vec2::xy(0., -1.));
-            let start_east = (Coord2::xy(chunk.size.x() as i32 - 1, chunk.size.y() as i32 / 2), Vec2::xy(-1., 0.));
-            let start_west = (Coord2::xy(0, chunk.size.y() as i32 / 2), Vec2::xy(1., 0.));
-            let center = Coord2::xy((chunk.size.x() as f64 / 2.) as i32, (chunk.size.y() as f64 / 2.) as i32);
+                // let mut x = 3;
+                // let mut y = 30;
 
-            let vec = match (road_north, road_south, road_east, road_west) {
-                // 2 conections
-                (true, true, false, false) => vec!((start_north.0, start_south.0, start_north.1)),
-                (false, false, true, true) => vec!((start_east.0, start_west.0, start_east.1)),
-                (true, false, true, false) => vec!((start_north.0, start_east.0, start_north.1)),
-                (true, false, false, true) => vec!((start_north.0, start_west.0, start_north.1)),
-                (false, true, true, false) => vec!((start_south.0, start_east.0, start_south.1)),
-                (false, true, false, true) => vec!((start_south.0, start_west.0, start_south.1)),
-                // 3 or 4 connections
-                _ => {
-                    let mut vec = Vec::new();
-                    if road_north {
-                        vec.push((start_north.0, center, start_north.1));
-                    }
-                    if road_south {
-                        vec.push((start_south.0, center, start_south.1));
-                    }
-                    if road_east {
-                        vec.push((start_east.0, center, start_east.1));
-                    }
-                    if road_west {
-                        vec.push((start_west.0, center, start_west.1));
-                    }
-                    vec
-                }
-            };
+                // let mut slice = &unit.cemetery[..];
+                // if slice.len() > 700 {
+                //     slice = &unit.cemetery[0..700];
+                // }
 
-            for (start, target, velocity) in vec.iter() {
-                let mut position = start.to_vec2();
-                let target = target.to_vec2();
-                let mut velocity = velocity.clone();
+                // for creature in slice.iter() {
+                //     chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
+                //     chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
 
-                let mut points = Vec::new();
-                points.push(position);
-
-                let max_speed: f32 = 1.;
-                let max_force = 0.1;
-
-                while position.dist_squared(&target) > (max_speed).powi(2) {
-                    position = position + velocity;
-
-                    let desired_velocity = (target - position).normalize(max_speed);
-                    let random_velocity = Vec2::xy(rng.randf_range(-0.3, 0.3), rng.randf_range(-0.3, 0.3));
-                    let steering = (desired_velocity - velocity) + random_velocity;
-                    let steering = steering.truncate(max_force);
-                    // steering = steering / mass
-                    velocity = (velocity + steering).truncate(max_speed);
-
-                    // Cobblestone
-                    let coord = Coord2::xy(position.x.round() as i32, position.y.round() as i32);
-                    for c in coord.neighbours_circle(chunk.size, 3).iter() {
-                        if rng.rand_chance(0.5) {
-                            chunk.map.ground_layer.set_tile(c.x as usize, c.y as usize, 5);
-                        }
-                        chunk.map.object_layer.set_tile(c.x as usize, c.y as usize, 0);
-                    }
-                }
-
-
-            }
-            
-        }
-
-        let mut found_sett = None;
-        for unit in world.units.iter() {
-            let unit = unit.borrow();
-            if unit.xy.x as i32 == xy.x && unit.xy.y as i32 == xy.y {
-
-                let mut x = 20;
-                let mut y = 20;
-
-                // TODO: can't handle more
-                let mut slice = &unit.creatures[..];
-                if slice.len() > 1000 {
-                    slice = &unit.creatures[0..1000];
-                }
-                for creature_id in slice.iter() {
-                    let creature = world.get_creature(creature_id);
-                    let point = Coord2::xy(x, y);
-                    let species = resources.species.get(&creature.species);
-                    chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
-                    x = x + 3;
-                    if x > 100 {
-                        y = y + 3;
-                        x = 20;
-                    }
-                }
-
-                let mut x = 10;
-                let mut y = 20;
-
-                for item in unit.artifacts.iter() {
-
-
-                    let item = world.artifacts.get(item);
-                    let texture = item.make_texture(&resources.materials);
-                    chunk.items_on_ground.push((Coord2::xy(x, y), item.clone(), texture));
-
-                    x = x + 2;
-                    if x > 18 {
-                        y = y + 2;
-                        x = 10;
-                    }
-                }
-
-                let mut x = 3;
-                let mut y = 30;
-
-                let mut slice = &unit.cemetery[..];
-                if slice.len() > 700 {
-                    slice = &unit.cemetery[0..700];
-                }
-
-                for creature in slice.iter() {
-                    chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
-                    chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
-
-                    x = x + 1;
-                    if x > 18 {
-                        y = y + 2;
-                        x = 3;
-                    }
-                }
-                
-                found_sett = Some(unit);
-
-            }
-        }
-
-        if let Some(_unit) = found_sett {
-            if chunk.npcs.len() == 0 {
-                for _ in 0..rng.randu_range(3, 7) {
-                    let point = chunk.get_spawn_pos(&mut rng);
-                    let species_id = resources.species.id_of("species:spider");
-                    let species = resources.species.get(&species_id);
-                    let npc = Actor::from_species(point, &species_id, species);
-                    chunk.npcs.push(npc);
-                }
-
-                let point = Coord2::xy(
-                    rng.randu_range(0, chunk.size.x()) as i32,
-                    rng.randu_range(0, chunk.size.y()) as i32
-                );
-                let item = ItemMaker::random(&rng, &resources.materials, ItemQuality::Normal);
-                let texture = item.make_texture(&resources.materials);
-                chunk.items_on_ground.push((point, item, texture));
-            }
-
-        }
-
-        chunk
-    }
-
-    pub(crate) fn get_spawn_pos(&self, rng: &mut Rng) -> Coord2 {
-        let mut point = Coord2::xy(
-                rng.randu_range(0, self.size.x()) as i32,
-                rng.randu_range(0, self.size.y()) as i32
-            );
-        for _ in 0..10 {
-            if !self.map.blocks_movement(point) {
-                return point
-            }
-            point = Coord2::xy(
-                rng.randu_range(0, self.size.x()) as i32,
-                rng.randu_range(0, self.size.y()) as i32
-            );
-        }
-        return point
+                //     x = x + 1;
+                //     if x > 18 {
+                //         y = y + 2;
+                //         x = 3;
+                //     }
+                // }
     }
 
 }

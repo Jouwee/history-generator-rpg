@@ -90,6 +90,9 @@ impl JigsawSolver {
 
     fn can_place(&self, piece: &JigsawPiece, position: Coord2) -> bool {
         let rect_a = [position.x, position.y, position.x + piece.size.x() as i32, position.y + piece.size.y() as i32];
+        if rect_a[0] < 0 || rect_a[1] < 0 || rect_a[2] >= self.size.x() as i32 || rect_a[3] >= self.size.y() as i32 {
+            return false;
+        }
         for structure in self.structures.iter() {
             for (position, piece) in structure.vec.iter() {
                 let rect_b = [position.x, position.y, position.x + piece.size.x() as i32, position.y + piece.size.y() as i32];
@@ -109,12 +112,30 @@ mod tests_jigsaw_solver {
     use crate::engine::geometry::Size2D;
     use super::*;
 
+    fn parse(size: Size2D, string: &str) -> JigsawPiece {
+        let mut tiles = Vec::new();
+        for char in string.chars() {
+            match char {
+                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None }),
+                'A' => tiles.push(JigsawPieceTile::Connection(String::from("A"))),
+                'B' => tiles.push(JigsawPieceTile::Connection(String::from("B"))),
+                'C' => tiles.push(JigsawPieceTile::Connection(String::from("C"))),
+                '_' => tiles.push(JigsawPieceTile::Air),
+                '.' => tiles.push(JigsawPieceTile::Empty),
+                _ => ()
+            }
+        }
+        JigsawPiece {
+            size,
+            tiles
+        }
+    }
 
     #[test]
     fn test_single_buildings() {
         let mut solver = JigsawSolver::new(Size2D(64, 64));
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("a.1", JigsawPiece::parse(Size2D(3, 3), "###|#_#|###"));
+        pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_#|###"));
         solver.add_pool("A", pool);
 
         let mut rng = Rng::seeded(0);
@@ -142,11 +163,11 @@ mod tests_jigsaw_solver {
         let mut solver = JigsawSolver::new(Size2D(64, 64));
 
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("a.1", JigsawPiece::parse(Size2D(3, 3), "###|#_B|###"));
+        pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_B|###"));
         solver.add_pool("A", pool);
 
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("b.1", JigsawPiece::parse(Size2D(3, 3), "###|A_#|###"));
+        pool.add_piece("b.1", parse(Size2D(3, 3), "###|A_#|###"));
         solver.add_pool("B", pool);
 
         let mut rng = Rng::seeded(0);
@@ -187,29 +208,6 @@ impl JigsawPiecePool {
 pub(crate) struct JigsawPiece {
     pub(crate) size: Size2D,
     pub(crate) tiles: Vec<JigsawPieceTile>
-}
-
-impl JigsawPiece {
-
-    pub(crate) fn parse(size: Size2D, string: &str) -> JigsawPiece {
-        let mut tiles = Vec::new();
-        for char in string.chars() {
-            match char {
-                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None }),
-                'A' => tiles.push(JigsawPieceTile::Connection(String::from("A"))),
-                'B' => tiles.push(JigsawPieceTile::Connection(String::from("B"))),
-                'C' => tiles.push(JigsawPieceTile::Connection(String::from("C"))),
-                '_' => tiles.push(JigsawPieceTile::Air),
-                '.' => tiles.push(JigsawPieceTile::Empty),
-                _ => ()
-            }
-        }
-        JigsawPiece {
-            size,
-            tiles
-        }
-    }
-
 }
 
 #[derive(Clone, PartialEq, Eq)]

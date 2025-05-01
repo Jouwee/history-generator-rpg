@@ -120,6 +120,7 @@ impl TileSet {
     }
 }
 
+#[derive(Clone)]
 pub(crate) enum Tile {
     Empty,
     SingleTile(TileSingle),
@@ -129,6 +130,8 @@ pub(crate) enum Tile {
 pub(crate) struct TileSingle {
     tile_width: usize,
     tile_height: usize,
+    image: DynamicImage,
+    // TODO: Use assets
     texture: Texture,
 }
 
@@ -137,17 +140,29 @@ impl TileSingle {
         let width = image.width() as usize;
         let height = image.height() as usize;
         let settings = TextureSettings::new().filter(Filter::Nearest);
+        let texture = Texture::from_image(&image.to_rgba8(), &settings);
         TileSingle {
             tile_width: width,
             tile_height: height,
-            texture: Texture::from_image(&image.to_rgba8(), &settings)
+            image,
+            texture
         }
     }
+}
+
+impl Clone for TileSingle {
+    
+    fn clone(&self) -> Self {
+        return Self::new(self.image.clone());
+    }
+
 }
 
 pub(crate) struct Tile16Subset {
     tile_width: usize,
     tile_height: usize,
+    image: DynamicImage,
+    // TODO: Use assets
     textures: Vec<Texture>
 }
 
@@ -164,7 +179,17 @@ impl Tile16Subset {
         Tile16Subset {
             tile_width,
             tile_height,
+            image,
             textures
         }
     }
+}
+
+
+impl Clone for Tile16Subset {
+    
+    fn clone(&self) -> Self {
+        return Self::new(self.image.clone(), self.tile_width, self.tile_height);
+    }
+
 }

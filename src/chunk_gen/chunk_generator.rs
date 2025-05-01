@@ -1,23 +1,3 @@
-/*
-[foyer]
-any
-
-[foyer_a]
-$template=
-######
-#c   #
-#Tc  #
-#c   #
-#    #
-###O##
-@o=entrance
-@#={tag=wall}
-@T={tag=table}
-@c={tag=chair} 
- */
-
-// https://www.youtube.com/watch?v=b6eBndQ_jK0&t=433s
-
 use core::panic;
 use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
@@ -25,7 +5,7 @@ use noise::{NoiseFn, Perlin};
 
 use crate::{commons::rng::Rng, engine::geometry::Size2D, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
 
-use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPiecePool, JigsawPieceTile, JigsawSolver}};
+use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}};
 
 pub(crate) struct ChunkGenerator {
     chunk: Chunk
@@ -189,7 +169,7 @@ impl ChunkGenerator {
         let mut solver = JigsawSolver::new(Size2D(64, 64));
         let parser = JigsawParser::new("assets/structures/village.toml");
 
-        parser.parse(&mut solver);
+        let _ = parser.parse(&mut solver);
 
         return solver;
     }
@@ -200,10 +180,16 @@ impl ChunkGenerator {
         let noise = Perlin::new(Rng::rand().derive("trees").seed());
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
-                if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
-                    if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
-                        if ground == 1 && rng.rand_chance(0.1) {
-                            self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
+                    if ground == 1 {
+                        if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
+                            if rng.rand_chance(0.1) {
+                                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                                continue;
+                            }
+                        }
+                        if rng.rand_chance(0.2) {
+                            self.chunk.map.object_layer.set_tile(x as usize, y as usize, 9);
                         }
                     }
                 }

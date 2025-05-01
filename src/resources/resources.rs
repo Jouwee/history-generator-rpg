@@ -1,6 +1,8 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::{attributes::Attributes, material::{Material, MaterialId}, species::{Species, SpeciesApearance, SpeciesId, SpeciesIntelligence}}};
+use image::ImageReader;
 
-use super::tile::{Tile, TileId};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileSingle}, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::{attributes::Attributes, material::{Material, MaterialId}, species::{Species, SpeciesApearance, SpeciesId, SpeciesIntelligence}}};
+
+use super::{object_tile::{ObjectTile, ObjectTileId}, tile::{Tile, TileId}};
 
 pub(crate) type Actions = ResourceMap<ActionId, Action>;
 pub(crate) type Materials = ResourceMap<MaterialId, Material>;
@@ -11,7 +13,8 @@ pub(crate) struct Resources {
     pub(crate) actions: Actions,
     pub(crate) materials: Materials,
     pub(crate) species: SpeciesMap,
-    pub(crate) tiles: ResourceMap<TileId, Tile>
+    pub(crate) tiles: ResourceMap<TileId, Tile>,
+    pub(crate) object_tiles: ResourceMap<ObjectTileId, ObjectTile>
 }
 
 impl Resources {
@@ -22,6 +25,7 @@ impl Resources {
             materials: ResourceMap::new(),
             species: ResourceMap::new(),
             tiles: ResourceMap::new(),
+            object_tiles: ResourceMap::new(),
         }
     }
 
@@ -30,6 +34,7 @@ impl Resources {
         self.load_actions();
         self.load_species();
         self.load_tiles();
+        self.load_object_tiles();
     }
 
     pub(crate) fn load_materials(&mut self) {
@@ -251,6 +256,36 @@ impl Resources {
         let mut tile = Tile::new(2, "assets/sprites/chunk_tiles/cobblestone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:cobblestone", tile);
+    }
+
+    pub(crate) fn load_object_tiles(&mut self) {
+        
+        let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 24, 48)), true));
+
+        let image = ImageReader::open("assets/sprites/tree.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
+        let image = ImageReader::open("assets/sprites/bed.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
+        let image = ImageReader::open("assets/sprites/table.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:table", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
+        let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        
+        let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        
+        let image = ImageReader::open("assets/sprites/chunk_tiles/anvil.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:anvil", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        
+        let image = ImageReader::open("assets/sprites/chunk_tiles/barrel.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:barrel", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        
+        let image = ImageReader::open("assets/sprites/chunk_tiles/grass_decal.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), false));
     }
 
 }
