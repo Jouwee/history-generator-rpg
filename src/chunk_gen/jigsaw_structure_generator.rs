@@ -28,26 +28,28 @@ impl JigsawSolver {
         let options = pool.pieces.values().collect();
         let options = rng.shuffle(options);
         
-        let selected= options.first().unwrap();
+        for selected in options.iter() {
 
-        if !self.can_place(&selected, position) {
-            return None;
+            if !self.can_place(&selected, position) {
+                continue;
+            }
+
+            let mut structure = Structure::new();
+            structure.add(&selected, position);
+
+            // TODO: Param
+            let result = self.recursive_jigsaw(structure, 1, 5);
+
+            if result.is_none() {
+                continue;
+            }
+
+
+            self.structures.push(result.unwrap());
+            
+            return Some(self.structures.last().unwrap());
         }
-
-        let mut structure = Structure::new();
-        structure.add(&selected, position);
-
-        // TODO: Param
-        let result = self.recursive_jigsaw(structure, 1, 5);
-
-        if result.is_none() {
-            return None;
-        }
-
-
-        self.structures.push(result.unwrap());
-        
-        return Some(self.structures.last().unwrap());
+        return None;
     }
 
     fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize) -> Option<Structure> {

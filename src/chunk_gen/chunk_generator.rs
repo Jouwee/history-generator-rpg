@@ -91,7 +91,7 @@ impl ChunkGenerator {
 
         let mut j = 0;
 
-        let mut solver = Self::get_jigsaw_solver();
+        let mut solver = self.get_jigsaw_solver();
 
         while homeless.len() > 0 {
             // TODO:
@@ -165,8 +165,8 @@ impl ChunkGenerator {
         }
     }
 
-    fn get_jigsaw_solver() -> JigsawSolver {
-        let mut solver = JigsawSolver::new(Size2D(64, 64));
+    fn get_jigsaw_solver(&self) -> JigsawSolver {
+        let mut solver = JigsawSolver::new(self.chunk.size.clone());
         let parser = JigsawParser::new("assets/structures/village.toml");
 
         let _ = parser.parse(&mut solver);
