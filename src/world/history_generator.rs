@@ -51,7 +51,7 @@ impl WorldHistoryGenerator {
             cultures.add::<CultureId>(culture);
         }
 
-        let mut world = World::new(parameters.clone(), world_map, cultures);
+        let mut world = World::new(world_map, cultures);
 
         let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
             rng: rng.derive("history"),

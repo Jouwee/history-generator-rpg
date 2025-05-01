@@ -1,6 +1,6 @@
 use crate::commons::{id_vec::{Id, IdVec}, rng::Rng};
 
-use super::{date::WorldDate, lineage::LineageId, species::SpeciesId, unit::UnitResources, world::{ArtifactId, World}};
+use super::{date::WorldDate, item::ItemId, lineage::LineageId, species::SpeciesId, unit::UnitResources, world::World};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -62,7 +62,7 @@ impl Creature {
 
 #[derive(Clone)]
 pub(crate) struct CreatureDetails {
-    pub(crate) inventory: Vec<ArtifactId>
+    pub(crate) inventory: Vec<ItemId>
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]

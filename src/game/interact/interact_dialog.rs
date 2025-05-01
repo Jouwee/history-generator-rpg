@@ -18,7 +18,7 @@ impl InteractDialog {
     pub(crate) fn start_dialog(&mut self, world: &World, creature_id: CreatureId) {
         let mut dialog = Dialog::new();
 
-        self.creature = Some((creature_id, world.get_creature(&creature_id).clone()));
+        self.creature = Some((creature_id, world.creatures.get(&creature_id).clone()));
         self.dialog_y = 0.;
 
         dialog.add_key("btn_who", Button::new("Who are you?", Position::Anchored(Anchor::BottomLeft, 10., 34.)));

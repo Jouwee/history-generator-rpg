@@ -116,7 +116,7 @@ impl HistorySimulation {
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
         for creature_id in unit.creatures.iter() {
-            let mut creature = world.get_creature_mut(creature_id);
+            let mut creature = world.creatures.get_mut(creature_id);
             stats.1.count(now, &creature);
 
             let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &mut creature);
@@ -157,11 +157,11 @@ impl HistorySimulation {
                 CreatureSideEffect::None => (),
                 CreatureSideEffect::Death(cause_of_death) => {
                     {
-                        let mut creature = world.get_creature_mut(&creature_id);
+                        let mut creature = world.creatures.get_mut(&creature_id);
                         // CreatureSimulation::kill_creature(&world, now, &mut creature, &cause_of_death);
                         creature.death = Some((now.clone(), cause_of_death));
                         if let Some(spouse_id) = creature.spouse {
-                            let mut spouse = world.get_creature_mut(&spouse_id);
+                            let mut spouse = world.creatures.get_mut(&spouse_id);
                             spouse.spouse = None;
                         }
                         let mut unit = world.units.get_mut(unit_id);
@@ -176,7 +176,7 @@ impl HistorySimulation {
                             if details.inventory.len() > 0 {
                                 has_possession = true;
                                 for candidate_id in creature.offspring.iter() {
-                                    let candidate = world.get_creature(&candidate_id);
+                                    let candidate = world.creatures.get(candidate_id);
                                     if candidate.death.is_none() {
                                         inheritor = Some((*candidate_id, details.inventory.clone()));
                                         break;
@@ -189,8 +189,8 @@ impl HistorySimulation {
                 
                         if has_possession {
                             if let Some((inheritor_id, inventory)) = inheritor {
-                                let mut inheritor = world.get_creature_mut(&inheritor_id);
-                                let mut creature = world.get_creature_mut(&creature_id);
+                                let mut inheritor = world.creatures.get_mut(&inheritor_id);
+                                let mut creature = world.creatures.get_mut(&creature_id);
                                 creature.details().inventory.clear();
                                 inheritor.details().inventory.append(&mut inventory.clone());
                                 drop(creature);
@@ -210,28 +210,28 @@ impl HistorySimulation {
                 },
                 CreatureSideEffect::HaveChild => {
 
-                    let mut creature = world.get_creature_mut(&creature_id);
+                    let mut creature = world.creatures.get_mut(&creature_id);
                     let child = CreatureSimulation::have_child_with_spouse(now, &world, &mut rng, &creature_id, &mut creature);
                     drop(creature);
                     if let Some(child) = child {
                         let father = child.father;
                         let mother = child.mother;
-                        let creature_id = world.add_creature(child);
+                        let creature_id = world.creatures.add(child);
                         let mut unit = world.units.get_mut(unit_id);
                         unit.creatures.push(creature_id);
                         world.events.push(Event::CreatureBirth { date: now.clone(), creature_id });
                         {
-                            let mut father = world.get_creature_mut(&father);
+                            let mut father = world.creatures.get_mut(&father);
                             father.offspring.push(creature_id);
                         }
                         {
-                            let mut mother = world.get_creature_mut(&mother);
+                            let mut mother = world.creatures.get_mut(&mother);
                             mother.offspring.push(creature_id);
                         }
                     }
                 },
                 CreatureSideEffect::LookForMarriage => {
-                    let creature = world.get_creature_mut(&creature_id);
+                    let creature = world.creatures.get_mut(&creature_id);
                     marriage_pool.push((creature_id, creature.gender));
                 },
                 CreatureSideEffect::LookForNewJob => {
@@ -239,9 +239,9 @@ impl HistorySimulation {
                 },
                 CreatureSideEffect::MakeArtifact => {
                     let item = ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel"));
-                    let id = world.add_artifact(item);
+                    let id = world.artifacts.add(item);
                     {
-                        let mut creature = world.get_creature_mut(&creature_id);             
+                        let mut creature = world.creatures.get_mut(&creature_id);             
                         creature.details().inventory.push(id);
                     }
                     world.events.push(Event::ArtifactCreated { date: *now, artifact: id, creator: creature_id });
@@ -264,14 +264,14 @@ impl HistorySimulation {
             let need_election = match unit.leader {
                 None => true,
                 Some(creature_id) => {
-                    let creature = world.get_creature(&creature_id);
+                    let creature = world.creatures.get(&creature_id);
                     creature.death.is_some()
                 }
             } && unit.creatures.len() > 0;
             if need_election {
                 let mut candidates_pool = Vec::new();
                 for creature_id in unit.creatures.iter() {
-                    let creature = world.get_creature(creature_id);
+                    let creature = world.creatures.get(creature_id);
                     let age = (*now - creature.birth).year();
                     if age > 18 {
                         candidates_pool.push(creature_id);
@@ -284,7 +284,7 @@ impl HistorySimulation {
                 };
                 // TODO: Can it maybe have no leader?                
                 {
-                    let mut leader = world.get_creature_mut(&new_leader);
+                    let mut leader = world.creatures.get_mut(&new_leader);
                     leader.profession = Profession::Ruler;
 
                     // TODO: Spouse / children of leader being peasant is weird
@@ -305,8 +305,8 @@ impl HistorySimulation {
                     // TODO: Can marry brother/sister
                     // TODO: Large age diff: 28, [CreatureId(203) 26] and [CreatureId(46) 64] married
                     {
-                        let mut creature_a = world.get_creature_mut(&candidate_a.0);
-                        let mut creature_b = world.get_creature_mut(&candidate_b.0);
+                        let mut creature_a = world.creatures.get_mut(&candidate_a.0);
+                        let mut creature_b = world.creatures.get_mut(&candidate_b.0);
                         creature_a.spouse = Some(candidate_b.0);
                         creature_b.spouse = Some(candidate_a.0);
                     }
@@ -323,7 +323,7 @@ impl HistorySimulation {
                 break;
             }
             let artisan_id = artisan_pool.remove(rng.randu_range(0, artisan_pool.len()));
-            let artisan = world.get_creature(&artisan_id);
+            let artisan = world.creatures.get(&artisan_id);
             let item = match artisan.profession {
                 Profession::Blacksmith => {
                     Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel")))
@@ -335,9 +335,9 @@ impl HistorySimulation {
             };
             drop(artisan);
             if let Some(item) = item {
-                let id = world.add_artifact(item.clone());
+                let id = world.artifacts.add(item.clone());
                 {
-                    let mut creature = world.get_creature_mut(&comission_creature_id);
+                    let mut creature = world.creatures.get_mut(&comission_creature_id);
                     match &item {
                         Item::Statue { material: _, scene: _ } => {
                             let mut unit = world.units.get_mut(unit_id);
@@ -353,7 +353,7 @@ impl HistorySimulation {
         }
 
         for creature_id in change_job_pool {
-            let mut creature = world.get_creature_mut(&creature_id);
+            let mut creature = world.creatures.get_mut(&creature_id);
             // Ideally this would look at what the city needs
             let rand_job = rng.randf();
             if rand_job < 0.8 {

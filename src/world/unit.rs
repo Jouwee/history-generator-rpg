@@ -2,7 +2,7 @@ use std::ops::Add;
 
 use crate::{commons::id_vec::IdVec, engine::geometry::Coord2};
 
-use super::{creature::{Creature, CreatureId, Profession}, date::WorldDate, world::ArtifactId};
+use super::{creature::{Creature, CreatureId, Profession}, date::WorldDate, item::ItemId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct UnitId(usize);
@@ -23,7 +23,7 @@ pub(crate) struct Unit {
     pub(crate) cemetery: Vec<CreatureId>,
     pub(crate) resources: UnitResources,
     pub(crate) leader: Option<CreatureId>,
-    pub(crate) artifacts: Vec<ArtifactId>
+    pub(crate) artifacts: Vec<ItemId>
 }
 
 #[derive(Clone, Copy)]

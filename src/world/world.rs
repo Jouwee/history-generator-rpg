@@ -1,26 +1,12 @@
-use std::{fs::File, io::Write, cell::{Ref, RefMut}};
+use std::{fs::File, io::Write};
 
-use crate::{commons::id_vec::Id, Event, Item, Resources, WorldGenerationParameters};
+use crate::{commons::id_vec::Id, Event, Item, Resources};
 
-use super::{creature::{Creature, CreatureId, Creatures}, culture::Cultures, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{CreatureId, Creatures}, culture::Cultures, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
 
 use crate::commons::id_vec::IdVec;
 
-// TODO:
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
-pub(crate) struct ArtifactId(usize);
-impl crate::commons::id_vec::Id for ArtifactId {
-    fn new(id: usize) -> Self {
-        ArtifactId(id)
-    }
-    fn as_usize(&self) -> usize {
-        self.0
-    }
-}
-
-
 pub(crate) struct World {
-    pub(crate) generation_params: WorldGenerationParameters,
     pub(crate) map: WorldTopology,
     pub(crate) map_features: WorldMapFeatures,
     pub(crate) units: Units,
@@ -34,9 +20,8 @@ pub(crate) struct World {
 
 impl World {
 
-    pub(crate) fn new(generation_params: WorldGenerationParameters, map: WorldTopology, cultures: Cultures) -> World {
+    pub(crate) fn new(map: WorldTopology, cultures: Cultures) -> World {
         return World {
-            generation_params,
             map,
             map_features: WorldMapFeatures::new(),
             units: Units::new(),
@@ -48,31 +33,13 @@ impl World {
         }
     }
 
-    // TODO:
-
-    pub(crate) fn add_creature(&mut self, creature: Creature) -> CreatureId {
-        self.creatures.add(creature)
-    }
-
-    pub(crate) fn add_artifact(&mut self, item: Item) -> ArtifactId {
-        return self.artifacts.add(item);
-    }
-
-    pub(crate) fn get_creature(&self, id: &CreatureId) -> Ref<Creature> {
-        self.creatures.get(id)
-    }
-
-    pub(crate) fn get_creature_mut(&self, id: &CreatureId) -> RefMut<Creature> {
-        self.creatures.get_mut(id)
-    }
-
     pub(crate) fn dump_events(&self, filename: &str, resources: &Resources) {
         let mut f = File::create(filename).unwrap();
         println!("{:?} events", self.events.len());
         for event in self.events.iter() {
             match event {
                 Event::CreatureBirth { date, creature_id } => {
-                    let creature = self.get_creature(creature_id);
+                    let creature = self.creatures.get(creature_id);
                     let name = self.creature_desc(creature_id, date);
                     let father = self.creature_desc(&creature.father, date);
                     let mother = self.creature_desc(&creature.mother, date);
@@ -110,7 +77,7 @@ impl World {
                     let name = self.creature_desc(creature_id, date);
                     let name_b = self.creature_desc(creator_id, date);
                     let artifact = self.artifacts.get(item_id);
-                    let creature = self.get_creature(creature_id);
+                    let creature = self.creatures.get(creature_id);
                     let age = (*date - creature.birth).year();
                     writeln!(&mut f, "{}, {} commissioned {} from {:?} for his {}th birthday", self.date_desc(date), name, artifact.name(&resources.materials), name_b, age).unwrap();
                 },
@@ -124,7 +91,7 @@ impl World {
     }
 
     fn creature_desc(&self, creature_id: &CreatureId, date: &WorldDate) -> String {
-        let creature = self.get_creature(creature_id);
+        let creature = self.creatures.get(creature_id);
         let age = (*date - creature.birth).year();
         let mut gender = "M";
         if creature.gender.is_female() {

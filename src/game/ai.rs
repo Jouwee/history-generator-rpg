@@ -130,7 +130,6 @@ impl AiSolver {
                     paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                 },
                 ActionType::Targeted { damage, inflicts } => {
-                    // TODO: Ai Groups
                     if ctx.xy.dist_squared(&chunk.player.xy) < 3. {
                         let mut ctx = ctx.clone();
                         ctx.ap -= action.ap_cost as i32;
@@ -167,10 +166,7 @@ impl AiSolver {
         let dist = ctx.xy.dist(&chunk.player.xy) as f64;
         if dist < 3. {
             return 0.;
-        }
-
-        // TODO: Ai Groups
-        
+        }        
         let path = astar.get_path(ctx.xy);
         if path.len() == 0 {
             return 0.

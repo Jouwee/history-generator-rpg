@@ -499,7 +499,7 @@ impl Scene for GameSceneState {
                                         if let Some(meta) = tile_meta {
                                             match meta {
                                                 TileMetadata::BurialPlace(creature_id) => {
-                                                    let creature = self.world.get_creature(creature_id);
+                                                    let creature = self.world.creatures.get(creature_id);
                                                     if let Some(death) = creature.death {
                                                         println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
                                                     }
@@ -517,7 +517,7 @@ impl Scene for GameSceneState {
                                         if let Some(meta) = tile_meta {
                                             match meta {
                                                 TileMetadata::BurialPlace(creature_id) => {
-                                                    let creature = self.world.get_creature(creature_id);
+                                                    let creature = self.world.creatures.get(creature_id);
                                                     self.chunk.map.remove_object(tile_pos);
                                                     if let Some(details) = &creature.details {
                                                         self.chunk.tiles_metadata.remove(&tile_pos);

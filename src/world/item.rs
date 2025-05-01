@@ -5,7 +5,18 @@ use opengl_graphics::Texture;
 
 use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
 
-use super::{creature::CreatureId, material::MaterialId, world::{ArtifactId, World}};
+use super::{creature::CreatureId, material::MaterialId, world::World};
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+pub(crate) struct ItemId(usize);
+impl crate::commons::id_vec::Id for ItemId {
+    fn new(id: usize) -> Self {
+        Self(id)
+    }
+    fn as_usize(&self) -> usize {
+        self.0
+    }
+}
 
 #[derive(Clone, Debug)]
 pub(crate) enum Item {
@@ -165,7 +176,7 @@ impl Item {
 #[derive(Clone, Debug)]
 pub(crate) enum ArtworkScene {
     Bust { creature_id: CreatureId },
-    FullBody { creature_id: CreatureId, artifact_id: Option<ArtifactId> }
+    FullBody { creature_id: CreatureId, artifact_id: Option<ItemId> }
 }
 
 #[derive(Clone, Debug)]

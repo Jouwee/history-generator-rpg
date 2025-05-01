@@ -84,9 +84,6 @@ impl CreatureSimulation {
             },
             _ => ()
         }
-
-        // TODO: New units, migration
-
         return CreatureSideEffect::None
     }
 

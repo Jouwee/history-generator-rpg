@@ -24,7 +24,7 @@ impl CreatureFactory {
             if self.rng.rand_chance(0.5) {
                 gender = CreatureGender::Female;
             }
-            let creature_id = world.add_creature(Creature {
+            let creature_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
                 lineage,
@@ -43,7 +43,7 @@ impl CreatureFactory {
 
             // TODO: Children
 
-            let father_id = world.add_creature(Creature {
+            let father_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
                 lineage,
@@ -59,7 +59,7 @@ impl CreatureFactory {
             });
             family.push(father_id);
             
-            let mother_id = world.add_creature(Creature {
+            let mother_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age + self.rng.randi_range(-5, 5), 0 ,0),
                 death: None,
                 lineage,
@@ -128,7 +128,7 @@ impl ArtifactFactory {
 
     pub(crate) fn create_statue(resources: &Resources, subject: CreatureId, world: &World) -> Item {
         let material = resources.materials.id_of("mat:bronze");
-        let creature = world.get_creature(&subject);
+        let creature = world.creatures.get(&subject);
         if let Some(details) = &creature.details {
             if let Some(item) = details.inventory.first() {
                 return Item::Statue { material: material, scene: ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) } }        
