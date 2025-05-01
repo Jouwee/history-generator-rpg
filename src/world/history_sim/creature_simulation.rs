@@ -22,7 +22,7 @@ const CHANCE_TO_STARVE: f32 = 0.2;
 const BASE_DISEASE_CHANCE: f32 = 0.0015;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
-const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 0.1;
+const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 1.0;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
