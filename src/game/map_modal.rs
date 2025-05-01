@@ -80,7 +80,6 @@ impl MapModal {
 
     }
 
-
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);

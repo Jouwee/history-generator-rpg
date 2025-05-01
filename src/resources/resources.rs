@@ -1,6 +1,6 @@
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileSingle}, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::{attributes::Attributes, material::{Material, MaterialId}, species::{Species, SpeciesApearance, SpeciesId, SpeciesIntelligence}}};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::action::{Action, ActionId, ActionType, Affliction, AfflictionChance, DamageType, Infliction}, world::{attributes::Attributes, material::{Material, MaterialId}, species::{Species, SpeciesApearance, SpeciesId, SpeciesIntelligence}}};
 
 use super::{object_tile::{ObjectTile, ObjectTileId}, tile::{Tile, TileId}};
 
@@ -276,7 +276,7 @@ impl Resources {
         self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
         
         let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
         
         let image = ImageReader::open("assets/sprites/chunk_tiles/anvil.png").unwrap().decode().unwrap();
         self.object_tiles.add("obj:anvil", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));

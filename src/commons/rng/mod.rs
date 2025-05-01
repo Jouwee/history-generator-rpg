@@ -69,6 +69,10 @@ impl Rng {
         return self.randf() < chance
     }
 
+    pub (crate) fn item<'a, U>(&mut self, array: &'a Vec<U>) -> Option<&'a U> {
+        return array.get(self.randu_range(0, array.len()));
+    }
+
     pub (crate) fn shuffle<U>(&mut self, mut array: Vec<U>) -> Vec<U> {
         let mut new = Vec::new();
         while array.len() > 0 {

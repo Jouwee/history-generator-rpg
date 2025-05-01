@@ -1,6 +1,8 @@
 use image::DynamicImage;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
+use crate::commons::rng::Rng;
+
 use super::render::RenderContext;
 
 pub(crate) struct TileMap {
@@ -54,6 +56,14 @@ impl TileMap {
                         ];
                         ctx.texture_ref(&tile.texture, pos);
                     },
+                    Tile::TileRandom(tile) => {
+                        let pos = [
+                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
+                        ];
+                        let mut rng = Rng::new(idx as u32);
+                        ctx.texture_ref(rng.item(&tile.textures).unwrap(), pos);
+                    },
                     Tile::T16Subset(tile) => {
                         let pos = [
                             x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
@@ -75,7 +85,7 @@ impl TileMap {
                         if x < self.width - 1 {
                             r = self.tiles[idx + 1] == tile_i;
                         }
-                        let idx = match (u, d, l, r) {
+                        let subtile_i = match (u, d, l, r) {
                             (false, false, false, false) => 12,
                             (false, false, false, true) => 13,
                             (false, false, true, false) => 15,
@@ -94,7 +104,7 @@ impl TileMap {
                             (true, true, true, false) => 7,
                             (true, true, true, true) => 6,
                         };
-                        ctx.texture_ref(tile.textures.get(idx).unwrap(), pos);
+                        ctx.texture_ref(tile.textures.get(subtile_i).unwrap(), pos);
                     }
                 }
                 z_order_render(ctx, x, y);
@@ -124,6 +134,7 @@ impl TileSet {
 pub(crate) enum Tile {
     Empty,
     SingleTile(TileSingle),
+    TileRandom(TileRandom),
     T16Subset(Tile16Subset)
 }
 
@@ -154,6 +165,42 @@ impl Clone for TileSingle {
     
     fn clone(&self) -> Self {
         return Self::new(self.image.clone());
+    }
+
+}
+
+pub(crate) struct TileRandom {
+    tile_width: u32,
+    tile_height: u32,
+    image: DynamicImage,
+    // TODO: Use assets
+    textures: Vec<Texture>
+}
+
+impl TileRandom {
+    pub(crate) fn new(image: DynamicImage, tile_width: u32, tile_height: u32) -> TileRandom {
+        let mut textures = Vec::new();
+        for y in 0..(image.height() / tile_height) {
+            for x in 0..(image.width() / tile_width) {
+                let tile = image.crop_imm(x * tile_width as u32, y * tile_height as u32, tile_width as u32, tile_height as u32).to_rgba8();
+                let settings = TextureSettings::new().filter(Filter::Nearest);
+                textures.push(Texture::from_image(&tile, &settings));
+            }
+        }
+        TileRandom {
+            tile_width,
+            tile_height,
+            image,
+            textures
+        }
+    }
+}
+
+
+impl Clone for TileRandom {
+    
+    fn clone(&self) -> Self {
+        return Self::new(self.image.clone(), self.tile_width, self.tile_height);
     }
 
 }
