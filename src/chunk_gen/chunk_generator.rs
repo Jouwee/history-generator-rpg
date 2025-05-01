@@ -18,11 +18,14 @@ $template=
 
 // https://www.youtube.com/watch?v=b6eBndQ_jK0&t=433s
 
-use std::time::Instant;
+use core::panic;
+use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
 use crate::{commons::rng::Rng, engine::geometry::Size2D, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
+
+use super::jigsaw_structure_generator::{JigsawPiece, JigsawPiecePool, JigsawPieceTile, JigsawSolver};
 
 pub(crate) struct ChunkGenerator {
     chunk: Chunk
@@ -83,25 +86,39 @@ impl ChunkGenerator {
 
     fn generate_buildings(&mut self, unit: &Unit, world: &World, resources: &Resources) {
         let mut homeless = unit.creatures.clone();
+        // TODO: Determinate
+        let mut rng = Rng::rand();
 
-        let room = Template::parse(Size2D(5, 7), 
-        "#####|#___#|#___C|#___#|C___#|#___#|##_##");
-
-        let mut x = 64;
-        let mut y = 64;
-
-        let mut dir = 0;
-        let mut i = 0;
-        let mut inc = 1;
-        let step = 9;
+        let mut building_seed_cloud = HashSet::new();
+        for _ in 0..1000 {
+            building_seed_cloud.insert(Coord2::xy(
+                rng.randu_range(0, self.chunk.size.x()) as i32,
+                rng.randu_range(0, self.chunk.size.y()) as i32
+            ));
+        }
+        let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
+        let mut building_seed_cloud: Vec<Coord2> = building_seed_cloud.into_iter().collect();
+        building_seed_cloud.sort_by(|a, b| {
+            let a = a.dist_squared(&center);
+            let b = b.dist_squared(&center);
+            if a < b {
+                return Ordering::Greater;
+            } else {
+                return Ordering::Less;
+            }
+        });
+        
 
         let mut j = 0;
+
+        let mut solver = Self::get_jigsaw_solver();
 
         while homeless.len() > 0 {
             // TODO:
             if j > 100 {
                 break;
             }
+            j = j + 1;
             let creature_id = homeless.pop().unwrap();
             let mut family = vec!(creature_id);
             let creature = world.creatures.get(&creature_id);
@@ -123,10 +140,30 @@ impl ChunkGenerator {
                 }
             }
 
+            let mut collapsed_pos = None;
+
+            while building_seed_cloud.len() > 0 {
+
+                let pos = building_seed_cloud.pop().unwrap();
+
+                let structure = solver.solve_structure("A", pos, &mut rng);
+                if let Some(structure) = structure {
+                    collapsed_pos = Some(pos);
+                    for (pos, piece) in structure.vec.iter() {
+                        self.place_template(*pos, &piece);
+                    }
+                    break;
+                }
 
 
-            // println!("{} {}", x, y);
-            self.place_template(Coord2::xy(x, y), &room);
+            }
+
+            if collapsed_pos.is_none() {
+                // TODO: No panic
+                panic!("No position found")
+            }
+            let collapsed_pos = collapsed_pos.unwrap();
+
 
             let mut lx = 0;
             let mut ly = 0;
@@ -134,7 +171,7 @@ impl ChunkGenerator {
             for creature_id in family.iter() {
 
                 let creature = world.get_creature(creature_id);
-                let point = Coord2::xy(x + lx + 1, y + ly + 1);
+                let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
                 let species = resources.species.get(&creature.species);
                 self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
                 lx += 1;
@@ -145,44 +182,29 @@ impl ChunkGenerator {
 
             }
 
-            // TODO: Spiral
-            match dir {
-                0 => x = x + step,
-                1 => y = y - step,
-                2 => x = x - step,
-                3 => y = y + step,
-                _ => ()
-            };
-            i = i + 1;
-            if i == inc {
-                i = 0;
-                if dir == 1 || dir == 3 {
-                    inc = inc + 1;
-                }
-                dir = (dir + 1) % 4;
-            }
-
         }
-        
+    }
 
-        // TODO: Use Jigsaw
-        // let entrance = Template::parse(Size2D(5, 7), 
-        // "#####|#___#|#___C|#___#|C___#|#___#|##_##");
-        // let room_a = Template::parse(Size2D(4, 5), 
-        // "####|#__#|#__C|#__#|####");
-        // let room_b = Template::parse(Size2D(4, 5), 
-        // "####|#__#|C__#|#__#|####");
+    fn get_jigsaw_solver() -> JigsawSolver {
+        let mut solver = JigsawSolver::new(Size2D(64, 64));
+        let mut pool = JigsawPiecePool::new();
+        pool.add_piece("a.1", JigsawPiece::parse(Size2D(5, 7), "#####|#___#|#___B|#___#|#___#|#___#|##_##"));
+        pool.add_piece("a.2", JigsawPiece::parse(Size2D(7, 5), "#######|#_____#|B_____B|#_____#|###_###"));
+        pool.add_piece("a.3", JigsawPiece::parse(Size2D(7, 7), ".#####.|#_____#|#_____#|B_____B|#_____#|#_____#|.##_##."));
+        solver.add_pool("A", pool);
 
-        // // TODO: Several buildings
+        let mut pool = JigsawPiecePool::new();
+        pool.add_piece("b.1", JigsawPiece::parse(Size2D(4, 5), "####|#__#|A__#|#__#|####"));
+        pool.add_piece("b.2", JigsawPiece::parse(Size2D(4, 5), "####|#__#|#__#|#__A|####"));
+        solver.add_pool("B", pool);
 
-        // // TODO: Allow for several starts
-        // let templates = &vec!(entrance.clone(), room_a, room_b);
-        // let start = entrance;
+        let mut pool = JigsawPiecePool::new();
+        pool.add_piece("c.1", JigsawPiece::parse(Size2D(5, 7), "#####|#___#|#___C|#___#|C___#|#___#|##_##"));
+        pool.add_piece("c.2", JigsawPiece::parse(Size2D(7, 5), "#######|#_____#|#_____C|#_____#|###_###"));
+        pool.add_piece("c.3", JigsawPiece::parse(Size2D(7, 7), ".#####.|#_____#|#_____#|#_____C|#_____#|#_____#|.##_##."));
+        solver.add_pool("C", pool);
 
-        // let templates = self.solve_jigsaw(Coord2::xy(20, 15), start, &templates, 5);
-        // for (origin, template) in templates.vec {
-        //     self.place_template(origin, &template);
-        // }
+        return solver;
     }
 
     fn collapse_decor(&mut self) {
@@ -246,16 +268,16 @@ impl ChunkGenerator {
         return None
     }
 
-    fn place_template(&mut self, origin: Coord2, template: &Template) {
+    fn place_template(&mut self, origin: Coord2, template: &JigsawPiece) {
         for i in 0..template.size.area() {
             let x = origin.x as usize + i % template.size.x();
             let y = origin.y as usize + i / template.size.x();
             let tile = template.tiles.get(i).unwrap();
             match tile {
-                TemplateTile::Air => self.chunk.map.ground_layer.set_tile(x, y, 4),
-                TemplateTile::Empty => (),
-                TemplateTile::Connection => self.chunk.map.ground_layer.set_tile(x, y, 4),
-                TemplateTile::Fixed(tile_id) => {
+                JigsawPieceTile::Air => self.chunk.map.ground_layer.set_tile(x, y, 4),
+                JigsawPieceTile::Empty => (),
+                JigsawPieceTile::Connection(_) => self.chunk.map.ground_layer.set_tile(x, y, 4),
+                JigsawPieceTile::Fixed(tile_id) => {
                     self.chunk.map.ground_layer.set_tile(x, y, 4);
                     self.chunk.map.object_layer.set_tile(x, y, *tile_id)
                 },
