@@ -1,0 +1,82 @@
+[symbols]
+'#' = { ground= 4, object= 1 }
+'_' = { ground= 4 }
+'b' = { ground= 4, object= 3 }
+'c' = { ground= 4, object= 5 }
+'t' = { ground= 4, object= 4 }
+'@' = { connect = "" }
+'A' = { connect = "village_house_start" }
+'B' = { connect = "village_house_room" }
+
+
+[village_house_start]
+
+[village_house_start.a]
+size = [5, 5]
+template = """
+#####
+#t__#
+#c__B
+#___#
+##_##"""
+
+[village_house_start.b]
+size = [7, 5]
+template = """
+#######
+#b__ct#
+#____c#
+#_____#
+###_###"""
+
+[village_house_start.c]
+size = [5, 5]
+template = """
+#####
+#_ct#
+B___#
+#___#
+##_##"""
+
+[village_house_start.d]
+size = [5, 5]
+template = """
+#####
+B_ct#
+#___#
+#t__B
+##_##"""
+
+[village_house_room]
+
+[village_house_room.a]
+size = [4, 4]
+template = """
+####
+A__#
+#_b#
+####"""
+
+[village_house_room.b]
+size = [4, 4]
+template = """
+####
+#_b#
+A__#
+####"""
+
+[village_house_room.c]
+size = [4, 4]
+template = """
+####
+#b_#
+#__B
+####"""
+
+[village_house_room.d]
+size = [4, 4]
+template = """
+####
+#__B
+#b_#
+####"""

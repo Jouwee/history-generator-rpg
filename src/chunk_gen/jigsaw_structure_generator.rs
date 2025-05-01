@@ -195,7 +195,7 @@ impl JigsawPiece {
         let mut tiles = Vec::new();
         for char in string.chars() {
             match char {
-                '#' => tiles.push(JigsawPieceTile::Fixed(1)),
+                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None }),
                 'A' => tiles.push(JigsawPieceTile::Connection(String::from("A"))),
                 'B' => tiles.push(JigsawPieceTile::Connection(String::from("B"))),
                 'C' => tiles.push(JigsawPieceTile::Connection(String::from("C"))),
@@ -216,7 +216,7 @@ impl JigsawPiece {
 pub(crate) enum JigsawPieceTile {
     Air,
     Empty,
-    Fixed(usize),
+    Fixed { ground: usize, object: Option<usize> },
     Connection(String)
 }
 

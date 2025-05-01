@@ -11,6 +11,7 @@ pistoncore-glutin_window = "0.72.0"
 piston2d-opengl_graphics = "0.85.0"
 image = "0.25.5"
 rodio = "0.20.1"
+toml = "0.8.22"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
