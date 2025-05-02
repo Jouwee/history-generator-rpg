@@ -13,9 +13,13 @@ impl Rng {
     }
     
     pub(crate) fn new(seed: u32) -> Rng {
-        return Rng {
+        let mut rng = Rng {
             seed
-        }
+        };
+        // This pseudo algorithm has a downside where close digits generate close results. So 0 and 1 are similar.
+        // This next jumps to the next random number to avoid this downside.
+        rng.next();
+        return rng;
     }
 
     pub(crate) fn seeded(seed: impl Hash) -> Rng {
@@ -70,7 +74,8 @@ impl Rng {
     }
 
     pub (crate) fn item<'a, U>(&mut self, array: &'a Vec<U>) -> Option<&'a U> {
-        return array.get(self.randu_range(0, array.len()));
+        let i = self.randu_range(0, array.len());
+        return array.get(i);
     }
 
     pub (crate) fn shuffle<U>(&mut self, mut array: Vec<U>) -> Vec<U> {
@@ -82,8 +87,7 @@ impl Rng {
         return new;
     }
 
-
-    pub(crate) fn xor_shift(&mut self, v: u32) -> u32 {
+    fn xor_shift(&mut self, v: u32) -> u32 {
         let mut x: u32 = v;
         x ^= x << 13;
         x ^= x >> 17;
