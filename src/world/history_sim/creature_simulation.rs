@@ -13,16 +13,16 @@ pub(crate) enum CreatureSideEffect {
     ArtisanLookingForComission,
 }
 
-const YEARLY_CHANCE_MARRY: f32 = 0.1;
+const YEARLY_CHANCE_MARRY: f32 = 0.4;
 // 0.68 = slow growth
 // 0.7 = medium growth
 // 1.0 = exponential
-const YEARLY_CHANCE_CHILD_MULT: f32 = 1.;
+const YEARLY_CHANCE_CHILD_MULT: f32 = 1.0;
 const CHANCE_TO_STARVE: f32 = 0.2;
 const BASE_DISEASE_CHANCE: f32 = 0.0015;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
-const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 1.0;
+const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 0.5;
 
 impl CreatureSimulation {
     // TODO: Smaller steps

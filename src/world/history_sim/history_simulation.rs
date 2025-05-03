@@ -12,7 +12,7 @@ pub(crate) struct HistorySimulation {
 pub(crate) struct HistorySimParams {
     pub(crate) rng: Rng,
     pub(crate) resources: Resources,
-    pub(crate) number_of_seed_cities: u8,
+    pub(crate) number_of_seed_cities: u16,
     pub(crate) seed_cities_population: u32,
 }
 
@@ -63,11 +63,11 @@ impl HistorySimulation {
         }
     }
 
-    pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) {
+    pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) -> bool {
         self.date = self.date + step;
         let now = Instant::now();
 
-        let mut stats = (0, Demographics::new());
+        let mut stats = (0, 0, 0, Demographics::new());
 
         for id in world.units.iter_ids::<UnitId>() {
             self.simulate_step_unit(world, &step, &self.date.clone(), self.params.rng.clone(), &id, &mut stats);
@@ -81,7 +81,9 @@ impl HistorySimulation {
         println!("Year: {}", self.date.year());
         println!("Total creatures: {}", world.creatures.len());
         println!("Total events: {}", world.events.len());
-        stats.1.print_console();
+        println!("Populated units: {}", stats.2);
+        println!("Desolate units: {}", stats.1);
+        stats.3.print_console();
 
         if stats.0 == 0 {
             println!("Dead world.");
@@ -102,12 +104,13 @@ impl HistorySimulation {
             println!("Old age: {}", map.0);
             println!("Starvation: {}", map.1);
             println!("Disease: {}", map.2);
-
+            return false;
         }
+        return true;
 
     }
 
-    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, Demographics)) {
+    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, usize, usize, Demographics)) {
         let mut unit = world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
 
@@ -115,9 +118,16 @@ impl HistorySimulation {
 
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
+        if unit.creatures.len() == 0 {
+            stats.1 += 1;
+        } else {
+            stats.2 += 1;
+        }
+        
+
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);
-            stats.1.count(now, &creature);
+            stats.3.count(now, &creature);
 
             let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &mut creature);
             side_effects.push((*creature_id, side_effect));
@@ -209,6 +219,13 @@ impl HistorySimulation {
                     world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
                 },
                 CreatureSideEffect::HaveChild => {
+
+                    let unit = world.units.get(unit_id);
+                    // TODO: Hard limit
+                    if unit.creatures.len() > 30 {
+                        continue;
+                    }
+                    drop(unit);
 
                     let mut creature = world.creatures.get_mut(&creature_id);
                     let child = CreatureSimulation::have_child_with_spouse(now, &world, &mut rng, &creature_id, &mut creature);
@@ -376,7 +393,7 @@ impl HistorySimulation {
     }
 
     fn find_unit_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
-        for _ in 0..20 {
+        for _ in 0..100 {
             let x = rng.randu_range(0, world.map.size.x());
             let y = rng.randu_range(0, world.map.size.y());
             let tile = world.map.tile(x, y);

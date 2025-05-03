@@ -151,7 +151,7 @@ impl Scene for WorldGenScene {
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
         let end_year = 500;
-        if self.generator.year >= end_year {
+        if self.generator.stop || self.generator.year >= end_year {
             return
         }
         let start = Instant::now();
@@ -167,6 +167,9 @@ impl Scene for WorldGenScene {
             }
             // Simulate years until reach the max time per iteration, otherwise it takes longer than it needs
             if start.elapsed().as_secs_f64() >= _update.max_update_time {
+                break;
+            }
+            if self.generator.stop {
                 break;
             }
         }

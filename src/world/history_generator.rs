@@ -16,6 +16,7 @@ pub(crate) struct WorldHistoryGenerator {
     pub(crate) year: u32,
     pub(crate) world: World,
     history_sim: HistorySimulation,
+    pub(crate) stop: bool
 }
 
 impl WorldHistoryGenerator {
@@ -56,8 +57,8 @@ impl WorldHistoryGenerator {
         let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
             rng: rng.derive("history"),
             resources: resources.clone(),
-            number_of_seed_cities: 100,
-            seed_cities_population: 50
+            number_of_seed_cities: 1000,
+            seed_cities_population: 20
         });
         history_sim.seed(&mut world);
 
@@ -65,14 +66,15 @@ impl WorldHistoryGenerator {
         let generator = WorldHistoryGenerator {
             history_sim,
             world,
-            year: 1
+            year: 1,
+            stop: false,
         };
 
         return generator;
     }
 
     pub(crate) fn simulate_year(&mut self) {
-        self.history_sim.simulate_step(WorldDate::new(1, 0, 0), &mut self.world);
+        self.stop = !self.history_sim.simulate_step(WorldDate::new(1, 0, 0), &mut self.world);
         self.year = self.history_sim.date.year() as u32;
     }
 
