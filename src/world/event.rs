@@ -10,4 +10,6 @@ pub(crate) enum Event {
     BurriedWithPosessions { date: WorldDate, creature_id: CreatureId },
     ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ItemId },
     NewLeaderElected { date: WorldDate, unit_id: UnitId, creature_id: CreatureId },
+    JoinBanditCamp { date: WorldDate, creature_id: CreatureId, unit_id: UnitId, new_unit_id: UnitId },
+    CreateBanditCamp { date: WorldDate, creature_id: CreatureId, unit_id: UnitId, new_unit_id: UnitId },
 }

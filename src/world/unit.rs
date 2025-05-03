@@ -24,7 +24,54 @@ pub(crate) struct Unit {
     pub(crate) resources: UnitResources,
     pub(crate) leader: Option<CreatureId>,
     pub(crate) artifacts: Vec<ItemId>,
-    pub(crate) population_peak: (i32, u32)
+    pub(crate) population_peak: (i32, u32),
+    pub(crate) unit_type: UnitType
+}
+
+impl Unit {
+
+    pub(crate) fn remove_creature(&mut self, id: &CreatureId) {
+        if let Some(idx) = self.creatures.iter().position(|another| another == id) {
+            self.creatures.remove(idx);
+        }
+    }
+
+}
+
+
+#[cfg(test)]
+mod tests_unit {
+    use crate::commons::id_vec::Id;
+
+    use super::*;
+
+    #[test]
+    fn test_remove_creature() {
+
+        let mut unit = Unit {
+            xy: Coord2::xy(0, 0),
+            creatures: Vec::new(),
+            cemetery: Vec::new(),
+            resources: UnitResources {
+                food: 0.
+            },
+            leader: None,
+            artifacts: Vec::new(),
+            population_peak: (0, 0),
+            unit_type: UnitType::Village
+        };
+        unit.creatures.push(CreatureId::mock(0));
+        unit.creatures.push(CreatureId::mock(1));
+        unit.remove_creature(&CreatureId::mock(0));
+        assert_eq!(unit.creatures.len(), 1);
+        assert_eq!(unit.creatures[0].as_usize(), 1);
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) enum UnitType {
+    Village,
+    BanditCamp,
 }
 
 #[derive(Clone, Copy)]
@@ -58,6 +105,7 @@ pub(crate) struct Demographics {
     farmers: u16,
     artisans: u16,
     politicians: u16,
+    outlaws: u16,
 }
 
 impl Demographics {
@@ -77,6 +125,7 @@ impl Demographics {
             farmers: 0,
             artisans: 0,
             politicians: 0,
+            outlaws: 0,
         }
     }
 
@@ -109,6 +158,7 @@ impl Demographics {
             Profession::Blacksmith | Profession::Sculptor => self.artisans += 1,
             Profession::Guard => self.army += 1,
             Profession::Ruler => self.politicians += 1,
+            Profession::Bandit => self.outlaws += 1,
         }
     }
 
@@ -126,6 +176,7 @@ impl Demographics {
         println!("farmers: {} ({:.2?}%)", self.farmers, Self::pct(self.employed, self.farmers));
         println!("artisans: {} ({:.2?}%)", self.artisans, Self::pct(self.employed, self.artisans));
         println!("politicians: {} ({:.2?}%)", self.politicians, Self::pct(self.employed, self.politicians));
+        println!("outlaws: {} ({:.2?}%)", self.outlaws, Self::pct(self.employed, self.outlaws));   
     }
 
     fn pct(total: u16, count: u16) -> f32 {

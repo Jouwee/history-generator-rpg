@@ -100,6 +100,8 @@ pub(crate) enum CauseOfDeath {
 pub(crate) enum Profession {
     // Someone that doesn't work. Usually children and elders, but could be reserved for nitwits.
     None,
+    // Outlaws
+    Bandit,
     // Workers
     // A peasant is someone trying to make the ends meet. Usually poor, they produce enough food to feed themselves and maybe a child, and pay a little in taxes.
     Peasant,
@@ -120,6 +122,7 @@ impl Profession {
             Profession::None => UnitResources { food: 0. },
             Profession::Peasant => UnitResources { food: 1.5 },
             Profession::Farmer => UnitResources { food: 3.0 },
+            Profession::Bandit => UnitResources { food: 0.8 },
             Profession::Guard => UnitResources { food: 0. },
             Profession::Blacksmith => UnitResources { food: 0. },
             Profession::Sculptor => UnitResources { food: 0. },
@@ -130,6 +133,7 @@ impl Profession {
     pub(crate) fn is_for_life(&self) -> bool {
         match self {
             Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
+            Profession::Bandit => true,
             Profession::Ruler => true,
         }
     }

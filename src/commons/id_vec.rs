@@ -5,6 +5,11 @@ pub(crate) trait Id: Clone + Copy {
     fn as_usize(&self) -> usize;
     fn new(id: usize) -> Self;
 
+    #[cfg(test)]
+    fn mock(id: usize) -> Self {
+        return Self::new(id)
+    }
+
 }
 
 pub(crate) struct IdVec<V> {
@@ -41,6 +46,10 @@ impl<V> IdVec<V> {
 
     pub(crate) fn iter(&self) -> std::slice::Iter<'_, RefCell<V>>{
         return self.vector.iter()
+    }
+
+    pub(crate) fn iter_id_val<K>(&self) -> impl Iterator<Item = (K, &RefCell<V>)> where K: Id {
+        return self.vector.iter().enumerate().map(|(i, val)| (K::new(i), val))
     }
 
     pub(crate) fn iter_ids<K>(&self) -> impl Iterator<Item = K> where K: Id {

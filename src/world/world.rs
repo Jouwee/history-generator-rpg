@@ -84,7 +84,15 @@ impl World {
                 Event::NewLeaderElected { date, unit_id, creature_id } => {
                     let name = self.creature_desc(creature_id, date, resources);
                     writeln!(&mut f, "{}, {} was elected new leader of {:?}", self.date_desc(date), name, *unit_id).unwrap();
-                }
+                },
+                Event::JoinBanditCamp { date, creature_id, unit_id, new_unit_id } => {
+                    let name = self.creature_desc(creature_id, date, resources);
+                    writeln!(&mut f, "{}, {} left {:?} and joined the bandits at {:?}", self.date_desc(date), name, *unit_id, *new_unit_id).unwrap();
+                },
+                Event::CreateBanditCamp { date, creature_id, unit_id, new_unit_id } => {
+                    let name = self.creature_desc(creature_id, date, resources);
+                    writeln!(&mut f, "{}, {} left {:?} and started a bandit camp at {:?}", self.date_desc(date), name, *unit_id, *new_unit_id).unwrap();
+                },
             }
             
         }

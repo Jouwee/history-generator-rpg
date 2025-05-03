@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources}, world::World}, Event};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -46,7 +46,8 @@ impl HistorySimulation {
                 },
                 leader: None,
                 artifacts: Vec::new(),
-                population_peak: (0, 0)
+                population_peak: (0, 0),
+                unit_type: UnitType::Village
             };
 
             while unit.creatures.len() < self.params.seed_cities_population as usize {
@@ -271,6 +272,59 @@ impl HistorySimulation {
                 CreatureSideEffect::ComissionArtifact => {
                     comissions_pool.push(creature_id);
                 }
+                CreatureSideEffect::BecomeBandit => {
+                    
+                    // TODO: Steal close artifact?
+                    
+                    // Removes creature from unit
+                    let unit = world.units.get(unit_id);
+                    let unit_xy = unit.xy.clone();
+                    drop(unit);
+                    // Looks for a camp nearby
+                    let existing_camp = world.units.iter_id_val().find(|(_unit_id, unit)| {
+                        let unit = unit.borrow();
+                        unit.unit_type == UnitType::BanditCamp
+                          && unit.xy.dist_squared(&unit_xy) < 15.*15.
+                          && unit.creatures.len() > 0
+                    });
+                    // If there's a camp nearby
+                    if let Some((camp_id, existing_camp)) = existing_camp {
+                        let mut existing_camp = existing_camp.borrow_mut();
+                        existing_camp.creatures.push(creature_id);
+                        world.events.push(Event::JoinBanditCamp { date: *now, creature_id, unit_id: *unit_id, new_unit_id: camp_id });
+                    } else {
+                        // Creates new camp
+                        let pos = self.find_unit_suitable_position_closeby(unit_xy, 15, &mut rng, world);
+                        match pos {
+                            Some(pos) => {
+                                let new_camp_id = world.units.add(Unit {
+                                    xy: pos,
+                                    artifacts: Vec::new(),
+                                    cemetery: Vec::new(),
+                                    creatures: vec!(creature_id),
+                                    leader: Some(creature_id),
+                                    population_peak: (0, 0),
+                                    unit_type: UnitType::BanditCamp,
+                                    resources: UnitResources {
+                                        food: 1.
+                                    }
+                                });
+                                world.events.push(Event::CreateBanditCamp { date: *now, creature_id, unit_id: *unit_id, new_unit_id: new_camp_id });
+                            },
+                            None => {
+                                println!("[WARN] No position found for new bandit camp");
+                                return;
+                            }
+                        }
+                    }
+                    // Removes creature from unit
+                    let mut unit = world.units.get_mut(unit_id);
+                    unit.remove_creature(&creature_id);
+                    unit.resources.food -= 1.;
+                    // Chances profession
+                    let mut creature = world.creatures.get_mut(&creature_id);
+                    creature.profession = Profession::Bandit;
+                }
             }
             
 
@@ -407,6 +461,39 @@ impl HistorySimulation {
         for _ in 0..100 {
             let x = rng.randu_range(0, world.map.size.x());
             let y = rng.randu_range(0, world.map.size.y());
+            let tile = world.map.tile(x, y);
+            match tile.region_id {
+                // Ocean
+                0 => continue,
+                // Desert
+                4 => continue,
+                _ => ()
+            }
+            let candidate = Coord2::xy(x as i32, y as i32);
+            let too_close = world.units.iter().any(|unit| {
+                let unit = unit.borrow();
+                return unit.xy.dist_squared(&candidate) < 5. * 5.
+            });
+            if too_close {
+                continue;
+            }
+            return Some(candidate)
+        }
+        return None;
+    }
+
+    fn find_unit_suitable_position_closeby(&self, center: Coord2, max_radius: i32, rng: &mut Rng, world: &World) -> Option<Coord2> {
+        let x_limit = [
+            (center.x - max_radius).max(0),
+            (center.x + max_radius).min(world.map.size.x() as i32)
+        ];
+        let y_limit = [
+            (center.y - max_radius).max(0),
+            (center.y + max_radius).min(world.map.size.y() as i32)
+        ];
+        for _ in 0..100 {
+            let x = rng.randi_range(x_limit[0], x_limit[1]) as usize;
+            let y = rng.randi_range(y_limit[0], y_limit[1]) as usize;
             let tile = world.map.tile(x, y);
             match tile.region_id {
                 // Ocean
