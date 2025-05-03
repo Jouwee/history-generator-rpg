@@ -30,7 +30,7 @@ impl JigsawSolver {
         
         for selected in options.iter() {
 
-            if !self.can_place(&selected, position) {
+            if !self.can_place(position, &selected.size) {
                 continue;
             }
 
@@ -77,7 +77,7 @@ impl JigsawSolver {
         let possibilities = rng.shuffle(possibilities);
         for possibility in possibilities.iter() {
             let origin = possibility.0.0 - possibility.2;
-            if self.can_place(possibility.1, origin) {
+            if self.can_place(origin, &possibility.1.size) {
                 let mut state_clone = vec.clone();
                 state_clone.add(possibility.1, origin);
                 state_clone.remove_connection(&possibility.0.0);
@@ -90,8 +90,12 @@ impl JigsawSolver {
         return None
     }
 
-    fn can_place(&self, piece: &JigsawPiece, position: Coord2) -> bool {
-        let rect_a = [position.x, position.y, position.x + piece.size.x() as i32, position.y + piece.size.y() as i32];
+    pub(crate) fn is_occupied(&self, coord: Coord2) -> bool {
+        return self.can_place(coord, &Size2D(1, 1))
+    }
+
+    fn can_place(&self, position: Coord2, size: &Size2D) -> bool {
+        let rect_a = [position.x, position.y, position.x + size.x() as i32, position.y + size.y() as i32];
         if rect_a[0] < 0 || rect_a[1] < 0 || rect_a[2] >= self.size.x() as i32 || rect_a[3] >= self.size.y() as i32 {
             return false;
         }

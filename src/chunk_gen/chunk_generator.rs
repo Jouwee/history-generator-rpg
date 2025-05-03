@@ -31,6 +31,8 @@ impl ChunkGenerator {
         self.generate_fixed_terrain_features();
         println!("[Chunk gen] Terrain: {:.2?}", now.elapsed());
 
+        let mut solver = self.get_jigsaw_solver();
+
         let now = Instant::now();
         let mut found_sett = None;
         for unit in world.units.iter() {
@@ -42,7 +44,6 @@ impl ChunkGenerator {
         println!("[Chunk gen] Unit search: {:.2?}", now.elapsed());
 
         if let Some(unit) = found_sett {
-            let mut solver = self.get_jigsaw_solver();
             let now = Instant::now();
             self.generate_large_structures(&unit, &mut solver);
             println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
@@ -66,7 +67,7 @@ impl ChunkGenerator {
 
         if self.path_endpoints.len() > 0 {
             let now = Instant::now();
-            self.generate_paths();
+            self.generate_paths(&mut solver);
             println!("[Chunk gen] Streets: {:.2?}", now.elapsed());
         }
 
@@ -338,7 +339,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_paths(&mut self) {
+    fn generate_paths(&mut self, solver: &mut JigsawSolver) {
         while self.path_endpoints.len() > 1 {
             let start = self.path_endpoints.pop().unwrap();
 
@@ -354,7 +355,7 @@ impl ChunkGenerator {
             
             let mut astar = AStar::new(self.chunk.size, start);
             astar.find_path(*closest, |xy| {
-                if !self.chunk.size.in_bounds(xy) || self.chunk.map.blocks_movement(xy) {
+                if !self.chunk.size.in_bounds(xy) || self.chunk.map.blocks_movement(xy) || solver.is_occupied(xy) {
                     return MovementCost::Impossible;
                 } else {
                     return MovementCost::Cost(1.);
