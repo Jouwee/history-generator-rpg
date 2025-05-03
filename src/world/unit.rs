@@ -23,7 +23,8 @@ pub(crate) struct Unit {
     pub(crate) cemetery: Vec<CreatureId>,
     pub(crate) resources: UnitResources,
     pub(crate) leader: Option<CreatureId>,
-    pub(crate) artifacts: Vec<ItemId>
+    pub(crate) artifacts: Vec<ItemId>,
+    pub(crate) population_peak: (i32, u32)
 }
 
 #[derive(Clone, Copy)]

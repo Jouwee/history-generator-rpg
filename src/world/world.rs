@@ -7,6 +7,7 @@ use super::{creature::{CreatureId, Creatures}, culture::Cultures, date::WorldDat
 use crate::commons::id_vec::IdVec;
 
 pub(crate) struct World {
+    pub(crate) date: WorldDate,
     pub(crate) map: WorldTopology,
     pub(crate) map_features: WorldMapFeatures,
     pub(crate) units: Units,
@@ -22,6 +23,7 @@ impl World {
 
     pub(crate) fn new(map: WorldTopology, cultures: Cultures) -> World {
         return World {
+            date: WorldDate::new(1, 1, 1),
             map,
             map_features: WorldMapFeatures::new(),
             units: Units::new(),

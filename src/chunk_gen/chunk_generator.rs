@@ -5,7 +5,7 @@ use noise::{NoiseFn, Perlin};
 
 use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::geometry::Size2D, game::chunk::TileMetadata, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
 
-use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}};
+use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
 pub(crate) struct ChunkGenerator {
     rng: Rng,
@@ -47,10 +47,14 @@ impl ChunkGenerator {
             self.generate_large_structures(&unit, &mut solver);
             println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
 
-            println!("Chunk has {} creatures, {} artifacts, {} graves", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len());
+            println!("Chunk has {} creatures, {} artifacts, {} graves. Peak was {} in {}", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len(), unit.population_peak.1, unit.population_peak.0);
             let now = Instant::now();
             self.generate_buildings(&unit, &mut solver, world, resources);
             println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
+
+            let now = Instant::now();
+            self.generate_ruins(&unit, &mut solver, world, resources);
+            println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
 
             if self.statue_spots.len() > 0 {
                 let now = Instant::now();
@@ -275,6 +279,65 @@ impl ChunkGenerator {
         }
     }
 
+    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+        let mut building_seed_cloud = HashSet::new();
+        for _ in 0..1000 {
+            building_seed_cloud.insert(Coord2::xy(
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
+            ));
+        }
+        let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
+        let mut building_seed_cloud: Vec<Coord2> = building_seed_cloud.into_iter().collect();
+        building_seed_cloud.sort_by(|a, b| {
+            let a = a.dist_squared(&center);
+            let b = b.dist_squared(&center);
+            if a < b {
+                return Ordering::Greater;
+            } else {
+                return Ordering::Less;
+            }
+        });
+        
+
+        let pop_diff = unit.population_peak.1 as usize - unit.creatures.len();
+        let ruins = pop_diff / 2;
+
+        let age = world.date.year() - unit.population_peak.0;
+
+        let mut j = 0;
+
+        for _ in 0..ruins {
+            j = j + 1;
+
+            let mut collapsed_pos = None;
+
+            while building_seed_cloud.len() > 0 {
+
+                let pos = building_seed_cloud.pop().unwrap();
+
+                let structure = solver.solve_structure("village_house_start", pos, &mut self.rng);
+                if let Some(structure) = structure {
+                    collapsed_pos = Some(pos);
+                    for (pos, piece) in structure.vec.iter() {
+                        self.place_template_filtered(*pos, &piece, AbandonedStructureFilter::new(self.rng.clone(), age as u32));
+                    }
+                    break;
+                }
+
+
+            }
+
+            if collapsed_pos.is_none() {
+                // TODO: No panic
+                println!("No position found" );
+                // panic!("No position found");
+                continue;
+            }
+
+        }
+    }
+
     fn generate_paths(&mut self) {
         while self.path_endpoints.len() > 1 {
             let start = self.path_endpoints.pop().unwrap();
@@ -359,21 +422,31 @@ impl ChunkGenerator {
     }
 
     fn place_template(&mut self, origin: Coord2, template: &JigsawPiece) {
+        self.place_template_filtered(origin, template, NoopFilter {});
+    }
+
+    fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, mut filter: F) where F: StructureFilter {
         for i in 0..template.size.area() {
             let x = origin.x as usize + i % template.size.x();
             let y = origin.y as usize + i / template.size.x();
-            let tile = template.tiles.get(i).unwrap();
+            let mut tile = template.tiles.get(i).unwrap().clone();
+
+            let filtered = filter.filter(Coord2::xy(x as i32, y as i32), &tile);
+            if let Some(filtered) = filtered {
+                tile = filtered;
+            }
+
             match tile {
                 JigsawPieceTile::Air => (),
                 JigsawPieceTile::Empty => (),
                 JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
                 JigsawPieceTile::Connection(_) => self.chunk.map.ground_layer.set_tile(x, y, 4),
                 JigsawPieceTile::Fixed { ground, object, statue_spot } => {
-                    self.chunk.map.ground_layer.set_tile(x, y, *ground);
+                    self.chunk.map.ground_layer.set_tile(x, y, ground);
                     if let Some(object) = object {
-                        self.chunk.map.object_layer.set_tile(x, y, *object)
+                        self.chunk.map.object_layer.set_tile(x, y, object)
                     }
-                    if *statue_spot {
+                    if statue_spot {
                         self.statue_spots.push(Coord2::xy(x as i32, y as i32))
                     }
                 },

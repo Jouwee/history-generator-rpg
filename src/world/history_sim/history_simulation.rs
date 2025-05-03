@@ -45,7 +45,8 @@ impl HistorySimulation {
                     food: self.params.seed_cities_population as f32
                 },
                 leader: None,
-                artifacts: Vec::new()
+                artifacts: Vec::new(),
+                population_peak: (0, 0)
             };
 
             while unit.creatures.len() < self.params.seed_cities_population as usize {
@@ -65,6 +66,7 @@ impl HistorySimulation {
 
     pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) -> bool {
         self.date = self.date + step;
+        world.date = self.date.clone();
         let now = Instant::now();
 
         let mut stats = (0, 0, 0, Demographics::new());
@@ -278,6 +280,9 @@ impl HistorySimulation {
 
         {
             let mut unit = world.units.get_mut(unit_id);
+
+            self.check_population_peak(now, &mut unit);
+
             let need_election = match unit.leader {
                 None => true,
                 Some(creature_id) => {
@@ -390,6 +395,12 @@ impl HistorySimulation {
         }
 
         // return deferred_side_effects
+    }
+
+    fn check_population_peak(&self, now: &WorldDate, unit: &mut Unit) {
+        if unit.creatures.len() >= unit.population_peak.1 as usize {
+            unit.population_peak = (now.year(), unit.creatures.len() as u32)
+        }
     }
 
     fn find_unit_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
