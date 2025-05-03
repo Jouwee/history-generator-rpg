@@ -54,7 +54,7 @@ impl ChunkGenerator {
             println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
 
             let now = Instant::now();
-            self.generate_ruins(&unit, &mut solver, world, resources);
+            self.generate_ruins(&unit, &mut solver, world);
             println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
 
             if self.statue_spots.len() > 0 {
@@ -280,7 +280,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World) {
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
