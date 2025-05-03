@@ -16,70 +16,79 @@
 [village_house_start]
 
 [village_house_start.a]
-size = [5, 6]
+size = [9, 8]
 template = """
-#####
-#t__#
-#c__B
-#___#
-##_##
-..&.r"""
+#########
+#_______#
+#_______B
+#_ct____#
+#__c____#
+#_______#
+##_######
+..&..rr.."""
 
 [village_house_start.b]
-size = [7, 6]
+size = [9, 8]
 template = """
-#######
-#b__ct#
-#____c#
-#_____#
-###_###
-.r.&..."""
-
-[village_house_start.c]
-size = [6, 6]
-template = """
-#####.
-#_ct#.
-B___#r
-#___#.
-##_##.
-..&..."""
+#########
+#_______#
+#___ctc_#
+B_______#
+#_______#
+#_______#
+######_##
+.r....&.."""
 
 [village_house_start.d]
-size = [5, 6]
+size = [9, 8]
 template = """
-#####
-B_ct#
-#___#
-#t__B
-##_##
-..&.."""
+#########
+#_______#
+#_______#
+#_ct____#
+#__c____#
+#_______#
+##_######
+..&..rr.."""
+
 
 [village_house_room]
 
 [village_house_room.a]
-size = [4, 4]
+size = [5, 5]
 template = """
-####
-A__#
-#_b#
-####"""
+#####
+#c_b#
+A___#
+#___#
+#####"""
 
 [village_house_room.b]
-size = [4, 4]
+size = [5, 6]
 template = """
-####
-#_b#
-A__#
-####"""
+######
+#___b#
+A___b#
+#____#
+######"""
 
 [village_house_room.c]
-size = [4, 4]
+size = [5, 5]
 template = """
-####
-#b_#
-#__B
-####"""
+#####
+#b__#
+#c__A
+#___#
+#####"""
+
+[village_house_room.d]
+size = [5, 6]
+template = """
+######
+#c__b#
+#b___A
+#____#
+######"""
 
 [village_plaza]
 [village_plaza.d]

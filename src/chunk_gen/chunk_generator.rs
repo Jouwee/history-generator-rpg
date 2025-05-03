@@ -206,10 +206,6 @@ impl ChunkGenerator {
         let mut j = 0;
 
         while homeless.len() > 0 {
-            // TODO:
-            if j > 100 {
-                break;
-            }
             j = j + 1;
             let creature_id = homeless.pop().unwrap();
             let mut family = vec!(creature_id);
@@ -252,7 +248,9 @@ impl ChunkGenerator {
 
             if collapsed_pos.is_none() {
                 // TODO: No panic
-                panic!("No position found")
+                println!("No position found" );
+                // panic!("No position found");
+                continue;
             }
             let collapsed_pos = collapsed_pos.unwrap();
 
