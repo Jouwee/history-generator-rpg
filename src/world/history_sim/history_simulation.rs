@@ -51,7 +51,7 @@ impl HistorySimulation {
 
             while unit.creatures.len() < self.params.seed_cities_population as usize {
                 
-                let family = factory.make_family_or_single(&self.date, self.params.resources.species.id_of("species:human"), world);
+                let family = factory.make_family_or_single(&self.date, self.params.resources.species.id_of("species:human"), world, &self.params.resources);
                 for creature_id in family {
                     unit.creatures.push(creature_id);
                 }

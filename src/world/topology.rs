@@ -1,9 +1,7 @@
 use std::{collections::{BTreeMap, VecDeque}, f32::consts::PI};
 
 use noise::{NoiseFn, Perlin};
-use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vector2}, Point2D}};
-
-use super::region::Region;
+use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vector2}, Point2D}, resources::biome::Biomes};
 
 pub(crate) struct WorldTopology {
     pub(crate) size: Size2D,
@@ -212,7 +210,7 @@ impl WorldTopology {
         }
     }
 
-    pub(crate) fn noise(&mut self, rng: &Rng, regions: &Vec<Region>) {
+    pub(crate) fn noise(&mut self, rng: &Rng, biomes: &Biomes) {
         let rng = rng.derive("world_map");
         let n_temp = Perlin::new(rng.derive("temperature").seed());
         let n_reg = Perlin::new(rng.derive("region").seed());
@@ -233,7 +231,7 @@ impl WorldTopology {
                 }
                 {
                     let mut region_candidates: Vec<u8> = Vec::new();
-                    for (j, region) in regions.iter().enumerate() {
+                    for (j, region) in biomes.iter().enumerate() {
                         if self.elevation[i] >= region.elevation.0 && self.elevation[i] <= region.elevation.1 && self.temperature[i] >= region.temperature.0 && self.temperature[i] <= region.temperature.1 {
                             region_candidates.push(j as u8);
                         }
@@ -251,7 +249,7 @@ impl WorldTopology {
                     }
                 }
                 {
-                    let region = &regions[self.region_id[i] as usize];
+                    let region = &biomes.get_u8(self.region_id[i]);
                     let region_fertility_range = region.soil_fertility_range;
                     let region_vegetation_range = region.vegetation;
                     let noise_modif = n_fert.get([xf / 10.0, yf / 10.0]) as f32;
@@ -285,7 +283,7 @@ pub(crate) struct WorldTileData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::geometry::Size2D;
+    use crate::{engine::geometry::Size2D, resources::biome::Biome};
 
 
     #[test]
@@ -312,23 +310,22 @@ mod tests {
         world_b.precipitation(&mut params_b);
         compare(&world_a, &world_b);
 
-        let regions = vec!(Region {
-            // name: String::from("Ocean"),
+        let mut biomes = Biomes::new();
+        biomes.add("a", Biome {
             elevation: (-2000, 0),
             temperature: (0, 5),
             vegetation: (0.0, 0.0),
             soil_fertility_range: (0.8, 1.2),
-        },
-        Region {
-            // name: String::from("Coastal"),
+        });
+        biomes.add("b", Biome {
             elevation: (0, 2000),
             temperature: (0, 5),
             vegetation: (0.0, 0.1),
             soil_fertility_range: (0.8, 1.2),
         });
 
-        world_a.noise(&params_a.rng, &regions);
-        world_b.noise(&params_b.rng, &regions);
+        world_a.noise(&params_a.rng, &biomes);
+        world_b.noise(&params_b.rng, &biomes);
         compare(&world_a, &world_b);
 
     }

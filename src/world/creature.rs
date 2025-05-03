@@ -1,6 +1,6 @@
-use crate::commons::{id_vec::{Id, IdVec}, rng::Rng};
+use crate::{commons::{id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, Resources};
 
-use super::{date::WorldDate, item::ItemId, lineage::LineageId, species::SpeciesId, unit::UnitResources, world::World};
+use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -47,9 +47,9 @@ impl Creature {
         return self.details.as_mut().expect("Already checked")
     }
 
-    pub(crate) fn name(&self, id: &CreatureId, world: &World) -> String {
+    pub(crate) fn name(&self, id: &CreatureId, world: &World, resources: &Resources) -> String {
         let lineage = world.lineages.get(&self.lineage);
-        let culture = world.cultures.get(&lineage.culture);
+        let culture = resources.cultures.get(&lineage.culture);
         let name_model = match &self.gender {
             CreatureGender::Male => &culture.first_name_male_model,
             CreatureGender::Female => &culture.first_name_female_model,

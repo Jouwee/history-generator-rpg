@@ -1,6 +1,4 @@
-use crate::{commons::damage_model::{DamageComponent, DamageOutput}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, GameContext};
-
-use super::{actor::Actor, chunk::ChunkMap, effect_layer::EffectLayer};
+use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer}, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -12,6 +10,8 @@ impl crate::commons::id_vec::Id for ActionId {
         self.0
     }
 }
+
+pub(crate) type Actions = ResourceMap<ActionId, Action>;
 
 #[derive(Clone)]
 pub(crate) struct Action {

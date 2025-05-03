@@ -1,4 +1,4 @@
-use crate::commons::{id_vec::IdVec, markovchains::MarkovChainSingleWordModel};
+use crate::commons::{markovchains::MarkovChainSingleWordModel, resource_map::ResourceMap};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
@@ -12,7 +12,7 @@ impl crate::commons::id_vec::Id for CultureId {
     }
 }
 
-pub(crate) type Cultures = IdVec<Culture>;
+pub(crate) type Cultures = ResourceMap<CultureId, Culture>;
 
 impl Cultures {
 

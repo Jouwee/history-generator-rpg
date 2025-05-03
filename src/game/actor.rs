@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}, world::World}, GameContext};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext};
 
-use super::{action::Affliction, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
+use super::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) enum ActorType {

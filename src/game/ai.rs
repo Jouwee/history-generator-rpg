@@ -1,8 +1,8 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::ActorType, resources::resources::Actions, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType}, GameContext};
 
-use super::{action::{Action, ActionId, ActionType, DamageType}, actor::Actor, chunk::Chunk};
+use super::{actor::Actor, chunk::Chunk};
 
 #[derive(Clone)]
 pub(crate) struct AiRunner {
@@ -143,12 +143,12 @@ impl AiSolver {
                         }
                         if let Some(inflicts) = inflicts {
                             let score_mult = match inflicts.chance {
-                                super::action::AfflictionChance::OnHit => 1.,
+                                AfflictionChance::OnHit => 1.,
                             };
                             let score = match inflicts.affliction {
-                                super::action::Affliction::Bleeding { duration } => 1. * duration as f64,
-                                super::action::Affliction::Stunned { duration } => 0.8 * duration as f64,
-                                super::action::Affliction::Poisoned { duration } => 0.8 * duration as f64,
+                                Affliction::Bleeding { duration } => 1. * duration as f64,
+                                Affliction::Stunned { duration } => 0.8 * duration as f64,
+                                Affliction::Poisoned { duration } => 0.8 * duration as f64,
                             };
                             ctx.damage_score += score * score_mult;
                         }

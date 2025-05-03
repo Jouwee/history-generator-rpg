@@ -1,15 +1,13 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{culture::{CultureId, Cultures}, date::WorldDate, history_sim::history_simulation::HistorySimulation, region::{RegionId, Regions}, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
+use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
 
-use super::{culture::Culture, region::Region, world::World};
+use super::world::World;
 
 
 #[derive(Clone)]
 pub(crate) struct WorldGenerationParameters {
     pub(crate) seed: u32,
-    pub(crate) cultures: Vec<Culture>,
-    pub(crate) regions: Vec<Region>,
 }
 
 pub(crate) struct WorldHistoryGenerator {
@@ -39,20 +37,9 @@ impl WorldHistoryGenerator {
         // let now: Instant = Instant::now();
         // world_map.erosion(&mut params);
         // println!("Erosion {:.2?}", now.elapsed());
-        world_map.noise(&rng, &parameters.regions);
+        world_map.noise(&rng, &resources.biomes);
 
-        let mut regions = Regions::new();
-        for region in parameters.regions.iter() {
-            regions.add::<RegionId>(region.clone());
-        }
-
-        let mut cultures = Cultures::new();
-        for culture in parameters.cultures.iter() {
-            let culture = culture.clone();
-            cultures.add::<CultureId>(culture);
-        }
-
-        let mut world = World::new(world_map, cultures);
+        let mut world = World::new(world_map);
 
         let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
             rng: rng.derive("history"),

@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, strings::Strings}, resources::resources::Resources, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, lineage::Lineage, material::MaterialId, species::SpeciesId, world::World}};
+use crate::{commons::{rng::Rng, strings::Strings}, resources::{material::MaterialId, resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, lineage::Lineage, world::World}};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -10,13 +10,12 @@ impl CreatureFactory {
         CreatureFactory { rng }
     }
 
-    pub(crate) fn make_family_or_single(&mut self, now: &WorldDate, species: SpeciesId, world: &mut World) -> Vec<CreatureId> {
+    pub(crate) fn make_family_or_single(&mut self, now: &WorldDate, species: SpeciesId, world: &mut World, resources: &Resources) -> Vec<CreatureId> {
         let age = self.rng.randi_range(20, 50);
 
-        let culture_id = world.cultures.random();
-        let culture = world.cultures.get(&culture_id);
-        let lineage = world.lineages.add(Lineage::new(world.cultures.random(), &culture));
-        drop(culture);
+        let culture_id = resources.cultures.random();
+        let culture = resources.cultures.get(&culture_id);
+        let lineage = world.lineages.add(Lineage::new(resources.cultures.random(), &culture));
 
         // Single
         if self.rng.rand_chance(0.5) {

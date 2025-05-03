@@ -3,9 +3,9 @@ use std::collections::{BTreeMap, HashMap};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::rng::Rng, game::action::ActionId};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, world::attributes::Attributes};
 
-use super::{attributes::Attributes, material::MaterialId};
+use super::{action::ActionId, material::MaterialId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct SpeciesId(usize);
@@ -17,6 +17,8 @@ impl crate::commons::id_vec::Id for SpeciesId {
         self.0
     }
 }
+
+pub(crate) type SpeciesMap = ResourceMap<SpeciesId, Species>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Species {

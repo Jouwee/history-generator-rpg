@@ -1,4 +1,3 @@
-use action::{ActionRunner, ActionType};
 use actor::ActorType;
 use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
@@ -10,10 +9,10 @@ use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
 use crate::engine::input::InputEvent as NewInputEvent;
 
+use crate::resources::action::{ActionRunner, ActionType};
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
-pub(crate) mod action;
 pub(crate) mod actor;
 pub(crate) mod ai;
 pub(crate) mod chunk;
@@ -477,7 +476,7 @@ impl Scene for GameSceneState {
                                             let creature_id = target.creature_id;
                                             if let Some(creature_id) = creature_id {
                                                 let creature = self.world.creatures.get(&creature_id);
-                                                println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &self.world), creature.profession, creature.gender, creature.birth.year());
+                                                println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &self.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
                                             }
                                         }
                                         let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);

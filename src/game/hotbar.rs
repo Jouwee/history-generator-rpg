@@ -4,9 +4,9 @@ use graphics::CharacterCache;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::resources::Actions, GameContext};
+use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
-use super::{action::{Action, ActionId}, actor::Actor, inventory::inventory::Inventory, InputEvent};
+use super::{actor::Actor, inventory::inventory::Inventory, InputEvent};
 
 pub(crate) struct Hotbar {
     background: Texture,
@@ -64,7 +64,7 @@ impl Hotbar {
         let mut tooltip = Tooltip::new(action.name.clone());
         tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
         match &action.action_type {
-            super::action::ActionType::Targeted { damage, inflicts } => {
+            ActionType::Targeted { damage, inflicts } => {
                 if let Some(damage) = damage {
                     tooltip.add_line(TooltipLine::Damage(damage.clone()));
                 }

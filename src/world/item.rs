@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::Texture;
 
-use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::action::ActionId, resources::resources::{Actions, Materials}};
+use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::{action::{ActionId, Actions}, material::{MaterialId, Materials}}};
 
-use super::{creature::CreatureId, material::MaterialId, world::World};
+use super::{creature::CreatureId, world::World};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemId(usize);

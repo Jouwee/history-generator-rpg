@@ -1,6 +1,4 @@
-use crate::{commons::{id_vec::IdVec, rng::Rng}, Culture};
-
-use super::culture::CultureId;
+use crate::{commons::{id_vec::IdVec, rng::Rng}, resources::culture::{Culture, CultureId}};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]

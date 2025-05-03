@@ -1,4 +1,4 @@
-use crate::engine::Color;
+use crate::{commons::resource_map::ResourceMap, engine::Color};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct MaterialId(usize);
@@ -10,6 +10,8 @@ impl crate::commons::id_vec::Id for MaterialId {
         self.0
     }
 }
+
+pub(crate) type Materials = ResourceMap<MaterialId, Material>;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Material {
