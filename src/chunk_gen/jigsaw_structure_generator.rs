@@ -4,6 +4,7 @@ use crate::{commons::rng::Rng, engine::geometry::Size2D, Coord2};
 
 
 pub(crate) struct JigsawSolver {
+    rng: Rng,
     size: Size2D,
     available_pools: HashMap<String, JigsawPiecePool>,
     structures: Vec<Structure>
@@ -11,8 +12,9 @@ pub(crate) struct JigsawSolver {
 
 impl JigsawSolver {
 
-    pub(crate) fn new(size: Size2D) -> Self {
+    pub(crate) fn new(size: Size2D, rng: Rng) -> Self {
         Self { 
+            rng,
             size,
             available_pools: HashMap::new(),
             structures: Vec::new()
@@ -38,7 +40,7 @@ impl JigsawSolver {
             structure.add(&selected, position);
 
             // TODO: Param
-            let result = self.recursive_jigsaw(structure, 1, 5);
+            let result = self.recursive_jigsaw(structure, 1, 5, self.rng.clone());
 
             if result.is_none() {
                 continue;
@@ -52,7 +54,7 @@ impl JigsawSolver {
         return None;
     }
 
-    fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize) -> Option<Structure> {
+    fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize, mut rng: Rng) -> Option<Structure> {
         if vec.open_connections.len() == 0 {
             return Some(vec)
         }
@@ -72,8 +74,6 @@ impl JigsawSolver {
                 }
             }
         }
-        // TODO: Deterministic
-        let mut rng = Rng::rand();
         let possibilities = rng.shuffle(possibilities);
         for possibility in possibilities.iter() {
             let origin = possibility.0.0 - possibility.2;
@@ -81,7 +81,7 @@ impl JigsawSolver {
                 let mut state_clone = vec.clone();
                 state_clone.add(possibility.1, origin);
                 state_clone.remove_connection(&possibility.0.0);
-                let result = self.recursive_jigsaw(state_clone, depth + 1, max_depth);
+                let result = self.recursive_jigsaw(state_clone, depth + 1, max_depth, rng.clone());
                 if result.is_some() {
                     return result;
                 }
@@ -139,7 +139,7 @@ mod tests_jigsaw_solver {
 
     #[test]
     fn test_single_buildings() {
-        let mut solver = JigsawSolver::new(Size2D(64, 64));
+        let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
         let mut pool = JigsawPiecePool::new();
         pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_#|###"));
         solver.add_pool("A", pool);
@@ -166,7 +166,7 @@ mod tests_jigsaw_solver {
 
     #[test]
     fn test_unique_connections() {
-        let mut solver = JigsawSolver::new(Size2D(64, 64));
+        let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
 
         let mut pool = JigsawPiecePool::new();
         pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_B|###"));

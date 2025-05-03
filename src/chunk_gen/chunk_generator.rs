@@ -16,10 +16,9 @@ pub(crate) struct ChunkGenerator {
 
 impl ChunkGenerator {
 
-    pub(crate) fn new(resources: &Resources, player: Actor, size: Size2D) -> ChunkGenerator {
+    pub(crate) fn new(resources: &Resources, player: Actor, size: Size2D, rng: Rng) -> ChunkGenerator {
         ChunkGenerator {
-            // TODO: Determinate
-            rng: Rng::rand(),
+            rng,
             chunk: Chunk::new(size, player, resources),
             path_endpoints: Vec::new(),
             statue_spots: Vec::new(),
@@ -90,14 +89,11 @@ impl ChunkGenerator {
     }
 
     fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver) {
-        // TODO: Determinate
-        let mut rng = Rng::rand();
-
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..50 {
             building_seed_cloud.insert(Coord2::xy(
-                rng.randu_range(0, self.chunk.size.x()) as i32,
-                rng.randu_range(0, self.chunk.size.y()) as i32
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
             ));
         }
         let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
@@ -118,7 +114,7 @@ impl ChunkGenerator {
 
                 let pos = building_seed_cloud.pop().unwrap();
 
-                let structure = solver.solve_structure("village_plaza", pos, &mut rng);
+                let structure = solver.solve_structure("village_plaza", pos, &mut self.rng);
                 if let Some(structure) = structure {
                     for (pos, piece) in structure.vec.iter() {
                         self.place_template(*pos, &piece);
@@ -140,7 +136,7 @@ impl ChunkGenerator {
 
                 let pos = building_seed_cloud.pop().unwrap();
 
-                let structure = solver.solve_structure("village_cemetery", pos, &mut rng);
+                let structure = solver.solve_structure("village_cemetery", pos, &mut self.rng);
                 if let Some(structure) = structure {
                     collapsed_pos = Some(pos);
                     for (pos, piece) in structure.vec.iter() {
@@ -185,14 +181,12 @@ impl ChunkGenerator {
 
     fn generate_buildings(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
         let mut homeless = unit.creatures.clone();
-        // TODO: Determinate
-        let mut rng = Rng::rand();
 
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
-                rng.randu_range(0, self.chunk.size.x()) as i32,
-                rng.randu_range(0, self.chunk.size.y()) as i32
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
             ));
         }
         let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
@@ -239,7 +233,7 @@ impl ChunkGenerator {
 
                 let pos = building_seed_cloud.pop().unwrap();
 
-                let structure = solver.solve_structure("village_house_start", pos, &mut rng);
+                let structure = solver.solve_structure("village_house_start", pos, &mut self.rng);
                 if let Some(structure) = structure {
                     collapsed_pos = Some(pos);
                     for (pos, piece) in structure.vec.iter() {
@@ -391,7 +385,7 @@ impl ChunkGenerator {
     }
 
     fn get_jigsaw_solver(&self) -> JigsawSolver {
-        let mut solver = JigsawSolver::new(self.chunk.size.clone());
+        let mut solver = JigsawSolver::new(self.chunk.size.clone(), self.rng.clone());
         let parser = JigsawParser::new("assets/structures/village.toml");
 
         let _ = parser.parse(&mut solver);
@@ -400,20 +394,18 @@ impl ChunkGenerator {
     }
 
     fn collapse_decor(&mut self) {
-        // TODO: Deterministic
-        let mut rng = Rng::rand();
         let noise = Perlin::new(Rng::rand().derive("trees").seed());
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
                 if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
                     if ground == 1 {
                         if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
-                            if rng.rand_chance(0.1) {
+                            if self.rng.rand_chance(0.1) {
                                 self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
                                 continue;
                             }
                         }
-                        if rng.rand_chance(0.2) {
+                        if self.rng.rand_chance(0.2) {
                             self.chunk.map.object_layer.set_tile(x as usize, y as usize, 9);
                         }
                     }
