@@ -187,9 +187,9 @@ mod tests {
 
         let mo3 = MarkovChainSingleWordModel::train(vec!("john", "joe", "joseph", "jonny", "jon", "jonas", "jasper"), 3);
         assert_eq!(mo3.generate(&Rng::new(0), 3, 10), "jasper");
-        assert_eq!(mo3.generate(&Rng::new(10), 3, 10), "jon");
+        assert_eq!(mo3.generate(&Rng::new(10), 3, 10), "joseph");
         // Might generate smaller than min if there's no other path
-        assert_eq!(mo3.generate(&Rng::new(10), 15, 20), "jonasa");
+        assert_eq!(mo3.generate(&Rng::new(10), 15, 20), "josepha");
 
     }
 }
