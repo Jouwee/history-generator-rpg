@@ -2,9 +2,12 @@
 '#' = { ground= 4, object= 1 }
 '_' = { ground= 4 }
 '+' = { ground= 5 }
+'*' = { ground= 5, statue_spot= true }
 'b' = { ground= 4, object= 3 }
 'c' = { ground= 4, object= 5 }
 't' = { ground= 4, object= 4 }
+'r' = { ground= 1, object= 8 }
+'&' = { path_endpoint = true }
 '@' = { connect = "" }
 'A' = { connect = "village_house_start" }
 'B' = { connect = "village_house_room" }
@@ -13,40 +16,44 @@
 [village_house_start]
 
 [village_house_start.a]
-size = [5, 5]
+size = [5, 6]
 template = """
 #####
 #t__#
 #c__B
 #___#
-##_##"""
+##_##
+..&.r"""
 
 [village_house_start.b]
-size = [7, 5]
+size = [7, 6]
 template = """
 #######
 #b__ct#
 #____c#
 #_____#
-###_###"""
+###_###
+.r.&..."""
 
 [village_house_start.c]
-size = [5, 5]
+size = [6, 6]
 template = """
-#####
-#_ct#
-B___#
-#___#
-##_##"""
+#####.
+#_ct#.
+B___#r
+#___#.
+##_##.
+..&..."""
 
 [village_house_start.d]
-size = [5, 5]
+size = [5, 6]
 template = """
 #####
 B_ct#
 #___#
 #t__B
-##_##"""
+##_##
+..&.."""
 
 [village_house_room]
 
@@ -78,15 +85,15 @@ template = """
 [village_plaza.d]
 size = [9, 9]
 template = """
-...+++...
 ..+++++..
-.+++++++.
-+++++++++
-+++++++++
-+++++++++
-.+++++++.
-..+++++..
-...+++..."""
+.++*+*++.
+++*+++*++
++*+++++*+
+++++&++++
++*+++++*+
+++*+++*++
+.++*+*++.
+..+++++.."""
 
 
 [village_cemetery]

@@ -111,7 +111,15 @@ impl JigsawParser {
                             Some(Value::Integer(object)) => Some(*object as usize),
                             _ => None
                         };
-                        map.insert(symbol, JigsawPieceTile::Fixed { ground: *ground as usize, object });
+                        let statue_spot = match tile_table.get("statue_spot") {
+                            Some(Value::Boolean(true)) => true,
+                            _ => false
+                        };
+                        map.insert(symbol, JigsawPieceTile::Fixed { ground: *ground as usize, object, statue_spot });
+                        continue;
+                    }
+                    if let Some(Value::Boolean(true)) = tile_table.get("path_endpoint") {
+                        map.insert(symbol, JigsawPieceTile::PathEndpoint);
                         continue;
                     }
                 },

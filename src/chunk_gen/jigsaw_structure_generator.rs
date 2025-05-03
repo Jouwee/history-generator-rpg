@@ -118,7 +118,7 @@ mod tests_jigsaw_solver {
         let mut tiles = Vec::new();
         for char in string.chars() {
             match char {
-                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None }),
+                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false }),
                 'A' => tiles.push(JigsawPieceTile::Connection(String::from("A"))),
                 'B' => tiles.push(JigsawPieceTile::Connection(String::from("B"))),
                 'C' => tiles.push(JigsawPieceTile::Connection(String::from("C"))),
@@ -216,7 +216,8 @@ pub(crate) struct JigsawPiece {
 pub(crate) enum JigsawPieceTile {
     Air,
     Empty,
-    Fixed { ground: usize, object: Option<usize> },
+    Fixed { ground: usize, object: Option<usize>, statue_spot: bool },
+    PathEndpoint,
     Connection(String)
 }
 

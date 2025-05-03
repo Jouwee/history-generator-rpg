@@ -269,11 +269,11 @@ impl Resources {
         let image = ImageReader::open("assets/sprites/bed.png").unwrap().decode().unwrap();
         self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
 
-        let image = ImageReader::open("assets/sprites/table.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:table", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        let image = ImageReader::open("assets/sprites/chunk_tiles/wood_small_table.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:table", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
 
-        let image = ImageReader::open("assets/sprites/stool.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        let image = ImageReader::open("assets/sprites/chunk_tiles/wood_stool.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
         
         let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
         self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));

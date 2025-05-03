@@ -3,18 +3,27 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, game::chunk::TileMetadata, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::geometry::Size2D, game::chunk::TileMetadata, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}};
 
 pub(crate) struct ChunkGenerator {
-    chunk: Chunk
+    rng: Rng,
+    chunk: Chunk,
+    path_endpoints: Vec<Coord2>,
+    statue_spots: Vec<Coord2>
 }
 
 impl ChunkGenerator {
 
     pub(crate) fn new(resources: &Resources, player: Actor, size: Size2D) -> ChunkGenerator {
-        ChunkGenerator { chunk: Chunk::new(size, player, resources) }
+        ChunkGenerator {
+            // TODO: Determinate
+            rng: Rng::rand(),
+            chunk: Chunk::new(size, player, resources),
+            path_endpoints: Vec::new(),
+            statue_spots: Vec::new(),
+        }
     }
 
     pub(crate) fn generate(&mut self, world: &World, xy: Coord2, resources: &Resources) {
@@ -35,13 +44,26 @@ impl ChunkGenerator {
         if let Some(unit) = found_sett {
             let mut solver = self.get_jigsaw_solver();
             let now = Instant::now();
-            self.generate_large_structures(&unit, &mut solver, world, resources);
+            self.generate_large_structures(&unit, &mut solver);
             println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
 
             println!("Chunk has {} creatures, {} artifacts, {} graves", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len());
             let now = Instant::now();
             self.generate_buildings(&unit, &mut solver, world, resources);
             println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
+
+            if self.statue_spots.len() > 0 {
+                let now = Instant::now();
+                self.place_statues(&unit, &world, &resources);
+                println!("[Chunk gen] Statues: {:.2?}", now.elapsed());
+            }
+
+        }
+
+        if self.path_endpoints.len() > 0 {
+            let now = Instant::now();
+            self.generate_paths();
+            println!("[Chunk gen] Streets: {:.2?}", now.elapsed());
         }
 
         let now = Instant::now();
@@ -62,7 +84,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver) {
         // TODO: Determinate
         let mut rng = Rng::rand();
 
@@ -86,7 +108,6 @@ impl ChunkGenerator {
         });
 
         if unit.artifacts.len() > 0 {
-            let mut collapsed_pos = None;
 
             while building_seed_cloud.len() > 0 {
 
@@ -94,7 +115,6 @@ impl ChunkGenerator {
 
                 let structure = solver.solve_structure("village_plaza", pos, &mut rng);
                 if let Some(structure) = structure {
-                    collapsed_pos = Some(pos);
                     for (pos, piece) in structure.vec.iter() {
                         self.place_template(*pos, &piece);
                     }
@@ -104,26 +124,7 @@ impl ChunkGenerator {
 
             }
 
-            if collapsed_pos.is_none() {
-                // TODO: No panic
-                panic!("No position found")
-            }
-            let collapsed_pos = collapsed_pos.unwrap();
-
-            let mut x = collapsed_pos.x;
-            let mut y = collapsed_pos.y;
-
-            for item in unit.artifacts.iter() {
-                let item = world.artifacts.get(item);
-                let texture = item.make_texture(&resources.materials);
-                self.chunk.items_on_ground.push((Coord2::xy(x, y), item.clone(), texture));
-
-                x = x + 2;
-                if x > collapsed_pos.x + 9 {
-                    y = y + 2;
-                    x = collapsed_pos.x;
-                }
-            }
+           
 
         }
 
@@ -276,6 +277,57 @@ impl ChunkGenerator {
         }
     }
 
+    fn generate_paths(&mut self) {
+        while self.path_endpoints.len() > 1 {
+            let start = self.path_endpoints.pop().unwrap();
+
+            let mut closest = self.path_endpoints.first().unwrap();
+            let mut closes_dst = closest.dist_squared(&start);
+            for point in self.path_endpoints.iter() {
+                let dst = start.dist_squared(point);
+                if dst < closes_dst {
+                    closest = point;
+                    closes_dst = dst;
+                }
+            }
+            
+            let mut astar = AStar::new(self.chunk.size, start);
+            astar.find_path(*closest, |xy| {
+                if !self.chunk.size.in_bounds(xy) || self.chunk.map.blocks_movement(xy) {
+                    return MovementCost::Impossible;
+                } else {
+                    return MovementCost::Cost(1.);
+                }
+            });
+            let path = astar.get_path(*closest);
+            for step in path {
+                self.chunk.map.ground_layer.set_tile(step.x as usize, step.y as usize, 5);
+            }
+
+
+        }
+    }
+
+    fn place_statues(&mut self, unit: &Unit, world: &World, resources: &Resources) {
+        let spots = self.statue_spots.clone();
+        let mut spots = self.rng.shuffle(spots);
+        for item in unit.artifacts.iter() {
+            let spot = spots.pop();
+            match spot {
+                None => {
+                    // TODO:
+                    println!("Not enough spots for artifacts");
+                    break;
+                },
+                Some(spot) => {
+                    let item = world.artifacts.get(item);
+                    let texture = item.make_texture(&resources.materials);
+                    self.chunk.items_on_ground.push((spot, item.clone(), texture));
+                }
+            }
+        }
+    }
+
     fn get_jigsaw_solver(&self) -> JigsawSolver {
         let mut solver = JigsawSolver::new(self.chunk.size.clone());
         let parser = JigsawParser::new("assets/structures/village.toml");
@@ -316,11 +368,15 @@ impl ChunkGenerator {
             match tile {
                 JigsawPieceTile::Air => (),
                 JigsawPieceTile::Empty => (),
+                JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
                 JigsawPieceTile::Connection(_) => self.chunk.map.ground_layer.set_tile(x, y, 4),
-                JigsawPieceTile::Fixed { ground, object } => {
+                JigsawPieceTile::Fixed { ground, object, statue_spot } => {
                     self.chunk.map.ground_layer.set_tile(x, y, *ground);
                     if let Some(object) = object {
                         self.chunk.map.object_layer.set_tile(x, y, *object)
+                    }
+                    if *statue_spot {
+                        self.statue_spots.push(Coord2::xy(x as i32, y as i32))
                     }
                 },
             }
