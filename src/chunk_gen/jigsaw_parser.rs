@@ -65,6 +65,12 @@ impl JigsawParser {
                                                             }
                                                         }
                                                     }
+
+                                                    if tiles.len() != size.area() {
+                                                        println!("[ERR] Jigsaw piece {pool_name}.{piece_name} expected {} tiles but has {}", size.area(), tiles.len());
+                                                        continue;
+                                                    }
+
                                                     let piece = JigsawPiece {
                                                         size,
                                                         tiles

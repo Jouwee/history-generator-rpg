@@ -3,9 +3,17 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::geometry::Size2D, game::chunk::TileMetadata, world::{creature::Profession, unit::Unit, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::{geometry::Size2D, tilemap::Tile}, game::chunk::TileMetadata, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
+
+struct ChunkFeaturePools {
+    main_pool: Option<String>,
+    detached_housing_pool: Option<String>,
+    cemetery_pool: Option<String>,
+    artifacts_pool: Option<String>,
+}
+
 
 pub(crate) struct ChunkGenerator {
     rng: Rng,
@@ -43,17 +51,20 @@ impl ChunkGenerator {
         println!("[Chunk gen] Unit search: {:.2?}", now.elapsed());
 
         if let Some(unit) = found_sett {
+
+            let pools = self.get_pools(&unit);
+
             let now = Instant::now();
-            self.generate_large_structures(&unit, &mut solver);
+            self.generate_large_structures(&unit, &mut solver, &pools);
             println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
 
             println!("Chunk has {} creatures, {} artifacts, {} graves. Peak was {} in {}", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len(), unit.population_peak.1, unit.population_peak.0);
             let now = Instant::now();
-            self.generate_buildings(&unit, &mut solver, world, resources);
+            self.generate_buildings(&unit, &mut solver, &pools, world, resources);
             println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
 
             let now = Instant::now();
-            self.generate_ruins(&unit, &mut solver, world);
+            self.generate_ruins(&unit, &mut solver, &pools, world);
             println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
 
             if self.statue_spots.len() > 0 {
@@ -79,6 +90,23 @@ impl ChunkGenerator {
         return self.chunk;
     }
 
+    fn get_pools(&self, unit: &Unit) -> ChunkFeaturePools {
+        match unit.unit_type {
+            UnitType::Village => ChunkFeaturePools {
+                main_pool: None,
+                detached_housing_pool: Some(String::from("village_house_start")),
+                artifacts_pool: Some(String::from("village_plaza")),
+                cemetery_pool: Some(String::from("village_cemetery"))
+            },
+            UnitType::BanditCamp => ChunkFeaturePools {
+                main_pool: None,
+                detached_housing_pool: Some(String::from("camp_start")),
+                artifacts_pool: None,
+                cemetery_pool: None
+            },
+        }
+    }
+
     fn generate_fixed_terrain_features(&mut self) {
         // TODO: Based on region
         for x in 0..self.chunk.size.x() {
@@ -88,7 +116,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver) {
+    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools) {
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..50 {
             building_seed_cloud.insert(Coord2::xy(
@@ -109,20 +137,21 @@ impl ChunkGenerator {
         });
 
         if unit.artifacts.len() > 0 {
+            if let Some(artifacts_pool) = &pools.artifacts_pool {
+                while building_seed_cloud.len() > 0 {
 
-            while building_seed_cloud.len() > 0 {
+                    let pos = building_seed_cloud.pop().unwrap();
 
-                let pos = building_seed_cloud.pop().unwrap();
-
-                let structure = solver.solve_structure("village_plaza", pos, &mut self.rng);
-                if let Some(structure) = structure {
-                    for (pos, piece) in structure.vec.iter() {
-                        self.place_template(*pos, &piece);
+                    let structure = solver.solve_structure(artifacts_pool, pos, &mut self.rng);
+                    if let Some(structure) = structure {
+                        for (pos, piece) in structure.vec.iter() {
+                            self.place_template(*pos, &piece);
+                        }
+                        break;
                     }
-                    break;
+
+
                 }
-
-
             }
 
            
@@ -130,56 +159,58 @@ impl ChunkGenerator {
         }
 
         if unit.cemetery.len() > 0 {
-            let mut collapsed_pos = None;
+            if let Some(cemetery_pool) = &pools.cemetery_pool {
+                let mut collapsed_pos = None;
 
-            while building_seed_cloud.len() > 0 {
+                while building_seed_cloud.len() > 0 {
 
-                let pos = building_seed_cloud.pop().unwrap();
+                    let pos = building_seed_cloud.pop().unwrap();
 
-                let structure = solver.solve_structure("village_cemetery", pos, &mut self.rng);
-                if let Some(structure) = structure {
-                    collapsed_pos = Some(pos);
-                    for (pos, piece) in structure.vec.iter() {
-                        self.place_template(*pos, &piece);
+                    let structure = solver.solve_structure(cemetery_pool, pos, &mut self.rng);
+                    if let Some(structure) = structure {
+                        collapsed_pos = Some(pos);
+                        for (pos, piece) in structure.vec.iter() {
+                            self.place_template(*pos, &piece);
+                        }
+                        break;
                     }
-                    break;
+
+
                 }
 
+                if collapsed_pos.is_none() {
+                    // TODO: No panic
+                    panic!("No position found")
+                }
+                let collapsed_pos = collapsed_pos.unwrap();
 
-            }
+                let mut x = collapsed_pos.x;
+                let mut y = collapsed_pos.y;
 
-            if collapsed_pos.is_none() {
-                // TODO: No panic
-                panic!("No position found")
-            }
-            let collapsed_pos = collapsed_pos.unwrap();
+                
+                let mut slice = &unit.cemetery[..];
+                // TODO:
+                if slice.len() > 49 {
+                    slice = &unit.cemetery[0..49];
+                }
 
-            let mut x = collapsed_pos.x;
-            let mut y = collapsed_pos.y;
-
-            
-            let mut slice = &unit.cemetery[..];
-            // TODO:
-            if slice.len() > 49 {
-                slice = &unit.cemetery[0..49];
-            }
-
-            for creature in slice.iter() {
-                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
-                self.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
+                for creature in slice.iter() {
+                    self.chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
+                    self.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
 
 
-                x = x + 2;
-                if x > collapsed_pos.x + 15 {
-                    y = y + 2;
-                    x = collapsed_pos.x;
+                    x = x + 2;
+                    if x > collapsed_pos.x + 15 {
+                        y = y + 2;
+                        x = collapsed_pos.x;
+                    }
                 }
             }
 
         }
     }
 
-    fn generate_buildings(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+    fn generate_buildings(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World, resources: &Resources) {
         let mut homeless = unit.creatures.clone();
 
         let mut building_seed_cloud = HashSet::new();
@@ -201,80 +232,79 @@ impl ChunkGenerator {
             }
         });
         
+        if let Some(detached_housing_pool) = &pools.detached_housing_pool {
 
-        let mut j = 0;
-
-        while homeless.len() > 0 {
-            j = j + 1;
-            let creature_id = homeless.pop().unwrap();
-            let mut family = vec!(creature_id);
-            let creature = world.creatures.get(&creature_id);
-            if let Some(spouse) = creature.spouse {
-                let in_homeless = homeless.iter().position(|id| *id == spouse);
-                if let Some(index) = in_homeless {
-                    homeless.remove(index);
-                    family.push(spouse);
-                }
-            }
-            for child_id in creature.offspring.iter() {
-                let in_homeless = homeless.iter().position(|id| *id == *child_id);
-                if let Some(index) = in_homeless {
-                    let child = world.creatures.get(child_id);
-                    if child.profession != Profession::None {
+            while homeless.len() > 0 {
+                let creature_id = homeless.pop().unwrap();
+                let mut family = vec!(creature_id);
+                let creature = world.creatures.get(&creature_id);
+                if let Some(spouse) = creature.spouse {
+                    let in_homeless = homeless.iter().position(|id| *id == spouse);
+                    if let Some(index) = in_homeless {
                         homeless.remove(index);
-                        family.push(*child_id);
+                        family.push(spouse);
                     }
                 }
-            }
-
-            let mut collapsed_pos = None;
-
-            while building_seed_cloud.len() > 0 {
-
-                let pos = building_seed_cloud.pop().unwrap();
-
-                let structure = solver.solve_structure("village_house_start", pos, &mut self.rng);
-                if let Some(structure) = structure {
-                    collapsed_pos = Some(pos);
-                    for (pos, piece) in structure.vec.iter() {
-                        self.place_template(*pos, &piece);
+                for child_id in creature.offspring.iter() {
+                    let in_homeless = homeless.iter().position(|id| *id == *child_id);
+                    if let Some(index) = in_homeless {
+                        let child = world.creatures.get(child_id);
+                        if child.profession != Profession::None {
+                            homeless.remove(index);
+                            family.push(*child_id);
+                        }
                     }
-                    break;
                 }
 
+                let mut collapsed_pos = None;
 
-            }
+                while building_seed_cloud.len() > 0 {
 
-            if collapsed_pos.is_none() {
-                // TODO: No panic
-                println!("No position found" );
-                // panic!("No position found");
-                continue;
-            }
-            let collapsed_pos = collapsed_pos.unwrap();
+                    let pos = building_seed_cloud.pop().unwrap();
+
+                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng);
+                    if let Some(structure) = structure {
+                        collapsed_pos = Some(pos);
+                        for (pos, piece) in structure.vec.iter() {
+                            self.place_template(*pos, &piece);
+                        }
+                        break;
+                    }
 
 
-            let mut lx = 0;
-            let mut ly = 0;
+                }
 
-            for creature_id in family.iter() {
+                if collapsed_pos.is_none() {
+                    // TODO: No panic
+                    println!("No position found" );
+                    // panic!("No position found");
+                    continue;
+                }
+                let collapsed_pos = collapsed_pos.unwrap();
 
-                let creature = world.creatures.get(creature_id);
-                let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
-                let species = resources.species.get(&creature.species);
-                self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
-                lx += 1;
-                if lx >= 3 {
-                    lx = 0;
-                    ly += 1;
+
+                let mut lx = 0;
+                let mut ly = 0;
+
+                for creature_id in family.iter() {
+
+                    let creature = world.creatures.get(creature_id);
+                    let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
+                    let species = resources.species.get(&creature.species);
+                    self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
+                    lx += 1;
+                    if lx >= 3 {
+                        lx = 0;
+                        ly += 1;
+                    }
+
                 }
 
             }
-
         }
     }
 
-    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World) {
+    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World) {
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
@@ -294,42 +324,44 @@ impl ChunkGenerator {
             }
         });
         
+        if let Some(detached_housing_pool) = &pools.detached_housing_pool {
 
-        let pop_diff = unit.population_peak.1 as usize - unit.creatures.len();
-        let ruins = pop_diff / 2;
+            let pop_diff = unit.population_peak.1 as usize - unit.creatures.len();
+            let ruins = pop_diff / 2;
 
-        let age = world.date.year() - unit.population_peak.0;
+            let age = world.date.year() - unit.population_peak.0;
 
-        let mut j = 0;
+            let mut j = 0;
 
-        for _ in 0..ruins {
-            j = j + 1;
+            for _ in 0..ruins {
+                j = j + 1;
 
-            let mut collapsed_pos = None;
+                let mut collapsed_pos = None;
 
-            while building_seed_cloud.len() > 0 {
+                while building_seed_cloud.len() > 0 {
 
-                let pos = building_seed_cloud.pop().unwrap();
+                    let pos = building_seed_cloud.pop().unwrap();
 
-                let structure = solver.solve_structure("village_house_start", pos, &mut self.rng);
-                if let Some(structure) = structure {
-                    collapsed_pos = Some(pos);
-                    for (pos, piece) in structure.vec.iter() {
-                        self.place_template_filtered(*pos, &piece, AbandonedStructureFilter::new(self.rng.clone(), age as u32));
+                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng);
+                    if let Some(structure) = structure {
+                        collapsed_pos = Some(pos);
+                        for (pos, piece) in structure.vec.iter() {
+                            self.place_template_filtered(*pos, &piece, AbandonedStructureFilter::new(self.rng.clone(), age as u32));
+                        }
+                        break;
                     }
-                    break;
+
+
                 }
 
+                if collapsed_pos.is_none() {
+                    // TODO: No panic
+                    println!("No position found" );
+                    // panic!("No position found");
+                    continue;
+                }
 
             }
-
-            if collapsed_pos.is_none() {
-                // TODO: No panic
-                println!("No position found" );
-                // panic!("No position found");
-                continue;
-            }
-
         }
     }
 
@@ -386,8 +418,11 @@ impl ChunkGenerator {
 
     fn get_jigsaw_solver(&self) -> JigsawSolver {
         let mut solver = JigsawSolver::new(self.chunk.size.clone(), self.rng.clone());
+        
         let parser = JigsawParser::new("assets/structures/village.toml");
+        let _ = parser.parse(&mut solver);
 
+        let parser = JigsawParser::new("assets/structures/bandit_camp.toml");
         let _ = parser.parse(&mut solver);
 
         return solver;
@@ -398,15 +433,17 @@ impl ChunkGenerator {
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
                 if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
-                    if ground == 1 {
-                        if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
-                            if self.rng.rand_chance(0.1) {
-                                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
-                                continue;
+                    if let Tile::Empty = self.chunk.map.object_layer.get_tile(x, y) {
+                        if ground == 1 {
+                            if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
+                                if self.rng.rand_chance(0.1) {
+                                    self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                                    continue;
+                                }
                             }
-                        }
-                        if self.rng.rand_chance(0.2) {
-                            self.chunk.map.object_layer.set_tile(x as usize, y as usize, 9);
+                            if self.rng.rand_chance(0.2) {
+                                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 9);
+                            }
                         }
                     }
                 }

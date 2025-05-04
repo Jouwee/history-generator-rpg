@@ -406,6 +406,10 @@ impl Resources {
         
         let image = ImageReader::open("assets/sprites/chunk_tiles/grass_decal.png").unwrap().decode().unwrap();
         self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), false));
+
+        let image = ImageReader::open("assets/sprites/chunk_tiles/tent.png").unwrap().decode().unwrap();
+        self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
     }
 
 }
