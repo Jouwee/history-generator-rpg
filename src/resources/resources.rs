@@ -376,6 +376,14 @@ impl Resources {
         let mut tile = Tile::new(2, "assets/sprites/chunk_tiles/cobblestone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:cobblestone", tile);
+
+        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass_dark.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
+        self.tiles.add("tile:grass_dark", tile);
+
+        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass_patchy.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
+        self.tiles.add("tile:grass_patchy", tile);
     }
 
     pub(crate) fn load_object_tiles(&mut self) {

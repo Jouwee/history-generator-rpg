@@ -109,9 +109,20 @@ impl ChunkGenerator {
 
     fn generate_fixed_terrain_features(&mut self) {
         // TODO: Based on region
+        let noise = Perlin::new(Rng::rand().derive("grass").seed());
+        
         for x in 0..self.chunk.size.x() {
             for y in 0..self.chunk.size.y() {
-                self.chunk.map.ground_layer.set_tile(x, y, 1);
+                let n = noise.get([x as f64 / 15.0, y as f64 / 15.0]);
+                if n > 0. {
+                    if n > 0.9 {
+                        self.chunk.map.ground_layer.set_tile(x, y, 7);
+                    } else {
+                        self.chunk.map.ground_layer.set_tile(x, y, 1);
+                    }
+                } else {
+                    self.chunk.map.ground_layer.set_tile(x, y, 6);
+                }
             }
         }
     }
@@ -434,7 +445,7 @@ impl ChunkGenerator {
             for y in 1..self.chunk.size.y()-1 {
                 if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
                     if let Tile::Empty = self.chunk.map.object_layer.get_tile(x, y) {
-                        if ground == 1 {
+                        if ground == 1 || ground == 6 || ground == 7 {
                             if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                                 if self.rng.rand_chance(0.1) {
                                     self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
