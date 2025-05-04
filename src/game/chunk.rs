@@ -183,7 +183,7 @@ impl Renderable for Chunk {
             actors_by_position.get_mut(&npc.xy).unwrap().push(npc);
         }
 
-        self.map.object_layer.render(ctx, |ctx, x, y| {
+        self.map.object_layer.render(ctx, game_ctx, |ctx, game_ctx, x, y| {
             if let Some(actors) = actors_by_position.get(&Coord2::xy(x as i32, y as i32)) {
                 for actor in actors {
                     actor.render(ctx, game_ctx);
@@ -196,37 +196,37 @@ impl Renderable for Chunk {
         }
         // Renders the nav borders
         {
-            let left = game_ctx.assets.image(ImageAsset::new("gui/nav_arrow_left.png"));
+            let left = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_left.png"));
             for y in 1..self.size.y()-1 {
                 ctx.texture_ref(&left.texture, [12., y as f64 * 24. + 12.]);
             }
         }
         {
-            let right = game_ctx.assets.image(ImageAsset::new("gui/nav_arrow_right.png"));
+            let right = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_right.png"));
             for y in 1..self.size.y()-1 {
                 ctx.texture_ref(&right.texture, [self.size.x() as f64 * 24. - 12., y as f64 * 24. + 12.]);
             }
         }
         {
-            let up = game_ctx.assets.image(ImageAsset::new("gui/nav_arrow_up.png"));
+            let up = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_up.png"));
             for x in 1..self.size.x()-1 {
                 ctx.texture_ref(&up.texture, [x as f64 * 24. + 12., 12.]);
             }
         }
         {
-            let down = game_ctx.assets.image(ImageAsset::new("gui/nav_arrow_down.png"));
+            let down = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_down.png"));
             for x in 1..self.size.x()-1 {
                 ctx.texture_ref(&down.texture, [x as f64 * 24. + 12., self.size.y() as f64 * 24. - 12.]);
             }
         }
         {
-            let corner = game_ctx.assets.image(ImageAsset::new("gui/nav_corner.png"));
+            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png"));
             ctx.texture_ref(&corner.texture, [12., 12.]);
-            let corner = game_ctx.assets.image(ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R90));
+            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R90));
             ctx.texture_ref(&corner.texture, [self.size.x() as f64 * 24. - 12., 12.]);
-            let corner = game_ctx.assets.image(ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R180));
+            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R180));
             ctx.texture_ref(&corner.texture, [self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.]);
-            let corner = game_ctx.assets.image(ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R270));
+            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R270));
             ctx.texture_ref(&corner.texture, [12., self.size.y() as f64 * 24. - 12.]);
         }
         // Renders some black bars outside the map to cover large tiles

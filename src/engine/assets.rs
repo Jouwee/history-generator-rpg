@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
+use super::geometry::Size2D;
+
 pub(crate) struct Assets {
     images: HashMap<ImageAsset, Asset<Image>>
 }
@@ -13,7 +15,7 @@ impl Assets {
         Assets { images: HashMap::new() }
     }
 
-    pub(crate) fn image(&mut self, params: ImageAsset) -> &Image {
+    pub(crate) fn image(&mut self, params: &ImageAsset) -> &Image {
         if !self.images.contains_key(&params) {
             let image = Image::new(&params);
             self.images.insert(params.clone(), Asset { value: image });
@@ -55,6 +57,7 @@ pub(crate) enum ImageRotate {
 }
 
 pub(crate) struct Image {
+    pub(crate) size: Size2D,
     pub(crate) texture: Texture
 }
 
@@ -72,6 +75,7 @@ impl Image {
         let settings = TextureSettings::new().filter(Filter::Nearest);
         let texture = Texture::from_image(&image.to_rgba8(), &settings);
         Self {
+            size: Size2D(image.width() as usize, image.height() as usize),
             texture
         }
     }

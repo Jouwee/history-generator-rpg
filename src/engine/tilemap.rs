@@ -1,9 +1,9 @@
 use image::DynamicImage;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::commons::rng::Rng;
+use crate::{commons::rng::Rng, GameContext};
 
-use super::render::RenderContext;
+use super::{assets::ImageAsset, render::RenderContext};
 
 pub(crate) struct TileMap {
     tiles: Vec<usize>,
@@ -42,7 +42,7 @@ impl TileMap {
         return self.tiles[idx]
     }
 
-    pub(crate) fn render<F>(&self, ctx: &mut RenderContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, usize, usize) -> () {
+    pub(crate) fn render<F>(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, &mut GameContext, usize, usize) -> () {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (y * self.width) + x;
@@ -50,11 +50,12 @@ impl TileMap {
                 match &self.tileset.tiles[tile_i] {
                     Tile::Empty => (),
                     Tile::SingleTile(tile) => {
+                        let image = game_ctx.assets.image(&tile.image);
                         let pos = [
-                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
-                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
+                            x as f64 * self.cell_width as f64 - (image.size.x() as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (image.size.y() as f64 - self.cell_height as f64),
                         ];
-                        ctx.texture_ref(&tile.texture, pos);
+                        ctx.texture_ref(&image.texture, pos);
                     },
                     Tile::TileRandom(tile) => {
                         let pos = [
@@ -107,7 +108,7 @@ impl TileMap {
                         ctx.texture_ref(tile.textures.get(subtile_i).unwrap(), pos);
                     }
                 }
-                z_order_render(ctx, x, y);
+                z_order_render(ctx, game_ctx, x, y);
             }
         }
     }
@@ -138,35 +139,17 @@ pub(crate) enum Tile {
     T16Subset(Tile16Subset)
 }
 
+#[derive(Clone)]
 pub(crate) struct TileSingle {
-    tile_width: usize,
-    tile_height: usize,
-    image: DynamicImage,
-    // TODO: Use assets
-    texture: Texture,
+    image: ImageAsset
 }
 
 impl TileSingle {
-    pub(crate) fn new(image: DynamicImage) -> TileSingle {
-        let width = image.width() as usize;
-        let height = image.height() as usize;
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let texture = Texture::from_image(&image.to_rgba8(), &settings);
-        TileSingle {
-            tile_width: width,
-            tile_height: height,
-            image,
-            texture
+    pub(crate) fn new(image: ImageAsset) -> Self {
+        Self {
+            image
         }
     }
-}
-
-impl Clone for TileSingle {
-    
-    fn clone(&self) -> Self {
-        return Self::new(self.image.clone());
-    }
-
 }
 
 pub(crate) struct TileRandom {

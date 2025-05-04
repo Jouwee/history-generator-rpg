@@ -29,11 +29,11 @@ impl MapModal {
         dual_tileset.add(3, image, 16, 16);
 
         let mut tileset = TileSet::new();
-        let image = ImageReader::open("assets/sprites/map_tiles/settlement.png").unwrap().decode().unwrap();
+        let image = ImageAsset::new("map_tiles/settlement.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = ImageReader::open("assets/sprites/map_tiles/road.png").unwrap().decode().unwrap();
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 16)));
-        let image = ImageReader::open("assets/sprites/map_tiles/marker.png").unwrap().decode().unwrap();
+        let image = ImageAsset::new("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
 
@@ -96,7 +96,7 @@ impl MapModal {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
         self.tilemap.render(ctx);
-        self.objects.render(ctx, |_, _, _| {});
+        self.objects.render(ctx, game_ctx, |_, _, _, _| {});
 
         let cursor = [self.player_pos.x as f64 * 16., self.player_pos.y as f64 * 16.];
         
@@ -105,15 +105,15 @@ impl MapModal {
             cursor[1].clamp(ctx.camera_rect[1], ctx.camera_rect[1] + ctx.camera_rect[3] - 16.),
         ];
         if cursor != cursor_clamp {
-            let icon = game_ctx.assets.image(ImageAsset::new("map_tiles/player_offscreen.png"));    
+            let icon = game_ctx.assets.image(&ImageAsset::new("map_tiles/player_offscreen.png"));    
             ctx.texture_ref(&icon.texture, cursor_clamp);
         } else {
-            let icon = game_ctx.assets.image(ImageAsset::new("map_tiles/player.png"));
+            let icon = game_ctx.assets.image(&ImageAsset::new("map_tiles/player.png"));
             ctx.texture_ref(&icon.texture, cursor_clamp);
         }
         let _ = ctx.try_pop();
         // Control
-        let icon = game_ctx.assets.image(ImageAsset::new("controls/right_click.png"));
+        let icon = game_ctx.assets.image(&ImageAsset::new("controls/right_click.png"));
         ctx.texture_ref(&icon.texture, [ctx.layout_rect[2] - 88., ctx.layout_rect[3] - 24.]);
         ctx.text_small("Drag to move", 5, [ctx.layout_rect[2] - 72., ctx.layout_rect[3] - 14.], Color::from_hex("ffffff"));
         self.close_button.render(ctx, game_ctx);
