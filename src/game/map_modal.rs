@@ -1,4 +1,4 @@
-use crate::{engine::{assets::ImageParams, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
+use crate::{engine::{assets::ImageAsset, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
 use image::ImageReader;
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
@@ -105,15 +105,15 @@ impl MapModal {
             cursor[1].clamp(ctx.camera_rect[1], ctx.camera_rect[1] + ctx.camera_rect[3] - 16.),
         ];
         if cursor != cursor_clamp {
-            let icon = game_ctx.assets.image(ImageParams::new("map_tiles/player_offscreen.png"));    
+            let icon = game_ctx.assets.image(ImageAsset::new("map_tiles/player_offscreen.png"));    
             ctx.texture_ref(&icon.texture, cursor_clamp);
         } else {
-            let icon = game_ctx.assets.image(ImageParams::new("map_tiles/player.png"));
+            let icon = game_ctx.assets.image(ImageAsset::new("map_tiles/player.png"));
             ctx.texture_ref(&icon.texture, cursor_clamp);
         }
         let _ = ctx.try_pop();
         // Control
-        let icon = game_ctx.assets.image(ImageParams::new("controls/right_click.png"));
+        let icon = game_ctx.assets.image(ImageAsset::new("controls/right_click.png"));
         ctx.texture_ref(&icon.texture, [ctx.layout_rect[2] - 88., ctx.layout_rect[3] - 24.]);
         ctx.text_small("Drag to move", 5, [ctx.layout_rect[2] - 72., ctx.layout_rect[3] - 14.], Color::from_hex("ffffff"));
         self.close_button.render(ctx, game_ctx);

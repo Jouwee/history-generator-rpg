@@ -4,7 +4,7 @@ use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
 pub(crate) struct Assets {
-    images: HashMap<ImageParams, Asset<Image>>
+    images: HashMap<ImageAsset, Asset<Image>>
 }
 
 impl Assets {
@@ -13,7 +13,7 @@ impl Assets {
         Assets { images: HashMap::new() }
     }
 
-    pub(crate) fn image(&mut self, params: ImageParams) -> &Image {
+    pub(crate) fn image(&mut self, params: ImageAsset) -> &Image {
         if !self.images.contains_key(&params) {
             let image = Image::new(&params);
             self.images.insert(params.clone(), Asset { value: image });
@@ -27,20 +27,20 @@ struct Asset<T> {
 }
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
-pub(crate) struct ImageParams {
+pub(crate) struct ImageAsset {
     path: String,
     rotate: ImageRotate
 }
 
-impl ImageParams {
-    pub(crate) fn new(path: &str) -> ImageParams {
-        ImageParams {
+impl ImageAsset {
+    pub(crate) fn new(path: &str) -> Self {
+        Self {
             path: String::from(path),
             rotate: ImageRotate::None
         }
     }
 
-    pub(crate) fn rotate(mut self, rotate: ImageRotate) -> ImageParams {
+    pub(crate) fn rotate(mut self, rotate: ImageRotate) -> Self {
         self.rotate = rotate;
         return self
     }
@@ -60,7 +60,7 @@ pub(crate) struct Image {
 
 impl Image {
 
-    pub(crate) fn new(params: &ImageParams) -> Image {
+    pub(crate) fn new(params: &ImageAsset) -> Image {
         let path = format!("./assets/sprites/{}", params.path);
         let image = ImageReader::open(&path).unwrap().decode().unwrap();
         let image = match params.rotate {
