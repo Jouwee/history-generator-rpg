@@ -50,8 +50,6 @@ impl Resources {
         self.materials.add("mat:bronze", bronze);
         self.materials.add("mat:birch", Material::new_wood("birch"));
         self.materials.add("mat:oak", Material::new_wood("oak"));
-        self.materials.add("mat:bone_leshen", Material::new_bone("leshen bone"));
-        self.materials.add("mat:bone_fiend", Material::new_bone("fiend bone"));
         let mut copper = Material::new_metal("copper");
         copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
         self.materials.add("mat:copper", copper);
@@ -259,18 +257,6 @@ impl Resources {
                 )),
             )
         )).innate_actions(vec!(self.actions.id_of("act:punch"))));
-        self.species.add("species:leshen", Species::new("leshen", SpeciesApearance::single_sprite("leshen.png"))
-            .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 45, agility: 15, constitution: 45, unallocated: 0 })
-            .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
-            .drops(vec!((self.materials.id_of("mat:bone_leshen"), 1)))
-        );
-        self.species.add("species:fiend", Species::new("fiend", SpeciesApearance::single_sprite("fiend.png"))
-            .intelligence(SpeciesIntelligence::Instinctive)
-            .attributes(Attributes { strength: 35, agility: 25, constitution: 35, unallocated: 0 })
-            .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
-            .drops(vec!((self.materials.id_of("mat:bone_fiend"), 1)))
-        );
         self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
