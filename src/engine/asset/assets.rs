@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use super::geometry::Size2D;
+use crate::engine::geometry::Size2D;
 
 pub(crate) struct Assets {
     images: HashMap<ImageAsset, Asset<Image>>

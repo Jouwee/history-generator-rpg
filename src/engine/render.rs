@@ -2,7 +2,7 @@ use graphics::{image, rectangle, Context, Text};
 use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use crate::graphics::Transformed;
 
-use super::{assets::OldAssets, Color};
+use super::{asset::assets::OldAssets, Color};
 
 pub(crate) struct RenderContext<'a, 'b> {
     pub(crate) context: Context,

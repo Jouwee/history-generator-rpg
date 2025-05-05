@@ -3,7 +3,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use crate::{commons::rng::Rng, GameContext};
 
-use super::{assets::ImageAsset, render::RenderContext};
+use super::{asset::assets::ImageAsset, render::RenderContext};
 
 pub(crate) struct TileMap {
     tiles: Vec<usize>,

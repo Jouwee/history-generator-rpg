@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{assets::ImageAsset, audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::assets::ImageAsset, audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
