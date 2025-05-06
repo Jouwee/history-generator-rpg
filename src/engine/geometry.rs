@@ -1,7 +1,7 @@
 use std::ops::{Add, Sub};
 
 
-#[derive(Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
 pub(crate) struct Size2D(pub(crate) usize, pub(crate) usize);
 
 impl Size2D {

@@ -1,8 +1,6 @@
 use std::time::Instant;
 
-use image::ImageReader;
-
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::assets::ImageAsset, audio::SoundEffect, geometry::Coord2, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -374,8 +372,8 @@ impl Resources {
 
     pub(crate) fn load_object_tiles(&mut self) {
         
-        let image = ImageReader::open("assets/sprites/chunk_tiles/stone_walls.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 24, 48)), true));
+        let image = ImageSheetAsset::new("assets/sprites/chunk_tiles/stone_walls.png", Size2D(24, 48));
+        self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true));
 
         let image = ImageAsset::new("tree.png");
         self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
@@ -383,14 +381,14 @@ impl Resources {
         let image = ImageAsset::new("bed.png");
         self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
 
-        let image = ImageReader::open("assets/sprites/chunk_tiles/wood_small_table.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:table", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
+        let image = ImageSheetAsset::new("chunk_tiles/wood_small_table.png", Size2D(24, 24));
+        self.object_tiles.add("obj:table", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
 
-        let image = ImageReader::open("assets/sprites/chunk_tiles/wood_stool.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
+        let image = ImageSheetAsset::new("chunk_tiles/wood_stool.png", Size2D(24, 24));
+        self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
         
-        let image = ImageReader::open("assets/sprites/chunk_tiles/tombstone.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), true));
+        let image = ImageSheetAsset::new("chunk_tiles/tombstone.png", Size2D(24, 24));
+        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
         
         let image = ImageAsset::new("chunk_tiles/anvil.png");
         self.object_tiles.add("obj:anvil", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
@@ -398,8 +396,8 @@ impl Resources {
         let image = ImageAsset::new("chunk_tiles/barrel.png");
         self.object_tiles.add("obj:barrel", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
         
-        let image = ImageReader::open("assets/sprites/chunk_tiles/grass_decal.png").unwrap().decode().unwrap();
-        self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image, 24, 24)), false));
+        let image = ImageSheetAsset::new("chunk_tiles/grass_decal.png", Size2D(24, 24));
+        self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
         let image = ImageAsset::new("chunk_tiles/tent.png");
         self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));

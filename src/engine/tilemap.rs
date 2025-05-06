@@ -1,9 +1,6 @@
-use image::DynamicImage;
-use opengl_graphics::{Filter, Texture, TextureSettings};
-
 use crate::{commons::rng::Rng, GameContext};
 
-use super::{asset::assets::ImageAsset, render::RenderContext};
+use super::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, render::RenderContext};
 
 pub(crate) struct TileMap {
     tiles: Vec<usize>,
@@ -58,17 +55,20 @@ impl TileMap {
                         ctx.texture_ref(&image.texture, pos);
                     },
                     Tile::TileRandom(tile) => {
+                        let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
                         let pos = [
-                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
-                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
+                            x as f64 * self.cell_width as f64 - (sheet.tile_size.x() as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (sheet.tile_size.y() as f64 - self.cell_height as f64),
                         ];
                         let mut rng = Rng::new(idx as u32);
-                        ctx.texture_ref(rng.item(&tile.textures).unwrap(), pos);
+                        let i = rng.randu_range(0, sheet.len());
+                        ctx.texture_ref(&sheet.get(i).unwrap(), pos);
                     },
                     Tile::T16Subset(tile) => {
+                        let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
                         let pos = [
-                            x as f64 * self.cell_width as f64 - (tile.tile_width as f64 - self.cell_width as f64) / 2.,
-                            y as f64 * self.cell_height as f64 - (tile.tile_height as f64 - self.cell_height as f64),
+                            x as f64 * self.cell_width as f64 - (sheet.tile_size.x() as f64 - self.cell_width as f64) / 2.,
+                            y as f64 * self.cell_height as f64 - (sheet.tile_size.y() as f64 - self.cell_height as f64),
                         ];
                         let mut u = false;
                         if y > 0 {
@@ -105,7 +105,7 @@ impl TileMap {
                             (true, true, true, false) => 7,
                             (true, true, true, true) => 6,
                         };
-                        ctx.texture_ref(tile.textures.get(subtile_i).unwrap(), pos);
+                        ctx.texture_ref(sheet.get(subtile_i).unwrap(), pos);
                     }
                 }
                 z_order_render(ctx, game_ctx, x, y);
@@ -152,74 +152,26 @@ impl TileSingle {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct TileRandom {
-    tile_width: u32,
-    tile_height: u32,
-    image: DynamicImage,
-    // TODO: Use assets
-    textures: Vec<Texture>
+    image_sheet: ImageSheetAsset
 }
 
 impl TileRandom {
-    pub(crate) fn new(image: DynamicImage, tile_width: u32, tile_height: u32) -> TileRandom {
-        let mut textures = Vec::new();
-        for y in 0..(image.height() / tile_height) {
-            for x in 0..(image.width() / tile_width) {
-                let tile = image.crop_imm(x * tile_width as u32, y * tile_height as u32, tile_width as u32, tile_height as u32).to_rgba8();
-                let settings = TextureSettings::new().filter(Filter::Nearest);
-                textures.push(Texture::from_image(&tile, &settings));
-            }
-        }
-        TileRandom {
-            tile_width,
-            tile_height,
-            image,
-            textures
-        }
+    pub(crate) fn new(image_sheet: ImageSheetAsset) -> Self {
+        Self { image_sheet }
     }
 }
 
-
-impl Clone for TileRandom {
-    
-    fn clone(&self) -> Self {
-        return Self::new(self.image.clone(), self.tile_width, self.tile_height);
-    }
-
-}
-
+#[derive(Clone)]
 pub(crate) struct Tile16Subset {
-    tile_width: usize,
-    tile_height: usize,
-    image: DynamicImage,
-    // TODO: Use assets
-    textures: Vec<Texture>
+    image_sheet: ImageSheetAsset
 }
 
 impl Tile16Subset {
-    pub(crate) fn new(image: DynamicImage, tile_width: usize, tile_height: usize) -> Tile16Subset {
-        let mut textures = Vec::new();
-        for y in 0..4 {
-            for x in 0..4 {
-                let tile = image.crop_imm(x * tile_width as u32, y * tile_height as u32, tile_width as u32, tile_height as u32).to_rgba8();
-                let settings = TextureSettings::new().filter(Filter::Nearest);
-                textures.push(Texture::from_image(&tile, &settings));
-            }
-        }
-        Tile16Subset {
-            tile_width,
-            tile_height,
-            image,
-            textures
+    pub(crate) fn new(image_sheet: ImageSheetAsset) -> Self {
+        Self {
+            image_sheet
         }
     }
-}
-
-
-impl Clone for Tile16Subset {
-    
-    fn clone(&self) -> Self {
-        return Self::new(self.image.clone(), self.tile_width, self.tile_height);
-    }
-
 }

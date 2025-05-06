@@ -1,4 +1,4 @@
-use crate::{engine::{asset::assets::ImageAsset, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
+use crate::{engine::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
 use image::ImageReader;
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
@@ -31,8 +31,8 @@ impl MapModal {
         let mut tileset = TileSet::new();
         let image = ImageAsset::new("map_tiles/settlement.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageReader::open("assets/sprites/map_tiles/road.png").unwrap().decode().unwrap();
-        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image, 16, 16)));
+        let image = ImageSheetAsset::new("assets/sprites/map_tiles/road.png", Size2D(16, 16));
+        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)));
         let image = ImageAsset::new("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
