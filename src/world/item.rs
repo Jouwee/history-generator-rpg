@@ -181,20 +181,20 @@ pub(crate) enum ArtworkScene {
 
 #[derive(Clone, Debug)]
 pub(crate) enum ItemQuality {
-    // Poor,
+    Poor,
     Normal,
-    // Good,
-    // Excelent,
+    Good,
+    Excelent,
     Legendary
 }
 
 impl ItemQuality {
     pub(crate) fn main_stat_multiplier(&self) -> f32 {
         match self {
-            // Self::Poor => 0.7,
+            Self::Poor => 0.7,
             Self::Normal => 1.0,
-            // Self::Good => 1.2,
-            // Self::Excelent => 1.4,
+            Self::Good => 1.2,
+            Self::Excelent => 1.4,
             Self::Legendary => 2.0,
         }
     }

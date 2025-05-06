@@ -302,7 +302,7 @@ impl ChunkGenerator {
                     let creature = world.creatures.get(creature_id);
                     let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
                     let species = resources.species.get(&creature.species);
-                    self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world));
+                    self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world, resources));
                     lx += 1;
                     if lx >= 3 {
                         lx = 0;

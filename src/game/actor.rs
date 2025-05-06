@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
 
-use super::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable};
+use super::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) enum ActorType {
@@ -76,7 +76,7 @@ impl Actor {
         }
     }
 
-    pub(crate) fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World) -> Actor {
+    pub(crate) fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World, resources: &Resources) -> Actor {
         let mut actor_type = ActorType::Passive;
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
@@ -90,14 +90,22 @@ impl Actor {
             }
         }
 
+        if creature.profession == Profession::Guard || creature.profession == Profession::Bandit {
+            let mut rng = Rng::seeded(creature_id);
+            let item = ItemFactory::weapon(&mut rng, &resources);
+            inventory.add(item);
+            inventory.equip(0);
+        }
+
         let mut hints = HashMap::new();
         hints.insert(String::from("clothes"), String::from("peasant"));
         match creature.profession {
             Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
+            Profession::Bandit => { hints.insert(String::from("clothes"), String::from("armor")); },
             // TODO:
-            Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("armor")); },
-            Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
-            Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
+            // Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("")); },
+            // Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
+            // Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
             _ => (),
         }
 

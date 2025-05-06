@@ -38,12 +38,4 @@ impl Material {
         }
     }
 
-    pub(crate) fn new_bone(name: &str) -> Material {
-        Material {
-            name: name.to_string(),
-            sharpness: 0.3,
-            color_pallete: [Color::from_hex("d4c692"), Color::from_hex("fee1b8"), Color::from_hex("f1f6f0"), Color::from_hex("f1f6f0")]
-        }
-    }
-
 }

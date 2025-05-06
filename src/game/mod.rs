@@ -17,6 +17,7 @@ pub(crate) mod actor;
 pub(crate) mod ai;
 pub(crate) mod chunk;
 pub(crate) mod effect_layer;
+pub(crate) mod factory;
 pub(crate) mod hotbar;
 pub(crate) mod interact;
 pub(crate) mod inventory;
