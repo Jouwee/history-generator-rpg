@@ -452,6 +452,10 @@ impl ChunkGenerator {
                                     continue;
                                 }
                             }
+                            if self.rng.rand_chance(0.02) {
+                                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 11);
+                                continue;
+                            }
                             if self.rng.rand_chance(0.2) {
                                 self.chunk.map.object_layer.set_tile(x as usize, y as usize, 9);
                             }

@@ -402,6 +402,9 @@ impl Resources {
         let image = ImageAsset::new("chunk_tiles/tent.png");
         self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
 
+        let image = ImageSheetAsset::new("chunk_tiles/pebbles.png", Size2D(24, 24));
+        self.object_tiles.add("obj:pebbles", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
+
     }
 
 }
