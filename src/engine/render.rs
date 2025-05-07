@@ -1,13 +1,12 @@
 use graphics::{image, rectangle, Context, Text};
 use opengl_graphics::{GlGraphics, GlyphCache, Texture};
-use crate::graphics::Transformed;
+use crate::{graphics::Transformed, Assets};
 
-use super::{asset::assets::OldAssets, Color};
+use super::{asset::assets::ImageAsset, Color};
 
 pub(crate) struct RenderContext<'a, 'b> {
     pub(crate) context: Context,
     pub(crate) gl: &'a mut GlGraphics,
-    pub(crate) assets: &'b mut OldAssets,
     pub(crate) layout_rect: [f64; 4],
     pub(crate) camera_rect: [f64; 4],
     pub(crate) transform_queue: Vec<[[f64; 3]; 2]>,
@@ -81,12 +80,13 @@ impl<'a, 'b> RenderContext<'a, 'b> {
             .unwrap();
     }
 
-    pub(crate) fn image(&mut self, texture_name: &str, position: [f64; 2]) {
-        let texture = self.assets.texture(texture_name);
-        let transform = self.context.transform.trans(position[0], position[1]);
-        image(texture, transform, self.gl);
+    pub(crate) fn image(&mut self, image_asset: &ImageAsset, position: [i32; 2], assets: &mut Assets) {
+        let img = assets.image(image_asset);
+        let transform = self.context.transform.trans(position[0] as f64, position[1] as f64);
+        image(&img.texture, transform, self.gl);
     }
 
+    #[deprecated]
     pub(crate) fn texture(&mut self, texture: Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         // Workaround for a behaviour of piston where it passes a reference of the texture to the backend for async rendering,
@@ -96,6 +96,7 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         image(self.textures.last().unwrap(), transform, self.gl);
     }
 
+    #[deprecated]
     pub(crate) fn texture_ref(&mut self, texture: &Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         image(texture, transform, self.gl);

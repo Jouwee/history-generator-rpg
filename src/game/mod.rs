@@ -7,6 +7,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
+use crate::engine::asset::assets::ImageAsset;
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionRunner, ActionType};
@@ -222,7 +223,7 @@ impl Scene for GameSceneState {
         self.chunk.render(ctx, game_ctx);
 
         if let Some(_) = self.hotbar.selected_action {
-            ctx.image("cursor.png", [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.]);
+            ctx.image(&ImageAsset::new("cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         }
         // Effects
         self.effect_layer.render(ctx, game_ctx);

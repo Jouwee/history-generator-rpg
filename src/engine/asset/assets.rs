@@ -96,35 +96,3 @@ impl Image {
     }
 
 }
-
-/* ------------------------------------------- */
-
-pub(crate) struct OldAssets {
-    textures: HashMap<String, OldAsset<Texture>>,
-}
-
-impl OldAssets {
-
-    pub(crate) fn new() -> OldAssets {
-        OldAssets {
-            textures: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn texture(&mut self, name: &str) -> &Texture {
-        if !self.textures.contains_key(name) {
-            let mut path = String::from("./assets/sprites/");
-            path.push_str(name);
-            let spritesheet = ImageReader::open(path).unwrap().decode().unwrap();
-            let settings = TextureSettings::new().filter(Filter::Nearest);
-            let texture = Texture::from_image(&spritesheet.to_rgba8(), &settings);
-            self.textures.insert(String::from(name), OldAsset { value: texture });
-        }
-        &self.textures.get(name).expect(format!("Image {name} does not exist").as_str()).value
-    }
-
-}
-
-pub(crate) struct OldAsset<T> {
-    value: T
-}

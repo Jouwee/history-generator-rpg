@@ -6,7 +6,7 @@ extern crate piston;
 
 use std::{time::Instant, vec};
 use commons::markovchains::MarkovChainSingleWordModel;
-use engine::{asset::assets::{Assets, OldAssets}, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{asset::assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::Actor, chunk::Chunk, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
 use world::{event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, worldgen::WorldGenScene};
@@ -37,7 +37,6 @@ pub(crate) struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     context: GameContext,
     scene: SceneEnum,
-    assets: OldAssets,
     debug_overlay: DebugOverlay,
     display_context: DisplayContext
 }
@@ -75,7 +74,6 @@ impl App {
             camera_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
             transform_queue: vec!(c.transform.clone()),
             gl: &mut self.gl,
-            assets: &mut self.assets,
             default_font: &mut glyphs,
             small_font: &mut small_glyphs,
             textures: Vec::new(),
@@ -172,7 +170,6 @@ fn main() {
             }
         },
         scene: SceneEnum::None,
-        assets: OldAssets::new(),
         debug_overlay: DebugOverlay::new(),
         display_context: DisplayContext {
             scale: 2.,
