@@ -38,6 +38,9 @@ impl DamageComponent {
             total_damage += bludgeoning.max(0.);
         }
 
+        if rng.rand_chance(0.05) {
+            return DamageOutput::CriticalHit(total_damage * 2.);    
+        }
         return DamageOutput::Hit(total_damage);
     }
 
@@ -53,7 +56,8 @@ impl DamageComponent {
 
 pub(crate) enum DamageOutput {
     Dodged,
-    Hit(f32)
+    Hit(f32),
+    CriticalHit(f32),
 }
 
 impl Add for DamageComponent {

@@ -18,6 +18,7 @@ pub(crate) mod ai;
 pub(crate) mod chunk;
 pub(crate) mod effect_layer;
 pub(crate) mod factory;
+pub(crate) mod health_component;
 pub(crate) mod hotbar;
 pub(crate) mod interact;
 pub(crate) mod inventory;
@@ -108,7 +109,7 @@ impl GameSceneState {
             {
                 let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
                 npc.start_of_round(&mut self.effect_layer);
-                if npc.hp.health_points == 0. {
+                if npc.hp.health_points() == 0. {
                     self.chunk.player.add_xp(100);
                     self.remove_npc(self.turn_controller.npc_idx(), ctx);
                     self.next_turn(ctx);
@@ -446,8 +447,8 @@ impl Scene for GameSceneState {
                                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                                         if let Some((i, target)) = target {
                                             if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, ctx) {
-                                                println!("new hp: {}", target.hp.health_points);
-                                                if target.hp.health_points == 0. {
+                                                println!("new hp: {}", target.hp.health_points());
+                                                if target.hp.health_points() == 0. {
                                                     self.chunk.player.add_xp(100);
                                                     self.remove_npc(i, ctx);
                                                 }
@@ -546,7 +547,8 @@ impl Scene for GameSceneState {
                                     let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                                     // TODO: Bed
                                     if self.chunk.map.get_object_idx(tile_pos) == 3 {
-                                        self.chunk.player.hp.refill();
+                                        // TODO: This healing doesn't work anymore.
+                                        // self.chunk.player.hp.refill();
                                     }
                                 },
                                 _ => ()

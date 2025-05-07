@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
 
-use super::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable};
+use super::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, health_component::HealthComponent, inventory::inventory::Inventory, Renderable};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) enum ActorType {
@@ -16,7 +16,7 @@ pub(crate) struct Actor {
     pub(crate) xy: Coord2,
     pub(crate) animation: AnimationTransform,
     pub(crate) ap: ActionPointsComponent,
-    pub(crate) hp: HealthPointsComponent,
+    pub(crate) hp: HealthComponent,
     pub(crate) attributes: Attributes,
     pub(crate) defence: DefenceComponent,
     pub(crate) actor_type: ActorType,
@@ -37,7 +37,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
-            hp: HealthPointsComponent::new(&species.attributes),
+            hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
             xp: 0,
@@ -61,7 +61,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
-            hp: HealthPointsComponent::new(&species.attributes),
+            hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
             xp: 0,
@@ -113,7 +113,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
-            hp: HealthPointsComponent::new(&species.attributes),
+            hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
             xp: 0,
@@ -133,7 +133,7 @@ impl Actor {
     pub(crate) fn update(&mut self, delta: f64) {
         self.animation.update(delta);
         // TODO: Why do this everytime?
-        self.hp.update(&self.attributes);
+        // self.hp.update(&self.attributes);
         self.ap.update(&self.attributes);
     }
 
@@ -142,11 +142,13 @@ impl Actor {
             affliction.delta += 1;
             match affliction.affliction {
                 Affliction::Bleeding { duration: _ } => {
-                    self.hp.damage(1.);
+                    // TODO: Rethink
+                    // self.hp.damage(1.);
                     effect_layer.add_damage_number(self.xy, 1.);
                 },
                 Affliction::Poisoned { duration: _ } => {
-                    self.hp.damage(1.);
+                    // TODO: Rethink
+                    // self.hp.damage(1.);
                     effect_layer.add_damage_number(self.xy, 1.);
                 },
                 Affliction::Stunned { duration: _ } => {
@@ -300,42 +302,6 @@ impl ActionPointsComponent {
         self.action_points = self.max_action_points as i32;
     }
 
-}
-
-#[derive(Clone)]
-pub(crate) struct HealthPointsComponent {
-    pub(crate) health_points: f32,
-    pub(crate) max_health_points: u16,
-}
-
-impl HealthPointsComponent {
-
-    pub(crate) fn new(attributes: &Attributes) -> HealthPointsComponent {
-        let max_hp = Self::max_hp(attributes);
-        HealthPointsComponent {
-            health_points: max_hp as f32,
-            max_health_points: max_hp
-        }
-    }
-
-    pub(crate) fn refill(&mut self) {
-        self.health_points = self.max_health_points as f32;
-    }
-
-    pub(crate) fn update(&mut self, attributes: &Attributes) {
-        self.max_health_points = Self::max_hp(attributes);
-        self.health_points = self.health_points.min(self.max_health_points as f32)
-    }
-
-    fn max_hp(attributes: &Attributes) -> u16 {
-        let hp = 10 + attributes.bonus_hp();
-        let hp = hp.clamp(0, u16::MAX as i32);
-        return hp as u16
-    }
-
-    pub(crate) fn damage(&mut self, damage: f32) {
-        self.health_points = (self.health_points - damage).max(0.0);
-    }
 }
 
 #[derive(Clone)]

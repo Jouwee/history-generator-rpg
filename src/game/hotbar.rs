@@ -91,10 +91,10 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
         hp_pos[0] = hp_pos[0] + 64.;
         hp_pos[1] = hp_pos[1] + 3.;
 
-        let health_pct = (state.player.hp.health_points / state.player.hp.max_health_points as f32) as f64;
+        let health_pct = (state.player.hp.health_points() / state.player.hp.max_health_points() as f32) as f64;
         ctx.rectangle_fill([hp_pos[0], hp_pos[1], (62. * health_pct).round(), 5.], Color::from_hex("994444"));
 
-        let text = format!("{:.0}/{:.0}", state.player.hp.health_points, state.player.hp.max_health_points);
+        let text = format!("{:.0}/{:.0}", state.player.hp.health_points(), state.player.hp.max_health_points());
         let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
         ctx.text_small(&text, 5, [(hp_pos[0] + 31. - text_width / 2.).round(), hp_pos[1] + 5.], Color::from_hex("ffffff"));
 

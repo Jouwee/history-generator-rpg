@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer}, Actor, GameContext};
+use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer, health_component::BodyPart}, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -123,9 +123,13 @@ impl ActionRunner {
                                     effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
                                 },
                                 DamageOutput::Hit(damage) => {
-                                    target.hp.damage(damage);
+                                    target.hp.hit(BodyPart::random(&mut Rng::rand()), damage);
                                     effect_layer.add_damage_number(target.xy, damage);
-                                }
+                                },
+                                DamageOutput::CriticalHit(damage) => {
+                                    target.hp.critical_hit(BodyPart::random(&mut Rng::rand()), damage);
+                                    effect_layer.add_damage_number(target.xy, damage);
+                                },
                             }
 
                             if let Some(fx) = &action.sound_effect {
