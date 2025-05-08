@@ -4,7 +4,7 @@ use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animat
 
 use super::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, health_component::HealthComponent, inventory::inventory::Inventory, Renderable};
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ActorType {
     Player,
     Passive,

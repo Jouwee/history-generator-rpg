@@ -22,7 +22,7 @@ pub(crate) type SpeciesMap = ResourceMap<SpeciesId, Species>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Species {
-    // pub(crate) name: String,
+    pub(crate) name: String,
     pub(crate) appearance: SpeciesApearance,
     pub(crate) intelligence: SpeciesIntelligence,
     pub(crate) attributes: Attributes,
@@ -32,9 +32,9 @@ pub(crate) struct Species {
 
 impl Species {
 
-    pub(crate) fn new(_name: &str, appearance: SpeciesApearance) -> Species {
+    pub(crate) fn new(name: &str, appearance: SpeciesApearance) -> Species {
         Species {
-            // name: String::from(name),
+            name: String::from(name),
             appearance,
             intelligence: SpeciesIntelligence::Civilized,
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },

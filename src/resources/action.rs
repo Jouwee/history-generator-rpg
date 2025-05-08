@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer, health_component::BodyPart}, Actor, GameContext};
+use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}, health_component::BodyPart}, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -97,7 +97,7 @@ impl ActionRunner {
         return false
     }
 
-    pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, ctx: &GameContext) -> bool {
+    pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, game_log: &mut GameLog, world: &World, ctx: &GameContext) -> bool {
         match &action.action_type {
             ActionType::Targeted { damage, inflicts } => {
                 if actor.ap.can_use(action.ap_cost) {
@@ -131,6 +131,8 @@ impl ActionRunner {
                                     effect_layer.add_damage_number(target.xy, damage);
                                 },
                             }
+
+                            game_log.log(GameLogEntry::damage(actor, target, &damage, &world, &ctx.resources));
 
                             if let Some(fx) = &action.sound_effect {
                                 ctx.audio.play_once(fx.clone());

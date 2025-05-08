@@ -2,6 +2,7 @@ use actor::ActorType;
 use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
 use effect_layer::EffectLayer;
+use game_log::GameLog;
 use hotbar::{Hotbar, HotbarState, NodeWithState};
 use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
@@ -19,6 +20,7 @@ pub(crate) mod ai;
 pub(crate) mod chunk;
 pub(crate) mod effect_layer;
 pub(crate) mod factory;
+pub(crate) mod game_log;
 pub(crate) mod health_component;
 pub(crate) mod hotbar;
 pub(crate) mod interact;
@@ -58,7 +60,8 @@ pub(crate) struct GameSceneState {
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
-    map_modal: Option<MapModal>
+    map_modal: Option<MapModal>,
+    game_log: GameLog,
 }
 
 impl GameSceneState {
@@ -80,6 +83,7 @@ impl GameSceneState {
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
             map_modal: None,
+            game_log: GameLog::new(),
         }
     }
 
@@ -238,6 +242,8 @@ impl Scene for GameSceneState {
         if self.can_change_turn_mode() {
             self.button_toggle_turn_based.render(ctx, game_ctx);
         }
+        self.game_log.render(ctx, game_ctx);
+
         self.interact_dialog.render(ctx, game_ctx);
         self.inventory_dialog.render(ctx, game_ctx);       
         self.tooltip_overlay.render(ctx, game_ctx); 
@@ -314,7 +320,7 @@ impl Scene for GameSceneState {
                 if let Some(action) = next {
                     let _ = match action.action_type {
                         ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                        ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
+                        ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                         _ => true
                     };
                 } else {
@@ -332,7 +338,7 @@ impl Scene for GameSceneState {
                     if let Some(action) = next {
                         let _ = match action.action_type {
                             ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                            ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, ctx),
+                            ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                             _ => true
                         };
                     } else {
@@ -447,8 +453,7 @@ impl Scene for GameSceneState {
                                     if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
                                         let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
                                         if let Some((i, target)) = target {
-                                            if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, ctx) {
-                                                println!("new hp: {}", target.hp.health_points());
+                                            if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, &mut self.game_log, &self.world, ctx) {
                                                 if target.hp.health_points() == 0. {
                                                     self.chunk.player.add_xp(100);
                                                     self.remove_npc(i, ctx);

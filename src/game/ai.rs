@@ -26,7 +26,7 @@ impl AiRunner {
         if let Some(action) = action {
             let action = actions.get(&action);
             self.delay = 0.;
-            self.delay_target = action.ap_cost as f64 / 100.;
+            self.delay_target = action.ap_cost as f64 / 200.;
             return Some(action)
         }
         return None

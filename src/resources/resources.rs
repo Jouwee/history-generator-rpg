@@ -372,7 +372,7 @@ impl Resources {
 
     pub(crate) fn load_object_tiles(&mut self) {
         
-        let image = ImageSheetAsset::new("assets/sprites/chunk_tiles/stone_walls.png", Size2D(24, 48));
+        let image = ImageSheetAsset::new("chunk_tiles/stone_walls.png", Size2D(24, 48));
         self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true));
 
         let image = ImageAsset::new("tree.png");
