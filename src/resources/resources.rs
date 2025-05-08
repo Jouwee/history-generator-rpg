@@ -375,8 +375,8 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/stone_walls.png", Size2D(24, 48));
         self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true));
 
-        let image = ImageAsset::new("tree.png");
-        self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        let image = ImageSheetAsset::new("chunk_tiles/tree.png", Size2D(64, 64));
+        self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
 
         let image = ImageAsset::new("bed.png");
         self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
