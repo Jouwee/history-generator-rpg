@@ -16,6 +16,7 @@ pub(crate) struct Actor {
     pub(crate) xy: Coord2,
     pub(crate) animation: AnimationTransform,
     pub(crate) ap: ActionPointsComponent,
+    pub(crate) stamina: StaminaComponent,
     pub(crate) hp: HealthComponent,
     pub(crate) attributes: Attributes,
     pub(crate) defence: DefenceComponent,
@@ -37,6 +38,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
+            stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
@@ -61,6 +63,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
+            stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
@@ -113,6 +116,7 @@ impl Actor {
             xy,
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(&species.attributes),
+            stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
             defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
@@ -300,6 +304,36 @@ impl ActionPointsComponent {
 
     pub(crate) fn fill(&mut self) {
         self.action_points = self.max_action_points as i32;
+    }
+
+}
+
+
+#[derive(Clone)]
+pub(crate) struct StaminaComponent {
+    pub(crate) stamina: f32,
+    pub(crate) max_stamina: f32,
+}
+
+impl StaminaComponent {
+
+    pub(crate) fn new() -> StaminaComponent {
+        StaminaComponent {
+            stamina: 100.,
+            max_stamina: 100.
+        }
+    }
+
+    pub(crate) fn can_use(&self, stamina: f32) -> bool {
+        return self.stamina >= stamina;
+    }
+
+    pub(crate) fn consume(&mut self, ap: f32) {
+        self.stamina -= ap;
+    }
+
+    pub(crate) fn recover_turn(&mut self) {
+        self.stamina = (self.stamina + 1.).min(self.max_stamina);
     }
 
 }

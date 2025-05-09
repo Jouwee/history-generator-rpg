@@ -63,6 +63,7 @@ impl Hotbar {
     fn build_tooltip(action: &Action) -> Tooltip {
         let mut tooltip = Tooltip::new(action.name.clone());
         tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
+        tooltip.add_line(TooltipLine::StaminaCost(action.stamina_cost));
         match &action.action_type {
             ActionType::Targeted { damage, inflicts } => {
                 if let Some(damage) = damage {
@@ -90,10 +91,8 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
         let mut hp_pos = base_pos.clone();
         hp_pos[0] = hp_pos[0] + 64.;
         hp_pos[1] = hp_pos[1] + 3.;
-
         let health_pct = (state.player.hp.health_points() / state.player.hp.max_health_points() as f32) as f64;
         ctx.rectangle_fill([hp_pos[0], hp_pos[1], (62. * health_pct).round(), 5.], Color::from_hex("994444"));
-
         let text = format!("{:.0}/{:.0}", state.player.hp.health_points(), state.player.hp.max_health_points());
         let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
         ctx.text_small(&text, 5, [(hp_pos[0] + 31. - text_width / 2.).round(), hp_pos[1] + 5.], Color::from_hex("ffffff"));
@@ -101,13 +100,20 @@ impl<'a> NodeWithState<HotbarState<'a>> for Hotbar {
         let mut ap_pos = base_pos.clone();
         ap_pos[0] = ap_pos[0] + 131.;
         ap_pos[1] = ap_pos[1] + 3.;
-
         let action_pct = (state.player.ap.action_points as f32 / state.player.ap.max_action_points as f32) as f64;
         ctx.rectangle_fill([ap_pos[0], ap_pos[1], (62. * action_pct).round(), 5.], Color::from_hex("446d99"));
-
         let text = format!("{:.0}/{:.0}", state.player.ap.action_points, state.player.ap.max_action_points);
         let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
         ctx.text_small(&text, 5, [(ap_pos[0] + 31. - text_width / 2.).round(), ap_pos[1] + 5.], Color::from_hex("ffffff"));
+
+
+        let mut stamina_pos = ap_pos.clone();
+        stamina_pos[1] = stamina_pos[1] - 7.;
+        let stamina_pct = (state.player.stamina.stamina as f32 / state.player.stamina.max_stamina as f32) as f64;
+        ctx.rectangle_fill([stamina_pos[0], stamina_pos[1], (62. * stamina_pct).round(), 5.], Color::from_hex("88ae59"));
+        let text = format!("{:.0}/{:.0}", state.player.stamina.stamina, state.player.stamina.max_stamina);
+        let text_width = ctx.small_font.width(5, &text).unwrap_or(0.);
+        ctx.text_small(&text, 5, [(stamina_pos[0] + 31. - text_width / 2.).round(), stamina_pos[1] + 5.], Color::from_hex("ffffff"));
 
         self.action_buttons.render(ctx, game_ctx);
 

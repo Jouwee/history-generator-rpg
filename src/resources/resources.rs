@@ -93,6 +93,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/slashing_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
+            stamina_cost: 5.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(1., 0., 0.))),
                 inflicts: None
@@ -104,6 +105,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/bleeding_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
+            stamina_cost: 20.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(0.8, 0.0, 0.))),
                 inflicts: Some(Infliction {
@@ -118,6 +120,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/mace_smash.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
+            stamina_cost: 5.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(0., 0., 1.))),
                 inflicts: None
@@ -129,6 +132,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/concussive_strike.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
+            stamina_cost: 20.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::FromWeapon(DamageComponent::new(1.0, 0.0, 0.))),
                 inflicts: Some(Infliction {
@@ -143,6 +147,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/unarmed_attack.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
+            stamina_cost: 5.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::Fixed(DamageComponent::new(0., 0., 1.))),
                 inflicts: None
@@ -154,6 +159,7 @@ impl Resources {
             icon: String::from("missing.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
+            stamina_cost: 5.,
             action_type: ActionType::Targeted {
                 damage: Some(DamageType::Fixed(DamageComponent::new(0., 1., 0.))),
                 inflicts: Some(Infliction {
@@ -168,6 +174,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/talk.png"),
             sound_effect: None,
             ap_cost: 0,
+            stamina_cost: 0.,
             action_type: ActionType::Talk
         });
         self.actions.add("act:inspect", Action {
@@ -176,6 +183,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/inspect.png"),
             sound_effect: None,
             ap_cost: 0,
+            stamina_cost: 0.,
             action_type: ActionType::Inspect
         });
         self.actions.add("act:dig", Action {
@@ -184,6 +192,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/dig.png"),
             sound_effect: None,
             ap_cost: 0,
+            stamina_cost: 0.,
             action_type: ActionType::Dig
         });
         self.actions.add("act:pickup", Action {
@@ -192,6 +201,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/pickup.png"),
             sound_effect: None,
             ap_cost: 20,
+            stamina_cost: 1.,
             action_type: ActionType::PickUp
         });
         self.actions.add("act:sleep", Action {
@@ -200,6 +210,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 0,
+            stamina_cost: 0.,
             action_type: ActionType::Sleep
         });
         self.actions.add("act:move_left", Action {
@@ -208,6 +219,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
+            stamina_cost: 0.2,
             action_type: ActionType::Move { offset: Coord2::xy(-1, 0) }
         });
         self.actions.add("act:move_right", Action {
@@ -216,6 +228,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
+            stamina_cost: 0.2,
             action_type: ActionType::Move { offset: Coord2::xy(1, 0) }
         });
         self.actions.add("act:move_up", Action {
@@ -224,6 +237,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
+            stamina_cost: 0.2,
             action_type: ActionType::Move { offset: Coord2::xy(0, -1) }
         });
         self.actions.add("act:move_down", Action {
@@ -232,6 +246,7 @@ impl Resources {
             icon: String::from("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
+            stamina_cost: 0.2,
             action_type: ActionType::Move { offset: Coord2::xy(0, 1) }
         });
     }

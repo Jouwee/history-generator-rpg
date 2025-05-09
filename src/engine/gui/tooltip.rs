@@ -155,6 +155,7 @@ pub(crate) enum TooltipLine {
     Title(String),
     Body(String),
     ApCost(u16),
+    StaminaCost(f32),
     Damage(DamageType),
     Inflicts(Infliction)
 }
@@ -162,7 +163,6 @@ pub(crate) enum TooltipLine {
 impl TooltipLine {
 
     fn dims(&self, ctx: &mut RenderContext) -> [f64; 2] {
-        
         match &self {
             Self::Title(title) => [ctx.small_font.width(5, &title).unwrap_or(0.), 8.],
             Self::Body(body) => [ctx.small_font.width(5, &body).unwrap_or(0.), 8.],
@@ -193,6 +193,7 @@ impl TooltipLine {
             Self::Title(title) => ctx.text_small(&title, 5, pos, Color::from_hex("ffffff")),
             Self::Body(body) => ctx.text_small(&body, 5, pos, Color::from_hex("5a6069")),
             Self::ApCost(ap_cost) => ctx.text_small(&format!("{ap_cost} AP"), 5, pos, Color::from_hex("446d99")),
+            Self::StaminaCost(stamina_cost) => ctx.text_small(&format!("{stamina_cost} ST"), 5, pos, Color::from_hex("88ae59")),
             Self::Damage(damage) => {
                 let damage = match damage {
                     DamageType::Fixed(dmg) => dmg,

@@ -28,6 +28,8 @@ pub(crate) mod inventory;
 pub(crate) mod map_modal;
 pub(crate) mod options;
 
+const RT_TURN_TIME: f64 = 1.;
+
 pub(crate) trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
 }
@@ -49,6 +51,7 @@ pub(crate) struct GameSceneState {
     pub(crate) world_pos: Coord2,
     pub(crate) chunk: Chunk,
     turn_mode: TurnMode,
+    player_turn_timer: f64,
     turn_controller: TurnController,
     button_inventory: Button,
     button_map: Button,
@@ -71,6 +74,7 @@ impl GameSceneState {
             chunk,
             world_pos,
             turn_mode: TurnMode::RealTime,
+            player_turn_timer: 0.,
             turn_controller: TurnController::new(),
             hotbar: Hotbar::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
@@ -103,9 +107,11 @@ impl GameSceneState {
     pub(crate) fn next_turn(&mut self, ctx: &mut GameContext) {
         if self.turn_controller.is_player_turn() {
             self.chunk.player.ap.fill();
+            self.chunk.player.stamina.recover_turn();
         } else {
             let actor_ending = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
             actor_ending.ap.fill();
+            actor_ending.stamina.recover_turn();
         }
         self.turn_controller.next_turn();
         if self.turn_controller.is_player_turn() {
@@ -133,11 +139,19 @@ impl GameSceneState {
     fn realtime_end_turn(&mut self, actor_idx: usize, ctx: &mut GameContext) {
         let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
         actor.ap.fill();
+        actor.stamina.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
         let actor = self.chunk.npcs.get(actor_idx).unwrap();
         let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, &self.chunk, ctx);
         let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
         actor.ai = ai;
+    }
+
+    fn realtime_player_end_turn(&mut self) {
+        let actor = &mut self.chunk.player;
+        actor.ap.fill();
+        actor.stamina.recover_turn();
+        actor.start_of_round(&mut self.effect_layer);
     }
 
     pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
@@ -328,6 +342,13 @@ impl Scene for GameSceneState {
                 }
             },
             TurnMode::RealTime => {
+
+                self.player_turn_timer += update.delta_time as f64;
+                if self.player_turn_timer >= RT_TURN_TIME {
+                    self.realtime_player_end_turn();
+                    self.player_turn_timer -= RT_TURN_TIME;
+                }
+
                 let mut end_turns_idxs = Vec::new();
                 for (idx, npc) in self.chunk.npcs.iter_mut().enumerate() {
                     if npc.ai.waiting_delay(update.delta_time) {
@@ -383,7 +404,10 @@ impl Scene for GameSceneState {
             if let ButtonEvent::Click = self.button_toggle_turn_based.event(evt) {
                 match self.turn_mode {
                     TurnMode::RealTime => self.turn_mode = TurnMode::TurnBased,
-                    TurnMode::TurnBased => self.turn_mode = TurnMode::RealTime,
+                    TurnMode::TurnBased => {
+                        self.turn_mode = TurnMode::RealTime;
+                        self.player_turn_timer = 0.;
+                    },
                 }
             }
         }
@@ -446,7 +470,7 @@ impl Scene for GameSceneState {
 
                     if let Some(action_id) = &self.hotbar.selected_action {
                         let action = ctx.resources.actions.get(action_id);
-                        if self.chunk.player.ap.can_use(action.ap_cost) {
+                        if self.chunk.player.ap.can_use(action.ap_cost) && self.chunk.player.stamina.can_use(action.stamina_cost) {
                             match &action.action_type {
                                 ActionType::Targeted { damage: _, inflicts: _ } => {
                                     let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);

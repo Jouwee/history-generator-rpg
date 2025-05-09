@@ -20,6 +20,7 @@ pub(crate) struct Action {
     pub(crate) description: String,
     pub(crate) sound_effect: Option<SoundEffect>,
     pub(crate) ap_cost: u16,
+    pub(crate) stamina_cost: f32,
     pub(crate) action_type: ActionType
 }
 
@@ -77,11 +78,12 @@ impl ActionRunner {
     pub(crate) fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
         match &action.action_type {
             ActionType::Move { offset } => {
-                if actor.ap.can_use(action.ap_cost) {
+                if actor.ap.can_use(action.ap_cost) && actor.stamina.can_use(action.stamina_cost) {
                     let xy = actor.xy.clone();
                     let pos = xy + *offset;
                     if !chunk_map.blocks_movement(pos) {
                         actor.ap.consume(action.ap_cost);
+                        actor.stamina.consume(action.stamina_cost);
                         actor.xy = pos;
                         actor.animation.play(&Self::build_walk_anim());
                         if let Some(sound) = chunk_map.get_step_sound(xy) {
@@ -100,9 +102,10 @@ impl ActionRunner {
     pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, game_log: &mut GameLog, world: &World, ctx: &GameContext) -> bool {
         match &action.action_type {
             ActionType::Targeted { damage, inflicts } => {
-                if actor.ap.can_use(action.ap_cost) {
+                if actor.ap.can_use(action.ap_cost) && actor.stamina.can_use(action.stamina_cost) {
                     if actor.xy.dist_squared(&target.xy) < 3. {
                         actor.ap.consume(action.ap_cost);
+                        actor.stamina.consume(action.stamina_cost);
                         let mut hit = true;
                         if let Some(damage) = damage {
                             // Compute damage

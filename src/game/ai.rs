@@ -68,6 +68,7 @@ impl AiSolver {
             actions: Vec::new(),
             xy: actor.xy,
             ap: actor.ap.action_points,
+            stamina: actor.stamina.stamina,
             depth: 1,
             score: 0.,
             position_score: 0.,
@@ -115,6 +116,9 @@ impl AiSolver {
             if action.ap_cost as i32 > ctx.ap {
                 continue;
             }
+            if action.stamina_cost > ctx.stamina {
+                continue;
+            }
             match &action.action_type {
                 ActionType::Move { offset } => {
                     let mut ctx = ctx.clone();
@@ -123,6 +127,7 @@ impl AiSolver {
                         continue;
                     }
                     ctx.ap -= action.ap_cost as i32;
+                    ctx.stamina -= action.stamina_cost;
                     ctx.depth += 1;
                     ctx.actions.push(*action_id);
                     ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
@@ -133,6 +138,7 @@ impl AiSolver {
                     if ctx.xy.dist_squared(&chunk.player.xy) < 3. {
                         let mut ctx = ctx.clone();
                         ctx.ap -= action.ap_cost as i32;
+                        ctx.stamina -= action.stamina_cost;
                         ctx.depth += 1;
                         ctx.actions.push(*action_id);
                         if let Some(damage) = damage {
@@ -195,6 +201,7 @@ struct SimContext {
     actions: Vec<ActionId>,
     xy: Coord2,
     ap: i32,
+    stamina: f32,
     depth: u8,
     score: f64,
     position_score: f64,
