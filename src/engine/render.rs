@@ -2,7 +2,7 @@ use graphics::{image, rectangle, Context, Text};
 use opengl_graphics::{GlGraphics, GlyphCache, Texture};
 use crate::{graphics::Transformed, Assets};
 
-use super::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, Color};
+use super::{asset::{font::Font, image::ImageAsset, image_sheet::ImageSheetAsset}, Color};
 
 pub(crate) struct RenderContext<'a, 'b> {
     pub(crate) context: Context,
@@ -50,8 +50,23 @@ impl<'a, 'b> RenderContext<'a, 'b> {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
     }
 
+    pub(crate) fn text(&mut self, text: &str, font: &mut Font, position: [i32; 2], color: &Color) {
+        Text::new_color(color.f32_arr(), font.size)
+            .round()
+            .draw_pos(
+                text,
+                [position[0] as f64, position[1] as f64],
+                &mut font.glyphs,
+                &self.context.draw_state,
+                self.context.transform,
+                self.gl,
+            )
+            .unwrap();
+    }
+
     //pub(crate) fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {
-    pub(crate) fn text(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
+    #[deprecated]
+    pub(crate) fn text_old(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
         Text::new_color(color.f32_arr(), font_size)
             .round()
             .draw_pos(
@@ -66,6 +81,7 @@ impl<'a, 'b> RenderContext<'a, 'b> {
     }
 
     //pub(crate) fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {
+    #[deprecated]
     pub(crate) fn text_small(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
         Text::new_color(color.f32_arr(), font_size)
             .round()

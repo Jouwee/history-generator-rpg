@@ -21,12 +21,14 @@ impl HeadsUpDisplay {
         ctx.image(&ImageAsset::new("gui/hud/background.png"), [16, 16], &mut game_ctx.assets);
 
         Self::draw_bar(ctx, &self.health, Color::from_hex("882309"), Color::from_hex("6c1307"), [42 + 16, 12 + 16, 182-42, 8]);
-        
         Self::draw_bar(ctx, &self.action_points, Color::from_hex("77a8c8"), Color::from_hex("486a75"), [45 + 16, 23 + 16, 165-45, 4]);
-
         Self::draw_bar(ctx, &self.stamina, Color::from_hex("7b8c48"), Color::from_hex("566639"), [42 + 16, 30 + 16, 156-42, 4]);
 
         player.render_layers([14., 11.], ctx, game_ctx);
+
+        let health_text = format!("{:.0} / {:.0}", player.hp.health_points(), player.hp.max_health_points());
+        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7+1], &Color::from_hex("000000"));
+        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7], &Color::from_hex("ffffff"));
 
         ctx.image(&ImageAsset::new("gui/hud/foreground.png"), [16, 16], &mut game_ctx.assets);
         perf().end("hud");
@@ -44,7 +46,7 @@ impl HeadsUpDisplay {
         ctx.rectangle_fill([x, y + hh, w2, hh], color_2);
     }
 
-    pub(crate) fn update(&mut self, player: &Actor, update: &Update, ctx: &mut GameContext) {
+    pub(crate) fn update(&mut self, player: &Actor, _update: &Update, _ctx: &mut GameContext) {
         self.health.0 = (player.hp.health_points() / player.hp.max_health_points()) as f64;
         self.action_points.0 = (player.ap.action_points as f64 / player.ap.max_action_points as f64) as f64;
         self.stamina.0 = (player.stamina.stamina / player.stamina.max_stamina) as f64;

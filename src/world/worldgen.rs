@@ -143,10 +143,10 @@ impl Scene for WorldGenScene {
         ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);
         let text = format!("Year {}", &self.generator.year.to_string());
         let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
-        ctx.text(&text, 11, [(center - text_width / 2.).round(), 16.], white);
+        ctx.text_old(&text, 11, [(center - text_width / 2.).round(), 16.], white);
         let text = "Press <enter> to start playing";
         let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
-        ctx.text(&text, 11, [(center - text_width / 2.).round(), 40.], white);
+        ctx.text_old(&text, 11, [(center - text_width / 2.).round(), 40.], white);
     }
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {

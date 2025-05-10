@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use super::{image::{Image, ImageAsset}, image_sheet::{ImageSheet, ImageSheetAsset}};
+use super::{font::{Font, FontAsset}, image::{Image, ImageAsset}, image_sheet::{ImageSheet, ImageSheetAsset}};
 
 pub(crate) struct Assets {
     images: HashMap<ImageAsset, Asset<Image>>,
-    image_sheets: HashMap<ImageSheetAsset, Asset<ImageSheet>>
+    image_sheets: HashMap<ImageSheetAsset, Asset<ImageSheet>>,
+    fonts: HashMap<FontAsset, Asset<Font>>,
 }
 
 impl Assets {
@@ -13,6 +14,7 @@ impl Assets {
         Assets {
             images: HashMap::new(),
             image_sheets: HashMap::new(),
+            fonts: HashMap::new(),
         }
     }
 
@@ -30,6 +32,18 @@ impl Assets {
             self.image_sheets.insert(params.clone(), Asset { value: image });
         }
         &self.image_sheets.get(&params).expect(format!("Image {} does not exist", params.path).as_str()).value
+    }
+
+    pub(crate) fn font(&mut self, params: &FontAsset) -> &mut Font {
+        if !self.fonts.contains_key(&params) {
+            let font = Font::new(&params);
+            self.fonts.insert(params.clone(), Asset { value: font });
+        }
+        &mut self.fonts.get_mut(&params).expect(format!("Font {} does not exist", params.path).as_str()).value
+    }
+
+    pub(crate) fn font_standard(&mut self) -> &mut Font {
+        return self.font(&FontAsset::new("Everyday_Standard.ttf", 6))
     }
 
 }
