@@ -253,14 +253,8 @@ impl Actor {
             self.attributes.unallocated += 1;
         }
     }
-}
 
-impl Renderable for Actor {
-    fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
-        // Applies the animation to the rendering
-        pos[0] += self.animation.translate[0];
-        pos[1] += self.animation.translate[1];
+    pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let textures = self.sprite.texture();
         for texture in textures {
             ctx.texture(texture, pos);
@@ -269,6 +263,16 @@ impl Renderable for Actor {
         if let Some(item) = item {
             ctx.texture(item.make_equipped_texture(&game_ctx.resources.materials), pos);
         }
+    }
+}
+
+impl Renderable for Actor {
+    fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+        let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        // Applies the animation to the rendering
+        pos[0] += self.animation.translate[0];
+        pos[1] += self.animation.translate[1];
+        self.render_layers(pos, ctx, game_ctx);
     }
 }
 

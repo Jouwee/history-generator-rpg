@@ -41,7 +41,9 @@ impl Image {
 
     pub(crate) fn new(params: &ImageAsset) -> Image {
         let path = format!("./assets/sprites/{}", params.path);
-        let image = ImageReader::open(&path).unwrap().decode().unwrap();
+        let image = ImageReader::open(&path)
+            .expect(&format!("Image not found: {}", path))
+            .decode().unwrap();
         let image = match params.rotate {
             ImageRotate::None => image,
             ImageRotate::R90 => image.rotate90(),

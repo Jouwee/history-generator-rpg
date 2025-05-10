@@ -23,6 +23,7 @@ use piston::window::WindowSettings;
 pub(crate) mod engine;
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
+pub(crate) mod globals;
 pub(crate) mod resources;
 pub(crate) mod world;
 pub(crate) mod game;

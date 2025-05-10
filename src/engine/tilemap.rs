@@ -1,4 +1,4 @@
-use crate::{commons::rng::Rng, GameContext};
+use crate::{commons::rng::Rng, globals::perf::perf, GameContext};
 
 use super::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, render::RenderContext};
 
@@ -40,8 +40,19 @@ impl TileMap {
     }
 
     pub(crate) fn render<F>(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, &mut GameContext, usize, usize) -> () {
-        for y in 0..self.height {
-            for x in 0..self.width {
+        perf().start("tilemap");
+        let cull_start = [
+            (ctx.camera_rect[0] / self.cell_width as f64 - 1.).max(0.) as usize,
+            (ctx.camera_rect[1] / self.cell_height as f64 - 1.).max(0.) as usize
+        ];
+        let cull_limit = [
+            1 + cull_start[0] + ctx.camera_rect[2] as usize / self.cell_width,
+            1 + cull_start[1] + ctx.camera_rect[3] as usize / self.cell_height
+        ];
+        let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
+        let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
+        for y in y_range {
+            for x in x_range.clone() {
                 let idx = (y * self.width) + x;
                 let tile_i = self.tiles[idx];
                 match &self.tileset.tiles[tile_i] {
@@ -111,6 +122,7 @@ impl TileMap {
                 z_order_render(ctx, game_ctx, x, y);
             }
         }
+        perf().end("tilemap");
     }
 
 }

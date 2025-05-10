@@ -1,4 +1,4 @@
-use crate::GameContext;
+use crate::{globals::perf::perf, GameContext};
 
 use super::{asset::image_sheet::ImageSheetAsset, render::RenderContext};
 
@@ -62,6 +62,7 @@ impl LayeredDualgridTilemap {
     }
 
     pub(crate) fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+        perf().start("dualgrid_tilemap");
         let hw = self.cell_width / 2;
         let hh = self.cell_height / 2;
         let cull_start = [
@@ -84,6 +85,7 @@ impl LayeredDualgridTilemap {
                 }
             }
         }
+        perf().end("dualgrid_tilemap");
     }
 
     pub(crate) fn collapse_tile(&mut self, x: usize, y: usize) {

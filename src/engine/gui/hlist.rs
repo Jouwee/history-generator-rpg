@@ -15,7 +15,7 @@ impl HList {
         HList {
             position,
             inner: InnerContainer::new(),
-            gap: 4.,
+            gap: 1.,
             size: None,
         }
     }

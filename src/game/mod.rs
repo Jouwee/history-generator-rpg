@@ -3,7 +3,8 @@ use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
 use effect_layer::EffectLayer;
 use game_log::GameLog;
-use hotbar::{Hotbar, HotbarState, NodeWithState};
+use gui::hud::HeadsUpDisplay;
+use hotbar::Hotbar;
 use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use map_modal::{MapModal, MapModalEvent};
@@ -22,6 +23,7 @@ pub(crate) mod effect_layer;
 pub(crate) mod factory;
 pub(crate) mod game_log;
 pub(crate) mod hotbar;
+pub(crate) mod gui;
 pub(crate) mod interact;
 pub(crate) mod inventory;
 pub(crate) mod map_modal;
@@ -33,6 +35,7 @@ pub(crate) trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
 }
 
+// TODO: Wtf is this?
 pub(crate) struct InputEvent {
     pub(crate) mouse_pos_cam: [f64; 2],
     pub(crate) mouse_pos_gui: [f64; 2],
@@ -57,6 +60,7 @@ pub(crate) struct GameSceneState {
     button_end_turn: Button,
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
+    hud: HeadsUpDisplay,
     interact_dialog: InteractDialog,
     inventory_dialog: CharacterDialog,
     cursor_pos: Coord2,
@@ -76,6 +80,7 @@ impl GameSceneState {
             player_turn_timer: 0.,
             turn_controller: TurnController::new(),
             hotbar: Hotbar::new(),
+            hud: HeadsUpDisplay::new(),
             button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
             button_map: Button::new("Map", Position::Anchored(Anchor::BottomCenter, -108.0, -24.0)),       
             button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
@@ -250,7 +255,8 @@ impl Scene for GameSceneState {
         self.effect_layer.render(ctx, game_ctx);
         // UI
         let _ = ctx.try_pop();
-        self.hotbar.render(HotbarState::new(&self.chunk.player), ctx, game_ctx);
+        self.hotbar.render(ctx, game_ctx);
+        self.hud.render(&self.chunk.player, ctx, game_ctx);
         self.button_inventory.render(ctx, game_ctx);
         self.button_map.render(ctx, game_ctx);
         if self.can_end_turn() {
@@ -271,7 +277,8 @@ impl Scene for GameSceneState {
             return map.update(update, ctx);
         }
 
-        self.hotbar.update(HotbarState::new(&self.chunk.player), update, ctx);
+        self.hotbar.update(update, ctx);
+        self.hud.update(&self.chunk.player, update, ctx);
         self.button_inventory.update(update, ctx);
         self.button_map.update(update, ctx);
         if self.can_end_turn() {
@@ -390,7 +397,8 @@ impl Scene for GameSceneState {
             return
         }
 
-        self.hotbar.input(HotbarState::new(&self.chunk.player), evt, ctx);
+        self.hotbar.input(evt, ctx);
+        self.hud.input(&self.chunk.player, &evt.evt, ctx);
         self.interact_dialog.input_state(evt);
         let dialog_evt = self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
         match dialog_evt {
