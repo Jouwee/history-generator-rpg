@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "tales_of_kathay"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "image",
  "noise",
