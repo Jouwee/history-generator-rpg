@@ -1,5 +1,7 @@
 use std::ops::Add;
 
+use crate::game::actor::actor_stats::ActorStats;
+
 use super::rng::Rng;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -15,11 +17,11 @@ impl DamageComponent {
         DamageComponent { slashing, piercing, bludgeoning }
     }
 
-    pub(crate) fn resolve(&self, defence: &DefenceComponent) -> DamageOutput {
+    pub(crate) fn resolve(&self, attacker_stats: &ActorStats<'_>, defence: &DefenceComponent, defender_stats: &ActorStats<'_>) -> DamageOutput {
         let mut total_damage = 0.;
         let mut rng = Rng::rand();
 
-        if rng.rand_chance(defence.dodge_chance) {
+        if rng.rand_chance(defender_stats.dodge_chance() + attacker_stats.enemy_dodge_bonus()) {
             return DamageOutput::Dodged
         }
 
@@ -37,9 +39,8 @@ impl DamageComponent {
             let bludgeoning = (self.bludgeoning * rng.randf_range(0.85, 1.15)) - defence.bludgeoning;
             total_damage += bludgeoning.max(0.);
         }
-
-        if rng.rand_chance(0.05) {
-            return DamageOutput::CriticalHit(total_damage * 2.);    
+        if rng.rand_chance(attacker_stats.critical_hit_chance()) {
+            return DamageOutput::CriticalHit(total_damage * attacker_stats.critical_hit_multiplier());    
         }
         return DamageOutput::Hit(total_damage);
     }
@@ -71,7 +72,6 @@ impl Add for DamageComponent {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) struct DefenceComponent {
-    pub(crate) dodge_chance: f32,
     pub(crate) slashing: f32,
     pub(crate) piercing: f32,
     pub(crate) bludgeoning: f32,
@@ -80,8 +80,8 @@ pub(crate) struct DefenceComponent {
 
 impl DefenceComponent {
 
-    pub(crate) fn new(slashing: f32, piercing: f32, bludgeoning: f32, dodge_chance: f32) -> DefenceComponent {
-        DefenceComponent { slashing, piercing, bludgeoning, dodge_chance }
+    pub(crate) fn new(slashing: f32, piercing: f32, bludgeoning: f32) -> DefenceComponent {
+        DefenceComponent { slashing, piercing, bludgeoning }
     }
 
 }
@@ -90,7 +90,7 @@ impl Add for DefenceComponent {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        DefenceComponent::new(self.slashing + rhs.slashing, self.piercing + rhs.piercing, self.bludgeoning + rhs.bludgeoning, self.dodge_chance + rhs.dodge_chance)
+        DefenceComponent::new(self.slashing + rhs.slashing, self.piercing + rhs.piercing, self.bludgeoning + rhs.bludgeoning)
     }
 
 }

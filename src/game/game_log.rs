@@ -2,7 +2,7 @@ use graphics::CharacterCache;
 
 use crate::{commons::damage_model::DamageOutput, world::world::World, Actor, Color, GameContext, RenderContext, Resources};
 
-use super::actor::ActorType;
+use super::actor::actor::ActorType;
 
 pub(crate) struct GameLog {
     entries: Vec<GameLogEntry>

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
 
-use super::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, health_component::HealthComponent, inventory::inventory::Inventory, Renderable};
+use super::{actor_stats::ActorStats, health_component::HealthComponent};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ActorType {
@@ -41,7 +41,7 @@ impl Actor {
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -66,7 +66,7 @@ impl Actor {
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -119,7 +119,7 @@ impl Actor {
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0., species.attributes.dodge_chance()),
+            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -167,6 +167,10 @@ impl Actor {
                 Affliction::Stunned { duration } => affliction.delta < duration,
             }
         });
+    }
+
+    pub(crate) fn stats<'a>(&'a self) -> ActorStats<'a> {
+        return ActorStats::new(&self)
     }
 
     pub(crate) fn add_affliction(&mut self, affliction: &Affliction) {

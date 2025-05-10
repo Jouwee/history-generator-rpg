@@ -161,7 +161,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             action_type: ActionType::Targeted {
-                damage: Some(DamageType::Fixed(DamageComponent::new(0., 1., 0.))),
+                damage: Some(DamageType::Fixed(DamageComponent::new(0., 10., 0.))),
                 inflicts: Some(Infliction {
                     chance: AfflictionChance::OnHit,
                     affliction: Affliction::Poisoned { duration: 10 }

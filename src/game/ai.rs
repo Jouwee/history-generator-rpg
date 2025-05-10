@@ -1,8 +1,8 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType}, GameContext};
 
-use super::{actor::Actor, chunk::Chunk};
+use super::{actor::actor::Actor, chunk::Chunk};
 
 #[derive(Clone)]
 pub(crate) struct AiRunner {

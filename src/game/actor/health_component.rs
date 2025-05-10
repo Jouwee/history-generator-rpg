@@ -40,15 +40,26 @@ impl HealthComponent {
     }
 
     pub(crate) fn hit(&mut self, body_part: BodyPart, damage: f32) {
-        self.current_hp -= damage;
+        self.current_hp = (self.current_hp - damage).max(0.);
         let body_part = self.body_parts.get_mut(&body_part).expect("Creature doesn't have bodypart");
-        body_part.health -= damage * NON_CRITICAL_HIT_BODY_PART_DAMAGE_MULT;
+        body_part.health = (body_part.health - (damage * NON_CRITICAL_HIT_BODY_PART_DAMAGE_MULT)).max(0.);
     }
 
     pub(crate) fn critical_hit(&mut self, body_part: BodyPart, damage: f32) {
-        self.current_hp -= damage;
+        self.current_hp = (self.current_hp - damage).max(0.);
         let body_part = self.body_parts.get_mut(&body_part).expect("Creature doesn't have bodypart");
-        body_part.health -= damage;
+        body_part.health = (body_part.health - damage).max(0.);
+    }
+
+    pub(crate) fn recover_turn(&mut self) {
+        self.current_hp = (self.current_hp + 1.).min(self.max_health_points());
+        for (_body_part, condition) in self.body_parts.iter_mut() {
+            condition.health = (condition.health + 0.1).min(condition.max_health);
+        }
+    }
+
+    pub(crate) fn body_part_condition(&self, body_part: &BodyPart) -> Option<&BodyPartCondition> {
+        return self.body_parts.get(body_part)
     }
 
 }
@@ -79,7 +90,7 @@ impl BodyPart {
 }
 
 #[derive(Clone)]
-struct BodyPartCondition {
+pub(crate) struct BodyPartCondition {
     health: f32,
     max_health: f32,
 }
@@ -88,6 +99,10 @@ impl BodyPartCondition {
 
     fn new(health: f32) -> Self {
         BodyPartCondition { health, max_health: health }
+    }
+
+    pub(crate) fn condition(&self) -> f32 {
+        return self.health / self.max_health;
     }
 
 }

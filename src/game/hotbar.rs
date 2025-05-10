@@ -6,7 +6,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
-use super::{actor::Actor, inventory::inventory::Inventory, InputEvent};
+use super::{actor::actor::Actor, inventory::inventory::Inventory, InputEvent};
 
 pub(crate) struct Hotbar {
     background: Texture,

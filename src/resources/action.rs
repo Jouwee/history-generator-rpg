@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{chunk::ChunkMap, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}, health_component::BodyPart}, world::world::World, Actor, GameContext};
+use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::health_component::BodyPart, chunk::ChunkMap, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -78,11 +78,12 @@ impl ActionRunner {
     pub(crate) fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
         match &action.action_type {
             ActionType::Move { offset } => {
-                if actor.ap.can_use(action.ap_cost) && actor.stamina.can_use(action.stamina_cost) {
+                let ap_cost = (action.ap_cost as f32 * actor.stats().walk_ap_multiplier()) as u16;
+                if actor.ap.can_use(ap_cost) && actor.stamina.can_use(action.stamina_cost) {
                     let xy = actor.xy.clone();
                     let pos = xy + *offset;
                     if !chunk_map.blocks_movement(pos) {
-                        actor.ap.consume(action.ap_cost);
+                        actor.ap.consume(ap_cost);
                         actor.stamina.consume(action.stamina_cost);
                         actor.xy = pos;
                         actor.animation.play(&Self::build_walk_anim());
@@ -118,7 +119,7 @@ impl ActionRunner {
                             };
                             let str_mult = actor.attributes.strength_attack_damage_mult();
                             let damage_model = damage.multiply(str_mult);
-                            let damage = damage_model.resolve(&target.defence);
+                            let damage = damage_model.resolve(&actor.stats(), &target.defence, &target.stats());
 
                             match damage {
                                 DamageOutput::Dodged => {

@@ -1,4 +1,4 @@
-use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::Actor, resources::resources::Resources, world::attributes::Attributes, GameContext};
+use crate::{engine::{gui::{button::{Button, ButtonEvent}, container::Container, dialog::Dialog, label::Label, vlist::VList, Anchor, GUINode, Position}, render::RenderContext}, game::actor::actor::Actor, resources::resources::Resources, world::attributes::Attributes, GameContext};
 
 use super::inventory::Inventory;
 

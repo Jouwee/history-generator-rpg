@@ -25,7 +25,7 @@ impl Material {
     pub(crate) fn new_metal(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 1.,
+            sharpness: 10.,
             color_pallete: [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")]
         }
     }
@@ -33,7 +33,7 @@ impl Material {
     pub(crate) fn new_wood(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 0.1,
+            sharpness: 1.0,
             color_pallete: [Color::from_hex("3d3333"), Color::from_hex("593e47"), Color::from_hex("7a5859"), Color::from_hex("a57855")]
         }
     }

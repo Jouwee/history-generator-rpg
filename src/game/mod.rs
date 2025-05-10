@@ -1,4 +1,4 @@
-use actor::ActorType;
+use actor::actor::ActorType;
 use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
 use effect_layer::EffectLayer;
@@ -21,7 +21,6 @@ pub(crate) mod chunk;
 pub(crate) mod effect_layer;
 pub(crate) mod factory;
 pub(crate) mod game_log;
-pub(crate) mod health_component;
 pub(crate) mod hotbar;
 pub(crate) mod interact;
 pub(crate) mod inventory;
@@ -108,10 +107,12 @@ impl GameSceneState {
         if self.turn_controller.is_player_turn() {
             self.chunk.player.ap.fill();
             self.chunk.player.stamina.recover_turn();
+            self.chunk.player.hp.recover_turn();
         } else {
             let actor_ending = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
             actor_ending.ap.fill();
             actor_ending.stamina.recover_turn();
+            actor_ending.hp.recover_turn();
         }
         self.turn_controller.next_turn();
         if self.turn_controller.is_player_turn() {
@@ -140,6 +141,7 @@ impl GameSceneState {
         let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
         actor.ap.fill();
         actor.stamina.recover_turn();
+        actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
         let actor = self.chunk.npcs.get(actor_idx).unwrap();
         let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, &self.chunk, ctx);
@@ -151,6 +153,7 @@ impl GameSceneState {
         let actor = &mut self.chunk.player;
         actor.ap.fill();
         actor.stamina.recover_turn();
+        actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
     }
 
