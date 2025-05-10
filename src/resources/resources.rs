@@ -420,6 +420,9 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/pebbles.png", Size2D(24, 24));
         self.object_tiles.add("obj:pebbles", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
+        let image = ImageSheetAsset::new("chunk_tiles/flowers.png", Size2D(24, 24));
+        self.object_tiles.add("obj:flowers", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
+
     }
 
 }

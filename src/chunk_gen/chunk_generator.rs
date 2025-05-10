@@ -440,13 +440,14 @@ impl ChunkGenerator {
     }
 
     fn collapse_decor(&mut self) {
-        let noise = Perlin::new(Rng::rand().derive("trees").seed());
+        let tree_noise = Perlin::new(Rng::rand().derive("trees").seed());
+        let flower_noise = Perlin::new(Rng::rand().derive("flower").seed());
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
                 if let Some(ground) = self.chunk.map.ground_layer.tile(x, y) {
                     if let Tile::Empty = self.chunk.map.object_layer.get_tile(x, y) {
                         if ground == 1 || ground == 6 || ground == 7 {
-                            if noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
+                            if tree_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                                 if self.rng.rand_chance(0.1) {
                                     self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
                                     continue;
@@ -454,6 +455,10 @@ impl ChunkGenerator {
                             }
                             if self.rng.rand_chance(0.02) {
                                 self.chunk.map.object_layer.set_tile(x as usize, y as usize, 11);
+                                continue;
+                            }
+                            if flower_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0.6 && self.rng.rand_chance(0.3) {
+                                self.chunk.map.object_layer.set_tile(x as usize, y as usize, 12);
                                 continue;
                             }
                             if self.rng.rand_chance(0.2) {
