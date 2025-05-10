@@ -1,6 +1,6 @@
 use crate::{commons::rng::Rng, GameContext};
 
-use super::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, render::RenderContext};
+use super::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, render::RenderContext};
 
 pub(crate) struct TileMap {
     tiles: Vec<usize>,

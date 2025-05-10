@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -359,28 +359,28 @@ impl Resources {
     }
 
     fn load_tiles(&mut self) {
-        let mut tile = Tile::new(0, "assets/sprites/chunk_tiles/stone.png");
+        let mut tile = Tile::new(0, "chunk_tiles/stone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:stone", tile);
-        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass.png");
+        let mut tile = Tile::new(4, "chunk_tiles/grass.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
         self.tiles.add("tile:grass", tile);
-        let tile = Tile::new(1, "assets/sprites/chunk_tiles/sand.png");
+        let tile = Tile::new(1, "chunk_tiles/sand.png");
         self.tiles.add("tile:sand", tile);
-        let tile = Tile::new(2, "assets/sprites/chunk_tiles/water.png");
+        let tile = Tile::new(2, "chunk_tiles/water.png");
         self.tiles.add("tile:water", tile);
-        let mut tile = Tile::new(3, "assets/sprites/chunk_tiles/floor.png");
+        let mut tile = Tile::new(3, "chunk_tiles/floor.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_wood_1.mp3", "sfx/step_wood_2.mp3", "sfx/step_wood_3.mp3")));
         self.tiles.add("tile:floor", tile);
-        let mut tile = Tile::new(2, "assets/sprites/chunk_tiles/cobblestone.png");
+        let mut tile = Tile::new(2, "chunk_tiles/cobblestone.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:cobblestone", tile);
 
-        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass_dark.png");
+        let mut tile = Tile::new(4, "chunk_tiles/grass_dark.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
         self.tiles.add("tile:grass_dark", tile);
 
-        let mut tile = Tile::new(4, "assets/sprites/chunk_tiles/grass_patchy.png");
+        let mut tile = Tile::new(4, "chunk_tiles/grass_patchy.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
         self.tiles.add("tile:grass_patchy", tile);
     }

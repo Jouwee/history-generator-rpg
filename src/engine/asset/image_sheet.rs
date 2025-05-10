@@ -33,8 +33,8 @@ impl ImageSheet {
         let mut textures = Vec::new();
         let tiles_x = image.width() / params.tile_size.0 as u32;
         let tiles_y = image.height() / params.tile_size.1 as u32;
-        for x in 0..tiles_x {
-            for y in 0..tiles_y {
+        for y in 0..tiles_y {
+            for x in 0..tiles_x {
                 let tile = image.crop_imm(x * params.tile_size.0 as u32, y * params.tile_size.1 as u32, params.tile_size.0 as u32, params.tile_size.1 as u32).to_rgba8();
                 // TODO: Subimage works with references. Maybe it's better?
                 //let tile = image.sub_image(x, y, params.tile_size.0 as u32, params.tile_size.1 as u32);

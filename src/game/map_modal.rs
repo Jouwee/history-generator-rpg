@@ -1,5 +1,4 @@
-use crate::{engine::{asset::{assets::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
-use image::ImageReader;
+use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -17,21 +16,21 @@ impl MapModal {
 
     pub(crate) fn new() -> MapModal {
         let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageReader::open("assets/sprites/map_tiles/ocean.png").unwrap().decode().unwrap();
-        dual_tileset.add(1, image, 16, 16);
-        let image = ImageReader::open("assets/sprites/map_tiles/coast.png").unwrap().decode().unwrap();
-        dual_tileset.add(0, image, 16, 16);
-        let image = ImageReader::open("assets/sprites/map_tiles/grassland.png").unwrap().decode().unwrap();
-        dual_tileset.add(4, image, 16, 16);
-        let image = ImageReader::open("assets/sprites/map_tiles/forest.png").unwrap().decode().unwrap();
-        dual_tileset.add(5, image, 16, 16);
-        let image = ImageReader::open("assets/sprites/map_tiles/desert.png").unwrap().decode().unwrap();
-        dual_tileset.add(3, image, 16, 16);
+        let image = ImageSheetAsset::new("map_tiles/ocean.png", Size2D(16, 16));
+        dual_tileset.add(1, image);
+        let image = ImageSheetAsset::new("map_tiles/coast.png", Size2D(16, 16));
+        dual_tileset.add(0, image);
+        let image = ImageSheetAsset::new("map_tiles/grassland.png", Size2D(16, 16));
+        dual_tileset.add(4, image);
+        let image = ImageSheetAsset::new("map_tiles/forest.png", Size2D(16, 16));
+        dual_tileset.add(5, image);
+        let image = ImageSheetAsset::new("map_tiles/desert.png", Size2D(16, 16));
+        dual_tileset.add(3, image);
 
         let mut tileset = TileSet::new();
         let image = ImageAsset::new("map_tiles/settlement.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageSheetAsset::new("assets/sprites/map_tiles/road.png", Size2D(16, 16));
+        let image = ImageSheetAsset::new("map_tiles/road.png", Size2D(16, 16));
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)));
         let image = ImageAsset::new("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
@@ -95,7 +94,7 @@ impl MapModal {
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
-        self.tilemap.render(ctx);
+        self.tilemap.render(ctx, game_ctx);
         self.objects.render(ctx, game_ctx, |_, _, _, _| {});
 
         let cursor = [self.player_pos.x as f64 * 16., self.player_pos.y as f64 * 16.];

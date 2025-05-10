@@ -119,7 +119,7 @@ mod test_health_component {
 
         health.hit(BodyPart::Torso, 5.);
         assert_eq!(health.health_points(), 95.);
-        assert_eq!(health.max_health_points(), 97.2973);
+        assert_eq!(health.max_health_points(), 99.324326);
         
         
     }

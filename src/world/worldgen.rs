@@ -4,7 +4,7 @@ use graphics::rectangle::{square, Border};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{audio::TrackMood, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
+use crate::{engine::{asset::image_sheet::ImageSheetAsset, audio::TrackMood, geometry::Size2D, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 
@@ -22,16 +22,16 @@ impl WorldGenScene {
         let settings = TextureSettings::new().filter(Filter::Nearest);
 
         let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageReader::open("assets/sprites/world_tiles/ocean.png").unwrap().decode().unwrap();
-        dual_tileset.add(1, image, 4, 4);
-        let image = ImageReader::open("assets/sprites/world_tiles/coast.png").unwrap().decode().unwrap();
-        dual_tileset.add(0, image, 4, 4);
-        let image = ImageReader::open("assets/sprites/world_tiles/grassland.png").unwrap().decode().unwrap();
-        dual_tileset.add(4, image, 4, 4);
-        let image = ImageReader::open("assets/sprites/world_tiles/forest.png").unwrap().decode().unwrap();
-        dual_tileset.add(5, image, 4, 4);
-        let image = ImageReader::open("assets/sprites/world_tiles/desert.png").unwrap().decode().unwrap();
-        dual_tileset.add(3, image, 4, 4);
+        let image = ImageSheetAsset::new("world_tiles/ocean.png", Size2D(4, 4));
+        dual_tileset.add(1, image);
+        let image = ImageSheetAsset::new("world_tiles/coast.png", Size2D(4, 4));
+        dual_tileset.add(0, image);
+        let image = ImageSheetAsset::new("world_tiles/grassland.png", Size2D(4, 4));
+        dual_tileset.add(4, image);
+        let image = ImageSheetAsset::new("world_tiles/forest.png", Size2D(4, 4));
+        dual_tileset.add(5, image);
+        let image = ImageSheetAsset::new("world_tiles/desert.png", Size2D(4, 4));
+        dual_tileset.add(3, image);
 
         let gray = Color::from_hex("636663");
         // let XXX = Color::from_hex("87857c");
@@ -115,13 +115,13 @@ impl Scene for WorldGenScene {
         ctx.audio.switch_music(TrackMood::Regular);
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.scale(2.);
         use graphics::*;
         let white = Color::rgb([1., 1., 1.]);
         let world = &self.generator.world;
         let ts = 4.;
-        self.tilemap.render(ctx);
+        self.tilemap.render(ctx, game_ctx);
         for unit in world.units.iter() {
             let unit = unit.borrow();
 

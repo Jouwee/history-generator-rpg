@@ -8,7 +8,7 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
-use crate::engine::asset::assets::ImageAsset;
+use crate::engine::asset::image::ImageAsset;
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionRunner, ActionType};

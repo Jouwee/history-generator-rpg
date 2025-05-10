@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{asset::assets::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, Renderable};
 
@@ -70,7 +70,7 @@ impl Chunk {
 
         let mut dual_tileset = LayeredDualgridTileset::new();
         for tile in resources.tiles.iter() {
-            dual_tileset.add(tile.tile_layer, tile.tileset_image.clone(), 24, 24);
+            dual_tileset.add(tile.tile_layer, tile.tileset_image.clone());
         }
 
         Chunk {
@@ -161,7 +161,7 @@ impl Chunk {
 
 impl Renderable for Chunk {
     fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
-        self.map.ground_layer.render(ctx);
+        self.map.ground_layer.render(ctx, game_ctx);
 
         let mut actors_by_position = HashMap::new();
         actors_by_position.insert(&self.player.xy, vec!(&self.player));

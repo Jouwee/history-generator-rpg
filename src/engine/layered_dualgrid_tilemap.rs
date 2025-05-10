@@ -1,7 +1,6 @@
-use image::DynamicImage;
-use opengl_graphics::{Filter, Texture, TextureSettings};
+use crate::GameContext;
 
-use super::render::RenderContext;
+use super::{asset::image_sheet::ImageSheetAsset, render::RenderContext};
 
 const IDX_BL: usize = 0;
 const IDX_TR_BR: usize = 1;
@@ -62,9 +61,9 @@ impl LayeredDualgridTilemap {
         }
     }
 
-    pub(crate) fn render(&self, ctx: &mut RenderContext) {
-        let hw = self.cell_width as f64 / 2.;
-        let hh = self.cell_height as f64 / 2.;
+    pub(crate) fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+        let hw = self.cell_width / 2;
+        let hh = self.cell_height / 2;
         let cull_start = [
             (ctx.camera_rect[0] / self.cell_width as f64 - 1.).max(0.) as usize,
             (ctx.camera_rect[1] / self.cell_height as f64 - 1.).max(0.) as usize
@@ -78,9 +77,9 @@ impl LayeredDualgridTilemap {
         for y in y_range {
             for x in x_range.clone() {
                 if let Some(tile) = &self.collapsed_tiles[x + y * self.width] {
-                    let pos = [(x * self.cell_width) as f64 + hw, (y * self.cell_height) as f64 + hh];
+                    let pos = [(x * self.cell_width + hw) as i32, (y * self.cell_height + hh) as i32];
                     for (tileset, tileset_idx) in tile {
-                        ctx.texture_ref(&self.tileset.tiles[*tileset].textures[*tileset_idx], pos);
+                        ctx.tile(&self.tileset.tiles[*tileset].textures, *tileset_idx, pos, &mut game_ctx.assets);
                     }
                 }
             }
@@ -163,18 +162,10 @@ impl LayeredDualgridTileset {
         }
     }
 
-    pub(crate) fn add(&mut self, layer: u16, image: DynamicImage, tile_width: u32, tile_height: u32) {
-        let mut textures = Vec::new();
-        for y in 0..4 {
-            for x in 0..4 {
-                let tile = image.crop_imm(x * tile_width, y * tile_height, tile_width, tile_height).to_rgba8();
-                let settings = TextureSettings::new().filter(Filter::Nearest);
-                textures.push(Texture::from_image(&tile, &settings));
-            }
-        }
+    pub(crate) fn add(&mut self, layer: u16, image: ImageSheetAsset) {
         self.tiles.push(DualgridTile {
             layer,
-            textures
+            textures: image
         })
     }
 
@@ -182,5 +173,5 @@ impl LayeredDualgridTileset {
 
 struct DualgridTile {
     layer: u16,
-    textures: Vec<Texture>
+    textures: ImageSheetAsset
 }
