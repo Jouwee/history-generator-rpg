@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{commons::id_vec::IdVec, engine::geometry::Coord2};
+use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2};
 
 use super::{creature::{Creature, CreatureId, Profession}, date::WorldDate, item::ItemId};
 
@@ -36,18 +36,37 @@ impl Unit {
         }
     }
 
+    pub(crate) fn select_new_profession(&self, rng: &mut Rng) -> Profession {
+        match self.unit_type {
+            UnitType::BanditCamp => Profession::Bandit,
+            UnitType::Village => {
+                // Ideally this would look at what the city needs
+                let rand_job = rng.randf();
+                if rand_job < 0.8 {
+                    return Profession::Peasant;
+                } else if rand_job < 0.88 {
+                    return Profession::Farmer;
+                } else if rand_job < 0.90 {
+                    return Profession::Sculptor;
+                } else if rand_job < 0.95 {
+                    return Profession::Blacksmith;
+                } else {
+                    return Profession::Guard;
+                }
+            }
+        }
+    }
+
 }
 
 
 #[cfg(test)]
 mod tests_unit {
     use crate::commons::id_vec::Id;
-
     use super::*;
 
     #[test]
     fn test_remove_creature() {
-
         let mut unit = Unit {
             xy: Coord2::xy(0, 0),
             creatures: Vec::new(),

@@ -430,25 +430,13 @@ impl HistorySimulation {
 
         for creature_id in change_job_pool {
             let mut creature = world.creatures.get_mut(&creature_id);
-            // Ideally this would look at what the city needs
-            let rand_job = rng.randf();
-            if rand_job < 0.8 {
-                creature.profession = Profession::Peasant;
-            } else if rand_job < 0.88 {
-                creature.profession = Profession::Farmer;
-            } else if rand_job < 0.90 {
-                creature.profession = Profession::Sculptor;
-            } else if rand_job < 0.95 {
-                creature.profession = Profession::Blacksmith;
-            } else {
-                creature.profession = Profession::Guard;
-            }
-            let profession = creature.profession;
+            let unit = world.units.get(unit_id);
+            let profession = unit.select_new_profession(&mut rng);
+            creature.profession = profession;
             drop(creature);
+            drop(unit);
             world.events.push(Event::CreatureProfessionChange { date: now.clone(), creature_id: creature_id, new_profession: profession });
         }
-
-        // return deferred_side_effects
     }
 
     fn check_population_peak(&self, now: &WorldDate, unit: &mut Unit) {

@@ -37,7 +37,7 @@ impl CreatureSimulation {
         }
         // Get a profession
         if age >= 14 && creature.profession == Profession::None {
-            creature.profession = Profession::Peasant;
+            return CreatureSideEffect::LookForNewJob;
         }
         if age >= 18 {
             // Have child

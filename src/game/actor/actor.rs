@@ -93,7 +93,7 @@ impl Actor {
             }
         }
 
-        if creature.profession == Profession::Guard || creature.profession == Profession::Bandit {
+        if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
             let mut rng = Rng::seeded(creature_id);
             let item = ItemFactory::weapon(&mut rng, &resources);
             inventory.add(item);
@@ -105,6 +105,7 @@ impl Actor {
         match creature.profession {
             Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
             Profession::Bandit => { hints.insert(String::from("clothes"), String::from("armor")); },
+            Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
             // TODO:
             // Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("")); },
             // Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
