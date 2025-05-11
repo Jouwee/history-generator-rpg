@@ -57,7 +57,7 @@ impl HeadsUpDisplay {
 
     }
 
-    pub(crate) fn input(&mut self, player: &Actor, evt: &InputEvent, _ctx: &mut GameContext) {
+    pub(crate) fn input(&mut self, _player: &Actor, _evt: &InputEvent, _ctx: &mut GameContext) {
     }
 
 }
