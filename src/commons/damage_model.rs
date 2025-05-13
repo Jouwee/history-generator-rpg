@@ -55,6 +55,7 @@ impl DamageComponent {
 
 }
 
+#[derive(Debug)]
 pub(crate) enum DamageOutput {
     Dodged,
     Hit(f32),

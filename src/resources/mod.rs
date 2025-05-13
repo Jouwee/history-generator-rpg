@@ -1,6 +1,7 @@
 pub(crate) mod resources;
 pub(crate) mod action;
 pub(crate) mod culture;
+pub(crate) mod item_blueprint;
 pub(crate) mod material;
 pub(crate) mod object_tile;
 pub(crate) mod biome;

@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, item::Item, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -258,7 +258,7 @@ impl HistorySimulation {
                     change_job_pool.push(creature_id);
                 },
                 CreatureSideEffect::MakeArtifact => {
-                    let item = ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel"));
+                    let item = ArtifactFactory::create_artifact(&mut rng, &self.params.resources);
                     let id = world.artifacts.add(item);
                     {
                         let mut creature = world.creatures.get_mut(&creature_id);             
@@ -402,7 +402,7 @@ impl HistorySimulation {
             let artisan = world.creatures.get(&artisan_id);
             let item = match artisan.profession {
                 Profession::Blacksmith => {
-                    Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources, &self.params.resources.materials.id_of("mat:steel")))
+                    Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources))
                 },
                 Profession::Sculptor => {
                     Some(ArtifactFactory::create_statue(&self.params.resources, comission_creature_id, &world))
@@ -414,12 +414,12 @@ impl HistorySimulation {
                 let id = world.artifacts.add(item.clone());
                 {
                     let mut creature = world.creatures.get_mut(&comission_creature_id);
-                    match &item {
-                        Item::Statue { material: _, scene: _ } => {
+                    match &item.artwork_scene {
+                        Some(_) => {
                             let mut unit = world.units.get_mut(unit_id);
                             unit.artifacts.push(id);
                         },
-                        Item::Sword(_) | Item::Mace(_) => {
+                        None => {
                             creature.details().inventory.push(id);
                         },
                     }

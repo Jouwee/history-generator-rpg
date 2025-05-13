@@ -1,8 +1,10 @@
 use std::time::Instant;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::attributes::Attributes, MarkovChainSingleWordModel};
+use image::ImageReader;
 
-use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+
+use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
 pub(crate) struct Resources {
@@ -13,6 +15,7 @@ pub(crate) struct Resources {
     pub(crate) object_tiles: ResourceMap<ObjectTileId, ObjectTile>,
     pub(crate) cultures: Cultures,
     pub(crate) biomes: Biomes,
+    pub(crate) item_blueprints: ItemBlueprints,
 }
 
 impl Resources {
@@ -26,6 +29,7 @@ impl Resources {
             object_tiles: ResourceMap::new(),
             cultures: Cultures::new(),
             biomes: Biomes::new(),
+            item_blueprints: ItemBlueprints::new(),
         }
     }
 
@@ -38,6 +42,7 @@ impl Resources {
         self.load_biomes();
         self.load_tiles();
         self.load_object_tiles();
+        self.load_item_blueprints();
         println!("Loading resources took {:.2?}", now.elapsed())
     }
 
@@ -422,6 +427,70 @@ impl Resources {
 
         let image = ImageSheetAsset::new("chunk_tiles/flowers.png", Size2D(24, 24));
         self.object_tiles.add("obj:flowers", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
+
+    }
+
+    fn load_item_blueprints(&mut self) {
+        let actions = &self.actions;
+
+        let image = ImageReader::open("./assets/sprites/chunk_tiles/stone_statue.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let statue = ItemBlueprint {
+            name: String::from("statue"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: None,
+            material: Some(MaterialBlueprintComponent { }),
+            quality: None,
+            mellee_damage: None,
+            artwork_scene: Some(ArtworkSceneBlueprintComponent { }),
+            name_blueprint: None,
+        };
+        self.item_blueprints.add("itb:statue", statue);
+
+        let image = ImageReader::open("./assets/sprites/species/human/sword_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/sword.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let sword_blueprint = ItemBlueprint {
+            name: String::from("sword"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite }),
+            material: Some(MaterialBlueprintComponent { }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(10., 0., 0.) }),
+            artwork_scene: None,
+            name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
+                String::from("sword"),
+                String::from("blade"),
+                String::from("slash"),
+                String::from("fang"),
+                String::from("tongue"),
+                String::from("kiss"),
+                String::from("wing"),
+                String::from("edge"),
+                String::from("talon")
+            ) })
+        };
+        self.item_blueprints.add("itb:sword", sword_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/mace.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("mace"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite }),
+            material: Some(MaterialBlueprintComponent { }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(0., 0., 10.) }),
+            artwork_scene: None,
+            name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })
+        };
+        self.item_blueprints.add("itb:mace", mace_blueprint);
 
     }
 

@@ -1,45 +1,102 @@
-use crate::{commons::rng::Rng, world::item::ItemQuality, Item, Mace, Resources, Sword};
+use crate::{commons::{rng::Rng, strings::Strings}, resources::item_blueprint::NameBlueprintComponent, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
 
 pub(crate) struct ItemFactory {}
 
 impl ItemFactory {
 
-    pub(crate) fn weapon(rng: &mut Rng, resources: &Resources) -> Item {
-        let material_id = match rng.randu_range(0, 2) {
+    pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
+        return WeaponFactory { rng: rng, resources: resources, quality: None, named: false }
+    }
+
+    pub(crate) fn statue(rng: &mut Rng, resources: &Resources, scene: ArtworkScene) -> Item {
+        let material_id = match rng.randu_range(0, 3) {
             0 => resources.materials.id_of("mat:steel"),
+            1 => resources.materials.id_of("mat:copper"),
             _ => resources.materials.id_of("mat:bronze")
         };
-        let f_quality = rng.randf();
-        let quality;
-        if f_quality < 0.5 {
-            quality = ItemQuality::Poor;
-        } else if f_quality < 0.9 {
-            quality = ItemQuality::Normal;
-        } else if f_quality < 0.99 {
-            quality = ItemQuality::Good;
-        } else {
-            quality = ItemQuality::Excelent;
-        }
 
-        let item;
-        match rng.randu_range(0, 2) {
-            0 => {
-                let blade = material_id;
-                let handle = resources.materials.id_of("mat:oak");
-                let guard = resources.materials.id_of("mat:bronze");
-                let pommel = resources.materials.id_of("mat:bronze");
-                let sword = Sword::new(quality, handle, blade, pommel, guard, &resources.materials);
-                item = Item::Sword(sword)
-            },
-            _ => {
-                let head = material_id;
-                let handle = resources.materials.id_of("mat:oak");
-                let pommel = resources.materials.id_of("mat:bronze");
-                let mace = Mace::new(quality, handle, head, pommel, &resources.materials);
-                item = Item::Mace(mace)
+        let blueprint = resources.item_blueprints.find("itb:statue");
+
+        let item = blueprint.make(vec!(
+            ItemMakeArguments::PrimaryMaterial(material_id),
+            ItemMakeArguments::Scene(scene),
+        ), &resources);
+        return item;
+    }
+
+}
+
+pub(crate) struct WeaponFactory<'a> {
+    rng: &'a mut Rng,
+    resources: &'a Resources,
+    quality: Option<ItemQuality>,
+    named: bool,
+}
+
+impl<'a> WeaponFactory<'a> {
+
+    pub(crate) fn quality(mut self, quality: ItemQuality) -> Self {
+        self.quality = Some(quality);
+        return self
+    }
+
+    pub(crate) fn named(mut self) -> Self {
+        self.named = true;
+        return self
+    }
+
+    pub(crate) fn make(&mut self) -> Item {
+        let material_id = match self.rng.randu_range(0, 2) {
+            0 => self.resources.materials.id_of("mat:steel"),
+            _ => self.resources.materials.id_of("mat:bronze")
+        };
+
+        let quality = match self.quality {
+            Some(quality) => quality,
+            None => {
+                let f_quality = self.rng.randf();
+                if f_quality < 0.5 {
+                    ItemQuality::Poor
+                } else if f_quality < 0.9 {
+                    ItemQuality::Normal
+                } else if f_quality < 0.99 {
+                    ItemQuality::Good
+                } else {
+                    ItemQuality::Excelent
+                }
+            }
+        };
+
+        let mut item;
+        let blueprint = match self.rng.randu_range(0, 2) {
+            0 => self.resources.item_blueprints.find("itb:sword"),
+            _ => self.resources.item_blueprints.find("itb:mace")
+        };
+        let handle = self.resources.materials.id_of("mat:oak");
+        let pommel = self.resources.materials.id_of("mat:bronze");
+        item = blueprint.make(vec!(
+            ItemMakeArguments::PrimaryMaterial(material_id),
+            ItemMakeArguments::SecondaryMaterial(handle),
+            ItemMakeArguments::DetailsMaterial(pommel),
+            ItemMakeArguments::Quality(quality),
+        ), &self.resources);
+
+        if self.named {
+            if let Some(name_blueprint) = &blueprint.name_blueprint {
+                item.special_name = Some(self.make_item_name(name_blueprint));
             }
         }
+
         return item;
+    }
+
+    fn make_item_name(&mut self, blueprint: &NameBlueprintComponent) -> String {
+        let preffixes = [
+            "whisper", "storm", "fire", "moon", "sun", "ice", "raven", "thunder", "flame", "frost", "ember"
+        ];
+        let prefix = preffixes[self.rng.randu_range(0, preffixes.len())];
+        let suffix = self.rng.item(&blueprint.suffixes).expect("Namable items should have suffixes");
+        return Strings::capitalize(format!("{prefix}{suffix}").as_str());
     }
 
 }

@@ -95,7 +95,7 @@ impl Actor {
 
         if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
             let mut rng = Rng::seeded(creature_id);
-            let item = ItemFactory::weapon(&mut rng, &resources);
+            let item = ItemFactory::weapon(&mut rng, &resources).make();
             inventory.add(item);
             inventory.equip(0);
         }
@@ -261,7 +261,9 @@ impl Actor {
         }
         let item = self.inventory.equipped();
         if let Some(item) = item {
-            ctx.texture(item.make_equipped_texture(&game_ctx.resources.materials), pos);
+            if let Some(equippable) = &item.equippable {
+                ctx.texture(equippable.make_texture(&item.material, &game_ctx.resources.materials), pos);
+            }
         }
     }
 }

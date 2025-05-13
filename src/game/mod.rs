@@ -524,7 +524,7 @@ impl Scene for GameSceneState {
                                         }
                                         let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);
                                         if let Some(item) = item {
-                                            println!("{}", item.1.description(&ctx.resources.materials, &self.world));
+                                            println!("{}", item.1.description(&ctx.resources, &self.world));
                                         }
                                         let tile = self.chunk.map.get_object_idx(tile_pos);
                                         let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);

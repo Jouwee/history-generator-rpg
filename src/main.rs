@@ -5,11 +5,11 @@ extern crate piston;
 
 
 use std::{time::Instant, vec};
-use commons::markovchains::MarkovChainSingleWordModel;
+use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{asset::assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::actor::Actor, chunk::Chunk, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
+use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
-use world::{event::*, history_generator::WorldGenerationParameters, item::{Item, Mace, Sword}, worldgen::WorldGenScene};
+use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
@@ -251,19 +251,10 @@ fn main() {
                         let species = app.context.resources.species.get(&species_id);
                         let mut player = Actor::player(Coord2::xy(16, 16), &species_id, species);
 
-                        player.inventory.add(Item::Sword(Sword::new(world::item::ItemQuality::Normal,
-                            app.context.resources.materials.id_of("mat:oak"),
-                            app.context.resources.materials.id_of("mat:copper"),
-                            app.context.resources.materials.id_of("mat:copper"),
-                            app.context.resources.materials.id_of("mat:copper"),
-                            &app.context.resources.materials)));
+                        let mut rng = Rng::seeded("player");
 
-
-                        player.inventory.add(Item::Mace(Mace::new(world::item::ItemQuality::Normal,
-                            app.context.resources.materials.id_of("mat:oak"),
-                            app.context.resources.materials.id_of("mat:steel"),
-                            app.context.resources.materials.id_of("mat:copper"),
-                            &app.context.resources.materials)));
+                        player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
 
                         player.inventory.equip(1);
 

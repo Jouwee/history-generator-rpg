@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, strings::Strings}, resources::{material::MaterialId, resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality, Mace, Sword}, lineage::Lineage, world::World}};
+use crate::{commons::rng::Rng, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -85,64 +85,24 @@ pub(crate) struct ArtifactFactory {
 
 impl ArtifactFactory {
 
-    pub(crate) fn create_artifact(rng: &mut Rng, resources: &Resources, material_id: &MaterialId) -> Item {
-        let material_id = material_id.clone();
-        let item;
-        match rng.randu_range(0, 2) {
-            0 => {
-                let mut blade = resources.materials.id_of("mat:steel");
-                let mut handle = resources.materials.id_of("mat:oak");
-                let mut guard = resources.materials.id_of("mat:bronze");
-                let mut pommel = resources.materials.id_of("mat:bronze");
-                match rng.randu_range(0, 4) {
-                    1 => blade = material_id,
-                    2 => guard = material_id,
-                    3 => handle = material_id,
-                    _ => pommel = material_id,
-                }
-                let mut sword = Sword::new(ItemQuality::Legendary, handle, blade, pommel, guard, &resources.materials);
-                sword.name = Some(Self::artifact_name(rng.derive("name"), vec!(
-                    "sword", "blade", "slash", "fang", "tongue", "kiss", "wing", "edge", "talon"
-                )));
-                item = Item::Sword(sword)
-            },
-            _ => {
-                let mut head = resources.materials.id_of("mat:steel");
-                let mut handle = resources.materials.id_of("mat:oak");
-                let mut pommel = resources.materials.id_of("mat:bronze");
-                match rng.randu_range(0, 3) {
-                    1 => head = material_id,
-                    2 => handle = material_id,
-                    _ => pommel = material_id,
-                }
-                let mut mace = Mace::new(ItemQuality::Legendary, handle, head, pommel, &resources.materials);
-                mace.name = Some(Self::artifact_name(rng.derive("name"), vec!(
-                    "breaker", "kiss", "fist", "touch"
-                )));
-                item = Item::Mace(mace)
-            }
-        }
+    pub(crate) fn create_artifact(rng: &mut Rng, resources: &Resources) -> Item {
+        let item = ItemFactory::weapon(rng, resources)
+            .quality(ItemQuality::Legendary)
+            .named()
+            .make();
         return item;
     }
 
     pub(crate) fn create_statue(resources: &Resources, subject: CreatureId, world: &World) -> Item {
-        let material = resources.materials.id_of("mat:bronze");
+        // TODO: Determinate
+        let mut rng = Rng::rand();
         let creature = world.creatures.get(&subject);
         if let Some(details) = &creature.details {
             if let Some(item) = details.inventory.first() {
-                return Item::Statue { material: material, scene: ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) } }        
+                return ItemFactory::statue(&mut rng, resources, ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) })
             }
         }
 
-        return Item::Statue { material: material, scene: ArtworkScene::Bust { creature_id: subject } }
-    }
-
-    fn artifact_name(mut rng: Rng, suffixes: Vec<&str>) -> String {
-        let preffixes = [
-            "whisper", "storm", "fire", "moon", "sun", "ice", "raven", "thunder", "flame", "frost", "ember"
-        ];
-        let prefix = preffixes[rng.randu_range(0, preffixes.len())];
-        let suffix = suffixes[rng.randu_range(0, suffixes.len())];
-        return Strings::capitalize(format!("{prefix}{suffix}").as_str());
+        return ItemFactory::statue(&mut rng, resources, ArtworkScene::Bust { creature_id: subject });
     }
 }

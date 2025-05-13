@@ -38,7 +38,7 @@ pub(crate) enum ActionType {
     Sleep
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum DamageType {
     FromWeapon(DamageComponent),
     Fixed(DamageComponent)

@@ -5,6 +5,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::Color;
 
+#[derive(Clone, Debug)]
 pub(crate) struct PalleteSprite {
     image: DynamicImage
 }
@@ -54,12 +55,6 @@ impl PalleteSprite {
                     map.insert(Color::from_hex("71f341").to_rgba8(), array[2].to_rgba8());
                     map.insert(Color::from_hex("a2f3a2").to_rgba8(), array[3].to_rgba8());
                 },
-                ColorMap::Yellow => {
-                    map.insert(Color::from_hex("495900").to_rgba8(), array[0].to_rgba8());
-                    map.insert(Color::from_hex("8a8a00").to_rgba8(), array[1].to_rgba8());
-                    map.insert(Color::from_hex("ebd320").to_rgba8(), array[2].to_rgba8());
-                    map.insert(Color::from_hex("fff392").to_rgba8(), array[3].to_rgba8());
-                }
             }
         }
         return map
@@ -72,5 +67,4 @@ pub(crate) enum ColorMap {
     Blue,
     Red,
     Green,
-    Yellow
 }

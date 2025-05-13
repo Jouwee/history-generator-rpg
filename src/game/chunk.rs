@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemMaker, ItemQuality}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::Item, world::World}, GameContext};
 
-use super::{actor::actor::Actor, Renderable};
+use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
 pub(crate) struct Chunk {
     pub(crate) size: Size2D,
@@ -96,6 +96,8 @@ impl Chunk {
             }
         }
 
+        chunk.player.xy = Coord2::xy(64, 64);
+
         // Bed
         chunk.map.object_layer.set_tile(36, 34, 3);
 
@@ -104,15 +106,13 @@ impl Chunk {
         let npc = Actor::from_species(Coord2::xy(26, 26), &resources.species.id_of("species:spider"), species);
         chunk.npcs.push(npc);
 
-        let point = Coord2::xy(34, 34);
-        let item = ItemMaker::random(&Rng::seeded("a"), &resources.materials, ItemQuality::Normal);
-        let texture = item.make_texture(&resources.materials);
-        chunk.items_on_ground.push((point, item, texture));
-
-        let point = Coord2::xy(35, 34);
-        let item = ItemMaker::random(&Rng::seeded("c"), &resources.materials, ItemQuality::Normal);
-        let texture = item.make_texture(&resources.materials);
-        chunk.items_on_ground.push((point, item, texture));
+        let mut rng = Rng::seeded("items");
+        for i in 0..8 {
+            let point = Coord2::xy(60 + i, 68);
+            let item = ItemFactory::weapon(&mut rng, &resources).make();
+            let texture = item.make_texture(&resources.materials);
+            chunk.items_on_ground.push((point, item, texture));
+        }
 
         // Puts a spider in a small labyrinth
         let species_id = &resources.species.id_of("species:spider");

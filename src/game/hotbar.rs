@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite, Color}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
+use crate::{commons::id_vec::Id, engine::{gui::{button::{Button, ButtonEvent}, container::Container, hlist::HList, tooltip::{Tooltip, TooltipLine}, Anchor, GUINode, Position}, render::RenderContext, scene::Update, sprite::Sprite}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory, InputEvent};
 
@@ -41,7 +41,9 @@ impl Hotbar {
     pub(crate) fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.equipped_actions = Vec::new();
         if let Some(equipped) = inventory.equipped() {
-            self.equipped_actions = equipped.actions(&ctx.resources.actions);
+            if let Some(action_provider) = &equipped.action_provider {
+                self.equipped_actions = action_provider.actions.clone();
+            }
         }
         self.update_buttons(&ctx.resources.actions);
     }

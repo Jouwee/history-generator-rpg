@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use image::ImageReader;
 use opengl_graphics::Texture;
 
-use crate::{commons::rng::Rng, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::{action::{ActionId, Actions}, material::{MaterialId, Materials}}};
+use crate::{commons::damage_model::DamageComponent, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
 
 use super::{creature::CreatureId, world::World};
 
@@ -19,158 +18,167 @@ impl crate::commons::id_vec::Id for ItemId {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum Item {
-    Sword(Sword),
-    Mace(Mace),
-    Statue { material: MaterialId, scene: ArtworkScene }
+pub(crate) struct Item {
+    pub(crate) name: String,
+    pub(crate) special_name: Option<String>,
+    pub(crate) placed_sprite: PalleteSprite,
+    pub(crate) action_provider: Option<ActionProviderComponent>,
+    pub(crate) equippable: Option<EquippableComponent>,
+    pub(crate) material: Option<MaterialComponent>,
+    pub(crate) quality: Option<QualityComponent>,
+    pub(crate) mellee_damage: Option<MelleeDamageComponent>,
+    pub(crate) artwork_scene: Option<ArtworkSceneComponent>
 }
 
 impl Item {
 
     pub(crate) fn name(&self, materials: &Materials) -> String {
-        match self {
-            Item::Sword(sword) => {
-                if let Some(name) = &sword.name {
-                    return name.clone()
-                }
-                let blade = materials.get(&sword.blade_mat).name.clone();
-                return format!("{blade} sword")
-            },
-            Item::Mace(mace) => {
-                if let Some(name) = &mace.name {
-                    return name.clone()
-                }
-                let head = materials.get(&mace.head_mat).name.clone();
-                return format!("{head} mace")
-            },
-            Item::Statue { material, scene: _} => {
-                let head = materials.get(material).name.clone();
-                return format!("{head} statue")
-            },
+        if let Some(name) = &self.special_name {
+            return name.clone();
         }
+        let mut name = self.name.clone();
+        if let Some(material) = &self.material {
+            let material = materials.get(&material.primary);
+            name = format!("{} {name}", material.name)
+        }
+        if let Some(quality) = &self.quality {
+            name = format!("{:?} {name}", quality.quality)
+        }
+        return name
     }
 
-    pub(crate) fn description(&self, materials: &Materials, world: &World) -> String {
-        let str;
-        match self {
-            Item::Sword(sword) => {
-                let handle = materials.get(&sword.handle_mat).name.clone();
-                let blade = materials.get(&sword.blade_mat).name.clone();
-                let pommel = materials.get(&sword.pommel_mat).name.clone();
-                let guard = materials.get(&sword.guard_mat).name.clone();
-                str = format!("It's a sword. It's blade is made of {blade}. The handle, made of {handle} is topped by a pomel of {pommel} and a guard of {guard}.");
-            },
-            Item::Mace(mace) => {
-                let handle = materials.get(&mace.handle_mat).name.clone();
-                let head = materials.get(&mace.head_mat).name.clone();
-                let pommel = materials.get(&mace.pommel_mat).name.clone();
-                str = format!("It's a mace. It's head is made of {head}. The handle, made of {handle} is topped by a pomel of {pommel}.");
-            },
-            Item::Statue { material, scene} => {
-                let head = materials.get(material).name.clone();
-                match scene {
-                    ArtworkScene::Bust { creature_id } => {
-                        return format!("A {head} statue. It depicts a bust of ({:?})", creature_id);
-                    },
-                    ArtworkScene::FullBody { creature_id, artifact_id } => {
-                        if let Some(artifact_id) = artifact_id {
-                            let artifact = world.artifacts.get(artifact_id);
-                            return format!("A {head} statue. It depicts a full-body image of ({:?}) holding {}", creature_id, artifact.name(materials));    
+    pub(crate) fn description(&self, resources: &Resources, world: &World) -> String {
+        let mut description = self.name.clone();
+
+        if let Some(quality) = &self.quality {
+            description = format!("{:?} {description}", quality.quality)
+        }
+
+        if let Some(material) = &self.material {
+            let mut composition = Vec::new();
+            
+            let primary = resources.materials.get(&material.primary);
+            composition.push(primary.name.clone());
+
+            if let Some(secondary) = material.secondary {
+                let primary = resources.materials.get(&secondary);
+                composition.push(primary.name.clone());
+            }
+
+            if let Some(details) = material.details {
+                let primary = resources.materials.get(&details);
+                composition.push(primary.name.clone());
+            }
+
+            let composition = composition.join(", ");
+            description = format!("{description} made of {composition}");
+        }
+
+        if let Some(scene) = &self.artwork_scene {
+            match scene.scene {
+                ArtworkScene::Bust { creature_id } => {
+                    let creature = world.creatures.get(&creature_id);
+                    description = format!("{description}. It depicts a bust of {}", creature.name(&creature_id, world, resources));
+                },
+                ArtworkScene::FullBody { creature_id, artifact_id } => {
+                    let creature = world.creatures.get(&creature_id);
+                    description = match artifact_id {
+                        Some(artifact) => {
+                            let artifact = world.artifacts.get(&artifact);
+                            format!("{description}. It depicts a full-body image of {} holding {}", creature.name(&creature_id, world, resources), artifact.name(&resources.materials))
                         }
-                        return format!("A {head} statue. It depicts a full-body image of ({:?})", creature_id);
-                    }
+                        None => format!("{description}. It depicts a full-body image of {}", creature.name(&creature_id, world, resources))
+                    };                    
                 }
-            },
-        }
-        return str
-    }
-
-    pub(crate) fn actions(&self, actions: &Actions) -> Vec<ActionId> {
-        match self {
-            Item::Sword(_sword) => {
-                return vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut"))
-            },
-            Item::Mace(_mace) => {
-                return vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike"))
-            },
-            // TODO: Kinda dumb
-            Item::Statue { material: _, scene: _ } => {
-                return vec!()
             }
         }
+        
+        return description
     }
-
 
     pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {
-        match self {
-            Self::Sword(sword) => {
-                let image = ImageReader::open("./assets/sprites/sword.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&sword.blade_mat).color_pallete);
-                map.insert(ColorMap::Red, materials.get(&sword.guard_mat).color_pallete);
-                map.insert(ColorMap::Green, materials.get(&sword.handle_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&sword.pommel_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            },
-            Self::Mace(mace) => {
-                let image = ImageReader::open("./assets/sprites/mace.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&mace.head_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&mace.handle_mat).color_pallete);
-                map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            },
-            // TODO: Kinda dumb
-            Item::Statue { material: _, scene: _ } => {
-                let image = ImageReader::open("./assets/sprites/chunk_tiles/stone_statue.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                return pallete_sprite.remap(HashMap::new())
-            }
+        let mut map = HashMap::new();
+        if let Some(material) = &self.material {
+            map = material.pallete_sprite(materials);
         }
+        return self.placed_sprite.remap(map)
     }
 
-    pub(crate) fn make_equipped_texture(&self, materials: &Materials) -> Texture {
-        match self {
-            Self::Sword(sword) => {
-                let image = ImageReader::open("./assets/sprites/species/human/sword_equipped.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&sword.blade_mat).color_pallete);
-                map.insert(ColorMap::Red, materials.get(&sword.guard_mat).color_pallete);
-                map.insert(ColorMap::Green, materials.get(&sword.handle_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&sword.pommel_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            },
-            Self::Mace(mace) => {
-                let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let mut map = HashMap::new();
-                map.insert(ColorMap::Blue, materials.get(&mace.head_mat).color_pallete);
-                map.insert(ColorMap::Yellow, materials.get(&mace.handle_mat).color_pallete);
-                map.insert(ColorMap::Green, materials.get(&mace.pommel_mat).color_pallete);
-                return pallete_sprite.remap(map)
-            },
-            // TODO: Kinda dumb
-            Self::Statue { material: _, scene: _} => {
-                let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
-                let pallete_sprite = PalleteSprite::new(image);
-                let map = HashMap::new();
-                return pallete_sprite.remap(map)
-            },
+    pub(crate) fn damage_mult(&self) -> f32 {
+        if let Some(damage) = &self.mellee_damage {
+            return damage.damage.slashing + damage.damage.bludgeoning + damage.damage.piercing;
         }
+        return 1.
     }
 
-    pub(crate) fn damage_mult(&self) -> f32 { 
-        match self {
-            Item::Sword(sword) => sword.damage_mult,
-            Item::Mace(sword) => sword.damage_mult,
-            // TODO: Kinda dumb
-            Item::Statue { material: _, scene: _} => 0.,
-        }
-    }
+}
 
+
+#[derive(Clone, Debug)]
+pub(crate) struct ActionProviderComponent {
+    pub(crate) actions: Vec<ActionId>
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct EquippableComponent {
+    pub(crate) sprite: PalleteSprite
+}
+
+impl EquippableComponent {
+
+    pub(crate) fn make_texture(&self, material: &Option<MaterialComponent>, materials: &Materials) -> Texture {
+        let mut map = HashMap::new();
+        if let Some(material) = &material {
+            map = material.pallete_sprite(materials);
+        }
+        return self.sprite.remap(map);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct QualityComponent {
+    pub(crate) quality: ItemQuality,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct MaterialComponent {
+    pub(crate) primary: MaterialId,
+    pub(crate) secondary: Option<MaterialId>,
+    pub(crate) details: Option<MaterialId>,
+}
+
+impl MaterialComponent {
+
+    fn pallete_sprite(&self, materials: &Materials) -> HashMap<ColorMap, [Color; 4]> {
+        let mut map = HashMap::new();
+        map.insert(ColorMap::Blue, materials.get(&self.primary).color_pallete);
+        if let Some(secondary) = self.secondary {
+            map.insert(ColorMap::Green, materials.get(&secondary).color_pallete);
+        }
+        if let Some(details) = self.details {
+            map.insert(ColorMap::Red, materials.get(&details).color_pallete);
+        }
+        return map;
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct MelleeDamageComponent {
+    pub(crate) damage: DamageComponent,
+}
+
+
+#[derive(Clone, Debug)]
+pub(crate) struct ArtworkSceneComponent {
+    pub(crate) scene: ArtworkScene,
+}
+
+pub(crate) enum ItemMakeArguments {
+    PrimaryMaterial(MaterialId),
+    SecondaryMaterial(MaterialId),
+    DetailsMaterial(MaterialId),
+    Quality(ItemQuality),
+    Scene(ArtworkScene),
 }
 
 #[derive(Clone, Debug)]
@@ -179,7 +187,7 @@ pub(crate) enum ArtworkScene {
     FullBody { creature_id: CreatureId, artifact_id: Option<ItemId> }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) enum ItemQuality {
     Poor,
     Normal,
@@ -198,64 +206,4 @@ impl ItemQuality {
             Self::Legendary => 2.0,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct Sword {
-    // pub(crate) quality: ItemQuality,
-    pub(crate) handle_mat: MaterialId,
-    pub(crate) blade_mat: MaterialId,
-    pub(crate) pommel_mat: MaterialId,
-    pub(crate) guard_mat: MaterialId,
-    pub(crate) damage_mult: f32,
-    pub(crate) name: Option<String>
-}
-
-impl Sword {
-    pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, blade_mat: MaterialId, pommel_mat: MaterialId, guard_mat: MaterialId, materials: &Materials) -> Sword {
-        let blade = materials.get(&blade_mat);
-        let damage_mult = blade.sharpness * quality.main_stat_multiplier();
-        Sword { handle_mat, blade_mat, pommel_mat, guard_mat, damage_mult, name: None }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct Mace {
-    // pub(crate) quality: ItemQuality,
-    pub(crate) handle_mat: MaterialId,
-    pub(crate) head_mat: MaterialId,
-    pub(crate) pommel_mat: MaterialId,
-    pub(crate) damage_mult: f32,
-    pub(crate) name: Option<String>
-}
-
-impl Mace {
-    pub(crate) fn new(quality: ItemQuality, handle_mat: MaterialId, head_mat: MaterialId, pommel_mat: MaterialId, materials: &Materials) -> Mace {
-        let head = materials.get(&head_mat);
-        let damage_mult = head.sharpness * quality.main_stat_multiplier();
-        Mace { handle_mat, head_mat, pommel_mat, damage_mult, name: None }
-    }
-}
-
-pub(crate) struct ItemMaker {}
-
-impl ItemMaker {
-
-    pub(crate) fn random(rng: &Rng, materials: &Materials, quality: ItemQuality) -> Item {
-        let mut rng = rng.derive("random_item");
-        let item = rng.randu_range(0, 3);
-
-        let blades = [materials.id_of("mat:steel"), materials.id_of("mat:bronze"), materials.id_of("mat:copper")];
-        let blade = blades[rng.randu_range(0, blades.len())];
-        let handles = [materials.id_of("mat:oak"), materials.id_of("mat:birch")];
-        let handle = handles[rng.randu_range(0, handles.len())];
-        let extras = [materials.id_of("mat:steel"), materials.id_of("mat:bronze"), materials.id_of("mat:copper")];
-        let extra = extras[rng.randu_range(0, extras.len())];
-
-        match item {
-            0 => Item::Sword(Sword::new(quality, handle, blade, extra, extra, materials)),
-            _ => Item::Mace(Mace::new(quality, handle, blade, extra, materials)),
-        }
-    }
-
 }
