@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::Item, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::Item, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -157,6 +157,15 @@ impl Chunk {
         return generator.into_chunk();
     }
 
+
+    pub(crate) fn astar_movement_cost(&self, xy: Coord2) -> MovementCost {
+        if !self.size.in_bounds(xy) || self.map.blocks_movement(xy) {
+            return MovementCost::Impossible;
+        } else {
+            return MovementCost::Cost(1.);
+        }
+    }
+
 }
 
 impl Renderable for Chunk {
@@ -196,27 +205,23 @@ impl Renderable for Chunk {
         }
         // Renders the nav borders
         {
-            let left = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_left.png"));
             for y in 1..self.size.y()-1 {
-                ctx.texture_ref(&left.texture, [12., y as f64 * 24. + 12.]);
+                ctx.image(&ImageAsset::new("gui/nav_arrow_left.png"), [12, y as i32 * 24 + 12], &mut game_ctx.assets);
             }
         }
         {
-            let right = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_right.png"));
             for y in 1..self.size.y()-1 {
-                ctx.texture_ref(&right.texture, [self.size.x() as f64 * 24. - 12., y as f64 * 24. + 12.]);
+                ctx.image(&ImageAsset::new("gui/nav_arrow_right.png"), [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12], &mut game_ctx.assets);
             }
         }
         {
-            let up = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_up.png"));
             for x in 1..self.size.x()-1 {
-                ctx.texture_ref(&up.texture, [x as f64 * 24. + 12., 12.]);
+                ctx.image(&ImageAsset::new("gui/nav_arrow_up.png"), [x as i32 * 24 - 12, 12], &mut game_ctx.assets);
             }
         }
         {
-            let down = game_ctx.assets.image(&ImageAsset::new("gui/nav_arrow_down.png"));
             for x in 1..self.size.x()-1 {
-                ctx.texture_ref(&down.texture, [x as f64 * 24. + 12., self.size.y() as f64 * 24. - 12.]);
+                ctx.image(&ImageAsset::new("gui/nav_arrow_down.png"), [x as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
             }
         }
         {

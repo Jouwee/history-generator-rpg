@@ -10,10 +10,19 @@ impl HeadsUpDisplay {
 
     pub(crate) fn new() -> Self {
         return Self {
-            health: (1., 1.),
-            action_points: (1., 1.),
-            stamina: (1., 1.),
+            health: (1., 1., None),
+            action_points: (1., 1., None),
+            stamina: (1., 1., None),
         }
+    }
+
+    pub(crate) fn preview_action_points(&mut self, player: &Actor, ap_cost: i32) {
+        let preview = (player.ap.action_points as f64 - ap_cost as f64) / player.ap.max_action_points as f64;
+        self.action_points.2 = Some(preview.max(0.));
+    }
+
+    pub(crate) fn clear_preview_action_points(&mut self) {
+        self.action_points.2 = None;
     }
 
     pub(crate) fn render(&mut self, player: &Actor, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
@@ -44,6 +53,12 @@ impl HeadsUpDisplay {
         ctx.rectangle_fill([x, y, w1, h], Color::from_hex("ffffff"));
         ctx.rectangle_fill([x, y, w2, hh], color_1);
         ctx.rectangle_fill([x, y + hh, w2, hh], color_2);
+        if let Some(preview) = bar.2 {
+            let w3 = rect[2] as f64 * preview;
+            let x = x + w3;
+            let w3 = w2 - w3;
+            ctx.rectangle_fill([x, y, w3, h], Color::from_hex("ffffff30"));
+        }
     }
 
     pub(crate) fn update(&mut self, player: &Actor, _update: &Update, _ctx: &mut GameContext) {
@@ -62,7 +77,7 @@ impl HeadsUpDisplay {
 
 }
 
-type NumberedBar = (f64, f64);
+type NumberedBar = (f64, f64, Option<f64>);
 
 fn update_bar(bar: &mut NumberedBar) {
     let diff = bar.1 - bar.0;

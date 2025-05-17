@@ -9,6 +9,8 @@ use interact::interact_dialog::InteractDialog;
 use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
+use player_pathing::PlayerPathing;
+use crate::commons::astar::AStar;
 use crate::engine::asset::image::ImageAsset;
 use crate::engine::input::InputEvent as NewInputEvent;
 
@@ -28,6 +30,7 @@ pub(crate) mod interact;
 pub(crate) mod inventory;
 pub(crate) mod map_modal;
 pub(crate) mod options;
+pub(crate) mod player_pathing;
 
 const RT_TURN_TIME: f64 = 1.;
 
@@ -43,7 +46,8 @@ pub(crate) struct InputEvent {
     pub(crate) evt: NewInputEvent
 }
 
-enum TurnMode {
+#[derive(PartialEq, Eq)]
+pub(crate) enum TurnMode {
     TurnBased,
     RealTime
 }
@@ -68,10 +72,13 @@ pub(crate) struct GameSceneState {
     effect_layer: EffectLayer,
     map_modal: Option<MapModal>,
     game_log: GameLog,
+    player_pathing: PlayerPathing,
+    player_pathfinding: AStar,
 }
 
 impl GameSceneState {
     pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
+        let player_pathfinding = AStar::new(chunk.size, chunk.player.xy);
         GameSceneState {
             world,
             chunk,
@@ -92,6 +99,8 @@ impl GameSceneState {
             effect_layer: EffectLayer::new(),
             map_modal: None,
             game_log: GameLog::new(),
+            player_pathing: PlayerPathing::new(),
+            player_pathfinding,
         }
     }
 
@@ -223,6 +232,17 @@ impl GameSceneState {
         self.init(ctx);
     }
 
+    fn set_turn_mode(&mut self, turn_mode: TurnMode) {
+        match turn_mode {
+            TurnMode::RealTime => {
+                self.hud.clear_preview_action_points();
+                self.player_turn_timer = 0.;
+            },
+            TurnMode::TurnBased => (),
+        }
+        self.turn_mode = turn_mode;
+    }
+
 }
 
 impl Scene for GameSceneState {
@@ -251,6 +271,9 @@ impl Scene for GameSceneState {
         if let Some(_) = self.hotbar.selected_action {
             ctx.image(&ImageAsset::new("cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         }
+
+        self.player_pathing.render(&self.turn_mode, &self.chunk.player, ctx, game_ctx);
+
         // Effects
         self.effect_layer.render(ctx, game_ctx);
         // UI
@@ -277,6 +300,14 @@ impl Scene for GameSceneState {
             return map.update(update, ctx);
         }
 
+        // TODO (OLaU4Dth): Ideally not every update
+        if self.chunk.player.xy != *self.player_pathfinding.to() {
+            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player.xy);
+        }
+        if self.turn_mode == TurnMode::TurnBased {
+            self.hud.preview_action_points(&self.chunk.player, self.player_pathing.get_preview_ap_cost());
+        }
+
         self.hotbar.update(update, ctx);
         self.hud.update(&self.chunk.player, update, ctx);
         self.button_inventory.update(update, ctx);
@@ -296,8 +327,6 @@ impl Scene for GameSceneState {
         self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
 
-        self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
-
         let mut hostile = false;
         for npc in self.chunk.npcs.iter_mut() {
             npc.update(update.delta_time);
@@ -305,7 +334,7 @@ impl Scene for GameSceneState {
         }
         self.chunk.player.update(update.delta_time);
         if hostile {
-            self.turn_mode = TurnMode::TurnBased;
+            self.set_turn_mode(TurnMode::TurnBased);
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
             ctx.audio.switch_music(TrackMood::Regular);
@@ -332,6 +361,9 @@ impl Scene for GameSceneState {
         match self.turn_mode {
             TurnMode::TurnBased => {
                 if self.turn_controller.is_player_turn() {
+                    if self.player_pathing.is_running() {
+                        self.player_pathing.update_running(&mut self.chunk.player, &self.chunk.map, update, ctx);
+                    }
                     return
                 }
                 let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
@@ -357,6 +389,10 @@ impl Scene for GameSceneState {
                 if self.player_turn_timer >= RT_TURN_TIME {
                     self.realtime_player_end_turn();
                     self.player_turn_timer -= RT_TURN_TIME;
+                }
+
+                if self.player_pathing.is_running() {
+                    self.player_pathing.update_running(&mut self.chunk.player, &self.chunk.map, update, ctx);
                 }
 
                 let mut end_turns_idxs = Vec::new();
@@ -385,6 +421,14 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
+        self.cursor_pos = Coord2::xy((evt.mouse_pos_cam[0] / 24.) as i32, (evt.mouse_pos_cam[1] / 24.) as i32);
+
+        if self.player_pathing.recompute_pathing(self.cursor_pos) {
+            // TODO (OLaU4Dth): This callback exists in 3 places
+            self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
+            self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
+        }
+
         if let Some(map) = &mut self.map_modal {
             match map.input(evt, ctx) {
                 MapModalEvent::Close => self.map_modal = None,
@@ -414,11 +458,8 @@ impl Scene for GameSceneState {
         if self.can_change_turn_mode() {
             if let ButtonEvent::Click = self.button_toggle_turn_based.event(evt) {
                 match self.turn_mode {
-                    TurnMode::RealTime => self.turn_mode = TurnMode::TurnBased,
-                    TurnMode::TurnBased => {
-                        self.turn_mode = TurnMode::RealTime;
-                        self.player_turn_timer = 0.;
-                    },
+                    TurnMode::RealTime => self.set_turn_mode(TurnMode::TurnBased),
+                    TurnMode::TurnBased => self.set_turn_mode(TurnMode::RealTime),
                 }
             }
         }
@@ -447,6 +488,9 @@ impl Scene for GameSceneState {
         }
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
+                Btn::Keyboard(Key::Escape) => {
+                    self.hotbar.selected_action = None;
+                },
                 Btn::Keyboard(Key::Space) => {
                     if let TurnMode::TurnBased = self.turn_mode {
                         self.next_turn(ctx);
@@ -594,6 +638,10 @@ impl Scene for GameSceneState {
                                 },
                                 _ => ()
                             }
+                        }
+                    } else {
+                        if let Some(path) = &mut self.player_pathing.get_preview() {
+                            self.player_pathing.start_running(path.clone());
                         }
                     }
                 }
