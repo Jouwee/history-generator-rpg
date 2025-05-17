@@ -140,13 +140,14 @@ impl Scene for WorldGenScene {
         }
         // Year banner
         let center = ctx.layout_rect[2] / 2.;
+        let font= game_ctx.assets.font_standard();
         ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);
         let text = format!("Year {}", &self.generator.year.to_string());
-        let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
-        ctx.text_old(&text, 11, [(center - text_width / 2.).round(), 16.], white);
+        let text_width = font.width(&text);
+        ctx.text(&text, font, [(center - text_width / 2.).round() as i32, 16], &white);
         let text = "Press <enter> to start playing";
-        let text_width = ctx.default_font.width(11, &text).unwrap_or(0.);
-        ctx.text_old(&text, 11, [(center - text_width / 2.).round(), 40.], white);
+        let text_width = font.width(&text);
+        ctx.text(&text, font, [(center - text_width / 2.).round() as i32, 40], &white);
     }
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {

@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-
+use graphics::CharacterCache;
 use opengl_graphics::GlyphCache;
 use opengl_graphics::{Filter, TextureSettings};
 
@@ -37,6 +36,10 @@ impl Font {
             glyphs,
             size: params.size
         }
+    }
+
+    pub(crate) fn width(&mut self, text: &str) -> f64 {
+        return self.glyphs.width(self.size, text).unwrap_or(0.);
     }
 
 }

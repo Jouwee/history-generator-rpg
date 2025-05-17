@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use piston::{Button, ButtonState, Key};
 
-use crate::{engine::{render::RenderContext, scene::Update, Color}, game::InputEvent, globals::perf::perf};
+use crate::{engine::{render::RenderContext, scene::Update, Color}, game::InputEvent, globals::perf::perf, GameContext};
 
 pub(crate) struct DebugOverlay {
     active: bool,
@@ -26,19 +26,19 @@ impl DebugOverlay {
         }
     }
 
-    pub(crate) fn render(&mut self, context: &mut RenderContext) {
+    pub(crate) fn render(&mut self, context: &mut RenderContext, game_ctx: &mut GameContext) {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], Color::from_hex("00000080"));
-            context.text_small(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), 5, [0., 12.], Color::from_hex("ffffff"));
-            context.text_small(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), 5, [0., 20.], Color::from_hex("ffffff"));
-            context.text_small(format!("Inp: {:.0}", self.input_time.average()).as_str(), 5, [0., 28.], Color::from_hex("ffffff"));
+            context.text(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 12], &Color::from_hex("ffffff"));
+            context.text(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 20], &Color::from_hex("ffffff"));
+            context.text(format!("Inp: {:.0}", self.input_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 28], &Color::from_hex("ffffff"));
 
             let perf_lines = perf().debug_lines();
             let mut y = 36.;
             for line in perf_lines {
                 context.rectangle_fill([0., y, 128., 8.], Color::from_hex("00000080"));
-                context.text_small(&line, 5, [0., y+6.], Color::from_hex("ffffff"));
+                context.text(&line, game_ctx.assets.font_standard(), [0, y as i32+6], &Color::from_hex("ffffff"));
                 y += 8.
             }
 

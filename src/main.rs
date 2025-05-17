@@ -88,7 +88,7 @@ impl App {
                 game_state.render(&mut context, &mut self.context);
             },
         }
-        self.debug_overlay.render(&mut context);
+        self.debug_overlay.render(&mut context, &mut self.context);
         // TODO: This is really disconnected
         self.display_context.camera_rect = context.camera_rect;
         self.display_context.gui_rect = context.layout_rect;

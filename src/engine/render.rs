@@ -66,22 +66,6 @@ impl<'a, 'b> RenderContext<'a, 'b> {
 
     //pub(crate) fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {
     #[deprecated]
-    pub(crate) fn text_old(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
-        Text::new_color(color.f32_arr(), font_size)
-            .round()
-            .draw_pos(
-                text,
-                [position[0], position[1]],
-                self.default_font,
-                &self.context.draw_state,
-                self.context.transform,
-                self.gl,
-            )
-            .unwrap();
-    }
-
-    //pub(crate) fn text(&mut self, text: &str, font: &mut GlyphCache, font_size: u32, position: [f64; 2], color: Color) {
-    #[deprecated]
     pub(crate) fn text_small(&mut self, text: &str, font_size: u32, position: [f64; 2], color: Color) {
         Text::new_color(color.f32_arr(), font_size)
             .round()
