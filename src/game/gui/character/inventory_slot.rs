@@ -11,7 +11,7 @@ impl InventorySlot {
     
     pub(crate) fn new() -> Self {
         let mut layout = LayoutComponent::new();
-        layout.size([24., 24.]);
+        layout.size([24., 24.]).padding([1.; 4]);
         Self {
             layout,
         }
@@ -29,7 +29,9 @@ impl UINode for InventorySlot {
 
     fn render(&mut self, state: &Self::State, ctx: &mut crate::RenderContext, game_ctx: &mut crate::GameContext) {
         let layout = self.layout.compute_layout_rect(ctx);
-        ctx.rectangle_fill(layout, Color::from_hex("00000088"));
+        ctx.rectangle_fill(layout, Color::from_hex("090714"));
+        let layout = self.layout.compute_inner_layout_rect(ctx);
+        ctx.rectangle_fill(layout, Color::from_hex("24232a"));
         if let Some(item) = &state {
             let texture = item.make_texture(&game_ctx.resources.materials);
             ctx.texture(texture, [layout[0], layout[1]]);

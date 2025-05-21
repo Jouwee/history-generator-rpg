@@ -61,6 +61,11 @@ impl<'a> RenderContext<'a> {
             .unwrap();
     }
 
+    pub(crate) fn text_shadow(&mut self, text: &str, font: &mut Font, position: [i32; 2], color: &Color) {
+        self.text(text, font, [position[0], position[1] + 1], &Color::rgb([0.; 3]));
+        self.text(text, font, position, color);
+    }
+
     pub(crate) fn image(&mut self, image_asset: &ImageAsset, position: [i32; 2], assets: &mut Assets) {
         let img = assets.image(image_asset);
         let transform = self.context.transform.trans(position[0] as f64, position[1] as f64);

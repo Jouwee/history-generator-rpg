@@ -46,6 +46,10 @@ impl Assets {
         return self.font(&FontAsset::new("Everyday_Standard.ttf", 6))
     }
 
+    pub(crate) fn font_heading(&mut self) -> &mut Font {
+        return self.font(&FontAsset::new("Fabled.ttf", 11))
+    }
+
 }
 
 struct Asset<T> {
