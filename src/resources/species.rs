@@ -5,7 +5,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use crate::{commons::{resource_map::ResourceMap, rng::Rng}, world::attributes::Attributes};
 
-use super::{action::ActionId, material::MaterialId};
+use super::action::ActionId;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct SpeciesId(usize);

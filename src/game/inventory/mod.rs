@@ -1,2 +1,2 @@
+pub(crate) mod inventory_container;
 pub(crate) mod inventory;
-pub(crate) mod character_dialog;

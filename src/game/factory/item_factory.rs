@@ -4,6 +4,24 @@ pub(crate) struct ItemFactory {}
 
 impl ItemFactory {
 
+    #[cfg(test)]
+    pub(crate) fn test() -> Item {
+        use image::ImageReader;
+        use crate::engine::pallete_sprite::PalleteSprite;
+        let image = ImageReader::open("./assets/sprites/missing.png").unwrap().decode().unwrap();
+        return Item {
+            action_provider: None,
+            artwork_scene: None,
+            equippable: None,
+            material: None,
+            mellee_damage: None,
+            name: String::from(""),
+            placed_sprite: PalleteSprite::new(image),
+            quality: None,
+            special_name: None,
+        }
+    }
+
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
         return WeaponFactory { rng: rng, resources: resources, quality: None, named: false }
     }

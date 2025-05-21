@@ -47,7 +47,8 @@ pub(crate) struct GameContext {
     assets: Assets,
     resources: Resources,
     tooltips: TooltipRegistry,
-    display_context: DisplayContext
+    display_context: DisplayContext,
+    drag_item: Option<Item>
 }
 
 pub(crate) struct DisplayContext {
@@ -168,7 +169,8 @@ fn main() {
                 scale: 2.,
                 camera_rect: [0.; 4],
                 gui_rect: [0.; 4]
-            }
+            },
+            drag_item: None,
         },
         scene: SceneEnum::None,
         debug_overlay: DebugOverlay::new(),
@@ -254,9 +256,7 @@ fn main() {
                         let mut rng = Rng::seeded("player");
 
                         player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
-                        player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
-
-                        player.inventory.equip(1);
+                        player.inventory.equip(ItemFactory::weapon(&mut rng, &app.context.resources).make());
 
                         let cursor = Coord2::xy(128, 128);
                         let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);

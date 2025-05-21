@@ -1,4 +1,4 @@
-use crate::{resources::action::ActionRunner, Actor, Color, Coord2, GameContext, RenderContext, Update};
+use crate::{engine::asset::image::ImageAsset, resources::action::ActionRunner, Actor, Coord2, GameContext, RenderContext, Update};
 
 use super::{chunk::ChunkMap, TurnMode};
 
@@ -18,11 +18,13 @@ impl PlayerPathing {
         }
     }
 
-    pub(crate) fn render(&mut self, turn_mode: &TurnMode, player: &Actor, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, turn_mode: &TurnMode, player: &Actor, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let mut running = false;
         if let Some(path) = &self.running {
             for tile in path.iter() {
-                ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffff8070"));
+                // TODO:
+                ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
+                // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffff8070"));
                 running = true;
             }
         }
@@ -31,9 +33,10 @@ impl PlayerPathing {
             if let Some(path) = &self.preview {
                 for tile in path.iter().rev() {
                     if *turn_mode == TurnMode::RealTime || remaining_ap >= 0 {
-                        ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffffffcc"));
+                        ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
                     } else {
-                        ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffffff30"));
+                        ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
+                        // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffffff30"));
                     }
                     // TODO (OLaU4Dth): 
                     remaining_ap -= 20;

@@ -6,8 +6,8 @@ pub(crate) mod container;
 pub(crate) mod dialog;
 pub(crate) mod hlist;
 pub(crate) mod label;
+pub(crate) mod new_ui;
 pub(crate) mod tooltip;
-pub(crate) mod vlist;
 
 pub(crate) trait GUINode {
     fn render(&mut self, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}

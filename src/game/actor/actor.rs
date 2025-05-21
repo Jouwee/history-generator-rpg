@@ -86,18 +86,20 @@ impl Actor {
         }
         let mut inventory = Inventory::new();
         if let Some(details) = &creature.details {
-            for id in details.inventory.iter() {
+            for (i, id) in details.inventory.iter().enumerate() {
                 let item = world.artifacts.get(id);
-                inventory.add(item.clone());
-                inventory.equip(0);
+                if i == 0 {
+                    inventory.equip(item.clone());
+                } else {
+                    inventory.add(item.clone());
+                }
             }
         }
 
         if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
             let mut rng = Rng::seeded(creature_id);
             let item = ItemFactory::weapon(&mut rng, &resources).make();
-            inventory.add(item);
-            inventory.equip(0);
+            inventory.equip(item);
         }
 
         let mut hints = HashMap::new();

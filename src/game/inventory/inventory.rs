@@ -1,43 +1,58 @@
 use crate::world::item::Item;
 
+use super::inventory_container::InventoryContainer;
+
 #[derive(Clone)]
 pub(crate) struct Inventory {
-    items: Vec<Item>,
-    equipped: Option<usize>
+    container: InventoryContainer,
+    equipped: Option<Item>
 }
 
 impl Inventory {
     pub(crate) fn new() -> Inventory {
-        Inventory { items: Vec::new(), equipped: None }
-    }
-
-    pub(crate) fn add(&mut self, item: Item) {
-        self.items.push(item);
-    }
-
-    pub(crate) fn equip(&mut self, i: usize) {
-        self.equipped = Some(i);
-    }
-
-    pub(crate) fn equipped(&self) -> Option<&Item> {
-        match self.equipped {
-            Some(i) => self.items.get(i),
-            None => None
+        Inventory { 
+            container: InventoryContainer::new(35),
+            equipped: None
         }
     }
 
-    pub(crate) fn len(&self) -> usize {
-        return self.items.len()
+    pub(crate) fn container_len(&self) -> usize {
+        return self.container.len();
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (usize, &Item, bool)> {
-        self.items.iter().enumerate().map(|(i, it)| {
-            let mut equip = false;
-            if let Some(equipped) = self.equipped {
-                equip = i == equipped;
-            }
-            (i, it, equip)
-        })
+    pub(crate) fn add(&mut self, item: Item) -> Result<(), Item> {
+        return self.container.add(item);
+    }
+
+    pub(crate) fn item(&self, index: usize) -> &Option<Item> {
+        return self.container.item(index);
+    }
+
+    pub(crate) fn item_mut(&mut self, index: usize) -> &mut Option<Item> {
+        return self.container.item_mut(index);
+    }
+
+    pub(crate) fn take_all(&mut self) -> Vec<Item> {
+        let mut items = self.container.take_all();
+        if let Some(item) = self.equipped.take() {
+            items.push(item);
+        }
+        return items;
+    }
+
+    pub(crate) fn equip(&mut self, item: Item) {
+        self.equipped = Some(item);
+    }
+
+    pub(crate) fn unequip(&mut self) -> Option<Item> {
+        self.equipped.take()
+    }
+
+    pub(crate) fn equipped(&self) -> Option<&Item> {
+        if let Some(equipped) = &self.equipped {
+            return Some(equipped);
+        }
+        return None
     }
 
 }

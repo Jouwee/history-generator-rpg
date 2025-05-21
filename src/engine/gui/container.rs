@@ -2,7 +2,7 @@ use std::{any::Any, collections::BTreeMap};
 
 use crate::{engine::{render::RenderContext, scene::Update}, GameContext};
 
-use super::{button::Button, dialog::Dialog, label::Label, vlist::VList, GUINode};
+use super::{button::Button, dialog::Dialog, label::Label, GUINode};
 
 pub(crate) struct InnerContainer {
     pub(crate) keys: BTreeMap<String, usize>,
@@ -77,9 +77,6 @@ pub(crate) trait Container {
         }
         if unknown.is::<Dialog>() {
             return Some(unknown.downcast_mut::<Dialog>().unwrap())
-        }
-        if unknown.is::<VList>() {
-            return Some(unknown.downcast_mut::<VList>().unwrap())
         }
         return None
     }

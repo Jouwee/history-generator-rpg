@@ -3,15 +3,16 @@ use ai::AiSolver;
 use chunk::{Chunk, TileMetadata};
 use effect_layer::EffectLayer;
 use game_log::GameLog;
+use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
 use interact::interact_dialog::InteractDialog;
-use inventory::character_dialog::{CharacterDialog, CharacterDialogOutput};
 use map_modal::{MapModal, MapModalEvent};
-use piston::{Button as Btn, ButtonArgs, ButtonState, Key};
+use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
 use crate::engine::asset::image::ImageAsset;
+use crate::engine::gui::new_ui::{DialogWrapper, UINode};
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionRunner, ActionType};
@@ -66,7 +67,7 @@ pub(crate) struct GameSceneState {
     hotbar: Hotbar,
     hud: HeadsUpDisplay,
     interact_dialog: InteractDialog,
-    inventory_dialog: CharacterDialog,
+    character_dialog: DialogWrapper<CharacterDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -93,7 +94,7 @@ impl GameSceneState {
             button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
             button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
             interact_dialog: InteractDialog::new(),
-            inventory_dialog: CharacterDialog::new(),
+            character_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -174,10 +175,11 @@ impl GameSceneState {
     pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let id;
         {
-            let npc = self.chunk.npcs.get(i).unwrap();
+            let npc = self.chunk.npcs.get_mut(i).unwrap();
             id = npc.creature_id;
-            for (_i, item, _equipped) in npc.inventory.iter() {
-                self.chunk.items_on_ground.push((npc.xy, item.clone(), item.make_texture(&ctx.resources.materials)));
+            for item in npc.inventory.take_all() {
+                let texture = item.make_texture(&ctx.resources.materials);
+                self.chunk.items_on_ground.push((npc.xy, item, texture));
             }
         }
         self.chunk.npcs.remove(i);
@@ -268,9 +270,7 @@ impl Scene for GameSceneState {
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx, game_ctx);
 
-        if let Some(_) = self.hotbar.selected_action {
-            ctx.image(&ImageAsset::new("cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
-        }
+        ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
 
         self.player_pathing.render(&self.turn_mode, &self.chunk.player, ctx, game_ctx);
 
@@ -289,9 +289,10 @@ impl Scene for GameSceneState {
             self.button_toggle_turn_based.render(ctx, game_ctx);
         }
         self.game_log.render(ctx, game_ctx);
-
         self.interact_dialog.render(ctx, game_ctx);
-        self.inventory_dialog.render(ctx, game_ctx);       
+
+        self.character_dialog.render(&mut self.chunk.player, ctx, game_ctx);
+
         self.tooltip_overlay.render(ctx, game_ctx); 
     }
 
@@ -323,7 +324,6 @@ impl Scene for GameSceneState {
             self.button_toggle_turn_based.update(update, ctx);
         }
         self.interact_dialog.update(update, ctx);
-        self.inventory_dialog.update(update, ctx);
         self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
 
@@ -421,14 +421,6 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
-        self.cursor_pos = Coord2::xy((evt.mouse_pos_cam[0] / 24.) as i32, (evt.mouse_pos_cam[1] / 24.) as i32);
-
-        if self.player_pathing.recompute_pathing(self.cursor_pos) {
-            // TODO (OLaU4Dth): This callback exists in 3 places
-            self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
-            self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
-        }
-
         if let Some(map) = &mut self.map_modal {
             match map.input(evt, ctx) {
                 MapModalEvent::Close => self.map_modal = None,
@@ -444,10 +436,9 @@ impl Scene for GameSceneState {
         self.hotbar.input(evt, ctx);
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
         self.interact_dialog.input_state(evt);
-        let dialog_evt = self.inventory_dialog.input_state(evt, &mut self.chunk.player, &ctx.resources);
-        match dialog_evt {
-            CharacterDialogOutput::EquipmentChanged => self.hotbar.equip(&self.chunk.player.inventory, &ctx),
-            CharacterDialogOutput::None => ()
+
+        if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
+            return
         }
 
         if self.can_end_turn() {
@@ -472,7 +463,12 @@ impl Scene for GameSceneState {
         }
 
         if let ButtonEvent::Click = self.button_inventory.event(evt) {
-            self.inventory_dialog.start_dialog(&self.chunk.player, &ctx.resources);
+
+            // TODO(xYMCADko): init logic is weird
+            let mut d = CharacterDialog::new();
+            d.init(&self.chunk.player, ctx);
+            self.character_dialog.show(d);
+
             return;
         }
 
@@ -486,6 +482,15 @@ impl Scene for GameSceneState {
                 self.chunk.player.ap.fill();
             }
         }
+
+        self.cursor_pos = Coord2::xy((evt.mouse_pos_cam[0] / 24.) as i32, (evt.mouse_pos_cam[1] / 24.) as i32);
+
+        if self.player_pathing.recompute_pathing(self.cursor_pos) {
+            // TODO (OLaU4Dth): This callback exists in 3 places
+            self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
+            self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
+        }
+
         if evt.button_args.state == ButtonState::Press {
             match evt.button_args.button {
                 Btn::Keyboard(Key::Escape) => {
@@ -521,132 +526,136 @@ impl Scene for GameSceneState {
                     let xy = &self.chunk.player.xy.clone();
                     let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
-                Btn::Mouse(_any) => {
+                _ => ()
+            }
+        }
 
-                    if let Some(action_id) = &self.hotbar.selected_action {
-                        let action = ctx.resources.actions.get(action_id);
-                        if self.chunk.player.ap.can_use(action.ap_cost) && self.chunk.player.stamina.can_use(action.stamina_cost) {
-                            match &action.action_type {
-                                ActionType::Targeted { damage: _, inflicts: _ } => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                        let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
-                                        if let Some((i, target)) = target {
-                                            if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, &mut self.game_log, &self.world, ctx) {
-                                                if target.hp.health_points() == 0. {
-                                                    self.chunk.player.add_xp(100);
-                                                    self.remove_npc(i, ctx);
-                                                }
-                                                // Turn everyone hostile
-                                                for p in self.chunk.npcs.iter_mut() {
-                                                    p.actor_type = ActorType::Hostile;
-                                                }
+        match evt.evt {
+            NewInputEvent::Click { button: MouseButton::Left, pos: _ } => {
+                if let Some(action_id) = &self.hotbar.selected_action {
+                    let action = ctx.resources.actions.get(action_id);
+                    if self.chunk.player.ap.can_use(action.ap_cost) && self.chunk.player.stamina.can_use(action.stamina_cost) {
+                        match &action.action_type {
+                            ActionType::Targeted { damage: _, inflicts: _ } => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                    let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == tile_pos);
+                                    if let Some((i, target)) = target {
+                                        if ActionRunner::targeted_try_use(action, &mut self.chunk.player, target, &mut self.effect_layer, &mut self.game_log, &self.world, ctx) {
+                                            if target.hp.health_points() == 0. {
+                                                self.chunk.player.add_xp(100);
+                                                self.remove_npc(i, ctx);
                                             }
-                                        }
-                                    }
-                                },
-                                ActionType::Talk => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                        let target = self.chunk.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
-                                        if let Some(target) = target {
-                                            self.interact_dialog.start_dialog(&self.world, target.creature_id.unwrap());
+                                            // Turn everyone hostile
+                                            for p in self.chunk.npcs.iter_mut() {
+                                                p.actor_type = ActorType::Hostile;
+                                            }
                                         }
                                     }
                                 }
-                                ActionType::Inspect => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                        println!("Inspect at {:?}", tile_pos);
-                                        let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
-                                        if let Some(target) = target {
-                                            let creature_id = target.creature_id;
-                                            if let Some(creature_id) = creature_id {
-                                                let creature = self.world.creatures.get(&creature_id);
-                                                println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &self.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
-                                            }
-                                        }
-                                        let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);
-                                        if let Some(item) = item {
-                                            println!("{}", item.1.description(&ctx.resources, &self.world));
-                                        }
-                                        let tile = self.chunk.map.get_object_idx(tile_pos);
-                                        let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
-                                        match tile {
-                                            1 => println!("A wall."),
-                                            2 => println!("A tree."),
-                                            3 => println!("A bed."),
-                                            4 => println!("A table."),
-                                            5 => println!("A stool."),
-                                            6 => println!("A tombstone."),            
-                                            _ => ()                                
-                                        };
-
-                                        if let Some(meta) = tile_meta {
-                                            match meta {
-                                                TileMetadata::BurialPlace(creature_id) => {
-                                                    let creature = self.world.creatures.get(creature_id);
-                                                    if let Some(death) = creature.death {
-                                                        println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
-                                                    }
-                                                    
-                                                }
-                                            }
-                                        }
-
-                                    }
-                                },
-                                ActionType::Dig => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                        let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
-                                        if let Some(meta) = tile_meta {
-                                            match meta {
-                                                TileMetadata::BurialPlace(creature_id) => {
-                                                    let creature = self.world.creatures.get(creature_id);
-                                                    self.chunk.map.remove_object(tile_pos);
-                                                    if let Some(details) = &creature.details {
-                                                        self.chunk.tiles_metadata.remove(&tile_pos);
-                                                        for item in details.inventory.iter() {
-                                                            let item = self.world.artifacts.get(item);
-                                                            self.chunk.items_on_ground.push((tile_pos, item.clone(), item.make_texture(&ctx.resources.materials)));
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
+                            },
+                            ActionType::Talk => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                    let target = self.chunk.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
+                                    if let Some(target) = target {
+                                        self.interact_dialog.start_dialog(&self.world, target.creature_id.unwrap());
                                     }
                                 }
-                                ActionType::PickUp => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                        let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item, _tex))| *xy == tile_pos);
-                                        if let Some((i, (_xy, item, _texture))) = target {
-                                            self.chunk.player.inventory.add(item.clone());
+                            }
+                            ActionType::Inspect => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                    println!("Inspect at {:?}", tile_pos);
+                                    let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
+                                    if let Some(target) = target {
+                                        let creature_id = target.creature_id;
+                                        if let Some(creature_id) = creature_id {
+                                            let creature = self.world.creatures.get(&creature_id);
+                                            println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &self.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
+                                        }
+                                    }
+                                    let item = self.chunk.items_on_ground.iter().find(|item| item.0 == tile_pos);
+                                    if let Some(item) = item {
+                                        println!("{}", item.1.description(&ctx.resources, &self.world));
+                                    }
+                                    let tile = self.chunk.map.get_object_idx(tile_pos);
+                                    let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
+                                    match tile {
+                                        1 => println!("A wall."),
+                                        2 => println!("A tree."),
+                                        3 => println!("A bed."),
+                                        4 => println!("A table."),
+                                        5 => println!("A stool."),
+                                        6 => println!("A tombstone."),            
+                                        _ => ()                                
+                                    };
+
+                                    if let Some(meta) = tile_meta {
+                                        match meta {
+                                            TileMetadata::BurialPlace(creature_id) => {
+                                                let creature = self.world.creatures.get(creature_id);
+                                                if let Some(death) = creature.death {
+                                                    println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
+                                                }
+                                                
+                                            }
+                                        }
+                                    }
+
+                                }
+                            },
+                            ActionType::Dig => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                    let tile_meta = self.chunk.tiles_metadata.get(&tile_pos);
+                                    if let Some(meta) = tile_meta {
+                                        match meta {
+                                            TileMetadata::BurialPlace(creature_id) => {
+                                                let creature = self.world.creatures.get(creature_id);
+                                                self.chunk.map.remove_object(tile_pos);
+                                                if let Some(details) = &creature.details {
+                                                    self.chunk.tiles_metadata.remove(&tile_pos);
+                                                    for item in details.inventory.iter() {
+                                                        let item = self.world.artifacts.get(item);
+                                                        self.chunk.items_on_ground.push((tile_pos, item.clone(), item.make_texture(&ctx.resources.materials)));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+                            ActionType::PickUp => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
+                                    let target = self.chunk.items_on_ground.iter_mut().enumerate().find(|(_i, (xy, _item, _tex))| *xy == tile_pos);
+                                    if let Some((i, (_xy, item, _texture))) = target {
+                                        if let Ok(_) = self.chunk.player.inventory.add(item.clone()) {
                                             self.chunk.items_on_ground.remove(i);
                                         }
                                     }
                                 }
-                                ActionType::Sleep => {
-                                    let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                    // TODO: Bed
-                                    if self.chunk.map.get_object_idx(tile_pos) == 3 {
-                                        // TODO: This healing doesn't work anymore.
-                                        // self.chunk.player.hp.refill();
-                                    }
-                                },
-                                _ => ()
                             }
-                        }
-                    } else {
-                        if let Some(path) = &mut self.player_pathing.get_preview() {
-                            self.player_pathing.start_running(path.clone());
+                            ActionType::Sleep => {
+                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
+                                // TODO: Bed
+                                if self.chunk.map.get_object_idx(tile_pos) == 3 {
+                                    // TODO: This healing doesn't work anymore.
+                                    // self.chunk.player.hp.refill();
+                                }
+                            },
+                            _ => ()
                         }
                     }
+                } else {
+                    if let Some(path) = &mut self.player_pathing.get_preview() {
+                        self.player_pathing.start_running(path.clone());
+                    }
                 }
-                _ => (),
             }
+            _ => (),
         }
     }
 
