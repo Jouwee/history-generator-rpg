@@ -1,6 +1,6 @@
 use std::{fmt::Display, hash::{DefaultHasher, Hash, Hasher}};
 
-use graphics::{image, CharacterCache, Transformed};
+use graphics::{image, Transformed};
 use ::image::ImageReader;
 use opengl_graphics::Texture;
 use piston::Button as Btn;
@@ -124,16 +124,17 @@ impl GUINode for Button {
         }
     }
 
-    fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
+    fn min_size(&self, _ctx: &mut RenderContext) -> [f64; 2] {
         if let Some(_) = &self.icon {
             return [24., 24.]
         }
         if self.text.len() == 0 {
             return [24., 24.]
         }
-        let width = ctx.small_font.width(5, &self.text);
-        if let Ok(width) = width {
-            return [width + 8., 24.]
+        // TODO: Use asset, but this will probably be removed
+        let width = 6 * self.text.len();
+        if width > 24 {
+            return [width as f64 + 8., 24.]
         } else {
             return [24., 24.]
         }

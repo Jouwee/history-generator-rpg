@@ -12,7 +12,7 @@ use resources::resources::Resources;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{Filter, GlGraphics, GlyphCache, OpenGL, TextureSettings};
+use opengl_graphics::{GlGraphics, OpenGL};
 use piston::{event_loop::{EventSettings, Events}, ButtonArgs, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
@@ -61,11 +61,6 @@ impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
-        let texture_settings = TextureSettings::new().filter(Filter::Nearest);
-        let mut glyphs = GlyphCache::new("./assets/alagard.ttf", (), texture_settings).expect("Could not load font");
-        let mut small_glyphs = GlyphCache::new("./assets/enter-the-gungeon-small.ttf", (), texture_settings).expect("Could not load font");
-
-
         let c = self.gl.draw_begin(args.viewport());
         
         // Clear the screen.
@@ -76,8 +71,6 @@ impl App {
             camera_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
             transform_queue: vec!(c.transform.clone()),
             gl: &mut self.gl,
-            default_font: &mut glyphs,
-            small_font: &mut small_glyphs,
             textures: Vec::new(),
         };
         match &mut self.scene {
@@ -255,7 +248,7 @@ fn main() {
 
                         let mut rng = Rng::seeded("player");
 
-                        player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
                         player.inventory.equip(ItemFactory::weapon(&mut rng, &app.context.resources).make());
 
                         let cursor = Coord2::xy(128, 128);

@@ -1,9 +1,9 @@
 use std::hash::{Hash, Hasher};
 
-use graphics::{image, CharacterCache, Transformed};
+use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
+use crate::{engine::{asset::font::Font, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
 
 use super::GUINode;
 
@@ -42,7 +42,7 @@ impl GUINode for TooltipOverlay {
             // Compute size
             let mut size = [10., 10.];
             for line in tooltip.lines.iter() {
-                let dims = line.dims(ctx);
+                let dims = line.dims(game_ctx.assets.font_standard());
                 size[0] = f64::max(size[0], dims[0] + 10.);
                 size[1] += dims[1];
             }
@@ -78,11 +78,11 @@ impl GUINode for TooltipOverlay {
             image(sprite.sprite(1, 1), transform, ctx.gl);
 
 
-            let mut pos = [position[0] + 6., position[1] + 12.];
+            let mut pos = [position[0] as i32 + 6, position[1] as i32 + 12];
             for line in tooltip.lines.iter() {
                 line.render(pos, ctx, game_ctx);
-                let dims = line.dims(ctx);
-                pos[1] += dims[1];
+                let dims = line.dims(game_ctx.assets.font_standard());
+                pos[1] += dims[1] as i32;
             }
 
         }
@@ -162,10 +162,10 @@ pub(crate) enum TooltipLine {
 
 impl TooltipLine {
 
-    fn dims(&self, ctx: &mut RenderContext) -> [f64; 2] {
+    fn dims(&self, font: &mut Font) -> [f64; 2] {
         match &self {
-            Self::Title(title) => [ctx.small_font.width(5, &title).unwrap_or(0.), 8.],
-            Self::Body(body) => [ctx.small_font.width(5, &body).unwrap_or(0.), 8.],
+            Self::Title(title) => [font.width(&title), 8.],
+            Self::Body(body) => [font.width(&body), 8.],
             Self::ApCost(_ap_cost) => [8., 8.],
             Self::Damage(damage) => {
                 let damage = match damage {
@@ -188,27 +188,27 @@ impl TooltipLine {
         }
     }
 
-    fn render(&self, mut pos: [f64; 2], ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    fn render(&self, mut pos: [i32; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         match &self {
-            Self::Title(title) => ctx.text_small(&title, 5, pos, Color::from_hex("ffffff")),
-            Self::Body(body) => ctx.text_small(&body, 5, pos, Color::from_hex("5a6069")),
-            Self::ApCost(ap_cost) => ctx.text_small(&format!("{ap_cost} AP"), 5, pos, Color::from_hex("446d99")),
-            Self::StaminaCost(stamina_cost) => ctx.text_small(&format!("{stamina_cost} ST"), 5, pos, Color::from_hex("88ae59")),
+            Self::Title(title) => ctx.text(&title, game_ctx.assets.font_standard(), pos, &Color::from_hex("ffffff")),
+            Self::Body(body) => ctx.text(&body, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069")),
+            Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), game_ctx.assets.font_standard(), pos, &Color::from_hex("446d99")),
+            Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), game_ctx.assets.font_standard(), pos, &Color::from_hex("88ae59")),
             Self::Damage(damage) => {
                 let damage = match damage {
                     DamageType::Fixed(dmg) => dmg,
                     DamageType::FromWeapon(dmg) => dmg,
                 };
                 if damage.slashing > 0. {
-                    ctx.text_small(&format!("{} slashing", damage.slashing), 5, pos, Color::from_hex("5a6069"));
-                    pos[1] += 8.;
+                    ctx.text(&format!("{} slashing", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
+                    pos[1] += 8;
                 }
                 if damage.piercing > 0. {
-                    ctx.text_small(&format!("{} piercing", damage.slashing), 5, pos, Color::from_hex("5a6069"));
-                    pos[1] += 8.;
+                    ctx.text(&format!("{} piercing", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
+                    pos[1] += 8;
                 }
                 if damage.bludgeoning > 0. {
-                    ctx.text_small(&format!("{} bludgeoning", damage.slashing), 5, pos, Color::from_hex("5a6069"));
+                    ctx.text(&format!("{} bludgeoning", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
                 }
             }
             Self::Inflicts(inflicts) => {
@@ -217,7 +217,7 @@ impl TooltipLine {
                     Affliction::Poisoned { duration } => format!("Target is Poisoned for {duration} turns"),
                     Affliction::Stunned { duration } => format!("Target is Stunned for {duration} turns"),
                 };
-                ctx.text_small(&text, 5, pos, Color::from_hex("5a6069"))
+                ctx.text(&text, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"))
             }
         }
     }

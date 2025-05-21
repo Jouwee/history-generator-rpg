@@ -1,7 +1,5 @@
 use std::f64::consts::PI;
 
-use graphics::CharacterCache;
-
 use crate::{commons::rng::Rng, engine::{geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
 pub(crate) struct EffectLayer {
@@ -21,7 +19,7 @@ impl EffectLayer {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
             if dn.width == 0. {
-                dn.width = ctx.small_font.width(5, &dn.text).unwrap_or(0.);
+                dn.width = game_ctx.assets.font_standard().width(&dn.text);
             }
             pos[0] += 12. - (dn.width / 2.);
             // Animate upwards - Ease out

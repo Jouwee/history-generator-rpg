@@ -91,7 +91,7 @@ impl Actor {
                 if i == 0 {
                     inventory.equip(item.clone());
                 } else {
-                    inventory.add(item.clone());
+                    let _ = inventory.add(item.clone());
                 }
             }
         }

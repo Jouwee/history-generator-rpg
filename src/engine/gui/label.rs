@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use graphics::CharacterCache;
-
 use crate::{engine::{asset::font::FontAsset, render::RenderContext, Color}, GameContext};
 
 use super::{GUINode, Position};
@@ -32,10 +30,11 @@ impl GUINode for Label {
         ctx.text(&self.text, game_ctx.assets.font(&self.font), [position[0] as i32, position[1] as i32], &Color::from_hex("ffffff"));
     }
 
-    fn min_size(&self, ctx: &mut RenderContext) -> [f64; 2] {
-        let width = ctx.default_font.width(12, &self.text);
-        if let Ok(width) = width {
-            return [width, 7.]
+    fn min_size(&self, _ctx: &mut RenderContext) -> [f64; 2] {
+        // TODO: Should come from asset, but this will be removed
+        let width = 13 * self.text.len();
+        if width > 0 {
+            return [width as f64, 7.]
         } else {
             return [16., 7.]
         }
