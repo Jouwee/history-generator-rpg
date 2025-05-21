@@ -114,7 +114,7 @@ impl MapModal {
         // Control
         let icon = game_ctx.assets.image(&ImageAsset::new("controls/right_click.png"));
         ctx.texture_ref(&icon.texture, [ctx.layout_rect[2] - 88., ctx.layout_rect[3] - 24.]);
-        ctx.text_small("Drag to move", 5, [ctx.layout_rect[2] - 72., ctx.layout_rect[3] - 14.], Color::from_hex("ffffff"));
+        ctx.text("Drag to move", game_ctx.assets.font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &Color::from_hex("ffffff"));
         self.close_button.render(ctx, game_ctx);
     }
 

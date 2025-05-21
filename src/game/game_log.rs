@@ -1,5 +1,3 @@
-use graphics::CharacterCache;
-
 use crate::{commons::damage_model::DamageOutput, world::world::World, Actor, Color, GameContext, RenderContext, Resources};
 
 use super::actor::actor::ActorType;
@@ -20,19 +18,19 @@ impl GameLog {
         // println!("{}", message.text);0
     }
 
-    pub fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    pub fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let last_entries = &self.entries[..10.min(self.entries.len())];
-        let mut y = ctx.layout_rect[3] - 64.;
+        let mut y = ctx.layout_rect[3] as i32 - 64;
         for entry in last_entries.iter() {
-            let mut x = 16.;
+            let mut x = 16;
             for part in entry.parts.iter() {
                 // Shadow effect
-                ctx.text_small(part.text(), 5, [x, y + 1.], Color::from_hex("000000"));
+                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y + 1], &Color::from_hex("000000"));
                 // Actual text
-                ctx.text_small(part.text(), 5, [x, y], part.color());
-                x += ctx.small_font.width(5, &part.text()).unwrap_or(0.);
+                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y], &part.color());
+                x += game_ctx.assets.font_standard().width(&part.text()) as i32;
             }
-            y -= 8.;
+            y -= 10;
         }
     }
 }

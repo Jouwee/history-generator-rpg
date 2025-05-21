@@ -16,7 +16,7 @@ impl EffectLayer {
         }
     }
 
-    pub(crate) fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
@@ -27,23 +27,24 @@ impl EffectLayer {
             // Animate upwards - Ease out
             pos[0] += dn.speed.x as f64 * f64::sin((dn.lifetime * PI) / 2.) * 16.;
             pos[1] += dn.speed.y as f64 * f64::sin((dn.lifetime * PI) / 2.) * 16.;
+            let pos = [pos[0] as i32, pos[1] as i32];
             // black border - the stupid way
             {
                 let mut lpos = pos;
-                lpos[0] -= 1.;
-                ctx.text_small(&dn.text, 5, lpos, Color::from_hex("000000"));
+                lpos[0] -= 1;
+                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
-                lpos[0] += 1.;
-                ctx.text_small(&dn.text, 5, lpos, Color::from_hex("000000"));
+                lpos[0] += 1;
+                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
-                lpos[1] -= 1.;
-                ctx.text_small(&dn.text, 5, lpos, Color::from_hex("000000"));
+                lpos[1] -= 1;
+                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
-                lpos[1] += 1.;
-                ctx.text_small(&dn.text, 5, lpos, Color::from_hex("000000"));
+                lpos[1] += 1;
+                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
             }
             // actual text
-            ctx.text_small(&dn.text, 5, pos, dn.color.color());
+            ctx.text(&dn.text, game_ctx.assets.font_standard(), pos, &dn.color.color());
         }
 
     }
