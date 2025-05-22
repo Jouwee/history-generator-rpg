@@ -29,7 +29,6 @@ impl Hotbar {
     }
 
     pub(crate) fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
-        self.available_actions.insert(ctx.resources.actions.id_of("act:talk"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:inspect"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:pickup"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:dig"));
