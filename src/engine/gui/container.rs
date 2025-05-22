@@ -2,7 +2,7 @@ use std::{any::Any, collections::BTreeMap};
 
 use crate::{engine::{render::RenderContext, scene::Update}, GameContext};
 
-use super::{button::Button, dialog::Dialog, label::Label, GUINode};
+use super::{button::Button, GUINode};
 
 pub(crate) struct InnerContainer {
     pub(crate) keys: BTreeMap<String, usize>,
@@ -23,12 +23,6 @@ impl InnerContainer {
 pub(crate) trait Container {
 
     fn container_mut(&mut self) -> &mut InnerContainer;
-
-    fn add<T>(&mut self, node: T) where T: GUINode + 'static {
-        let container = self.container_mut();
-        let boxed = Box::new(node);
-        container.children.push(boxed);
-    }
 
     fn add_key<T>(&mut self, key: &str, node: T) where T: GUINode + 'static {
         let boxed = Box::new(node);
@@ -69,14 +63,8 @@ pub(crate) trait Container {
 
     fn to_gui_node<'a>(unknown: &'a mut Box<dyn Any>) -> Option<&'a mut dyn GUINode> {
         // TODO: Find a way of not having these
-        if unknown.is::<Label>() {
-            return Some(unknown.downcast_mut::<Label>().unwrap())
-        }
         if unknown.is::<Button>() {
             return Some(unknown.downcast_mut::<Button>().unwrap())
-        }
-        if unknown.is::<Dialog>() {
-            return Some(unknown.downcast_mut::<Dialog>().unwrap())
         }
         return None
     }

@@ -31,7 +31,6 @@ pub(crate) enum ActionType {
         damage: Option<DamageType>,
         inflicts: Option<Infliction>
     },
-    Talk,
     Inspect,
     Dig,
     PickUp,

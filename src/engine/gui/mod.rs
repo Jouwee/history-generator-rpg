@@ -3,9 +3,7 @@ use super::{render::RenderContext, scene::Update};
 
 pub(crate) mod button;
 pub(crate) mod container;
-pub(crate) mod dialog;
 pub(crate) mod hlist;
-pub(crate) mod label;
 pub(crate) mod new_ui;
 pub(crate) mod tooltip;
 
@@ -17,12 +15,10 @@ pub(crate) trait GUINode {
         let p;
         match position {
             Position::Auto => p = [parent_rect[0], parent_rect[1]],
-            Position::Anchored(Anchor::TopLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + *y],
             Position::Anchored(Anchor::TopRight, x, y) => p = [parent_rect[0] + parent_rect[2] - size[0] - *x, parent_rect[1] + *y],
             Position::Anchored(Anchor::BottomLeft, x, y) => p = [parent_rect[0] + *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomRight, x, y) => p = [parent_rect[0] + parent_rect[2] - *x, parent_rect[1] + parent_rect[3] - *y],
             Position::Anchored(Anchor::BottomCenter, x, y) => p = [parent_rect[0] + (parent_rect[2] / 2. - size[0] / 2.) + *x, parent_rect[1] + parent_rect[3] + *y],
-            Position::Centered => p = [parent_rect[0] + parent_rect[2] / 2. - size[0] / 2., parent_rect[1] + parent_rect[3] / 2. - size[1] / 2.]
         }
         return [p[0].round(), p[1].round()]
     }
@@ -40,11 +36,9 @@ pub(crate) trait GUINode {
 pub(crate) enum Position {
     Auto,
     Anchored(Anchor, f64, f64),
-    Centered
 }
 
 pub(crate) enum Anchor {
-    TopLeft,
     TopRight,
     BottomLeft,
     BottomRight,

@@ -173,15 +173,15 @@ impl Resources {
                 })
             }
         });
-        self.actions.add("act:talk", Action {
-            name: String::from("Talk"),
-            description: String::from("Talk with a friendly NPC"),
-            icon: String::from("gui/icons/actions/talk.png"),
-            sound_effect: None,
-            ap_cost: 0,
-            stamina_cost: 0.,
-            action_type: ActionType::Talk
-        });
+        // self.actions.add("act:talk", Action {
+        //     name: String::from("Talk"),
+        //     description: String::from("Talk with a friendly NPC"),
+        //     icon: String::from("gui/icons/actions/talk.png"),
+        //     sound_effect: None,
+        //     ap_cost: 0,
+        //     stamina_cost: 0.,
+        //     action_type: ActionType::Talk
+        // });
         self.actions.add("act:inspect", Action {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),

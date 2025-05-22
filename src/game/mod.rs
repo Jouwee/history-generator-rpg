@@ -6,7 +6,6 @@ use game_log::GameLog;
 use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
-use interact::interact_dialog::InteractDialog;
 use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
@@ -27,7 +26,6 @@ pub(crate) mod factory;
 pub(crate) mod game_log;
 pub(crate) mod hotbar;
 pub(crate) mod gui;
-pub(crate) mod interact;
 pub(crate) mod inventory;
 pub(crate) mod map_modal;
 pub(crate) mod options;
@@ -66,7 +64,6 @@ pub(crate) struct GameSceneState {
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
     hud: HeadsUpDisplay,
-    interact_dialog: InteractDialog,
     character_dialog: DialogWrapper<CharacterDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
@@ -93,7 +90,6 @@ impl GameSceneState {
             button_map: Button::new("Map", Position::Anchored(Anchor::BottomCenter, -108.0, -24.0)),       
             button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
             button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
-            interact_dialog: InteractDialog::new(),
             character_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
@@ -289,7 +285,6 @@ impl Scene for GameSceneState {
             self.button_toggle_turn_based.render(ctx, game_ctx);
         }
         self.game_log.render(ctx, game_ctx);
-        self.interact_dialog.render(ctx, game_ctx);
 
         self.character_dialog.render(&mut self.chunk.player, ctx, game_ctx);
 
@@ -323,7 +318,6 @@ impl Scene for GameSceneState {
             }
             self.button_toggle_turn_based.update(update, ctx);
         }
-        self.interact_dialog.update(update, ctx);
         self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
 
@@ -435,7 +429,6 @@ impl Scene for GameSceneState {
 
         self.hotbar.input(evt, ctx);
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
-        self.interact_dialog.input_state(evt);
 
         if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
             return
@@ -554,15 +547,6 @@ impl Scene for GameSceneState {
                                     }
                                 }
                             },
-                            ActionType::Talk => {
-                                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                                if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
-                                    let target = self.chunk.npcs.iter_mut().find(|npc| npc.xy == tile_pos);
-                                    if let Some(target) = target {
-                                        self.interact_dialog.start_dialog(&self.world, target.creature_id.unwrap());
-                                    }
-                                }
-                            }
                             ActionType::Inspect => {
                                 let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
                                 if tile_pos.dist_squared(&self.chunk.player.xy) < 3. {
