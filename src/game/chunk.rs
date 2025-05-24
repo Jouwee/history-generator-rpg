@@ -17,6 +17,7 @@ pub(crate) struct Chunk {
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
 }
 
+#[derive(Clone)]
 pub(crate) enum TileMetadata {
     BurialPlace(CreatureId)
 }
@@ -225,14 +226,10 @@ impl Renderable for Chunk {
             }
         }
         {
-            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png"));
-            ctx.texture_ref(&corner.texture, [12., 12.]);
-            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R90));
-            ctx.texture_ref(&corner.texture, [self.size.x() as f64 * 24. - 12., 12.]);
-            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R180));
-            ctx.texture_ref(&corner.texture, [self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.]);
-            let corner = game_ctx.assets.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R270));
-            ctx.texture_ref(&corner.texture, [12., self.size.y() as f64 * 24. - 12.]);
+            ctx.image(&ImageAsset::new("gui/nav_corner.png"), [12, 12], &mut game_ctx.assets);
+            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R90), [self.size.x() as i32 * 24 - 12, 12], &mut game_ctx.assets);
+            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R180), [self.size.x() as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
+            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R270), [12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
         }
         // Renders some black bars outside the map to cover large tiles
         {

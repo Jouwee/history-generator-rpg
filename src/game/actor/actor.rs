@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable}, resources::{action::Affliction, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
+use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::{inventory::Inventory}, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, health_component::HealthComponent};
 
@@ -254,6 +254,28 @@ impl Actor {
             self.level = new_level;
             self.attributes.unallocated += 1;
         }
+    }
+
+    pub(crate) fn get_all_available_actions(&self, game_ctx: &mut GameContext) -> Vec<ActionId> {
+        let mut vec = Vec::new();
+
+        let species = game_ctx.resources.species.get(&self.species);
+        vec.extend(species.innate_actions.clone());
+
+        if let Some(item) = self.inventory.equipped() {
+            if let Some(action_provider) = &item.action_provider {
+                vec.extend(action_provider.actions.clone());
+            }
+        }
+
+        if let ActorType::Player = self.actor_type {
+            vec.push(game_ctx.resources.actions.id_of("act:inspect"));
+            vec.push(game_ctx.resources.actions.id_of("act:pickup"));
+            vec.push(game_ctx.resources.actions.id_of("act:dig"));
+            vec.push(game_ctx.resources.actions.id_of("act:sleep"));
+        }
+        
+        return vec;
     }
 
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {

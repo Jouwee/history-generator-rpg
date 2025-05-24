@@ -7,6 +7,7 @@ use crate::DisplayContext;
 pub(crate) enum InputEvent {
     None,
     Click { button: MouseButton, pos: [f64; 2] },
+    MouseMove { pos: [f64; 2] },
     Drag { button: MouseButton, offset: [f64; 2] }
 }
 
@@ -48,8 +49,9 @@ impl InputEvent {
                 }
                 if state.dragging.contains(&Button::Mouse(MouseButton::Left)) {
                     return InputEvent::Drag { offset, button: MouseButton::Left }
-                }
+                } 
             }
+            return InputEvent::MouseMove { pos: mouse_pos }
         }
         return InputEvent::None
     }

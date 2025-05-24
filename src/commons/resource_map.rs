@@ -37,6 +37,14 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         return self.map.get(key).expect(&format!("Resource {key} not found")).clone()
     }
 
+    pub(crate) fn validate_id(&self, id: usize) -> Option<I> {
+        if id < self.vector.len() {
+            return Some(I::new(id))
+        } else {
+            return None;
+        }
+    }
+
     pub(crate) fn iter(&self) -> Iter<V> {
         return self.vector.iter()
     }
