@@ -1,8 +1,12 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
 use crate::{engine::{asset::image::ImageAsset, input::InputEvent, spritesheet::Spritesheet}, Color, GameContext, RenderContext};
+
+use super::tooltip::Tooltip;
 
 #[derive(Debug)]
 pub(crate) struct LayoutComponent {
@@ -29,12 +33,13 @@ impl LayoutComponent {
         let size = self.size;
         let x = match &self.anchor {
             Anchor::TopLeft => ctx.layout_rect[0] + self.anchor_margin[0],
-            Anchor::Center => ctx.layout_rect[0] / 2. + size[0] / 2. + self.anchor_margin[0],
+            Anchor::Center | Anchor::BottomCenter => ctx.layout_rect[0] + (ctx.layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
             Anchor::TopRight => ctx.layout_rect[0] + ctx.layout_rect[2] - self.anchor_margin[2] - size[0],
         };
         let y = match &self.anchor {
             Anchor::TopLeft | Anchor::TopRight => ctx.layout_rect[1] + self.anchor_margin[1],
             Anchor::Center => ctx.layout_rect[1] / 2. + size[1] / 2. + self.anchor_margin[1],
+            Anchor::BottomCenter => ctx.layout_rect[1] + ctx.layout_rect[3] - size[1] + self.anchor_margin[3],
         };
         self.last_layout = [x, y, size[0], size[1]];
         return self.last_layout;
@@ -77,6 +82,12 @@ impl LayoutComponent {
         return self
     }
 
+    pub(crate) fn anchor_bottom_center(&mut self, center: f64, bottom: f64) -> &mut Self {
+        self.anchor = Anchor::BottomCenter;
+        self.anchor_margin = [center, 0., 0., bottom];
+        return self
+    }
+
     pub(crate) fn hitbox(&self, cursor: &[f64; 2]) -> bool {
         let layout = &self.last_layout;
         return cursor[0] >= layout[0] && cursor[1] >= layout[1] && cursor[0] <= layout[0]+layout[2] && cursor[1] <= layout[1]+layout[3]
@@ -94,7 +105,7 @@ pub enum Anchor {
     Center,
     // CenterRight,
     // BottomLeft,
-    // BottomCenter,
+    BottomCenter,
     // BottomRight,
 }
 
@@ -221,17 +232,44 @@ impl<T> InputResult<T> {
 pub(crate) struct Button {
     layout: LayoutComponent, 
     text: String,
+    background: ImageAsset,
+    tooltip: Option<(u64, Tooltip)>,
 }
 
 impl Button {
 
     pub(crate) fn text(text: &str) -> Self {
         let mut layout = LayoutComponent::new();
-        layout.size([48., 24.]);
+        layout.size([24., 24.]);
         Self {
             layout,
-            text: String::from(text)
+            text: String::from(text),
+            background: ImageAsset::new("gui/button/background.png"),
+            tooltip: None,
         }
+    }
+
+    pub(crate) fn image(image: &ImageAsset) -> Self {
+        let mut layout = LayoutComponent::new();
+        layout.size([24., 24.]);
+        Self {
+            layout,
+            text: String::from(""),
+            background: image.clone(),
+            tooltip: None,
+        }
+    }
+
+    pub(crate) fn tooltip(mut self, tooltip: Tooltip) -> Self {
+        let mut hasher = DefaultHasher::new();
+        tooltip.hash(&mut hasher);
+        let hash = hasher.finish();
+        self.tooltip = Some((hash, tooltip));
+        return self
+    }
+
+    pub(crate) fn set_text(&mut self, text: &str) {
+        self.text = String::from(text);
     }
 
 }
@@ -250,8 +288,7 @@ impl UINode for Button {
         let frame = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
         let frame = Spritesheet::new(frame, (8, 8));
 
-        let background = ImageAsset::new("gui/button/background.png");
-        let background = game_ctx.assets.image(&background);
+        let background = game_ctx.assets.image(&self.background);
 
         let position = [layout[0], layout[1]];
         let size = [layout[2], layout[3]];
@@ -280,13 +317,25 @@ impl UINode for Button {
         ctx.text(&self.text, game_ctx.assets.font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &Color::from_hex("ffffff"));
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, _game_ctx: &mut GameContext) -> InputResult<()> {
+    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> InputResult<()> {
+        if self.text.len() != 0 {
+            return InputResult::None;
+        }
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
                     return InputResult::Consume(());
                 }
             },
+            InputEvent::MouseMove { pos } => {
+                if let Some((hash, tooltip)) = &self.tooltip {
+                    if self.layout.hitbox(pos) {
+                        ctx.tooltips.show_delayed_prehash(*hash, &tooltip, *pos);
+                    } else {
+                        ctx.tooltips.hide_prehash(*hash);
+                    }
+                }
+            }
             _ => ()
         }
         return InputResult::None;

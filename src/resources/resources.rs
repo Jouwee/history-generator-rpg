@@ -95,7 +95,7 @@ impl Resources {
         self.actions.add("act:sword:slash", Action {
             name: String::from("Slash"),
             description: String::from("A slashing strike"),
-            icon: String::from("gui/icons/actions/slashing_cut.png"),
+            icon: ImageAsset::new("gui/icons/actions/slashing_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
@@ -107,7 +107,7 @@ impl Resources {
         self.actions.add("act:sword:bleeding_cut", Action {
             name: String::from("Bleeding Cut"),
             description: String::from("A deep cut that causes bleeding"),
-            icon: String::from("gui/icons/actions/bleeding_cut.png"),
+            icon: ImageAsset::new("gui/icons/actions/bleeding_cut.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
@@ -122,7 +122,7 @@ impl Resources {
         self.actions.add("act:mace:smash", Action {
             name: String::from("Smash"),
             description: String::from("A heavy smash"),
-            icon: String::from("gui/icons/actions/mace_smash.png"),
+            icon: ImageAsset::new("gui/icons/actions/mace_smash.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
@@ -134,7 +134,7 @@ impl Resources {
         self.actions.add("act:mace:concussive_strike", Action {
             name: String::from("Concussive Strike"),
             description: String::from("An aimed hit at the head"),
-            icon: String::from("gui/icons/actions/concussive_strike.png"),
+            icon: ImageAsset::new("gui/icons/actions/concussive_strike.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
@@ -149,7 +149,7 @@ impl Resources {
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
             description: String::from("A good ol' punch"),
-            icon: String::from("gui/icons/actions/unarmed_attack.png"),
+            icon: ImageAsset::new("gui/icons/actions/unarmed_attack.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
@@ -161,7 +161,7 @@ impl Resources {
         self.actions.add("act:spider_bite", Action {
             name: String::from("Bite"),
             description: String::from("A spider bite"),
-            icon: String::from("missing.png"),
+            icon: ImageAsset::new("missing.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
@@ -176,7 +176,7 @@ impl Resources {
         // self.actions.add("act:talk", Action {
         //     name: String::from("Talk"),
         //     description: String::from("Talk with a friendly NPC"),
-        //     icon: String::from("gui/icons/actions/talk.png"),
+        //     icon: ImageAsset::new("gui/icons/actions/talk.png"),
         //     sound_effect: None,
         //     ap_cost: 0,
         //     stamina_cost: 0.,
@@ -185,7 +185,7 @@ impl Resources {
         self.actions.add("act:inspect", Action {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),
-            icon: String::from("gui/icons/actions/inspect.png"),
+            icon: ImageAsset::new("gui/icons/actions/inspect.png"),
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
@@ -194,7 +194,7 @@ impl Resources {
         self.actions.add("act:dig", Action {
             name: String::from("Dig"),
             description: String::from("Dig the ground"),
-            icon: String::from("gui/icons/actions/dig.png"),
+            icon: ImageAsset::new("gui/icons/actions/dig.png"),
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
@@ -203,7 +203,7 @@ impl Resources {
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
             description: String::from("Pick up something from the ground"),
-            icon: String::from("gui/icons/actions/pickup.png"),
+            icon: ImageAsset::new("gui/icons/actions/pickup.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 1.,
@@ -212,7 +212,7 @@ impl Resources {
         self.actions.add("act:sleep", Action {
             name: String::from("Sleep"),
             description: String::from("Sleep in a bed"),
-            icon: String::from("gui/icons/actions/sleep.png"),
+            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
@@ -221,7 +221,7 @@ impl Resources {
         self.actions.add("act:move_left", Action {
             name: String::from("Move Left"),
             description: String::from("Move"),
-            icon: String::from("gui/icons/actions/sleep.png"),
+            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 0.2,
@@ -230,7 +230,7 @@ impl Resources {
         self.actions.add("act:move_right", Action {
             name: String::from("Move Right"),
             description: String::from("Move"),
-            icon: String::from("gui/icons/actions/sleep.png"),
+            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 0.2,
@@ -239,7 +239,7 @@ impl Resources {
         self.actions.add("act:move_up", Action {
             name: String::from("Move Up"),
             description: String::from("Move"),
-            icon: String::from("gui/icons/actions/sleep.png"),
+            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 0.2,
@@ -248,7 +248,7 @@ impl Resources {
         self.actions.add("act:move_down", Action {
             name: String::from("Move Down"),
             description: String::from("Move"),
-            icon: String::from("gui/icons/actions/sleep.png"),
+            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 0.2,

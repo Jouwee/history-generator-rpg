@@ -1,4 +1,4 @@
-use std::{fmt::Display, hash::{DefaultHasher, Hash, Hasher}};
+use std::fmt::Display;
 
 use graphics::{image, Transformed};
 use ::image::ImageReader;
@@ -7,7 +7,7 @@ use piston::Button as Btn;
 
 use crate::{engine::{render::RenderContext, scene::Update, sprite::Sprite, spritesheet::Spritesheet, Color}, game::InputEvent, GameContext};
 
-use super::{tooltip::Tooltip, GUINode, Position};
+use super::{GUINode, Position};
 
 pub(crate) struct Button {
     text: String,
@@ -16,7 +16,6 @@ pub(crate) struct Button {
     icon: Option<Texture>,
     position: Position,
     last_layout: [f64; 4],
-    tooltip: Option<(u64, Tooltip)>,
 }
 
 impl Button {
@@ -30,34 +29,7 @@ impl Button {
             position,
             last_layout: [0.; 4],
             icon: None,
-            tooltip: None,
         }
-    }
-
-    pub(crate) fn new_bg(bg: Texture, position: Position) -> Button {
-        let spritesheet = ImageReader::open("./assets/sprites/gui/button/frame.png").unwrap().decode().unwrap();
-        let spritesheet = Spritesheet::new(spritesheet, (8, 8));
-        Button {
-            text: String::new(),
-            background: bg,
-            frame: spritesheet,
-            position,
-            last_layout: [0.; 4],
-            icon: None,
-            tooltip: None
-        }
-    }
-
-    pub(crate) fn tooltip(mut self, tooltip: Tooltip) -> Self {
-        let mut hasher = DefaultHasher::new();
-        tooltip.hash(&mut hasher);
-        let hash = hasher.finish();
-        self.tooltip = Some((hash, tooltip));
-        return self
-    }
-
-    pub(crate) fn text(&mut self, text: impl Display) {
-        self.text = text.to_string();
     }
 
     pub(crate) fn event(&self, evt: &InputEvent) -> ButtonEvent {
@@ -74,16 +46,7 @@ impl Button {
 
 impl GUINode for Button {
 
-    fn update(&mut self, update: &Update, ctx: &mut GameContext) {
-        if let Some((hash, tooltip)) = &self.tooltip {
-            let position = self.last_layout;
-            let pos = update.mouse_pos_gui;
-            if pos[0] >= position[0] && pos[1] >= position[1] && pos[0] <= position[0]+position[2] && pos[1] <= position[1]+position[3] {
-                ctx.tooltips.show_delayed_prehash(*hash, &tooltip, pos);
-            } else {
-                ctx.tooltips.hide_prehash(*hash);
-            }
-        }
+    fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
     }
 
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {

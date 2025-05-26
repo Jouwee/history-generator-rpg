@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, health_component::BodyPart}, chunk::{ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, GameContext, GameSceneState, Item};
+use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, health_component::BodyPart}, chunk::{ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, GameContext, GameSceneState, Item};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -16,7 +16,7 @@ pub(crate) type Actions = ResourceMap<ActionId, Action>;
 #[derive(Clone)]
 pub(crate) struct Action {
     pub(crate) name: String,
-    pub(crate) icon: String,
+    pub(crate) icon: ImageAsset,
     pub(crate) description: String,
     pub(crate) sound_effect: Option<SoundEffect>,
     pub(crate) ap_cost: u16,

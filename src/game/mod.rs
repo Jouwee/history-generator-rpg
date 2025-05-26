@@ -12,12 +12,12 @@ use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
 use crate::engine::asset::image::ImageAsset;
-use crate::engine::gui::new_ui::{DialogWrapper, InputResult, UINode};
+use crate::engine::gui::new_ui::{Button, DialogWrapper, InputResult, UINode};
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
 use crate::world::world::World;
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{button::{Button, ButtonEvent}, tooltip::TooltipOverlay, Anchor, GUINode, Position}, render::RenderContext, scene::{Scene, Update}}, GameContext};
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{tooltip::TooltipOverlay, GUINode}, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub(crate) mod actor;
 pub(crate) mod ai;
@@ -80,6 +80,16 @@ pub(crate) struct GameSceneState {
 impl GameSceneState {
     pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
         let player_pathfinding = AStar::new(chunk.size, chunk.player.xy);
+
+        let mut button_map = Button::text("Map");
+        button_map.layout_component().anchor_bottom_center(-172.0, -1.0);
+        let mut button_inventory = Button::text("Chr");
+        button_inventory.layout_component().anchor_bottom_center(-147.0, -1.0);
+        let mut button_end_turn = Button::text("Trn");
+        button_end_turn.layout_component().anchor_bottom_center(147.0, -1.0);
+        let mut button_toggle_turn_based = Button::text("Mod");
+        button_toggle_turn_based.layout_component().anchor_bottom_center(172.0, -1.0);
+
         GameSceneState {
             world,
             chunk,
@@ -89,10 +99,10 @@ impl GameSceneState {
             turn_controller: TurnController::new(),
             hotbar: Hotbar::new(),
             hud: HeadsUpDisplay::new(),
-            button_inventory: Button::new("Character", Position::Anchored(Anchor::BottomLeft, 10.0, 32.0)),       
-            button_map: Button::new("Map", Position::Anchored(Anchor::BottomCenter, -108.0, -24.0)),       
-            button_end_turn: Button::new("End turn", Position::Anchored(Anchor::BottomCenter, 158.0, -32.0)),
-            button_toggle_turn_based: Button::new("Enter turn-based mode", Position::Anchored(Anchor::BottomRight, 100.0, 32.0)),
+            button_map,
+            button_inventory,
+            button_end_turn,
+            button_toggle_turn_based,
             character_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
@@ -279,15 +289,15 @@ impl Scene for GameSceneState {
         self.effect_layer.render(ctx, game_ctx);
         // UI
         let _ = ctx.try_pop();
-        self.hotbar.render(ctx, game_ctx);
+        self.hotbar.render(&(), ctx, game_ctx);
         self.hud.render(&self.chunk.player, ctx, game_ctx);
-        self.button_inventory.render(ctx, game_ctx);
-        self.button_map.render(ctx, game_ctx);
+        self.button_inventory.render(&(), ctx, game_ctx);
+        self.button_map.render(&(), ctx, game_ctx);
         if self.can_end_turn() {
-            self.button_end_turn.render(ctx, game_ctx);
+            self.button_end_turn.render(&(), ctx, game_ctx);
         }
         if self.can_change_turn_mode() {
-            self.button_toggle_turn_based.render(ctx, game_ctx);
+            self.button_toggle_turn_based.render(&(), ctx, game_ctx);
         }
         self.game_log.render(ctx, game_ctx);
 
@@ -310,19 +320,12 @@ impl Scene for GameSceneState {
             self.hud.preview_action_points(&self.chunk.player, self.player_pathing.get_preview_ap_cost());
         }
 
-        self.hotbar.update(update, ctx);
         self.hud.update(&self.chunk.player, update, ctx);
-        self.button_inventory.update(update, ctx);
-        self.button_map.update(update, ctx);
-        if self.can_end_turn() {
-            self.button_end_turn.update(update, ctx);
-        }
         if self.can_change_turn_mode() {
             match self.turn_mode {
-                TurnMode::RealTime => self.button_toggle_turn_based.text("Enter turn-based mode"),
-                TurnMode::TurnBased => self.button_toggle_turn_based.text("Exit turn-based mode"),
+                TurnMode::RealTime => self.button_toggle_turn_based.set_text("Trn"),
+                TurnMode::TurnBased => self.button_toggle_turn_based.set_text("RT"),
             }
-            self.button_toggle_turn_based.update(update, ctx);
         }
         self.tooltip_overlay.update(update, ctx); 
         self.effect_layer.update(update, ctx);
@@ -433,7 +436,7 @@ impl Scene for GameSceneState {
             return
         }
 
-        self.hotbar.input(evt, ctx);
+        self.hotbar.input(&mut (), &evt.evt, ctx);
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
 
         if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
@@ -470,12 +473,12 @@ impl Scene for GameSceneState {
 
 
         if self.can_end_turn() {
-            if let ButtonEvent::Click = self.button_end_turn.event(evt) {
+            if let InputResult::Consume(_) = self.button_end_turn.input(&mut (), &evt.evt, ctx) {
                 self.next_turn(ctx);
             }
         }
         if self.can_change_turn_mode() {
-            if let ButtonEvent::Click = self.button_toggle_turn_based.event(evt) {
+            if let InputResult::Consume(_) = self.button_toggle_turn_based.input(&mut (), &evt.evt, ctx) {
                 match self.turn_mode {
                     TurnMode::RealTime => self.set_turn_mode(TurnMode::TurnBased),
                     TurnMode::TurnBased => self.set_turn_mode(TurnMode::RealTime),
@@ -483,14 +486,14 @@ impl Scene for GameSceneState {
             }
         }
 
-        if let ButtonEvent::Click = self.button_map.event(evt) {
+        if let InputResult::Consume(_) = self.button_map.input(&mut (), &evt.evt, ctx) {
             let mut map = MapModal::new();
             map.init(&self.world, &self.world_pos);
             self.map_modal = Some(map);
             return;
         }
 
-        if let ButtonEvent::Click = self.button_inventory.event(evt) {
+        if let InputResult::Consume(_) = self.button_inventory.input(&mut (), &evt.evt, ctx) {
 
             // TODO(xYMCADko): init logic is weird
             let mut d = CharacterDialog::new();
