@@ -13,8 +13,8 @@ impl Spritesheet {
         let mut sheet = Spritesheet {
             textures: HashMap::new()
         };
-        for x in 0..sprite_size.0 {
-            for y in 0..sprite_size.1 {
+        for x in 0..(img.width() / sprite_size.0) {
+            for y in 0..(img.height() / sprite_size.1) {
                 let sprite = img.crop_imm(x * sprite_size.0, y * sprite_size.1, sprite_size.0, sprite_size.1).to_rgba8();
                 let settings = TextureSettings::new().filter(Filter::Nearest);
                 let sprite = Texture::from_image(&sprite, &settings);

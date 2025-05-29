@@ -1,30 +1,25 @@
 use std::collections::HashSet;
 
-use image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
-
-use crate::{engine::{gui::{new_ui::{Button, LayoutComponent, UINode}, tooltip::{Tooltip, TooltipLine}}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{new_ui::{Button, InputResult, LayoutComponent, UINode}, tooltip::{Tooltip, TooltipLine}}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
-    background: Texture,
+    background: ImageAsset,
     available_actions: HashSet<ActionId>,
     equipped_actions: Vec<ActionId>,
     pub(crate) selected_action: Option<ActionId>,
-    buttons: Vec<Button>
+    buttons: Vec<(ActionId, Button)>
 }
 
 impl Hotbar {
     pub(crate) fn new() -> Hotbar {
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        let background = ImageReader::open("assets/sprites/gui/hotbar/background.png").unwrap().decode().unwrap();
         let mut layout = LayoutComponent::new();
         layout.size([388., 26.]).anchor_bottom_center(0., 0.);
         Hotbar {
             layout,
-            background: Texture::from_image(&background.to_rgba8(), &settings),
+            background: ImageAsset::new("gui/hotbar/background.png"),
             available_actions: HashSet::new(),
             equipped_actions: Vec::new(),
             selected_action: None,
@@ -56,7 +51,7 @@ impl Hotbar {
         self.buttons.clear();
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = actions.get(action_id);
-            self.buttons.push(Button::image(&action.icon).tooltip(Self::build_tooltip(action)))
+            self.buttons.push((*action_id, Button::image(&action.icon).tooltip(Self::build_tooltip(action))))
         }
     }
 
@@ -90,14 +85,14 @@ impl UINode for Hotbar {
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let rect = self.layout.compute_layout_rect(ctx);
-        ctx.texture_ref(&self.background, [rect[0], rect[1]]);
+        ctx.image(&self.background, [rect[0] as i32, rect[1] as i32], &mut game_ctx.assets);
 
         let copy = ctx.layout_rect;
         ctx.layout_rect = rect;
         ctx.layout_rect[0] += 62.;
         ctx.layout_rect[1] += 1.;
 
-        for button in self.buttons.iter_mut() {
+        for (_id, button) in self.buttons.iter_mut() {
             ctx.layout_rect[0] += 24.;
             button.render(&(), ctx, game_ctx);
         }
@@ -107,9 +102,24 @@ impl UINode for Hotbar {
     }
 
     fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> crate::engine::gui::new_ui::InputResult<Self::Input> {
-        for button in self.buttons.iter_mut() {
-            button.input(&mut (), evt, ctx);
-            //         self.selected_action = Some(*action_id);
+        let mut selected = None;
+        for (action_id, button) in self.buttons.iter_mut() {
+            if let InputResult::Consume(()) = button.input(&mut (), evt, ctx) {
+                if self.selected_action.is_some_and(|id| &id == action_id) {
+                    button.set_selected(false);
+                    self.selected_action = None;
+                    return InputResult::Consume(())
+                } else {
+                    selected = Some(*action_id);
+                }
+            }
+        }
+        if let Some(action_id) = selected {
+            self.selected_action = Some(action_id);
+            for (b_action_id, button) in self.buttons.iter_mut() {
+                button.set_selected(b_action_id == &action_id);
+            }
+            return InputResult::Consume(())
         }
         crate::engine::gui::new_ui::InputResult::None
     }

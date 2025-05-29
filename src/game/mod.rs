@@ -435,7 +435,9 @@ impl Scene for GameSceneState {
             return
         }
 
-        self.hotbar.input(&mut (), &evt.evt, ctx);
+        if let InputResult::Consume(()) = self.hotbar.input(&mut (), &evt.evt, ctx) {
+            return
+        }
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
 
         if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
