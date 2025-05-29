@@ -282,7 +282,9 @@ impl Scene for GameSceneState {
 
         ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
 
-        self.player_pathing.render(&self.turn_mode, &self.chunk.player, ctx, game_ctx);
+        if self.hotbar.selected_action.is_none() {
+            self.player_pathing.render(&self.turn_mode, &self.chunk.player, ctx, game_ctx);
+        }
 
         // Effects
         self.effect_layer.render(ctx, game_ctx);
@@ -310,6 +312,7 @@ impl Scene for GameSceneState {
         if let Some(map) = &mut self.map_modal {
             return map.update(update, ctx);
         }
+        self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
         // TODO (OLaU4Dth): Ideally not every update
         if self.chunk.player.xy != *self.player_pathfinding.to() {
@@ -417,6 +420,7 @@ impl Scene for GameSceneState {
                 for idx in end_turns_idxs {
                     self.realtime_end_turn(idx, ctx);
                 }
+                self.chunk.player.ap.fill();
             }
         }
 
@@ -517,10 +521,7 @@ impl Scene for GameSceneState {
             }
         }
 
-        self.cursor_pos = Coord2::xy((evt.mouse_pos_cam[0] / 24.) as i32, (evt.mouse_pos_cam[1] / 24.) as i32);
-
         if self.player_pathing.recompute_pathing(self.cursor_pos) {
-            // TODO (OLaU4Dth): This callback exists in 3 places
             self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
             self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
         }
@@ -539,26 +540,6 @@ impl Scene for GameSceneState {
                     let mut map = MapModal::new();
                     map.init(&self.world, &self.world_pos);
                     self.map_modal = Some(map);
-                },
-                Btn::Keyboard(Key::Up) => {
-                    let action = ctx.resources.actions.find("act:move_up");  
-                    let xy = &self.chunk.player.xy.clone();
-                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
-                },
-                Btn::Keyboard(Key::Down) => {
-                    let action = ctx.resources.actions.find("act:move_down");  
-                    let xy = &self.chunk.player.xy.clone();
-                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
-                },
-                Btn::Keyboard(Key::Left) => {
-                    let action = ctx.resources.actions.find("act:move_left");  
-                    let xy = &self.chunk.player.xy.clone();
-                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
-                },
-                Btn::Keyboard(Key::Right) => {
-                    let action = ctx.resources.actions.find("act:move_right");  
-                    let xy = &self.chunk.player.xy.clone();
-                    let _ = ActionRunner::move_try_use(action, &mut self.chunk.player, &self.chunk.map, ctx, xy);
                 },
                 _ => ()
             }
@@ -616,6 +597,9 @@ impl Scene for GameSceneState {
                 }
             }
             _ => (),
+        }
+        if self.turn_mode == TurnMode::RealTime {
+            self.chunk.player.ap.fill();
         }
     }
 
