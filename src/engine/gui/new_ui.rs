@@ -4,7 +4,7 @@ use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{asset::image::ImageAsset, input::InputEvent, spritesheet::Spritesheet}, Color, GameContext, RenderContext};
+use crate::{engine::{asset::image::ImageAsset, input::InputEvent, spritesheet::Spritesheet}, Color, GameContext, RenderContext, Update};
 
 use super::tooltip::Tooltip;
 
@@ -205,6 +205,9 @@ pub(crate) trait UINode {
     fn init(&mut self, _state: &Self::State, _game_ctx: &mut GameContext) {}
 
     fn render(&mut self, _state: &Self::State, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
+
+    fn update(&mut self, _state: &mut Self::State, _update: &Update, _ctx: &mut GameContext) {
+    }
 
     fn input(&mut self, _state: &mut Self::State, _evt: &InputEvent, _ctx: &mut GameContext) -> InputResult<Self::Input> {
         return InputResult::None;

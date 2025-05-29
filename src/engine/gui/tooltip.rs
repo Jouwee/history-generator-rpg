@@ -5,30 +5,38 @@ use ::image::ImageReader;
 
 use crate::{engine::{asset::font::Font, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
 
-use super::GUINode;
+use super::new_ui::{LayoutComponent, UINode};
 
 pub(crate) struct TooltipOverlay {
-
+    layout: LayoutComponent
 }
 
 
 impl TooltipOverlay {
 
     pub(crate) fn new() -> Self {
-        Self {  }
+        Self { 
+            layout: LayoutComponent::new()
+        }
     }
 
 }
 
-impl GUINode for TooltipOverlay {
+impl UINode for TooltipOverlay {
+    type State = ();
+    type Input = ();
+    
+    fn layout_component(&mut self) -> &mut LayoutComponent {
+        &mut self.layout
+    }
 
-    fn update(&mut self, update: &Update, ctx: &mut crate::GameContext) {
+    fn update(&mut self, _state: &mut Self::State, update: &Update, ctx: &mut crate::GameContext) {
         if let Some(tuple) = &mut ctx.tooltips.current_tooltip {
             tuple.3 += update.delta_time;
         }
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
 
         let tooltip = match &game_ctx.tooltips.current_tooltip {
             Some(v) => Some(v.clone()),

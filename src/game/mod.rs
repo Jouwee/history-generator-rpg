@@ -17,7 +17,7 @@ use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
 use crate::world::world::World;
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::{tooltip::TooltipOverlay, GUINode}, render::RenderContext, scene::{Scene, Update}}, GameContext};
+use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub(crate) mod actor;
 pub(crate) mod ai;
@@ -302,7 +302,7 @@ impl Scene for GameSceneState {
 
         self.character_dialog.render(&mut self.chunk.player, ctx, game_ctx);
 
-        self.tooltip_overlay.render(ctx, game_ctx); 
+        self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
     }
 
@@ -326,7 +326,7 @@ impl Scene for GameSceneState {
                 TurnMode::TurnBased => self.button_toggle_turn_based.set_text("RT"),
             }
         }
-        self.tooltip_overlay.update(update, ctx); 
+        self.tooltip_overlay.update(&mut (), update, ctx); 
         self.effect_layer.update(update, ctx);
 
         let mut hostile = false;
