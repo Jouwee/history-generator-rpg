@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, GameContext, Resources};
 
-use super::{actor_stats::ActorStats, health_component::HealthComponent};
+use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ActorType {
@@ -81,39 +81,16 @@ impl Actor {
         if species.intelligence == SpeciesIntelligence::Instinctive {
             actor_type = ActorType::Hostile;
         }
-        let mut inventory = Inventory::new();
-        if let Some(details) = &creature.details {
-            for (i, id) in details.inventory.iter().enumerate() {
-                let item = world.artifacts.get(id);
-                if i == 0 {
-                    // TODO(xkdo7YuQ):
-                    inventory.equip(&EquipmentType::Hand, item.clone());
-                } else {
-                    let _ = inventory.add(item.clone());
-                }
-            }
-        }
-
-        if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
-            let mut rng = Rng::seeded(creature_id);
-            let item = ItemFactory::weapon(&mut rng, &resources).make();
-            // TODO(xkdo7YuQ):
-            inventory.equip(&EquipmentType::Hand, item);
-        }
-
+        // TODO: Determinate
+        let mut rng = Rng::seeded(creature_id);
+        let inventory = EquipmentGenerator::generate(&creature_id, &mut rng, world, resources);
+       
         let mut hints = HashMap::new();
-        // TODO(xkdo7YuQ):
-        // hints.insert(String::from("clothes"), String::from("peasant"));
-        // match creature.profession {
-        //     Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
-        //     Profession::Bandit => { hints.insert(String::from("clothes"), String::from("armor")); },
-        //     Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
-        //     // TODO:
-        //     // Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("")); },
-        //     // Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
-        //     // Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
-        //     _ => (),
-        // }
+        if creature.gender.is_male() {
+            hints.insert(String::from("base"), String::from("male_light")); 
+        } else {
+            hints.insert(String::from("base"), String::from("female_light")); 
+        }
 
         Actor {
             xy,

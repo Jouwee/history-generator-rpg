@@ -70,6 +70,24 @@ impl Inventory {
         self.equipped.iter()
     }
 
+    pub(crate) fn auto_equip(&mut self) {
+        for i in 0..self.container.len() {
+            let mut equip_slot = None;
+            if let Some(item) = self.container.item(i) {
+                if let Some(equippable) = &item.equippable {
+                    if self.equipped(&equippable.slot).is_none() {
+                        equip_slot = Some(equippable.slot.clone());
+                    }
+                }
+            }
+            if let Some(slot) = equip_slot {
+                if let Some(item) = self.container.take(i) {
+                    self.equip(&slot, item);
+                }
+            }
+        }
+    }
+
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

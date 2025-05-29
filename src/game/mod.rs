@@ -474,6 +474,7 @@ impl Scene for GameSceneState {
         if self.can_end_turn() {
             if let InputResult::Consume(_) = self.button_end_turn.input(&mut (), &evt.evt, ctx) {
                 self.next_turn(ctx);
+                return;
             }
         }
         if self.can_change_turn_mode() {
@@ -482,6 +483,7 @@ impl Scene for GameSceneState {
                     TurnMode::RealTime => self.set_turn_mode(TurnMode::TurnBased),
                     TurnMode::TurnBased => self.set_turn_mode(TurnMode::RealTime),
                 }
+                return;
             }
         }
 

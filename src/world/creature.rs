@@ -58,6 +58,10 @@ impl Creature {
         return format!("{} {}", name, lineage.name)
     }
 
+    pub(crate) fn networth_range(&self) -> [i32; 2] {
+        return self.profession.networth_range()
+    }
+
 }
 
 #[derive(Clone)]
@@ -135,6 +139,19 @@ impl Profession {
             Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
             Profession::Bandit => true,
             Profession::Ruler => true,
+        }
+    }
+
+    pub(crate) fn networth_range(&self) -> [i32; 2] {
+        match self {
+            Profession::None => [0, 0],
+            Profession::Peasant => [1, 10],
+            Profession::Farmer => [3, 15],
+            Profession::Bandit => [3, 15],
+            Profession::Guard => [5, 20],
+            Profession::Blacksmith =>  [5, 20],
+            Profession::Sculptor =>  [5, 20],
+            Profession::Ruler =>  [50, 100],
         }
     }
 

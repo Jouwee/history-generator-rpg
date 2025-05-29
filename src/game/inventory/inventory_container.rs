@@ -43,6 +43,13 @@ impl InventoryContainer {
         }
     }
 
+    pub(crate) fn take(&mut self, index: usize) -> Option<Item> {
+        if let Some(item) = self.items.get_mut(index) {
+            return item.take()    
+        }
+        return None
+    }
+
     pub(crate) fn take_all(&mut self) -> Vec<Item> {
         let mut result = Vec::new();
         for item in self.items.iter_mut() {
