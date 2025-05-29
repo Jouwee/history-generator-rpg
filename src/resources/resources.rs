@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -268,11 +268,7 @@ impl Resources {
                     ("short", "species/human/hair_short.png"),
                     ("shaved", "species/human/hair_shaved.png"),
                     ("bald", "system/transparent.png"),
-                )),
-                ("clothes", vec!(
-                    ("peasant", "species/human/clothes_peasant.png"),
-                    ("armor", "species/human/armor_placeholder.png")
-                )),
+                ))
             )
         )).innate_actions(vec!(self.actions.id_of("act:punch"))));
         self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
@@ -443,6 +439,7 @@ impl Resources {
             material: Some(MaterialBlueprintComponent { }),
             quality: None,
             mellee_damage: None,
+            armor: None,
             artwork_scene: Some(ArtworkSceneBlueprintComponent { }),
             name_blueprint: None,
         };
@@ -456,10 +453,11 @@ impl Resources {
             name: String::from("sword"),
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
             material: Some(MaterialBlueprintComponent { }),
             quality: Some(QualityBlueprintComponent { }),
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(10., 0., 0.) }),
+            armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
                 String::from("sword"),
@@ -483,14 +481,88 @@ impl Resources {
             name: String::from("mace"),
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
             material: Some(MaterialBlueprintComponent { }),
             quality: Some(QualityBlueprintComponent { }),
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(0., 0., 10.) }),
+            armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })
         };
         self.item_blueprints.add("itb:mace", mace_blueprint);
+
+
+        let image = ImageReader::open("./assets/sprites/species/human/peasant_shirt_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/peasant_shirt.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("peasant shirt"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoGarment }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 8., 0.), coverage: vec!(BodyPart::Torso) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:shirt", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/pants_simple_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/pants_simple.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("pants"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Legs }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 0., 0.), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:pants", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/boots_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/boots.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("boots"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Feet }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 1., 0.), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:boots", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/armor_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/armor.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("armor"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageComponent::new(3., 3., 1.), coverage: vec!(BodyPart::Torso) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:armor", shirt_blueprint);
 
     }
 

@@ -1,4 +1,4 @@
-use crate::Actor;
+use crate::{commons::damage_model::DamageComponent, Actor};
 
 use super::health_component::BodyPart;
 
@@ -48,5 +48,16 @@ impl<'a> ActorStats<'a> {
         return 2.
     }
 
-}
+    pub(crate) fn protection(&self, body_part: &BodyPart) -> DamageComponent {
+        let mut base = DamageComponent::new(0., 0., 0.);
+        for (_slot, item) in self.actor.inventory.all_equipped() {
+            if let Some(armor) = &item.armor {
+                if armor.coverage.iter().any(|i| i == body_part) {
+                    base = base + armor.protection;
+                }
+            }
+        }
+        return base
+    }
 
+}

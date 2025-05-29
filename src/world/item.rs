@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{commons::damage_model::DamageComponent, engine::pallete_sprite::{ColorMap, PalleteSprite}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
+use crate::{commons::damage_model::DamageComponent, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
 
 use super::{creature::CreatureId, world::World};
 
@@ -27,6 +27,7 @@ pub(crate) struct Item {
     pub(crate) material: Option<MaterialComponent>,
     pub(crate) quality: Option<QualityComponent>,
     pub(crate) mellee_damage: Option<MelleeDamageComponent>,
+    pub(crate) armor: Option<ArmorComponent>,
     pub(crate) artwork_scene: Option<ArtworkSceneComponent>
 }
 
@@ -121,7 +122,8 @@ pub(crate) struct ActionProviderComponent {
 
 #[derive(Clone, Debug)]
 pub(crate) struct EquippableComponent {
-    pub(crate) sprite: PalleteSprite
+    pub(crate) sprite: PalleteSprite,
+    pub(crate) slot: EquipmentType,
 }
 
 impl EquippableComponent {
@@ -165,6 +167,12 @@ impl MaterialComponent {
 #[derive(Clone, Debug)]
 pub(crate) struct MelleeDamageComponent {
     pub(crate) damage: DamageComponent,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ArmorComponent {
+    pub(crate) protection: DamageComponent,
+    pub(crate) coverage: Vec<BodyPart>
 }
 
 

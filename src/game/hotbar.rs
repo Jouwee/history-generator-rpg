@@ -44,7 +44,7 @@ impl Hotbar {
 
     pub(crate) fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.equipped_actions = Vec::new();
-        if let Some(equipped) = inventory.equipped() {
+        for (_slot, equipped) in inventory.all_equipped() {
             if let Some(action_provider) = &equipped.action_provider {
                 self.equipped_actions = action_provider.actions.clone();
             }

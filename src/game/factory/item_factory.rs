@@ -15,6 +15,7 @@ impl ItemFactory {
             equippable: None,
             material: None,
             mellee_damage: None,
+            armor: None,
             name: String::from(""),
             placed_sprite: PalleteSprite::new(image),
             quality: None,
@@ -24,6 +25,34 @@ impl ItemFactory {
 
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
         return WeaponFactory { rng: rng, resources: resources, quality: None, named: false }
+    }
+
+    pub(crate) fn torso_garment<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:shirt");
+         let item = blueprint.make(vec!(
+        ), &resources);
+        return item;
+    }
+
+    pub(crate) fn inner_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:armor");
+         let item = blueprint.make(vec!(
+        ), &resources);
+        return item;
+    }
+
+    pub(crate) fn pants<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:pants");
+         let item = blueprint.make(vec!(
+        ), &resources);
+        return item;
+    }
+
+    pub(crate) fn boots<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:boots");
+         let item = blueprint.make(vec!(
+        ), &resources);
+        return item;
     }
 
     pub(crate) fn statue(rng: &mut Rng, resources: &Resources, scene: ArtworkScene) -> Item {

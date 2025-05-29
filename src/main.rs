@@ -7,7 +7,7 @@ extern crate piston;
 use std::{time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{asset::assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
+use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
@@ -249,7 +249,13 @@ fn main() {
                         let mut rng = Rng::seeded("player");
 
                         let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
-                        player.inventory.equip(ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        let _ = player.inventory.add(ItemFactory::torso_garment(&mut rng, &app.context.resources));
+                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+                        let _ = player.inventory.add(ItemFactory::boots(&mut rng, &app.context.resources));
+                        let _ = player.inventory.add(ItemFactory::pants(&mut rng, &app.context.resources));
+                        let _ = player.inventory.add(ItemFactory::boots(&mut rng, &app.context.resources));
+
+                        player.inventory.equip(&EquipmentType::Hand, ItemFactory::weapon(&mut rng, &app.context.resources).make());
 
                         let cursor = Coord2::xy(128, 128);
                         let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);

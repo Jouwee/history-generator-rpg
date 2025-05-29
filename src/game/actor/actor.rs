@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::{damage_model::DefenceComponent, rng::Rng}, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::{inventory::Inventory}, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, factory::item_factory::ItemFactory, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId, Profession}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, health_component::HealthComponent};
 
@@ -19,7 +19,6 @@ pub(crate) struct Actor {
     pub(crate) stamina: StaminaComponent,
     pub(crate) hp: HealthComponent,
     pub(crate) attributes: Attributes,
-    pub(crate) defence: DefenceComponent,
     pub(crate) actor_type: ActorType,
     pub(crate) ai: AiRunner,
     pub(crate) sprite: CreatureAppearance,
@@ -37,11 +36,10 @@ impl Actor {
         Actor {
             xy,
             animation: AnimationTransform::new(),
-            ap: ActionPointsComponent::new(&species.attributes),
+            ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -62,11 +60,10 @@ impl Actor {
         Actor {
             xy,
             animation: AnimationTransform::new(),
-            ap: ActionPointsComponent::new(&species.attributes),
+            ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -89,7 +86,8 @@ impl Actor {
             for (i, id) in details.inventory.iter().enumerate() {
                 let item = world.artifacts.get(id);
                 if i == 0 {
-                    inventory.equip(item.clone());
+                    // TODO(xkdo7YuQ):
+                    inventory.equip(&EquipmentType::Hand, item.clone());
                 } else {
                     let _ = inventory.add(item.clone());
                 }
@@ -99,30 +97,31 @@ impl Actor {
         if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
             let mut rng = Rng::seeded(creature_id);
             let item = ItemFactory::weapon(&mut rng, &resources).make();
-            inventory.equip(item);
+            // TODO(xkdo7YuQ):
+            inventory.equip(&EquipmentType::Hand, item);
         }
 
         let mut hints = HashMap::new();
-        hints.insert(String::from("clothes"), String::from("peasant"));
-        match creature.profession {
-            Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
-            Profession::Bandit => { hints.insert(String::from("clothes"), String::from("armor")); },
-            Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
-            // TODO:
-            // Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("")); },
-            // Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
-            // Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
-            _ => (),
-        }
+        // TODO(xkdo7YuQ):
+        // hints.insert(String::from("clothes"), String::from("peasant"));
+        // match creature.profession {
+        //     Profession::Guard => { hints.insert(String::from("clothes"), String::from("armor")); },
+        //     Profession::Bandit => { hints.insert(String::from("clothes"), String::from("armor")); },
+        //     Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
+        //     // TODO:
+        //     // Profession::Blacksmith => { hints.insert(String::from("clothes"), String::from("")); },
+        //     // Profession::Sculptor => { hints.insert(String::from("clothes"), String::from("armor")); },
+        //     // Profession::Ruler => { hints.insert(String::from("clothes"), String::from("armor")); },
+        //     _ => (),
+        // }
 
         Actor {
             xy,
             animation: AnimationTransform::new(),
-            ap: ActionPointsComponent::new(&species.attributes),
+            ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
             hp: HealthComponent::new(),
             attributes: species.attributes.clone(),
-            defence: DefenceComponent::new(0., 0., 0.),
             xp: 0,
             level: 1,
             ai: AiRunner::new(),
@@ -139,9 +138,6 @@ impl Actor {
 
     pub(crate) fn update(&mut self, delta: f64) {
         self.animation.update(delta);
-        // TODO: Why do this everytime?
-        // self.hp.update(&self.attributes);
-        self.ap.update(&self.attributes);
     }
 
     pub(crate) fn start_of_round(&mut self, effect_layer: &mut EffectLayer) {
@@ -262,7 +258,7 @@ impl Actor {
         let species = game_ctx.resources.species.get(&self.species);
         vec.extend(species.innate_actions.clone());
 
-        if let Some(item) = self.inventory.equipped() {
+        for (_slot, item) in self.inventory.all_equipped() {
             if let Some(action_provider) = &item.action_provider {
                 vec.extend(action_provider.actions.clone());
             }
@@ -283,8 +279,9 @@ impl Actor {
         for texture in textures {
             ctx.texture(texture, pos);
         }
-        let item = self.inventory.equipped();
-        if let Some(item) = item {
+        // TODO:
+        let equipment = self.inventory.all_equipped();
+        for (_slot, item) in equipment {
             if let Some(equippable) = &item.equippable {
                 ctx.texture(equippable.make_texture(&item.material, &game_ctx.resources.materials), pos);
             }
@@ -310,23 +307,16 @@ pub(crate) struct ActionPointsComponent {
 
 impl ActionPointsComponent {
 
-    pub(crate) fn new(attributes: &Attributes) -> ActionPointsComponent {
-        let max_ap = Self::max_ap(attributes);
+    pub(crate) fn new() -> ActionPointsComponent {
+        let max_ap = Self::max_ap();
         ActionPointsComponent {
             action_points: max_ap as i32,
             max_action_points: max_ap
         }
     }
 
-    pub(crate) fn update(&mut self, attributes: &Attributes) {
-        self.max_action_points = Self::max_ap(attributes);
-        self.action_points = self.action_points.min(self.max_action_points as i32)
-    }
-
-    fn max_ap(attributes: &Attributes) -> u16 {
-        let ap = 100 + attributes.bonus_ap();
-        let ap = ap.clamp(0, u16::MAX as i32);
-        return ap as u16
+    fn max_ap() -> u16 {
+        return 100
     }
 
     pub(crate) fn can_use(&self, ap: u16) -> bool {

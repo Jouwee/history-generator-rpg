@@ -318,9 +318,6 @@ impl UINode for Button {
     }
 
     fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> InputResult<()> {
-        if self.text.len() != 0 {
-            return InputResult::None;
-        }
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {

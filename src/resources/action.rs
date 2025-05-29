@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageComponent, DamageOutput}, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, health_component::BodyPart}, chunk::{ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, GameContext, GameSceneState, Item};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState, Item};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -243,13 +243,12 @@ impl ActionRunner {
                             let damage = match &damage {
                                 DamageType::Fixed(dmg) => dmg,
                                 DamageType::FromWeapon(dmg) => {
-                                    let item = actor.inventory.equipped().expect("Used equipped action with no equipped item");
+                                    let item = actor.inventory.equipped(&EquipmentType::Hand).expect("Used equipped action with no equipped item");
                                     &dmg.multiply(item.damage_mult())
                                 }
                             };
-                            let str_mult = actor.attributes.strength_attack_damage_mult();
-                            let damage_model = damage.multiply(str_mult);
-                            let damage = damage_model.resolve(&actor.stats(), &target.defence, &target.stats());
+                            let target_body_part = BodyPart::random(&mut Rng::rand());
+                            let damage = resolve_damage(&damage, &actor.stats(), &target_body_part, &target.stats());
 
                             match damage {
                                 DamageOutput::Dodged => {
@@ -257,11 +256,11 @@ impl ActionRunner {
                                     effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
                                 },
                                 DamageOutput::Hit(damage) => {
-                                    target.hp.hit(BodyPart::random(&mut Rng::rand()), damage);
+                                    target.hp.hit(target_body_part, damage);
                                     effect_layer.add_damage_number(target.xy, damage);
                                 },
                                 DamageOutput::CriticalHit(damage) => {
-                                    target.hp.critical_hit(BodyPart::random(&mut Rng::rand()), damage);
+                                    target.hp.critical_hit(target_body_part, damage);
                                     effect_layer.add_damage_number(target.xy, damage);
                                 },
                             }

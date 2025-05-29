@@ -1,10 +1,14 @@
-use crate::{engine::gui::new_ui::{InputResult, LayoutComponent, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, GameContext, RenderContext};
+use crate::{engine::gui::new_ui::{InputResult, LayoutComponent, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 
 pub(crate) struct CharacterDialog {
     layout: LayoutComponent,
-    equipment_slot: EquipmentSlot,
+    equipment_slot_hand: EquipmentSlot,
+    equipment_slot_garment: EquipmentSlot,
+    equipment_slot_inner_armor: EquipmentSlot,
+    equipment_slot_legs: EquipmentSlot,
+    equipment_slot_feet: EquipmentSlot,
     slots: Vec<InventorySlot>,
 }
 
@@ -15,7 +19,11 @@ impl CharacterDialog {
         layout.anchor_center().size([400., 282.]).padding([8.; 4]);
         Self {
             layout,
-            equipment_slot: EquipmentSlot::new(),
+            equipment_slot_hand: EquipmentSlot::new(EquipmentType::Hand),
+            equipment_slot_garment: EquipmentSlot::new(EquipmentType::TorsoGarment),
+            equipment_slot_inner_armor: EquipmentSlot::new(EquipmentType::TorsoInner),
+            equipment_slot_legs: EquipmentSlot::new(EquipmentType::Legs),
+            equipment_slot_feet: EquipmentSlot::new(EquipmentType::Feet),
             slots: Vec::new(),
         }
     }
@@ -104,7 +112,15 @@ impl UINode for CharacterDialog {
         ];
 
         ctx.layout_rect = base;
-        self.equipment_slot.render(&actor.inventory, ctx, game_ctx);
+        self.equipment_slot_hand.render(&actor.inventory, ctx, game_ctx);
+        ctx.layout_rect[0] += 26.;
+        self.equipment_slot_garment.render(&actor.inventory, ctx, game_ctx);
+        ctx.layout_rect[0] += 26.;
+        self.equipment_slot_inner_armor.render(&actor.inventory, ctx, game_ctx);
+        ctx.layout_rect[0] += 26.;
+        self.equipment_slot_legs.render(&actor.inventory, ctx, game_ctx);
+        ctx.layout_rect[0] += 26.;
+        self.equipment_slot_feet.render(&actor.inventory, ctx, game_ctx);
 
         base[1] += 32.;
 
@@ -124,7 +140,19 @@ impl UINode for CharacterDialog {
     }
 
     fn input(&mut self, state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> InputResult<Self::Input> {
-        if self.equipment_slot.input(&mut state.inventory, evt, ctx).is_consumed() {
+        if self.equipment_slot_hand.input(&mut state.inventory, evt, ctx).is_consumed() {
+            return InputResult::Consume(())
+        }
+        if self.equipment_slot_garment.input(&mut state.inventory, evt, ctx).is_consumed() {
+            return InputResult::Consume(())
+        }
+        if self.equipment_slot_inner_armor.input(&mut state.inventory, evt, ctx).is_consumed() {
+            return InputResult::Consume(())
+        }
+        if self.equipment_slot_legs.input(&mut state.inventory, evt, ctx).is_consumed() {
+            return InputResult::Consume(())
+        }
+        if self.equipment_slot_feet.input(&mut state.inventory, evt, ctx).is_consumed() {
             return InputResult::Consume(())
         }
         for (i, slot) in self.slots.iter_mut().enumerate() {

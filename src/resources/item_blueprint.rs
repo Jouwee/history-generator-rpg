@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, world::item::{ActionProviderComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemBlueprintId(usize);
@@ -22,6 +22,7 @@ pub(crate) struct ItemBlueprint {
     pub(crate) material: Option<MaterialBlueprintComponent>,
     pub(crate) quality: Option<QualityBlueprintComponent>,
     pub(crate) mellee_damage: Option<MelleeDamageBlueprintComponent>,
+    pub(crate) armor: Option<ArmorComponent>,
     pub(crate) artwork_scene: Option<ArtworkSceneBlueprintComponent>,
     pub(crate) name_blueprint: Option<NameBlueprintComponent>,
 }
@@ -47,6 +48,7 @@ impl ItemBlueprint {
                 Some(mellee_blueprint) => Some(mellee_blueprint.make(&arguments, &resources)),
                 None => None
             },
+            armor: self.armor.clone(),
             artwork_scene: match &self.artwork_scene {
                 Some(artwork_scene) => Some(artwork_scene.make(&arguments)),
                 None => None

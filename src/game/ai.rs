@@ -60,7 +60,7 @@ impl AiSolver {
         );
         let species = ctx.resources.species.get(&actor.species);
         all_actions.extend(species.innate_actions.iter());
-        if let Some(item) = actor.inventory.equipped() {
+        for (_slot, item) in actor.inventory.all_equipped() {
             if let Some(action_provider) = &item.action_provider {
                 all_actions.extend(action_provider.actions.clone());
             }

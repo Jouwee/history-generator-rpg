@@ -1,6 +1,6 @@
-use crate::{commons::damage_model::DamageOutput, world::world::World, Actor, Color, GameContext, RenderContext, Resources};
+use crate::{world::world::World, Actor, Color, GameContext, RenderContext, Resources};
 
-use super::actor::actor::ActorType;
+use super::actor::{actor::ActorType, damage_resolver::DamageOutput};
 
 pub(crate) struct GameLog {
     entries: Vec<GameLogEntry>
@@ -51,7 +51,7 @@ impl GameLogEntry {
         match damage {
             DamageOutput::Dodged => GameLogEntry::from_parts(vec!(
                 Part::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                Part::Text(String::from(" doged ")),
+                Part::Text(String::from(" dodged ")),
                 Part::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
                 Part::Text(String::from("'s attack")),
             )),
