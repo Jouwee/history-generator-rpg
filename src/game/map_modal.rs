@@ -1,4 +1,4 @@
-use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::{Button, ButtonEvent}, Anchor, GUINode, Position}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
+use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{new_ui::{Button, InputResult, UINode}}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -35,6 +35,8 @@ impl MapModal {
         let image = ImageAsset::new("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
+        let mut close_button = Button::text("Close");
+        close_button.layout_component().anchor_top_right(0., 0.);
 
         MapModal {
             tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 16, 16),
@@ -42,7 +44,7 @@ impl MapModal {
             offset: Vec2::xy(128.*16., 128.*16.),
             player_pos: Coord2::xy(0, 0),
             world_size: Size2D(0, 0),
-            close_button: Button::new("Close", Position::Anchored(Anchor::TopRight, 0., 0.))
+            close_button
         }
     }
 
@@ -97,25 +99,22 @@ impl MapModal {
         self.tilemap.render(ctx, game_ctx);
         self.objects.render(ctx, game_ctx, |_, _, _, _| {});
 
-        let cursor = [self.player_pos.x as f64 * 16., self.player_pos.y as f64 * 16.];
+        let cursor = [self.player_pos.x * 16, self.player_pos.y * 16];
         
         let cursor_clamp = [
-            cursor[0].clamp(ctx.camera_rect[0], ctx.camera_rect[0] + ctx.camera_rect[2] - 16.),
-            cursor[1].clamp(ctx.camera_rect[1], ctx.camera_rect[1] + ctx.camera_rect[3] - 16.),
+            cursor[0].clamp(ctx.camera_rect[0] as i32, ctx.camera_rect[0] as i32 + ctx.camera_rect[2] as i32 - 16),
+            cursor[1].clamp(ctx.camera_rect[1] as i32, ctx.camera_rect[1] as i32 + ctx.camera_rect[3] as i32 - 16),
         ];
         if cursor != cursor_clamp {
-            let icon = game_ctx.assets.image(&ImageAsset::new("map_tiles/player_offscreen.png"));    
-            ctx.texture_ref(&icon.texture, cursor_clamp);
+            ctx.image(&ImageAsset::new("map_tiles/player_offscreen.png"), cursor_clamp, &mut game_ctx.assets);
         } else {
-            let icon = game_ctx.assets.image(&ImageAsset::new("map_tiles/player.png"));
-            ctx.texture_ref(&icon.texture, cursor_clamp);
+            ctx.image(&ImageAsset::new("map_tiles/player.png"), cursor_clamp, &mut game_ctx.assets);
         }
         let _ = ctx.try_pop();
         // Control
-        let icon = game_ctx.assets.image(&ImageAsset::new("controls/right_click.png"));
-        ctx.texture_ref(&icon.texture, [ctx.layout_rect[2] - 88., ctx.layout_rect[3] - 24.]);
+        ctx.image(&ImageAsset::new("controls/right_click.png"), [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24], &mut game_ctx.assets);
         ctx.text("Drag to move", game_ctx.assets.font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &Color::from_hex("ffffff"));
-        self.close_button.render(ctx, game_ctx);
+        self.close_button.render(&(), ctx, game_ctx);
     }
 
     pub(crate) fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
@@ -129,7 +128,7 @@ impl MapModal {
                 _ => ()
             }
         }
-        if let ButtonEvent::Click = self.close_button.event(evt) {
+        if let InputResult::Consume(()) = self.close_button.input(&mut (), &evt.evt, ctx) {
             return MapModalEvent::Close;
         }
         let camera = ctx.display_context.camera_rect;

@@ -42,7 +42,6 @@ pub(crate) trait Renderable {
 // TODO: Wtf is this?
 pub(crate) struct InputEvent {
     pub(crate) mouse_pos_cam: [f64; 2],
-    pub(crate) mouse_pos_gui: [f64; 2],
     pub(crate) button_args: ButtonArgs,
     pub(crate) evt: NewInputEvent
 }

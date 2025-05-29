@@ -97,12 +97,10 @@ impl App {
             delta_time: 0.,
             max_update_time: (1. / event_settings.ups as f64),
             mouse_pos_cam: [0., 0.],
-            mouse_pos_gui: [0., 0.]
         };
         update.delta_time = args.dt;
         let p = last_mouse_pos;
         update.mouse_pos_cam = [p[0] / self.display_context.scale + self.display_context.camera_rect[0], p[1] / self.display_context.scale + self.display_context.camera_rect[1]];
-        update.mouse_pos_gui = [p[0] / self.display_context.scale, p[1] / self.display_context.scale];
 
         self.context.audio.update(&update);
         self.debug_overlay.update(&update);
@@ -217,7 +215,6 @@ fn main() {
             let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
             let input_event = OldInputEvent {
                 mouse_pos_cam: [k[0] / app.display_context.scale + app.display_context.camera_rect[0], k[1] / app.display_context.scale + app.display_context.camera_rect[1]],
-                mouse_pos_gui: [k[0] / app.display_context.scale, k[1] / app.display_context.scale],
                 button_args: b,
                 evt: InputEvent::from_mouse_move(k, &app.display_context, &mut input_state)
             };
@@ -230,7 +227,6 @@ fn main() {
                 let p = last_mouse_pos;
                 let input_event = OldInputEvent {
                     mouse_pos_cam: [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]],
-                    mouse_pos_gui: [p[0] / app.display_context.scale, p[1] / app.display_context.scale],
                     button_args: k,
                     evt: InputEvent::from_button_args(&k, &mut input_state)
                 };

@@ -12,7 +12,6 @@ pub(crate) mod pallete_sprite;
 pub(crate) mod render;
 pub(crate) mod spritesheet;
 pub(crate) mod scene;
-pub(crate) mod sprite;
 pub(crate) mod tilemap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
