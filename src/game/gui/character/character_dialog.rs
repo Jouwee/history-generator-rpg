@@ -16,7 +16,7 @@ impl CharacterDialog {
     
     pub(crate) fn new() -> Self {
         let mut layout = LayoutComponent::new();
-        layout.anchor_center().size([400., 282.]).padding([8.; 4]);
+        layout.anchor_center().size([400., 332.]).padding([8.; 4]);
         Self {
             layout,
             equipment_slot_hand: EquipmentSlot::new(EquipmentType::Hand),
@@ -57,11 +57,13 @@ impl UINode for CharacterDialog {
         ctx.layout_rect = [
             ctx.layout_rect[0] + 8.,
             ctx.layout_rect[1] + 8.,
-            148.,
-            250.,
+            158.,
+            300.,
         ];
         ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("3a3c45"));
         
+        let stats = actor.stats();
+
         let mut lines = Vec::new();
         lines.push(StatLine::Title(String::from("Health & Stamina")));
         lines.push(StatLine::Line(String::from("Health"), format!("{:.0} / {:.0}", actor.hp.health_points(), actor.hp.max_health_points())));
@@ -70,13 +72,18 @@ impl UINode for CharacterDialog {
 
         lines.push(StatLine::Title(String::from("Condition")));
         lines.push(StatLine::Line(String::from("Head"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::Head).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Head protection"), format!("{}", stats.protection(&BodyPart::Head))));
         lines.push(StatLine::Line(String::from("Torso"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::Torso).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Torso protection"), format!("{}", stats.protection(&BodyPart::Torso))));
         lines.push(StatLine::Line(String::from("Left arm"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::LeftArm).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Left arm protection"), format!("{}", stats.protection(&BodyPart::LeftArm))));
         lines.push(StatLine::Line(String::from("Right arm"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::RightArm).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Right arm protection"), format!("{}", stats.protection(&BodyPart::RightArm))));
         lines.push(StatLine::Line(String::from("Left leg"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::LeftLeg).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Left leg protection"), format!("{}", stats.protection(&BodyPart::LeftLeg))));
         lines.push(StatLine::Line(String::from("Right leg"), format!("{:.0}%", actor.hp.body_part_condition(&BodyPart::RightLeg).unwrap().condition() * 100.)));
+        lines.push(StatLine::Line(String::from("Right leg protection"), format!("{}", stats.protection(&BodyPart::RightLeg))));
 
-        let stats = actor.stats();
         lines.push(StatLine::Title(String::from("Combat")));
         lines.push(StatLine::Line(String::from("Crit chance"), format!("{:.2}%", stats.critical_hit_chance() * 100.)));
         lines.push(StatLine::Line(String::from("Crit damage"), format!("{:.2}", stats.critical_hit_multiplier())));
@@ -93,8 +100,8 @@ impl UINode for CharacterDialog {
                     layout[1] += 16;
                 },
                 StatLine::Line(name, value) => {
-                    ctx.text_shadow(name, game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("ffffff"));
-                    ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 93, layout[1]], &Color::from_hex("ffffff"));
+                    ctx.text_shadow(name, game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("7f839c"));
+                    ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 103, layout[1]], &Color::from_hex("ffffff"));
                     layout[1] += 11;
                 }
             }
@@ -105,7 +112,7 @@ impl UINode for CharacterDialog {
         ctx.layout_rect = copy2;
 
         let mut base = [
-            ctx.layout_rect[0] + 164.,
+            ctx.layout_rect[0] + 174.,
             ctx.layout_rect[1] + 8.,
             24.,
             24.

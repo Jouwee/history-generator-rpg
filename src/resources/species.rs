@@ -117,13 +117,13 @@ pub(crate) struct CreatureAppearance {
 }
 
 impl CreatureAppearance {
-    pub(crate) fn texture(&self) -> Vec<Texture> {
+    pub(crate) fn texture(&self) -> Vec<(String, Texture)> {
         let mut vec = Vec::new();
-        for (_k, v) in self.map.iter() {
+        for (k, v) in self.map.iter() {
             // TODO: Don't load everytime
             let image = ImageReader::open(format!("./assets/sprites/{}", v.1)).unwrap().decode().unwrap();
             let settings = TextureSettings::new().filter(Filter::Nearest);
-            vec.push(Texture::from_image(&image.to_rgba8(), &settings));
+            vec.push((k.clone(), Texture::from_image(&image.to_rgba8(), &settings)));
         }
         return vec;
     }

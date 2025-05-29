@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub};
+use std::{fmt::Display, ops::{Add, Sub}};
 
 // TODO: Rename to Damage Model. Will represent damage, defence, etc
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -41,6 +41,14 @@ impl Sub for DamageComponent {
 
     fn sub(self, rhs: Self) -> Self::Output {
         DamageComponent::new(self.slashing - rhs.slashing, self.piercing - rhs.piercing, self.bludgeoning - rhs.bludgeoning)
+    }
+
+}
+
+impl Display for DamageComponent {
+    
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return f.write_str(&format!("{:1}/{:1}/{:1}", self.slashing, self.piercing, self.bludgeoning));
     }
 
 }

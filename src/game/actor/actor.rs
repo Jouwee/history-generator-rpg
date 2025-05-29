@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -252,16 +252,33 @@ impl Actor {
     }
 
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let textures = self.sprite.texture();
-        for texture in textures {
-            ctx.texture(texture, pos);
+        let mut textures = Vec::new();
+        for (key, texture) in self.sprite.texture() {
+            let z_order = match key.as_str() {
+                "base" => 0,
+                "hair" => 100,
+                _ => {
+                    println!("[WARN] No order found for {}", key);
+                    9999
+                }
+            };
+            textures.push((z_order, texture));
         }
-        // TODO:
-        let equipment = self.inventory.all_equipped();
-        for (_slot, item) in equipment {
+        for (slot, item) in self.inventory.all_equipped() {
             if let Some(equippable) = &item.equippable {
-                ctx.texture(equippable.make_texture(&item.material, &game_ctx.resources.materials), pos);
+                let z_order = match slot {
+                    EquipmentType::Feet => 1,
+                    EquipmentType::Legs => 2,
+                    EquipmentType::TorsoGarment => 3,
+                    EquipmentType::TorsoInner => 4,
+                    EquipmentType::Hand => 200,
+                };
+                textures.push((z_order, equippable.make_texture(&item.material, &game_ctx.resources.materials)));
             }
+        }
+        textures.sort_by(|a, b| a.0.cmp(&b.0));
+        for (_z, texture) in textures {
+            ctx.texture(texture, pos);
         }
     }
 }

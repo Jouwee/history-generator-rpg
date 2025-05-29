@@ -38,7 +38,7 @@ impl LayoutComponent {
         };
         let y = match &self.anchor {
             Anchor::TopLeft | Anchor::TopRight => ctx.layout_rect[1] + self.anchor_margin[1],
-            Anchor::Center => ctx.layout_rect[1] / 2. + size[1] / 2. + self.anchor_margin[1],
+            Anchor::Center => ctx.layout_rect[1] + (ctx.layout_rect[3] / 2.) - (size[1] / 2.) + self.anchor_margin[1],
             Anchor::BottomCenter => ctx.layout_rect[1] + ctx.layout_rect[3] - size[1] + self.anchor_margin[3],
         };
         self.last_layout = [x, y, size[0], size[1]];
