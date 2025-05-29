@@ -75,6 +75,7 @@ impl Inventory {
             let mut equip_slot = None;
             if let Some(item) = self.container.item(i) {
                 if let Some(equippable) = &item.equippable {
+                    // TODO: Choose best
                     if self.equipped(&equippable.slot).is_none() {
                         equip_slot = Some(equippable.slot.clone());
                     }

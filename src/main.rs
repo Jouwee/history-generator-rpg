@@ -249,8 +249,10 @@ fn main() {
                         let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::boots(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::pants(&mut rng, &app.context.resources));
+                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
 
-                        player.inventory.equip(&EquipmentType::Hand, ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        player.inventory.auto_equip();
 
                         let cursor = Coord2::xy(128, 128);
                         let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);

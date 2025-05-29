@@ -7,7 +7,7 @@ pub(crate) struct AStar {
     to: Coord2,
     came_from: HashMap<Coord2, Coord2>,
     cost_so_far: HashMap<Coord2, f32>,
-    frontier: VecDeque<Coord2>,
+    frontier: VecDeque<(usize, Coord2)>,
     size: Size2D
 }
 
@@ -21,7 +21,7 @@ impl AStar {
             frontier: VecDeque::new(),
             size
         };
-        astar.frontier.push_front(to);
+        astar.frontier.push_front((0, to));
         astar.cost_so_far.insert(to, 0.);
         return astar
     }
@@ -32,13 +32,19 @@ impl AStar {
 
     pub(crate) fn find_path<F>(&mut self, from: Coord2, cost: F) where F: Fn(Coord2) -> MovementCost {
         while !self.frontier.is_empty() {
-            let current = self.frontier.pop_front().unwrap();
+            let (depth, current) = self.frontier.pop_front().unwrap();
             
             if current == from {
                 break
             }
+
+            // Reverses the neighbour order every other step, so the path isn't always an L shape
+            let mut neighbors = self.neighbors(current);
+            if depth % 2 == 0 {
+                neighbors.reverse();
+            }
             
-            for next in self.neighbors(current) {
+            for next in neighbors {
                 let cost = cost(next);
                 match cost {
                     MovementCost::Impossible => (),
@@ -48,7 +54,7 @@ impl AStar {
                             self.cost_so_far.insert(next, new_cost);
                             // TODO: Using priotity as sorting should be faster, but inserting sorted is too costly
                             // let priority = new_cost + Self::heuristic(next, from);
-                            self.frontier.push_back(next); // P = priority
+                            self.frontier.push_back((depth + 1, next)); // P = priority
                             self.came_from.insert(next, current);
                         }
                     }
@@ -69,11 +75,7 @@ impl AStar {
             current = *self.came_from.get(&current).unwrap();
         }
         path.push(self.to);
-        // path.reverse();
-        
         return path
-        
-        // return came_from, cost_so_far
     }
 
     pub(crate) fn neighbors(&self, point: Coord2) -> Vec<Coord2> {

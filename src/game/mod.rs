@@ -225,13 +225,13 @@ impl GameSceneState {
             player.xy.x = self.chunk.size.x() as i32 - 2;
         }
         if offset.x > 0 {
-            player.xy.x = 1;
+            player.xy.x = 2;
         }
         if offset.y < 0 {
             player.xy.y = self.chunk.size.y() as i32 - 2;
         }
         if offset.y > 0 {
-            player.xy.y = 1;
+            player.xy.y = 2;
         }
         // Creates the new chunk
         // TODO: When out of bounds, make a special chunk gen
@@ -343,19 +343,19 @@ impl Scene for GameSceneState {
         }
 
         // Check movement between chunks
-        if self.chunk.player.xy.x == 0 {
+        if self.chunk.player.xy.x <= 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(-1, 0), ctx);
             return
         }
-        if self.chunk.player.xy.y == 0 {
+        if self.chunk.player.xy.y <= 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(0, -1), ctx);
             return
         }
-        if self.chunk.player.xy.x == self.chunk.size.x() as i32 - 1 {
+        if self.chunk.player.xy.x >= self.chunk.size.x() as i32 - 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(1, 0), ctx);
             return
         }
-        if self.chunk.player.xy.y == self.chunk.size.y() as i32 - 1 {
+        if self.chunk.player.xy.y >= self.chunk.size.y() as i32 - 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(0, 1), ctx);
             return
         }
