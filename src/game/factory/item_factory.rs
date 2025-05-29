@@ -27,28 +27,28 @@ impl ItemFactory {
         return WeaponFactory { rng: rng, resources: resources, quality: None, named: false }
     }
 
-    pub(crate) fn torso_garment<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+    pub(crate) fn torso_garment<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:shirt");
          let item = blueprint.make(vec!(
         ), &resources);
         return item;
     }
 
-    pub(crate) fn inner_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+    pub(crate) fn inner_armor<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:armor");
          let item = blueprint.make(vec!(
         ), &resources);
         return item;
     }
 
-    pub(crate) fn pants<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+    pub(crate) fn pants<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:pants");
          let item = blueprint.make(vec!(
         ), &resources);
         return item;
     }
 
-    pub(crate) fn boots<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+    pub(crate) fn boots<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:boots");
          let item = blueprint.make(vec!(
         ), &resources);

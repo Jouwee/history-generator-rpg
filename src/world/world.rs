@@ -2,14 +2,13 @@ use std::{fs::File, io::Write};
 
 use crate::{commons::id_vec::Id, Event, Item, Resources};
 
-use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, map_features::WorldMapFeatures, topology::WorldTopology, unit::Units};
+use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
 use crate::commons::id_vec::IdVec;
 
 pub(crate) struct World {
     pub(crate) date: WorldDate,
     pub(crate) map: WorldTopology,
-    pub(crate) map_features: WorldMapFeatures,
     pub(crate) units: Units,
     pub(crate) lineages: Lineages,
     pub(crate) creatures: Creatures,
@@ -24,7 +23,6 @@ impl World {
         return World {
             date: WorldDate::new(1, 1, 1),
             map,
-            map_features: WorldMapFeatures::new(),
             units: Units::new(),
             creatures: Creatures::new(),
             lineages: Lineages::new(),

@@ -1,4 +1,4 @@
-use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{new_ui::{Button, InputResult, UINode}}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{map_features::MapFeature, unit::UnitType, world::World}, GameContext};
+use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{new_ui::{Button, InputResult, UINode}}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -60,11 +60,6 @@ impl MapModal {
                     3 => self.tilemap.set_tile(x, y, 3),
                     4 => self.tilemap.set_tile(x, y, 4),
                     _ => ()
-                }
-                for feature in world.map_features.get_features(Coord2::xy(x as i32, y as i32)).iter() {
-                    match feature {
-                        MapFeature::Road => self.objects.set_tile(x, y, 2),
-                    }
                 }
             }
         }

@@ -5,7 +5,6 @@ pub(crate) mod event;
 pub(crate) mod history_generator;
 pub(crate) mod item;
 pub(crate) mod lineage;
-pub(crate) mod map_features;
 pub(crate) mod topology;
 pub(crate) mod unit;
 pub(crate) mod world;
