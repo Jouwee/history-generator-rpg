@@ -1,6 +1,6 @@
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::gui::new_ui::{ContextMenu, ContextMenuModel, InputResult, LayoutComponent, UINode}, resources::action::{ActionId, ActionParams, ActionRunner}, Actor, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, InputResult, UINode}, resources::action::{ActionId, ActionParams, ActionRunner}, Actor, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,

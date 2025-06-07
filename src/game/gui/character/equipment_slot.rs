@@ -1,6 +1,6 @@
 use piston::MouseButton;
 
-use crate::{engine::gui::new_ui::{InputResult, LayoutComponent, UINode}, game::inventory::inventory::Inventory, Color, EquipmentType, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, game::inventory::inventory::Inventory, Color, EquipmentType, InputEvent, Item};
 
 
 pub(crate) struct EquipmentSlot {

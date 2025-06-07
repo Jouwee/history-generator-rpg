@@ -1,4 +1,4 @@
-use crate::{engine::gui::new_ui::{InputResult, LayoutComponent, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, RenderContext};
+use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 

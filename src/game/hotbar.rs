@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{engine::{asset::image::ImageAsset, gui::{new_ui::{Button, InputResult, LayoutComponent, UINode}, tooltip::{Tooltip, TooltipLine}}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, InputResult, UINode}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory};
 
@@ -96,7 +96,7 @@ impl UINode for Hotbar {
 
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> crate::engine::gui::new_ui::InputResult<Self::Input> {
+    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> InputResult<Self::Input> {
         let mut selected = None;
         for (action_id, button) in self.buttons.iter_mut() {
             if let InputResult::Consume(()) = button.input(&mut (), evt, ctx) {
@@ -116,7 +116,7 @@ impl UINode for Hotbar {
             }
             return InputResult::Consume(())
         }
-        crate::engine::gui::new_ui::InputResult::None
+        InputResult::None
     }
 
 }

@@ -1,6 +1,6 @@
 use piston::MouseButton;
 
-use crate::{engine::gui::new_ui::{InputResult, LayoutComponent, UINode}, Color, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, Color, InputEvent, Item};
 
 
 pub(crate) struct InventorySlot {

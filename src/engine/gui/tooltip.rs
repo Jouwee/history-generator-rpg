@@ -3,9 +3,7 @@ use std::hash::{Hash, Hasher};
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{asset::font::Font, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
-
-use super::new_ui::{LayoutComponent, UINode};
+use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent

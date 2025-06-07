@@ -12,7 +12,9 @@ use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
 use crate::engine::asset::image::ImageAsset;
-use crate::engine::gui::new_ui::{Button, DialogWrapper, InputResult, UINode};
+use crate::engine::gui::button::Button;
+use crate::engine::gui::dialog::DialogWrapper;
+use crate::engine::gui::{InputResult, UINode};
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
