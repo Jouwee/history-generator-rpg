@@ -445,6 +445,7 @@ impl Scene for GameSceneState {
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
 
         if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
+            self.hotbar.equip(&self.chunk.player.inventory, ctx);
             return
         }
 

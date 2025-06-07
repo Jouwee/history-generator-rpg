@@ -28,11 +28,6 @@ impl Hotbar {
     }
 
     pub(crate) fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
-        // TODO(vz4Z7ytt): Get from actor
-        self.available_actions.insert(ctx.resources.actions.id_of("act:inspect"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:pickup"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:dig"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:sleep"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
         self.equip(inventory, ctx);
     }
