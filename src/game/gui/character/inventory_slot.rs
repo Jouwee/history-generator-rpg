@@ -1,6 +1,8 @@
+use std::ops::ControlFlow;
+
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, Color, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, Color, InputEvent, Item};
 
 
 pub(crate) struct InventorySlot {
@@ -38,7 +40,7 @@ impl UINode for InventorySlot {
         }
     }
 
-    fn input(&mut self, state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut crate::GameContext) -> InputResult<Self::Input> {
+    fn input(&mut self, state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut crate::GameContext) -> ControlFlow<Self::Input> {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
@@ -47,12 +49,12 @@ impl UINode for InventorySlot {
                     } else if state.is_none() && ctx.drag_item.is_some() {
                         state.replace(ctx.drag_item.take().expect("already checked"));
                     }
-                    return InputResult::Consume(());
+                    return ControlFlow::Break(());
                 }
             },
             _ => (),
         }
-        return InputResult::None;
+        return ControlFlow::Continue(());
     }
 
 }

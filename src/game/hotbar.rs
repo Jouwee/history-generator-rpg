@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, InputResult, UINode}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory};
 
@@ -96,14 +96,14 @@ impl UINode for Hotbar {
 
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> InputResult<Self::Input> {
+    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
         let mut selected = None;
         for (action_id, button) in self.buttons.iter_mut() {
-            if let InputResult::Consume(()) = button.input(&mut (), evt, ctx) {
+            if let ControlFlow::Break(()) = button.input(&mut (), evt, ctx) {
                 if self.selected_action.is_some_and(|id| &id == action_id) {
                     button.set_selected(false);
                     self.selected_action = None;
-                    return InputResult::Consume(())
+                    return ControlFlow::Break(())
                 } else {
                     selected = Some(*action_id);
                 }
@@ -114,9 +114,9 @@ impl UINode for Hotbar {
             for (b_action_id, button) in self.buttons.iter_mut() {
                 button.set_selected(b_action_id == &action_id);
             }
-            return InputResult::Consume(())
+            return ControlFlow::Break(())
         }
-        InputResult::None
+        ControlFlow::Continue(())
     }
 
 }

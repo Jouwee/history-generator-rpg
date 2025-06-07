@@ -1,4 +1,6 @@
-use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, RenderContext};
+use std::ops::ControlFlow;
+
+use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 
@@ -146,28 +148,16 @@ impl UINode for CharacterDialog {
         perf().end("character_dialog");
     }
 
-    fn input(&mut self, state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> InputResult<Self::Input> {
-        if self.equipment_slot_hand.input(&mut state.inventory, evt, ctx).is_consumed() {
-            return InputResult::Consume(())
-        }
-        if self.equipment_slot_garment.input(&mut state.inventory, evt, ctx).is_consumed() {
-            return InputResult::Consume(())
-        }
-        if self.equipment_slot_inner_armor.input(&mut state.inventory, evt, ctx).is_consumed() {
-            return InputResult::Consume(())
-        }
-        if self.equipment_slot_legs.input(&mut state.inventory, evt, ctx).is_consumed() {
-            return InputResult::Consume(())
-        }
-        if self.equipment_slot_feet.input(&mut state.inventory, evt, ctx).is_consumed() {
-            return InputResult::Consume(())
-        }
+    fn input(&mut self, state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
+        self.equipment_slot_hand.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_garment.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_inner_armor.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_legs.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_feet.input(&mut state.inventory, evt, ctx)?;
         for (i, slot) in self.slots.iter_mut().enumerate() {
-            if slot.input(&mut state.inventory.item_mut(i), evt, ctx).is_consumed() {
-                return InputResult::Consume(())
-            }
+            slot.input(&mut state.inventory.item_mut(i), evt, ctx)?;
         }
-        return InputResult::None
+        return ControlFlow::Continue(())
     }
 
 }

@@ -1,6 +1,8 @@
+use std::ops::ControlFlow;
+
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, InputResult, UINode}, resources::action::{ActionId, ActionParams, ActionRunner}, Actor, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}, resources::action::{ActionId, ActionParams, ActionRunner}, Actor, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,
@@ -51,15 +53,15 @@ impl UINode for GameContextMenu {
         return &mut self.layout
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut crate::GameContext) -> InputResult<Self::Input> {
+    fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut crate::GameContext) -> ControlFlow<Self::Input> {
         if let Some(menu) = &mut self.menu {
-            if let InputResult::Consume((idu, _)) = menu.menu.input(&mut menu.menu_model, evt, ctx) {
+            if let ControlFlow::Break((idu, _)) = menu.menu.input(&mut menu.menu_model, evt, ctx) {
                 let id = ctx.resources.actions.validate_id(idu as usize);
                 if let Some(id) = id {
                     let cursor = menu.cursor_pos.clone();
                     self.close();
                     println!("Clicked option");
-                    return InputResult::Consume((cursor, id))
+                    return ControlFlow::Break((cursor, id))
                 } else {
                     println!("[WARN] No action found for ID {}", idu);
                 }
@@ -69,7 +71,7 @@ impl UINode for GameContextMenu {
             }
         }
 
-        InputResult::None
+        ControlFlow::Continue(())
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut crate::RenderContext, game_ctx: &mut crate::GameContext) {

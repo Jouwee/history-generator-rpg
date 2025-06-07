@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::{ops::ControlFlow, time::{Duration, Instant}};
 
 use graphics::rectangle::{square, Border};
 use image::ImageReader;
@@ -176,6 +176,7 @@ impl Scene for WorldGenScene {
         }
     }
 
-    fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) {
+    fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) -> ControlFlow<()> {
+        ControlFlow::Continue(())
     }
 }

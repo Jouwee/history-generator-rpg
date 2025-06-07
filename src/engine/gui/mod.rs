@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use crate::{engine::gui::layout_component::LayoutComponent, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) mod button;
@@ -20,23 +22,8 @@ pub(crate) trait UINode {
     fn update(&mut self, _state: &mut Self::State, _update: &Update, _ctx: &mut GameContext) {
     }
 
-    fn input(&mut self, _state: &mut Self::State, _evt: &InputEvent, _ctx: &mut GameContext) -> InputResult<Self::Input> {
-        return InputResult::None;
+    fn input(&mut self, _state: &mut Self::State, _evt: &InputEvent, _ctx: &mut GameContext) -> ControlFlow<Self::Input> {
+        return ControlFlow::Continue(());
     }
 
-}
-
-pub(crate) enum InputResult<T> {
-    None,
-    Passthrough(T),
-    Consume(T),
-}
-
-impl<T> InputResult<T> {
-    pub(crate) fn is_consumed(&self) -> bool {
-        match self {
-            Self::Consume(_) => true,
-            _ => false,
-        }
-    }
 }

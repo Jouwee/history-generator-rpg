@@ -1,10 +1,10 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::{hash::{DefaultHasher, Hash, Hasher}, ops::ControlFlow};
 
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{asset::image::ImageAsset, gui::{layout_component::LayoutComponent, tooltip::Tooltip, InputResult, UINode}, spritesheet::Spritesheet}, Color, GameContext, InputEvent, RenderContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet}, Color, GameContext, InputEvent, RenderContext};
 
 
 pub(crate) struct Button {
@@ -136,11 +136,11 @@ impl UINode for Button {
         ctx.text(&self.text, game_ctx.assets.font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &Color::from_hex("ffffff"));
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> InputResult<()> {
+    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
-                    return InputResult::Consume(());
+                    return ControlFlow::Break(());
                 }
             },
             InputEvent::MouseMove { pos } => {
@@ -156,7 +156,7 @@ impl UINode for Button {
             }
             _ => ()
         }
-        return InputResult::None;
+        return ControlFlow::Continue(());
     }
 
 }

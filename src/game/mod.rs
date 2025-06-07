@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use actor::actor::ActorType;
 use ai::AiSolver;
 use chunk::Chunk;
@@ -14,7 +16,7 @@ use crate::commons::astar::AStar;
 use crate::engine::asset::image::ImageAsset;
 use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;
-use crate::engine::gui::{InputResult, UINode};
+use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
@@ -428,7 +430,7 @@ impl Scene for GameSceneState {
 
     }
 
-    fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) {
+    fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let Some(map) = &mut self.map_modal {
             match map.input(evt, ctx) {
                 MapModalEvent::Close => self.map_modal = None,
@@ -438,20 +440,18 @@ impl Scene for GameSceneState {
                 },
                 MapModalEvent::None => ()
             }
-            return
+            return ControlFlow::Continue(());
         }
 
-        if let InputResult::Consume(()) = self.hotbar.input(&mut (), &evt.evt, ctx) {
-            return
-        }
+        self.hotbar.input(&mut (), &evt.evt, ctx)?;
         self.hud.input(&self.chunk.player, &evt.evt, ctx);
 
-        if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_consumed() {
+        if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_break() {
             self.hotbar.equip(&self.chunk.player.inventory, ctx);
-            return
+            return ControlFlow::Break(());
         }
 
-        if let InputResult::Consume((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
+        if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
             let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
@@ -476,47 +476,47 @@ impl Scene for GameSceneState {
                 }
             }
             
-            return
+            return ControlFlow::Break(());
         }
 
 
         if self.can_end_turn() {
-            if let InputResult::Consume(_) = self.button_end_turn.input(&mut (), &evt.evt, ctx) {
+            if self.button_end_turn.input(&mut (), &evt.evt, ctx).is_break() {
                 self.next_turn(ctx);
-                return;
+                return ControlFlow::Break(());
             }
         }
         if self.can_change_turn_mode() {
-            if let InputResult::Consume(_) = self.button_toggle_turn_based.input(&mut (), &evt.evt, ctx) {
+            if self.button_toggle_turn_based.input(&mut (), &evt.evt, ctx).is_break() {
                 match self.turn_mode {
                     TurnMode::RealTime => self.set_turn_mode(TurnMode::TurnBased),
                     TurnMode::TurnBased => self.set_turn_mode(TurnMode::RealTime),
                 }
-                return;
+                return ControlFlow::Break(());
             }
         }
 
-        if let InputResult::Consume(_) = self.button_map.input(&mut (), &evt.evt, ctx) {
+        if self.button_map.input(&mut (), &evt.evt, ctx).is_break() {
             let mut map = MapModal::new();
             map.init(&self.world, &self.world_pos);
             self.map_modal = Some(map);
-            return;
+            return ControlFlow::Break(());
         }
 
-        if let InputResult::Consume(_) = self.button_inventory.input(&mut (), &evt.evt, ctx) {
+        if self.button_inventory.input(&mut (), &evt.evt, ctx).is_break() {
 
             // TODO(xYMCADko): init logic is weird
             let mut d = CharacterDialog::new();
             d.init(&self.chunk.player, ctx);
             self.character_dialog.show(d);
 
-            return;
+            return ControlFlow::Break(());
         }
 
         match self.turn_mode {
             TurnMode::TurnBased => {
                 if !self.turn_controller.is_player_turn() {
-                    return
+                    return ControlFlow::Continue(());
                 }
             },
             TurnMode::RealTime => {
@@ -604,6 +604,7 @@ impl Scene for GameSceneState {
         if self.turn_mode == TurnMode::RealTime {
             self.chunk.player.ap.fill();
         }
+        return ControlFlow::Continue(())
     }
 
 }

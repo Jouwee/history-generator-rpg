@@ -1,7 +1,9 @@
+use std::ops::ControlFlow;
+
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{gui::{button::Button, InputResult, UINode}, spritesheet::Spritesheet}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, UINode}, spritesheet::Spritesheet}, GameContext, RenderContext};
 
 
 pub(crate) struct DialogWrapper<T> where T: UINode {
@@ -69,20 +71,20 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
 
     }
 
-    pub(crate) fn input(&mut self, state: &mut S, evt: &crate::InputEvent, ctx: &mut GameContext) -> InputResult<()> {
+    pub(crate) fn input(&mut self, state: &mut S, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let Some(value) = &mut self.value {
             match self.close_button.input(&mut (), evt, ctx) {
-                InputResult::Consume(_) => {
+                ControlFlow::Break(_) => {
                     self.hide();
-                    return InputResult::Consume(());
+                    return ControlFlow::Break(());
                 },
                 _ => ()
             }
-            if value.input(state, evt, ctx).is_consumed() {
-                return InputResult::Consume(());
+            if value.input(state, evt, ctx).is_break() {
+                return ControlFlow::Break(());
             }
         }
-        InputResult::None
+        ControlFlow::Continue(())
     }
 
 }

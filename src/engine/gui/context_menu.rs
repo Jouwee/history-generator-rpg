@@ -1,6 +1,8 @@
+use std::ops::ControlFlow;
+
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, InputResult, UINode}, Color, GameContext, InputEvent, RenderContext};
+use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, Color, GameContext, InputEvent, RenderContext};
 
 const ROW_HEIGHT: f64 = 11.;
 
@@ -61,19 +63,19 @@ impl UINode for ContextMenu {
         ctx.layout_rect = copy;
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, _game_ctx: &mut GameContext) -> InputResult<Self::Input> {
+    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, _game_ctx: &mut GameContext) -> ControlFlow<Self::Input> {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if let Some(i) = self.option_idx_from_pos(pos) {
                     if let Some(v) = _state.items.get(i) {
-                        return InputResult::Consume(v.clone());
+                        return ControlFlow::Break(v.clone());
                     }
                 }
             },
             InputEvent::MouseMove { pos } => self.hover_index = self.option_idx_from_pos(pos),
             _ => ()
         }
-        return InputResult::None;
+        return ControlFlow::Continue(());
     }
 
 }

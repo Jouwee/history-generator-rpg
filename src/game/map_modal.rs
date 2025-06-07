@@ -1,4 +1,4 @@
-use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, InputResult, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{unit::UnitType, world::World}, GameContext};
+use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -123,7 +123,7 @@ impl MapModal {
                 _ => ()
             }
         }
-        if let InputResult::Consume(()) = self.close_button.input(&mut (), &evt.evt, ctx) {
+        if self.close_button.input(&mut (), &evt.evt, ctx).is_break() {
             return MapModalEvent::Close;
         }
         let camera = ctx.display_context.camera_rect;
