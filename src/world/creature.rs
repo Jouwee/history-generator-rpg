@@ -21,6 +21,9 @@ impl crate::commons::id_vec::Id for CreatureId {
 
 pub(crate) type Creatures = IdVec<Creature>;
 
+pub(crate) const SIM_FLAG_INTELIGENT: u8 = 0b00000001;
+pub(crate) const SIM_FLAG_GREAT_BEAST: u8 = 0b00000010;
+
 #[derive(Clone)]
 pub(crate) struct Creature {
     pub(crate) species: SpeciesId,
@@ -33,7 +36,10 @@ pub(crate) struct Creature {
     pub(crate) spouse: Option<CreatureId>,
     pub(crate) offspring: Vec<CreatureId>,
     pub(crate) lineage: LineageId,
-    pub(crate) details: Option<CreatureDetails>
+    pub(crate) experience: u32,
+    pub(crate) details: Option<CreatureDetails>,
+    // TODO(PaZs1uBR): Bitmask
+    pub(crate) sim_flags: u8,
 }
 
 impl Creature {
@@ -48,6 +54,12 @@ impl Creature {
     }
 
     pub(crate) fn name(&self, id: &CreatureId, world: &World, resources: &Resources) -> String {
+        if self.sim_flag_is_great_beast() {
+            let species = resources.species.get(&self.species);
+            return format!("the {}", species.name);
+        }
+
+
         let lineage = world.lineages.get(&self.lineage);
         let culture = resources.cultures.get(&lineage.culture);
         let name_model = match &self.gender {
@@ -60,6 +72,14 @@ impl Creature {
 
     pub(crate) fn networth_range(&self) -> [i32; 2] {
         return self.profession.networth_range()
+    }
+
+    pub(crate) fn sim_flag_is_inteligent(&self) -> bool {
+        return self.sim_flags & SIM_FLAG_INTELIGENT > 0
+    }
+
+    pub(crate) fn sim_flag_is_great_beast(&self) -> bool {
+        return self.sim_flags & SIM_FLAG_GREAT_BEAST > 0
     }
 
 }
@@ -97,6 +117,8 @@ pub(crate) enum CauseOfDeath {
     OldAge,
     Starvation,
     Disease,
+    // TODO(PaZs1uBR): Battle ID
+    KilledInBattle(CreatureId)
 }
 
 

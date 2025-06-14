@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, Profession}, date::WorldDate, unit::{Demographics, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::battle_simulator::BattleSimulator, unit::{Demographics, SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -44,7 +44,9 @@ impl HistorySimulation {
                     // Enough food for a year
                     food: self.params.seed_cities_population as f32
                 },
-                leader: None,
+                settlement: Some(SettlementComponent {
+                    leader: None,
+                }),
                 artifacts: Vec::new(),
                 population_peak: (0, 0),
                 unit_type: UnitType::Village
@@ -70,6 +72,41 @@ impl HistorySimulation {
         world.date = self.date.clone();
         let now = Instant::now();
 
+
+        // TODO(tfWpiQPF): Find a cooler way to spawn
+        if self.params.rng.rand_chance(0.3) {
+            let pos = self.find_unit_suitable_pos(&mut self.params.rng.clone(), world);
+
+            if let Some(pos) = pos {
+                let species = self.params.resources.species.id_of("species:varningr");
+                let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
+                let creature = factory.make_single(species, 10, SIM_FLAG_GREAT_BEAST, world, &self.params.resources);
+                let unit = Unit {
+                    // TODO(PaZs1uBR): These don't make sense
+                    artifacts: Vec::new(),
+                    cemetery: Vec::new(),
+                    creatures: vec!(creature),
+                    settlement: None,
+                    population_peak: (0, 0),
+                    resources: UnitResources { food: 0. },
+                    // TODO(PaZs1uBR): Unit type
+                    unit_type: UnitType::BanditCamp,
+                    xy: pos
+                };
+
+                println!("[!!!] spawn spider");
+
+                world.units.add::<UnitId>(unit);
+
+            } else {
+                println!("[!!!] failed to spawn");
+            }
+
+
+        }
+
+
+
         let mut stats = (0, 0, 0, Demographics::new());
 
         for id in world.units.iter_ids::<UnitId>() {
@@ -91,7 +128,7 @@ impl HistorySimulation {
         if stats.0 == 0 {
             println!("Dead world.");
 
-            let mut map = (0, 0, 0);
+            let mut map = (0, 0, 0, 0);
             for creature in world.creatures.iter() {
                 let creature = creature.borrow();
                 if let Some(death) = &creature.death {
@@ -99,6 +136,7 @@ impl HistorySimulation {
                         CauseOfDeath::OldAge => { map.0 += 1; },
                         CauseOfDeath::Starvation => { map.1 += 1; },
                         CauseOfDeath::Disease => { map.2 += 1; },
+                        CauseOfDeath::KilledInBattle(_) => { map.3 += 1; },
                     }
                 }
             }
@@ -107,6 +145,7 @@ impl HistorySimulation {
             println!("Old age: {}", map.0);
             println!("Starvation: {}", map.1);
             println!("Disease: {}", map.2);
+            println!("Battle: {}", map.3);
             return false;
         }
         return true;
@@ -158,69 +197,15 @@ impl HistorySimulation {
 
         drop(unit);
 
-
-        // let mut deferred_side_effects = Vec::new();
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
         let mut artisan_pool = Vec::new();
         let mut comissions_pool = Vec::new();
-        // TODO: Move this to a impl
+        // TODO: Move all of these to a impl
         for (creature_id, side_effect) in side_effects.into_iter() {
             match side_effect {
                 CreatureSideEffect::None => (),
-                CreatureSideEffect::Death(cause_of_death) => {
-                    {
-                        let mut creature = world.creatures.get_mut(&creature_id);
-                        // CreatureSimulation::kill_creature(&world, now, &mut creature, &cause_of_death);
-                        creature.death = Some((now.clone(), cause_of_death));
-                        if let Some(spouse_id) = creature.spouse {
-                            let mut spouse = world.creatures.get_mut(&spouse_id);
-                            spouse.spouse = None;
-                        }
-                        let mut unit = world.units.get_mut(unit_id);
-                        let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
-                        let id = unit.creatures.remove(i);
-                        unit.cemetery.push(id);
-
-                        let mut inheritor = None;
-                        let mut has_possession = false;
-
-                        if let Some(details) = &creature.details {
-                            if details.inventory.len() > 0 {
-                                has_possession = true;
-                                for candidate_id in creature.offspring.iter() {
-                                    let candidate = world.creatures.get(candidate_id);
-                                    if candidate.death.is_none() {
-                                        inheritor = Some((*candidate_id, details.inventory.clone()));
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        drop(creature);
-                
-                        if has_possession {
-                            if let Some((inheritor_id, inventory)) = inheritor {
-                                let mut inheritor = world.creatures.get_mut(&inheritor_id);
-                                let mut creature = world.creatures.get_mut(&creature_id);
-                                creature.details().inventory.clear();
-                                inheritor.details().inventory.append(&mut inventory.clone());
-                                drop(creature);
-                                drop(inheritor);
-                                for item in inventory.iter() {
-                                    world.events.push(Event::InheritedArtifact { date: now.clone(), creature_id: inheritor_id, from: creature_id, item: *item });
-                                }
-                            } else {
-                                world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id });
-                            }
-                        }
-
-                        // TODO: Inherit leadership
-
-                    }
-                    world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
-                },
+                CreatureSideEffect::Death(cause_of_death) => Self::kill_creature(world, creature_id, *unit_id, cause_of_death),
                 CreatureSideEffect::HaveChild => {
 
                     let unit = world.units.get(unit_id);
@@ -302,7 +287,9 @@ impl HistorySimulation {
                                     artifacts: Vec::new(),
                                     cemetery: Vec::new(),
                                     creatures: vec!(creature_id),
-                                    leader: Some(creature_id),
+                                    settlement: Some(SettlementComponent {
+                                        leader: Some(creature_id)
+                                    }),
                                     population_peak: (0, 0),
                                     unit_type: UnitType::BanditCamp,
                                     resources: UnitResources {
@@ -324,11 +311,9 @@ impl HistorySimulation {
                     // Chances profession
                     let mut creature = world.creatures.get_mut(&creature_id);
                     creature.profession = Profession::Bandit;
-                }
+                },
+                CreatureSideEffect::AttackNearbyUnits => Self::attack_nearby_unit(world, &mut rng, *unit_id)
             }
-            
-
-
         }
 
 
@@ -337,11 +322,16 @@ impl HistorySimulation {
 
             self.check_population_peak(now, &mut unit);
 
-            let need_election = match unit.leader {
-                None => true,
-                Some(creature_id) => {
-                    let creature = world.creatures.get(&creature_id);
-                    creature.death.is_some()
+            let need_election = match &unit.settlement {
+                None => false,
+                Some(settlement) => {
+                    match settlement.leader {
+                        None => true,
+                        Some(creature_id) => {
+                            let creature = world.creatures.get(&creature_id);
+                            creature.death.is_some()
+                        }
+                    }
                 }
             } && unit.creatures.len() > 0;
             if need_election {
@@ -366,7 +356,7 @@ impl HistorySimulation {
                     // TODO: Spouse / children of leader being peasant is weird
 
                 }
-                unit.leader = Some(new_leader);
+                unit.settlement.as_mut().expect("No election should be held with no settlement").leader = Some(new_leader);
                 world.events.push(Event::NewLeaderElected { date: now.clone(), unit_id: *unit_id, creature_id: new_leader });
             }
             
@@ -436,6 +426,107 @@ impl HistorySimulation {
             drop(creature);
             drop(unit);
             world.events.push(Event::CreatureProfessionChange { date: now.clone(), creature_id: creature_id, new_profession: profession });
+        }
+    }
+
+    fn kill_creature(world: &mut World, creature_id: CreatureId, unit_id: UnitId, cause_of_death: CauseOfDeath) {
+        let now = world.date.clone();
+        {
+            let mut creature = world.creatures.get_mut(&creature_id);
+            if creature.death.is_some() {
+                println!("[WARN] Trying to kill already dead creature");
+                return;
+            }
+            creature.death = Some((now.clone(), cause_of_death));
+            if let Some(spouse_id) = creature.spouse {
+                let mut spouse = world.creatures.get_mut(&spouse_id);
+                spouse.spouse = None;
+            }
+            let mut unit = world.units.get_mut(&unit_id);
+            let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
+            let id = unit.creatures.remove(i);
+            unit.cemetery.push(id);
+
+            let mut inheritor = None;
+            let mut has_possession = false;
+
+            if let Some(details) = &creature.details {
+                if details.inventory.len() > 0 {
+                    has_possession = true;
+                    for candidate_id in creature.offspring.iter() {
+                        let candidate = world.creatures.get(candidate_id);
+                        if candidate.death.is_none() {
+                            inheritor = Some((*candidate_id, details.inventory.clone()));
+                            break;
+                        }
+                    }
+                }
+            }
+
+            drop(creature);
+
+            if has_possession {
+                if let Some((inheritor_id, inventory)) = inheritor {
+                    let mut inheritor = world.creatures.get_mut(&inheritor_id);
+                    let mut creature = world.creatures.get_mut(&creature_id);
+                    creature.details().inventory.clear();
+                    inheritor.details().inventory.append(&mut inventory.clone());
+                    drop(creature);
+                    drop(inheritor);
+                    for item in inventory.iter() {
+                        world.events.push(Event::InheritedArtifact { date: now.clone(), creature_id: inheritor_id, from: creature_id, item: *item });
+                    }
+                } else {
+                    world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id });
+                }
+            }
+
+            // TODO: Inherit leadership
+
+        }
+        world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
+    }
+
+    fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {
+        let mut candidates = Vec::new();
+        {
+            let source_unit = world.units.get(&unit_id);
+            for (id, unit) in world.units.iter_id_val::<UnitId>() {
+                if id != unit_id {
+                    let unit = unit.borrow();
+                    // TODO(PaZs1uBR): Magic number
+                    if unit.creatures.len() > 0 && unit.xy.dist_squared(&source_unit.xy) < 20.*20. {
+                        candidates.push(id);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if let Some(target) = rng.item(&candidates) {
+            let battle;
+            {
+                let unit = world.units.get(&unit_id);
+                let target_unit = world.units.get(target);
+                battle = BattleSimulator::simulate_attack(unit_id, &unit, *target, &target_unit, rng, world);
+            }
+
+            // TODO(PaZs1uBR): Log
+            println!("#B Battle ---------");
+            for l in battle.log.iter() {
+                println!("#B {}", l);
+            }
+
+            for (id, unit_id, killer) in battle.deaths {
+                let cause_of_death = CauseOfDeath::KilledInBattle(killer);
+                // TODO(PaZs1uBR): They died at the place they were fighting, not where they came from.
+                Self::kill_creature(world, id, unit_id, cause_of_death);
+            }
+
+            for (id, xp) in battle.xp_add {
+                let mut creature = world.creatures.get_mut(&id);
+                creature.experience += xp;
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::{commons::rng::Rng, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -34,7 +34,9 @@ impl CreatureFactory {
                 gender,
                 offspring: Vec::new(),
                 species: species,
+                experience: 0,
                 details: None,
+                sim_flags: SIM_FLAG_INTELIGENT
             });
             return vec!(creature_id)
         } else {
@@ -54,7 +56,9 @@ impl CreatureFactory {
                 gender: CreatureGender::Male,
                 offspring: Vec::new(),
                 species: species,
+                experience: 0,
                 details: None,
+                sim_flags: SIM_FLAG_INTELIGENT
             });
             family.push(father_id);
             
@@ -69,13 +73,45 @@ impl CreatureFactory {
                 gender: CreatureGender::Female,
                 offspring: Vec::new(),
                 species: species,
+                experience: 0,
                 details: None,
+                sim_flags: SIM_FLAG_INTELIGENT
             });
             family.push(mother_id);
 
 
             return family;
         }
+    }
+
+    pub(crate) fn make_single(&mut self, species: SpeciesId, level: u16, sim_flags: u8, world: &mut World, resources: &Resources) -> CreatureId {
+        
+        // TODO(PaZs1uBR): A beast doesn't have a lineage
+        let culture_id = resources.cultures.random();
+        let culture = resources.cultures.get(&culture_id);
+        let lineage = world.lineages.add(Lineage::new(resources.cultures.random(), &culture));
+
+        let mut gender = CreatureGender::Male;
+        if self.rng.rand_chance(0.5) {
+            gender = CreatureGender::Female;
+        }
+        let creature_id = world.creatures.add(Creature {
+            birth: world.date.clone(),
+            death: None,
+            lineage,
+            father: CreatureId::ancients(),
+            mother: CreatureId::ancients(),
+            // TODO(PaZs1uBR): A creature doesn't have a profession
+            profession: Profession::Peasant,
+            spouse: None,
+            experience: level_to_xp(level),
+            gender,
+            offspring: Vec::new(),
+            species: species,
+            details: None,
+            sim_flags
+        });
+        return creature_id
     }
 }
 

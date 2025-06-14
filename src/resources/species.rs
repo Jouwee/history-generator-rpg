@@ -98,13 +98,15 @@ impl SpeciesApearance {
         for (k, v) in self.map.iter() {
             let hint = hints.get(k);
             if let Some(hint) = hint {
-                collapsed.map.insert(k.clone(), (hint.to_string(), v.get(hint).unwrap().clone()));    
-            } else {
-                let mut rng = rng.derive(k);
-                let variations: Vec<(&String, &String)> = v.iter().collect();
-                let variation = variations[rng.randu_range(0, variations.len())];
-                collapsed.map.insert(k.clone(), (variation.0.clone(), variation.1.clone()));
+                if let Some(hint) = v.get(hint) {
+                    collapsed.map.insert(k.clone(), (hint.to_string(), hint.clone()));  
+                    continue;  
+                }
             }
+            let mut rng = rng.derive(k);
+            let variations: Vec<(&String, &String)> = v.iter().collect();
+            let variation = variations[rng.randu_range(0, variations.len())];
+            collapsed.map.insert(k.clone(), (variation.0.clone(), variation.1.clone()));
         }
         collapsed
     }

@@ -6,3 +6,4 @@ pub(crate) mod matrix_index;
 pub(crate) mod resource_map;
 pub(crate) mod rng;
 pub(crate) mod strings;
+pub(crate) mod xp_table;

@@ -22,7 +22,7 @@ pub(crate) struct Unit {
     pub(crate) creatures: Vec<CreatureId>,
     pub(crate) cemetery: Vec<CreatureId>,
     pub(crate) resources: UnitResources,
-    pub(crate) leader: Option<CreatureId>,
+    pub(crate) settlement: Option<SettlementComponent>,
     pub(crate) artifacts: Vec<ItemId>,
     pub(crate) population_peak: (i32, u32),
     pub(crate) unit_type: UnitType
@@ -59,6 +59,10 @@ impl Unit {
 
 }
 
+pub(crate) struct SettlementComponent {
+    pub(crate) leader: Option<CreatureId>,
+}
+
 
 #[cfg(test)]
 mod tests_unit {
@@ -74,7 +78,7 @@ mod tests_unit {
             resources: UnitResources {
                 food: 0.
             },
-            leader: None,
+            settlement: None,
             artifacts: Vec::new(),
             population_peak: (0, 0),
             unit_type: UnitType::Village

@@ -12,6 +12,7 @@ pub(crate) enum CreatureSideEffect {
     ComissionArtifact,
     ArtisanLookingForComission,
     BecomeBandit,
+    AttackNearbyUnits,
 }
 
 const YEARLY_CHANCE_MARRY: f32 = 0.4;
@@ -25,7 +26,7 @@ const CHANCE_TO_BECOME_BANDIT: f32 = 0.005;
 
 impl CreatureSimulation {
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &mut Creature) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
@@ -35,6 +36,14 @@ impl CreatureSimulation {
         if rng.rand_chance(Self::chance_of_disease(now, &creature)) {
             return CreatureSideEffect::Death(CauseOfDeath::Disease);
         }
+
+        if creature.sim_flag_is_great_beast() {
+            // TODO(PaZs1uBR): Balance
+            if rng.rand_chance(0.8) {
+                return CreatureSideEffect::AttackNearbyUnits;
+            }
+        }
+
         // Get a profession
         if age >= 14 && creature.profession == Profession::None {
             return CreatureSideEffect::LookForNewJob;
@@ -143,6 +152,8 @@ impl CreatureSimulation {
                 species: creature.species,
                 spouse: None,
                 details: None,
+                experience: 0,
+                sim_flags: father.sim_flags
             };
             return Some(child)
         }

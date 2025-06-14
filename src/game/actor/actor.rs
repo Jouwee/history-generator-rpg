@@ -82,6 +82,7 @@ impl Actor {
             actor_type = ActorType::Hostile;
         }
         // TODO: Determinate
+        // TODO(PaZs1uBR): Animals souldn't have equipment
         let mut rng = Rng::seeded(creature_id);
         let inventory = EquipmentGenerator::generate(&creature_id, &mut rng, world, resources);
        

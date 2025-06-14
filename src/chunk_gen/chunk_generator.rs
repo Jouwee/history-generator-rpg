@@ -336,7 +336,7 @@ impl ChunkGenerator {
         });
         
         if let Some(detached_housing_pool) = &pools.detached_housing_pool {
-
+            // TODO(BUG): attempt to subtract with overflow
             let pop_diff = unit.population_peak.1 as usize - unit.creatures.len();
             let ruins = pop_diff / 2;
 
