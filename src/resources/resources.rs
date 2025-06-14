@@ -173,6 +173,18 @@ impl Resources {
                 })
             }
         });
+        self.actions.add("act:bite", Action {
+            name: String::from("Bite"),
+            description: String::from("A bite"),
+            icon: ImageAsset::new("missing.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            ap_cost: 40,
+            stamina_cost: 5.,
+            action_type: ActionType::Targeted {
+                damage: Some(DamageType::Fixed(DamageComponent::new(0., 10., 0.))),
+                inflicts: None
+            }
+        });
         // self.actions.add("act:talk", Action {
         //     name: String::from("Talk"),
         //     description: String::from("Talk with a friendly NPC"),
@@ -271,10 +283,18 @@ impl Resources {
                 ))
             )
         )).innate_actions(vec!(self.actions.id_of("act:punch"))));
+
         self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
+        );
+
+        self.species.add("species:varningr", Species::new("varningr", SpeciesApearance::single_sprite("species/varningr/varningr.png"))
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
+            // TODO:
+            .innate_actions(vec!(self.actions.id_of("act:bite")))
         );
     }
 
