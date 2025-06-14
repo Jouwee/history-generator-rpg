@@ -147,10 +147,17 @@ impl ActionRunner {
 
         match action.action_type {
             ActionType::Inspect => {
+
+                // TODO(hu2htwck): Add info to codex
+
                 println!("Inspect at {:?}", action_params.cursor_pos);
                 if let Some((_, target)) = &action_params.target {
                     let creature_id = target.creature_id;
                     if let Some(creature_id) = creature_id {
+                        let codex = action_params.world.codex.creature_mut(&creature_id);
+                        // TODO(hu2htwck): Not this
+                        codex.add_appearance();
+                        codex.add_name();
                         let creature = action_params.world.creatures.get(&creature_id);
                         println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &action_params.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
                     }
@@ -175,6 +182,10 @@ impl ActionRunner {
                         TileMetadata::BurialPlace(creature_id) => {
                             let creature = action_params.world.creatures.get(creature_id);
                             if let Some(death) = creature.death {
+                                let codex = action_params.world.codex.creature_mut(&creature_id);
+                                codex.add_name();
+                                codex.add_death();
+                                // TODO(hu2htwck): Event
                                 println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
                             }
                             
@@ -332,7 +343,7 @@ pub(crate) struct ActionUseParams<'a> {
     pub(crate) item_on_ground: Option<(usize, &'a Item)>,
     pub(crate) tile_metadata: Option<&'a TileMetadata>,
     pub(crate) object_tile: usize,
-    pub(crate) world: &'a World,
+    pub(crate) world: &'a mut World,
 }
 
 impl<'a> ActionUseParams<'a> {

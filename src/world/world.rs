@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use crate::{commons::id_vec::Id, Event, Item, Resources};
+use crate::{commons::id_vec::Id, game::codex::Codex, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -14,6 +14,7 @@ pub(crate) struct World {
     pub(crate) creatures: Creatures,
     pub(crate) events: Vec<Event>,
     pub(crate) artifacts: IdVec<Item>,
+    pub(crate) codex: Codex,
 
 }
 
@@ -28,6 +29,7 @@ impl World {
             lineages: Lineages::new(),
             artifacts: IdVec::new(),
             events: Vec::new(),
+            codex: Codex::new(),
         }
     }
 

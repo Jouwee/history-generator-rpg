@@ -258,9 +258,6 @@ impl HistorySimulation {
                     comissions_pool.push(creature_id);
                 }
                 CreatureSideEffect::BecomeBandit => {
-                    
-                    // TODO: Steal close artifact?
-                    
                     // Removes creature from unit
                     let unit = world.units.get(unit_id);
                     let unit_xy = unit.xy.clone();

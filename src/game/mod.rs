@@ -19,13 +19,16 @@ use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
+use crate::game::gui::codex_dialog::CodexDialog;
 use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
+use crate::world::creature::CreatureId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub(crate) mod actor;
 pub(crate) mod ai;
 pub(crate) mod chunk;
+pub(crate) mod codex;
 pub(crate) mod effect_layer;
 pub(crate) mod factory;
 pub(crate) mod game_log;
@@ -64,12 +67,14 @@ pub(crate) struct GameSceneState {
     player_turn_timer: f64,
     turn_controller: TurnController,
     button_inventory: Button,
+    button_codex: Button,
     button_map: Button,
     button_end_turn: Button,
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
     hud: HeadsUpDisplay,
     character_dialog: DialogWrapper<CharacterDialog>,
+    codex_dialog: DialogWrapper<CodexDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -81,17 +86,38 @@ pub(crate) struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
+    pub(crate) fn new(mut world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
         let player_pathfinding = AStar::new(chunk.size, chunk.player.xy);
 
         let mut button_map = Button::text("Map");
         button_map.layout_component().anchor_bottom_center(-172.0, -1.0);
         let mut button_inventory = Button::text("Chr");
         button_inventory.layout_component().anchor_bottom_center(-147.0, -1.0);
+        let mut button_codex = Button::text("Cdx");
+        button_codex.layout_component().anchor_bottom_center(-122.0, -1.0);
         let mut button_end_turn = Button::text("Trn");
         button_end_turn.layout_component().anchor_bottom_center(147.0, -1.0);
         let mut button_toggle_turn_based = Button::text("Mod");
         button_toggle_turn_based.layout_component().anchor_bottom_center(172.0, -1.0);
+
+        // TODO(hu2htwck): Test code
+        let mut iter = world.creatures.iter_ids::<CreatureId>();
+        let id1 = iter.next().unwrap().clone();
+        let id2 = iter.next().unwrap().clone();
+        let id3 = iter.next().unwrap().clone();
+        let c = world.codex.creature_mut(&id1);
+        c.add_name();
+        c.add_appearance();
+        c.add_birth();
+        c.add_death();
+        c.add_father();
+        c.add_mother();
+        let c = world.codex.creature_mut(&id2);
+        c.add_name();
+        let c = world.codex.creature_mut(&id3);
+        c.add_birth();
+        c.add_father();
+        c.add_mother();
 
         GameSceneState {
             world,
@@ -104,9 +130,11 @@ impl GameSceneState {
             hud: HeadsUpDisplay::new(),
             button_map,
             button_inventory,
+            button_codex,
             button_end_turn,
             button_toggle_turn_based,
             character_dialog: DialogWrapper::new(),
+            codex_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -297,6 +325,7 @@ impl Scene for GameSceneState {
         self.hotbar.render(&(), ctx, game_ctx);
         self.hud.render(&self.chunk.player, ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
+        self.button_codex.render(&(), ctx, game_ctx);
         self.button_map.render(&(), ctx, game_ctx);
         if self.can_end_turn() {
             self.button_end_turn.render(&(), ctx, game_ctx);
@@ -307,6 +336,7 @@ impl Scene for GameSceneState {
         self.game_log.render(ctx, game_ctx);
 
         self.character_dialog.render(&mut self.chunk.player, ctx, game_ctx);
+        self.codex_dialog.render(&mut self.world, ctx, game_ctx);
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
@@ -450,6 +480,8 @@ impl Scene for GameSceneState {
             self.hotbar.equip(&self.chunk.player.inventory, ctx);
             return ControlFlow::Break(());
         }
+        self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
+
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
@@ -466,7 +498,7 @@ impl Scene for GameSceneState {
                 item_on_ground: item_on_ground.and_then(|(i, t)| Some((i, &t.1))),
                 tile_metadata,
                 object_tile,
-                world: &self.world
+                world: &mut self.world
             };
 
             let result = ActionRunner::try_use(action, &mut action_params, &mut self.effect_layer, &mut self.game_log, ctx);
@@ -509,6 +541,16 @@ impl Scene for GameSceneState {
             let mut d = CharacterDialog::new();
             d.init(&self.chunk.player, ctx);
             self.character_dialog.show(d);
+
+            return ControlFlow::Break(());
+        }
+
+        if self.button_codex.input(&mut (), &evt.evt, ctx).is_break() {
+
+            // TODO(xYMCADko): init logic is weird
+            let mut d = CodexDialog::new();
+            d.init(&self.world, ctx);
+            self.codex_dialog.show(d);
 
             return ControlFlow::Break(());
         }
@@ -582,7 +624,7 @@ impl Scene for GameSceneState {
                         item_on_ground: item_on_ground.and_then(|(i, t)| Some((i, &t.1))),
                         tile_metadata,
                         object_tile,
-                        world: &self.world
+                        world: &mut self.world
                     };
 
 
