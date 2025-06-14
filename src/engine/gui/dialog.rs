@@ -14,7 +14,7 @@ pub(crate) struct DialogWrapper<T> where T: UINode {
 impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
 
     pub(crate) fn new() -> Self {
-        let mut close_button = Button::text("Close");
+        let mut close_button = Button::text(" X");
         close_button.layout_component().anchor_top_right(0., 0.);
         Self {
             value: None,
@@ -26,7 +26,10 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
         self.value = Some(value)
     }
 
-    pub(crate) fn hide(&mut self) -> Option<T> {
+    pub(crate) fn hide(&mut self, state: &mut S, game_ctx: &mut GameContext) -> Option<T> {
+        if let Some(value) = &mut self.value {
+            value.destroy(state, game_ctx)
+        }
         return self.value.take();
     }
 
@@ -38,15 +41,9 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
             // TODO: Better spritesheets, and scaling
             let spritesheet = ImageReader::open("./assets/sprites/gui/dialog.png").unwrap().decode().unwrap();
             let spritesheet = Spritesheet::new(spritesheet, (24, 24));
-            // Corners
-            let transform = ctx.context.transform.trans(position[0], position[1]);
-            image(spritesheet.sprite(0, 0), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0], position[1] + size[1] - 24.);
-            image(spritesheet.sprite(0, 2), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + size[0] - 24., position[1]);
-            image(spritesheet.sprite(2, 0), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + size[0] - 24., position[1] + size[1] - 24.);
-            image(spritesheet.sprite(2, 2), transform, ctx.gl);
+            // Body
+            let transform = ctx.context.transform.trans(position[0] + 24., position[1] + 24.).scale((size[0]-24.) / 24., (size[1]-24.) / 24.);
+            image(spritesheet.sprite(1, 1), transform, ctx.gl);
             // Borders
             let transform = ctx.context.transform.trans(position[0] + 24., position[1]).scale((size[0]-24.) / 24., 1.);
             image(spritesheet.sprite(1, 0), transform, ctx.gl);
@@ -56,9 +53,15 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
             image(spritesheet.sprite(0, 1), transform, ctx.gl);
             let transform = ctx.context.transform.trans(position[0] + size[0] - 24., position[1] + 24.).scale(1., (size[1]-24.) / 24.);
             image(spritesheet.sprite(2, 1), transform, ctx.gl);
-            // Body
-            let transform = ctx.context.transform.trans(position[0] + 24., position[1] + 24.).scale((size[0]-24.) / 24., (size[1]-24.) / 24.);
-            image(spritesheet.sprite(1, 1), transform, ctx.gl);
+            // Corners
+            let transform = ctx.context.transform.trans(position[0], position[1]);
+            image(spritesheet.sprite(0, 0), transform, ctx.gl);
+            let transform = ctx.context.transform.trans(position[0], position[1] + size[1] - 24.);
+            image(spritesheet.sprite(0, 2), transform, ctx.gl);
+            let transform = ctx.context.transform.trans(position[0] + size[0] - 24., position[1]);
+            image(spritesheet.sprite(2, 0), transform, ctx.gl);
+            let transform = ctx.context.transform.trans(position[0] + size[0] - 24., position[1] + size[1] - 24.);
+            image(spritesheet.sprite(2, 2), transform, ctx.gl);
 
             v.render(state, ctx, game_ctx);
 
@@ -75,7 +78,7 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
         if let Some(value) = &mut self.value {
             match self.close_button.input(&mut (), evt, ctx) {
                 ControlFlow::Break(_) => {
-                    self.hide();
+                    self.hide(state, ctx);
                     return ControlFlow::Break(());
                 },
                 _ => ()

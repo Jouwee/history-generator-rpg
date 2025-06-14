@@ -17,6 +17,8 @@ pub(crate) trait UINode {
 
     fn init(&mut self, _state: &Self::State, _game_ctx: &mut GameContext) {}
 
+    fn destroy(&mut self, _state: &mut Self::State, _game_ctx: &mut GameContext) {}
+
     fn render(&mut self, _state: &Self::State, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
 
     fn update(&mut self, _state: &mut Self::State, _update: &Update, _ctx: &mut GameContext) {

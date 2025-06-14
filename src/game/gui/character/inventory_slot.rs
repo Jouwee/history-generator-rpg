@@ -44,10 +44,12 @@ impl UINode for InventorySlot {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
-                    if state.is_some() && ctx.drag_item.is_none() {
+                    let mut drag = ctx.drag_item.take();
+                    if state.is_some() {
                         ctx.drag_item = state.take();
-                    } else if state.is_none() && ctx.drag_item.is_some() {
-                        state.replace(ctx.drag_item.take().expect("already checked"));
+                    }
+                    if let Some(item) = drag.take() {
+                        state.replace(item);
                     }
                     return ControlFlow::Break(());
                 }

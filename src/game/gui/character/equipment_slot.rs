@@ -55,13 +55,15 @@ impl UINode for EquipmentSlot {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
-                    if state.equipped(&self.slot).is_some() && ctx.drag_item.is_none() {
-                        ctx.drag_item = state.unequip(&self.slot);
-                    } else if state.equipped(&self.slot).is_none() && self.can_place_drag_item(&ctx.drag_item) {
-                        if let Some(item) = ctx.drag_item.take() {
+                    if ctx.drag_item.is_none() || self.can_place_drag_item(&ctx.drag_item) {
+                        let mut drag = ctx.drag_item.take();
+                        if state.equipped(&self.slot).is_some() {
+                            ctx.drag_item = state.unequip(&self.slot);
+                        }
+                        if let Some(item) = drag.take() {
                             state.equip(&self.slot, item);
                         }
-                    }
+                }
                     return ControlFlow::Break(());
                 }
             },
