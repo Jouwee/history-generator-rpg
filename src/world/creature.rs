@@ -1,4 +1,4 @@
-use crate::{commons::{id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, Resources};
+use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
@@ -38,7 +38,6 @@ pub(crate) struct Creature {
     pub(crate) lineage: LineageId,
     pub(crate) experience: u32,
     pub(crate) details: Option<CreatureDetails>,
-    // TODO(PaZs1uBR): Bitmask
     pub(crate) sim_flags: u8,
 }
 
@@ -75,11 +74,11 @@ impl Creature {
     }
 
     pub(crate) fn sim_flag_is_inteligent(&self) -> bool {
-        return self.sim_flags & SIM_FLAG_INTELIGENT > 0
+        return bitmask_get(self.sim_flags, SIM_FLAG_INTELIGENT)
     }
 
     pub(crate) fn sim_flag_is_great_beast(&self) -> bool {
-        return self.sim_flags & SIM_FLAG_GREAT_BEAST > 0
+        return bitmask_get(self.sim_flags, SIM_FLAG_GREAT_BEAST)
     }
 
 }

@@ -94,7 +94,7 @@ impl HistorySimulation {
                     xy: pos
                 };
 
-                println!("[!!!] spawn spider");
+                println!("[!!!] spawn varningr");
 
                 world.units.add::<UnitId>(unit);
 

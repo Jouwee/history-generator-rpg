@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use crate::{commons::id_vec::Id, game::codex::Codex, Event, Item, Resources};
+use crate::{commons::id_vec::Id, game::codex::Codex, world::item::ItemId, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -30,6 +30,36 @@ impl World {
             artifacts: IdVec::new(),
             events: Vec::new(),
             codex: Codex::new(),
+        }
+    }
+
+    pub(crate) fn find_goal(&mut self, resources: &mut Resources) {
+        let mut artifact = None;
+        for (id, item) in self.artifacts.iter_id_val::<ItemId>() {
+            let i_item = item.borrow();
+
+            // TODO(NJ5nTVIV): Select ownerless
+            // TODO(NJ5nTVIV): Older = cooler
+
+            let mut score = 1.;
+            if let Some(quality) = &i_item.quality {
+                score = score * quality.quality.main_stat_multiplier();
+            }
+            score = score * i_item.damage_mult();
+
+            match artifact {
+                None => artifact = Some((id, item, score)),
+                Some((_id, _item, c_score)) => {
+                    if score > c_score {
+                        artifact = Some((id, item, score));
+                    }
+                }
+            }
+        }
+        if let Some((id, item, _score)) = artifact {
+            // TODO(NJ5nTVIV): Title screen
+            println!("You have heard of the legends of the ancient artifact {}. You set out into the world to find it's secrets.", item.borrow().name(&resources.materials));
+            self.codex.artifact_mut(&id).add_name();
         }
     }
 

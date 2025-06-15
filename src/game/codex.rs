@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
-use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::creature::CreatureId};
+use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId}};
 
 pub(crate) struct Codex {
     creatures: HashMap<CreatureId, CreatureCodex>,
+    artifacts: HashMap<ItemId, ArtifactCodex>,
 }
 
 impl Codex {
 
     pub(crate) fn new() -> Self {
-        Codex { creatures: HashMap::new() }
+        Codex {
+            creatures: HashMap::new(),
+            artifacts: HashMap::new(),
+        }
     }
 
     pub(crate) fn creatures(&self) -> std::collections::hash_map::Keys<'_, CreatureId, CreatureCodex> {
@@ -25,6 +29,21 @@ impl Codex {
             self.creatures.insert(*creature_id, CreatureCodex { facts_bitmask: 0, events: Vec::new() });    
         }
         return self.creatures.get_mut(creature_id).expect("Just inserted");
+    }
+
+    pub(crate) fn artifacts(&self) -> std::collections::hash_map::Keys<'_, ItemId, ArtifactCodex> {
+        return self.artifacts.keys();
+    }
+
+    pub(crate) fn artifact(&self, artifact_id: &ItemId) -> Option<&ArtifactCodex> {
+        return self.artifacts.get(artifact_id);
+    }
+
+    pub(crate) fn artifact_mut(&mut self, artifact_id: &ItemId) -> &mut ArtifactCodex {
+        if !self.artifacts.contains_key(artifact_id) {
+            self.artifacts.insert(*artifact_id, ArtifactCodex { facts_bitmask: 0, events: Vec::new() });    
+        }
+        return self.artifacts.get_mut(artifact_id).expect("Just inserted");
     }
 
 }
@@ -89,6 +108,25 @@ impl CreatureCodex {
 
     pub(crate) fn add_mother(&mut self) {
         self.facts_bitmask = bitmask_set(self.facts_bitmask, CREATURE_FACT_MOTHER);
+    }
+
+}
+
+const ARTIFACT_FACT_NAME: u8 = 0b0000_0001;
+
+pub(crate) struct ArtifactCodex {
+    facts_bitmask: u8,
+    events: Vec<usize>,
+}
+
+impl ArtifactCodex {
+
+    pub(crate) fn know_name(&self) -> bool {
+        return bitmask_get(self.facts_bitmask, ARTIFACT_FACT_NAME);
+    }
+
+    pub(crate) fn add_name(&mut self) {
+        self.facts_bitmask = bitmask_set(self.facts_bitmask, ARTIFACT_FACT_NAME);
     }
 
 }
