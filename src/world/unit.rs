@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2};
+use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2, resources::material::MaterialId};
 
 use super::{creature::{Creature, CreatureId, Profession}, date::WorldDate, item::ItemId};
 
@@ -61,8 +61,21 @@ impl Unit {
 
 pub(crate) struct SettlementComponent {
     pub(crate) leader: Option<CreatureId>,
+    pub(crate) material_stock: Vec<(MaterialId, usize)>
 }
 
+impl SettlementComponent {
+
+    pub(crate) fn add_material(&mut self, material: &MaterialId, number: usize) {
+        let i = self.material_stock.iter().position(|(id, _c)| id == material);
+        if let Some(i) = i {
+            self.material_stock[i].1 += number;
+        } else {
+            self.material_stock.push((*material, number));
+        }
+    }
+
+}
 
 #[cfg(test)]
 mod tests_unit {

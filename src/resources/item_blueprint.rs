@@ -61,6 +61,9 @@ impl ItemBlueprint {
 
 #[derive(Clone, Debug)]
 pub(crate) struct MaterialBlueprintComponent {
+    pub(crate) primary_tag_bitmask: u8,
+    pub(crate) secondary_tag_bitmask: Option<u8>,
+    pub(crate) details_tag_bitmask: Option<u8>,
 }
 
 impl MaterialBlueprintComponent {

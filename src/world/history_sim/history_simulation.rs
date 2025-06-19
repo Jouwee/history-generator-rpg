@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::battle_simulator::BattleSimulator, unit::{Demographics, SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::battle_simulator::BattleSimulator, item::ItemQuality, unit::{Demographics, SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -46,6 +46,7 @@ impl HistorySimulation {
                 },
                 settlement: Some(SettlementComponent {
                     leader: None,
+                    material_stock: Vec::new()
                 }),
                 artifacts: Vec::new(),
                 population_peak: (0, 0),
@@ -205,7 +206,7 @@ impl HistorySimulation {
         for (creature_id, side_effect) in side_effects.into_iter() {
             match side_effect {
                 CreatureSideEffect::None => (),
-                CreatureSideEffect::Death(cause_of_death) => Self::kill_creature(world, creature_id, *unit_id, cause_of_death),
+                CreatureSideEffect::Death(cause_of_death) => Self::kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.params.resources),
                 CreatureSideEffect::HaveChild => {
 
                     let unit = world.units.get(unit_id);
@@ -242,15 +243,7 @@ impl HistorySimulation {
                 CreatureSideEffect::LookForNewJob => {
                     change_job_pool.push(creature_id);
                 },
-                CreatureSideEffect::MakeArtifact => {
-                    let item = ArtifactFactory::create_artifact(&mut rng, &self.params.resources);
-                    let id = world.artifacts.add(item);
-                    {
-                        let mut creature = world.creatures.get_mut(&creature_id);             
-                        creature.details().inventory.push(id);
-                    }
-                    world.events.push(Event::ArtifactCreated { date: *now, artifact: id, creator: creature_id });
-                },
+                CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng, &mut self.params.resources),
                 CreatureSideEffect::ArtisanLookingForComission => {
                     artisan_pool.push(creature_id);
                 }
@@ -285,7 +278,8 @@ impl HistorySimulation {
                                     cemetery: Vec::new(),
                                     creatures: vec!(creature_id),
                                     settlement: Some(SettlementComponent {
-                                        leader: Some(creature_id)
+                                        leader: Some(creature_id),
+                                        material_stock: Vec::new(),
                                     }),
                                     population_peak: (0, 0),
                                     unit_type: UnitType::BanditCamp,
@@ -309,7 +303,7 @@ impl HistorySimulation {
                     let mut creature = world.creatures.get_mut(&creature_id);
                     creature.profession = Profession::Bandit;
                 },
-                CreatureSideEffect::AttackNearbyUnits => Self::attack_nearby_unit(world, &mut rng, *unit_id)
+                CreatureSideEffect::AttackNearbyUnits => Self::attack_nearby_unit(world, &mut rng, *unit_id, &mut self.params.resources)
             }
         }
 
@@ -386,33 +380,7 @@ impl HistorySimulation {
                 break;
             }
             let artisan_id = artisan_pool.remove(rng.randu_range(0, artisan_pool.len()));
-            let artisan = world.creatures.get(&artisan_id);
-            let item = match artisan.profession {
-                Profession::Blacksmith => {
-                    Some(ArtifactFactory::create_artifact(&mut rng, &self.params.resources))
-                },
-                Profession::Sculptor => {
-                    Some(ArtifactFactory::create_statue(&self.params.resources, comission_creature_id, &world))
-                },
-                _ => None
-            };
-            drop(artisan);
-            if let Some(item) = item {
-                let id = world.artifacts.add(item.clone());
-                {
-                    let mut creature = world.creatures.get_mut(&comission_creature_id);
-                    match &item.artwork_scene {
-                        Some(_) => {
-                            let mut unit = world.units.get_mut(unit_id);
-                            unit.artifacts.push(id);
-                        },
-                        None => {
-                            creature.details().inventory.push(id);
-                        },
-                    }
-                }
-                world.events.push(Event::ArtifactComission { date: now.clone(), creature_id: comission_creature_id, creator_id: artisan_id, item_id: id });
-            }
+            Self::make_artifact(&artisan_id, Some(&comission_creature_id), unit_id, world, &mut rng, &mut self.params.resources);
         }
 
         for creature_id in change_job_pool {
@@ -426,8 +394,9 @@ impl HistorySimulation {
         }
     }
 
-    fn kill_creature(world: &mut World, creature_id: CreatureId, unit_id: UnitId, cause_of_death: CauseOfDeath) {
+    fn kill_creature(world: &mut World, creature_id: CreatureId, unit_from_id: UnitId, unit_death_id: UnitId, cause_of_death: CauseOfDeath, resources: &mut Resources) {
         let now = world.date.clone();
+        let died_home = unit_from_id == unit_death_id;
         {
             let mut creature = world.creatures.get_mut(&creature_id);
             if creature.death.is_some() {
@@ -439,10 +408,24 @@ impl HistorySimulation {
                 let mut spouse = world.creatures.get_mut(&spouse_id);
                 spouse.spouse = None;
             }
-            let mut unit = world.units.get_mut(&unit_id);
+            let mut unit = world.units.get_mut(&unit_from_id);
             let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
             let id = unit.creatures.remove(i);
-            unit.cemetery.push(id);
+
+            // Else, the body is lost
+            if died_home {
+                unit.cemetery.push(id);
+            } else {
+                let mut death_unit = world.units.get_mut(&unit_death_id);
+                if let Some(settlement) = &mut death_unit.settlement {
+                    let species = resources.species.get(&creature.species);
+                    for drop in species.drops.iter() {
+                        settlement.add_material(drop, 1);
+                    }
+                }
+            }         
+
+            // TODO(PaZs1uBR): If they didn't die home, inheritance shouldn't take place
 
             let mut inheritor = None;
             let mut has_possession = false;
@@ -484,7 +467,7 @@ impl HistorySimulation {
         world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
     }
 
-    fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {
+    fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId, resources: &mut Resources) {
         let mut candidates = Vec::new();
         {
             let source_unit = world.units.get(&unit_id);
@@ -516,13 +499,78 @@ impl HistorySimulation {
 
             for (id, unit_id, killer) in battle.deaths {
                 let cause_of_death = CauseOfDeath::KilledInBattle(killer);
-                // TODO(PaZs1uBR): They died at the place they were fighting, not where they came from.
-                Self::kill_creature(world, id, unit_id, cause_of_death);
+                Self::kill_creature(world, id, unit_id, *target, cause_of_death, resources);
             }
 
             for (id, xp) in battle.xp_add {
                 let mut creature = world.creatures.get_mut(&id);
                 creature.experience += xp;
+            }
+        }
+    }
+
+    fn make_artifact(artisan_id: &CreatureId, comissioneer_id: Option<&CreatureId>, unit_id: &UnitId, world: &mut World, rng: &mut Rng, resources: &mut Resources) {
+        let mut artisan = world.creatures.get_mut(artisan_id);
+        let mut unit = world.units.get_mut(unit_id);
+        let item = match artisan.profession {
+            Profession::Blacksmith => {
+                let f_quality = rng.randf() + (xp_to_level(artisan.experience) as f32 * 0.01);
+                let quality;
+                if f_quality <= 0.5 {
+                    quality = ItemQuality::Poor
+                } else if f_quality <= 0.80 {
+                    quality = ItemQuality::Normal
+                } else if f_quality <= 0.95 {
+                    quality = ItemQuality::Good
+                } else if f_quality <= 1.00 {
+                    quality = ItemQuality::Excelent
+                } else {
+                    quality = ItemQuality::Legendary
+                }
+
+                let item = ItemFactory::weapon(rng, resources)
+                    .quality(quality)
+                    .material_pool(unit.settlement.as_mut().and_then(|sett| Some(&mut sett.material_stock)))
+                    .named()
+                    .make();
+                Some(item)
+            },
+            Profession::Sculptor => {
+                if let Some(comissioneer_id) = comissioneer_id {
+                    Some(ArtifactFactory::create_statue(rng, resources, *comissioneer_id, &world))
+                } else {
+                    None
+                }
+            },
+            _ => None
+        };
+
+        if item.is_some() {
+            // Levels-up artisan
+            artisan.experience += 100;
+        }
+
+        drop(artisan);
+
+        if let Some(item) = item {
+            
+            let who_gets_item = comissioneer_id.unwrap_or(artisan_id);
+            let id = world.artifacts.add(item.clone());
+            {
+                let mut creature = world.creatures.get_mut(who_gets_item);
+                match &item.artwork_scene {
+                    Some(_) => {
+                        unit.artifacts.push(id);
+                    },
+                    None => {
+                        creature.details().inventory.push(id);
+                    },
+                }
+            }
+            if let Some(comissioneer_id) = comissioneer_id {
+                world.events.push(Event::ArtifactComission { date: world.date.clone(), creature_id: *comissioneer_id, creator_id: *artisan_id, item_id: id });
+            } else {
+                world.events.push(Event::ArtifactCreated { date: world.date.clone(), artifact: id, creator: *artisan_id });
             }
         }
     }

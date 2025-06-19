@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, strings::Strings}, resources::item_blueprint::NameBlueprintComponent, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
+use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::NameBlueprintComponent, material::MaterialId}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
 
 pub(crate) struct ItemFactory {}
 
@@ -24,7 +24,7 @@ impl ItemFactory {
     }
 
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
-        return WeaponFactory { rng: rng, resources: resources, quality: None, named: false }
+        return WeaponFactory { rng: rng, resources: resources, quality: None, material_pool: None, named: false }
     }
 
     pub(crate) fn torso_garment<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
@@ -73,10 +73,13 @@ impl ItemFactory {
 
 }
 
+type MaterialPool = Vec<(MaterialId, usize)>;
+
 pub(crate) struct WeaponFactory<'a> {
     rng: &'a mut Rng,
     resources: &'a Resources,
     quality: Option<ItemQuality>,
+    material_pool: Option<&'a mut MaterialPool>,
     named: bool,
 }
 
@@ -87,17 +90,18 @@ impl<'a> WeaponFactory<'a> {
         return self
     }
 
+
+    pub(crate) fn material_pool(mut self, material_pool: Option<&'a mut MaterialPool>) -> Self {
+        self.material_pool = material_pool;
+        return self
+    }
+
     pub(crate) fn named(mut self) -> Self {
         self.named = true;
         return self
     }
 
     pub(crate) fn make(&mut self) -> Item {
-        let material_id = match self.rng.randu_range(0, 2) {
-            0 => self.resources.materials.id_of("mat:steel"),
-            _ => self.resources.materials.id_of("mat:bronze")
-        };
-
         let quality = match self.quality {
             Some(quality) => quality,
             None => {
@@ -119,14 +123,33 @@ impl<'a> WeaponFactory<'a> {
             0 => self.resources.item_blueprints.find("itb:sword"),
             _ => self.resources.item_blueprints.find("itb:mace")
         };
-        let handle = self.resources.materials.id_of("mat:oak");
-        let pommel = self.resources.materials.id_of("mat:bronze");
-        item = blueprint.make(vec!(
-            ItemMakeArguments::PrimaryMaterial(material_id),
-            ItemMakeArguments::SecondaryMaterial(handle),
-            ItemMakeArguments::DetailsMaterial(pommel),
-            ItemMakeArguments::Quality(quality),
-        ), &self.resources);
+
+        let mut arguments = vec!(ItemMakeArguments::Quality(quality));
+
+        if let Some(material_blueprint) = &blueprint.material {
+            let always_available = vec!(
+                self.resources.materials.id_of("mat:oak"),
+                self.resources.materials.id_of("mat:birch"),
+                self.resources.materials.id_of("mat:copper"),
+                self.resources.materials.id_of("mat:bronze"),
+                self.resources.materials.id_of("mat:steel"),
+            );
+
+            let primary = self.pick_material(material_blueprint.primary_tag_bitmask, &always_available);
+            arguments.push(ItemMakeArguments::PrimaryMaterial(primary));
+
+            if let Some(secondary_bitmask) = material_blueprint.secondary_tag_bitmask {
+                let secondary = self.pick_material(secondary_bitmask, &always_available);
+                arguments.push(ItemMakeArguments::SecondaryMaterial(secondary));
+            }
+
+            if let Some(details_bitmask) = material_blueprint.details_tag_bitmask {
+                let details = self.pick_material(details_bitmask, &always_available);
+                arguments.push(ItemMakeArguments::DetailsMaterial(details));
+            }
+        }
+
+        item = blueprint.make(arguments, &self.resources);
 
         if self.named {
             if let Some(name_blueprint) = &blueprint.name_blueprint {
@@ -135,6 +158,53 @@ impl<'a> WeaponFactory<'a> {
         }
 
         return item;
+    }
+
+    fn pick_material(&mut self, mat_tag_bitmask: u8, always_available_materials: &Vec<MaterialId>) -> MaterialId {
+
+        enum MaterialSource {
+            Pool(MaterialId),
+            AlwaysAvailable(MaterialId),
+        }
+        let mut candidates = Vec::new();
+
+        if let Some(material_pool) = &self.material_pool {
+            for (material_id, _count) in material_pool.iter() {
+                let material = self.resources.materials.get(material_id);
+                if bitmask_get(material.tags_bitmask, mat_tag_bitmask) {
+                    candidates.push(MaterialSource::Pool(*material_id));
+                }
+            };
+        }
+
+        for material_id in always_available_materials.iter() {
+            let material = self.resources.materials.get(material_id);
+            if bitmask_get(material.tags_bitmask, mat_tag_bitmask) {
+                candidates.push(MaterialSource::AlwaysAvailable(*material_id));
+            }
+        };
+
+        let selected_material = self.rng.item(&candidates);
+        match selected_material {
+            Some(MaterialSource::Pool(id)) => {
+                Self::consume_material(self.material_pool.as_mut().expect("Checked above"), id).expect("I don't see how this would happen");
+                *id
+            },
+            Some(MaterialSource::AlwaysAvailable(id)) => *id,
+            _ => panic!("No materials available to create item"),
+        }
+    }
+
+    fn consume_material(pool: &mut MaterialPool, id: &MaterialId) -> Result<(), ()> {
+        let position = pool.iter().position(|(l_id, _count)| l_id == id);
+        if let Some(position) = position {
+            pool[position].1 -= 1;
+            if pool[position].1 <= 0 {
+                pool.remove(position);
+            }
+            return Ok(())
+        }
+        return Err(())
     }
 
     fn make_item_name(&mut self, blueprint: &NameBlueprintComponent) -> String {

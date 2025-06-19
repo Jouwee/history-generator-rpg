@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::Item, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -89,7 +89,7 @@ impl Chunk {
         }
     }
 
-    pub(crate) fn playground(resources: &Resources, player: Actor) -> Chunk {
+    pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> Chunk {
         let mut chunk = Self::new(Size2D(128, 128), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
@@ -108,11 +108,18 @@ impl Chunk {
         chunk.npcs.push(npc);
 
         let mut rng = Rng::seeded("items");
-        for i in 0..8 {
-            let point = Coord2::xy(60 + i, 68);
-            let item = ItemFactory::weapon(&mut rng, &resources).make();
-            let texture = item.make_texture(&resources.materials);
-            chunk.items_on_ground.push((point, item, texture));
+        for i in 0..60 {
+            let point = Coord2::xy(60 + (i % 10), 68 + (i / 10));
+            if i < 10 {
+                let item = ItemFactory::weapon(&mut rng, &resources).make();
+                let texture = item.make_texture(&resources.materials);
+                chunk.items_on_ground.push((point, item, texture));
+            } else {
+                let i = rng.randu_range(0, world.artifacts.len());
+                let item = world.artifacts.get(&ItemId::new(i));
+                let texture = item.make_texture(&resources.materials);
+                chunk.items_on_ground.push((point, item.clone(), texture));
+            }         
         }
 
         return chunk

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, world::attributes::Attributes};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, resources::material::MaterialId, world::attributes::Attributes};
 
 use super::action::ActionId;
 
@@ -27,6 +27,7 @@ pub(crate) struct Species {
     pub(crate) intelligence: SpeciesIntelligence,
     pub(crate) attributes: Attributes,
     pub(crate) innate_actions: Vec<ActionId>,
+    pub(crate) drops: Vec<MaterialId>,
 }
 
 impl Species {
@@ -38,6 +39,7 @@ impl Species {
             intelligence: SpeciesIntelligence::Civilized,
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },
             innate_actions: Vec::new(),
+            drops: Vec::new()
         }
     }
 
@@ -53,6 +55,11 @@ impl Species {
 
     pub(crate) fn attributes(mut self, attributes: Attributes) -> Self {
         self.attributes = attributes;
+        self
+    }
+
+    pub(crate) fn drops(mut self, drops: Vec<MaterialId>) -> Self {
+        self.drops = drops;
         self
     }
 

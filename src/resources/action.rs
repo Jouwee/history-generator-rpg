@@ -252,10 +252,12 @@ impl ActionRunner {
                         if let Some(damage) = damage {
                             // Compute damage
                             let damage = match &damage {
-                                DamageType::Fixed(dmg) => dmg,
+                                DamageType::Fixed(dmg) => dmg.clone(),
                                 DamageType::FromWeapon(dmg) => {
                                     let item = actor.inventory.equipped(&EquipmentType::Hand).expect("Used equipped action with no equipped item");
-                                    &dmg.multiply(item.damage_mult())
+                                    let damage = dmg.multiply(item.damage_mult());
+                                    let damage = damage + item.extra_damage(&ctx.resources.materials);
+                                    damage
                                 }
                             };
                             let target_body_part = BodyPart::random(&mut Rng::rand());

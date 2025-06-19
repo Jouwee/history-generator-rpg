@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -48,14 +48,22 @@ impl Resources {
 
     fn load_materials(&mut self) {
         self.materials.add("mat:steel", Material::new_metal("steel"));
+
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
         self.materials.add("mat:bronze", bronze);
+
         self.materials.add("mat:birch", Material::new_wood("birch"));
+
         self.materials.add("mat:oak", Material::new_wood("oak"));
+
         let mut copper = Material::new_metal("copper");
         copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
         self.materials.add("mat:copper", copper);
+
+        let mut bone = Material::new_bone("varningr's bone");
+        bone.extra_damage = DamageComponent::arcane(5.);
+        self.materials.add("mat:varningr_bone", bone);
     }
 
     fn load_biomes(&mut self) {
@@ -293,6 +301,7 @@ impl Resources {
         self.species.add("species:varningr", Species::new("varningr", SpeciesApearance::single_sprite("species/varningr/varningr.png"))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
+            .drops(vec!(self.materials.id_of("mat:varningr_bone")))
             // TODO:
             .innate_actions(vec!(self.actions.id_of("act:bite")))
         );
@@ -456,7 +465,11 @@ impl Resources {
             placed_sprite, 
             action_provider: None,
             equippable: None,
-            material: Some(MaterialBlueprintComponent { }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_WOOD | MAT_TAG_METAL,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
             quality: None,
             mellee_damage: None,
             armor: None,
@@ -474,7 +487,11 @@ impl Resources {
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut")) }),
             equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
-            material: Some(MaterialBlueprintComponent { }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
+                details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
+            }),
             quality: Some(QualityBlueprintComponent { }),
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(10., 0., 0.) }),
             armor: None,
@@ -502,7 +519,11 @@ impl Resources {
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike")) }),
             equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
-            material: Some(MaterialBlueprintComponent { }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
+                details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
+            }),
             quality: Some(QualityBlueprintComponent { }),
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(0., 0., 10.) }),
             armor: None,

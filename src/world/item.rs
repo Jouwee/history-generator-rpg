@@ -112,6 +112,23 @@ impl Item {
         return 1.
     }
 
+    pub(crate) fn extra_damage(&self, materials: &Materials) -> DamageComponent {
+        let mut damage = DamageComponent::arcane(0.);
+        if let Some(material) = &self.material {
+            let primary = materials.get(&material.primary);
+            damage = damage + primary.extra_damage;
+            if let Some(secondary) = &material.secondary {
+                let secondary = materials.get(secondary);
+                damage = damage + secondary.extra_damage;
+            }
+            if let Some(details) = &material.details {
+                let details = materials.get(details);
+                damage = damage + details.extra_damage;
+            }
+        }
+        return damage;
+    }
+
 }
 
 

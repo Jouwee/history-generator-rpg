@@ -6,6 +6,7 @@ pub(crate) struct DamageComponent {
     pub(crate) slashing: f32,
     pub(crate) piercing: f32,
     pub(crate) bludgeoning: f32,
+    pub(crate) arcane: f32,
 }
 
 impl DamageComponent {
@@ -14,7 +15,17 @@ impl DamageComponent {
         DamageComponent { 
             slashing: slashing.max(0.),
             piercing: piercing.max(0.),
-            bludgeoning: bludgeoning.max(0.)
+            bludgeoning: bludgeoning.max(0.),
+            arcane: 0.
+        }
+    }
+
+    pub(crate) fn arcane(arcane: f32) -> DamageComponent {
+        DamageComponent { 
+            slashing: 0.,
+            piercing: 0.,
+            bludgeoning: 0.,
+            arcane: arcane.max(0.),
         }
     }
 
@@ -22,7 +33,8 @@ impl DamageComponent {
         DamageComponent {
             slashing: self.slashing * mult,
             piercing: self.piercing * mult,
-            bludgeoning: self.bludgeoning * mult
+            bludgeoning: self.bludgeoning * mult,
+            arcane: self.arcane * mult,
         }
     }
 }
@@ -31,7 +43,12 @@ impl Add for DamageComponent {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        DamageComponent::new(self.slashing + rhs.slashing, self.piercing + rhs.piercing, self.bludgeoning + rhs.bludgeoning)
+        DamageComponent{
+            slashing: self.slashing + rhs.slashing,
+            piercing: self.piercing + rhs.piercing,
+            bludgeoning: self.bludgeoning + rhs.bludgeoning,
+            arcane: self.arcane + rhs.arcane,
+        }
     }
 
 }
@@ -40,7 +57,12 @@ impl Sub for DamageComponent {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        DamageComponent::new(self.slashing - rhs.slashing, self.piercing - rhs.piercing, self.bludgeoning - rhs.bludgeoning)
+        DamageComponent{
+            slashing: self.slashing - rhs.slashing,
+            piercing: self.piercing - rhs.piercing,
+            bludgeoning: self.bludgeoning - rhs.bludgeoning,
+            arcane: self.arcane - rhs.arcane,
+        }
     }
 
 }

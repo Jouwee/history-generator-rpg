@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item, ItemQuality}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -121,24 +121,14 @@ pub(crate) struct ArtifactFactory {
 
 impl ArtifactFactory {
 
-    pub(crate) fn create_artifact(rng: &mut Rng, resources: &Resources) -> Item {
-        let item = ItemFactory::weapon(rng, resources)
-            .quality(ItemQuality::Legendary)
-            .named()
-            .make();
-        return item;
-    }
-
-    pub(crate) fn create_statue(resources: &Resources, subject: CreatureId, world: &World) -> Item {
-        // TODO: Determinate
-        let mut rng = Rng::rand();
+    pub(crate) fn create_statue(rng: &mut Rng, resources: &Resources, subject: CreatureId, world: &World) -> Item {
         let creature = world.creatures.get(&subject);
         if let Some(details) = &creature.details {
             if let Some(item) = details.inventory.first() {
-                return ItemFactory::statue(&mut rng, resources, ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) })
+                return ItemFactory::statue(rng, resources, ArtworkScene::FullBody { creature_id: subject, artifact_id: Some(*item) })
             }
         }
 
-        return ItemFactory::statue(&mut rng, resources, ArtworkScene::Bust { creature_id: subject });
+        return ItemFactory::statue(rng, resources, ArtworkScene::Bust { creature_id: subject });
     }
 }

@@ -267,7 +267,7 @@ fn main() {
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
-                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player);
+                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player, &scene.world);
                         let mut scene = GameSceneState::new(scene.world, scene.world_pos, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
