@@ -153,7 +153,8 @@ impl CreatureSimulation {
                 spouse: None,
                 details: None,
                 experience: 0,
-                sim_flags: father.sim_flags
+                sim_flags: father.sim_flags,
+                relationships: Vec::new()
             };
             return Some(child)
         }

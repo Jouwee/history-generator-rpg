@@ -144,3 +144,154 @@ impl World {
     }
 
 }
+
+
+#[cfg(test)]
+pub(crate) mod fixture {
+    use std::cell::{Ref, RefMut};
+
+    use crate::{engine::geometry::{Coord2, Size2D}, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, unit::{Unit, UnitId, UnitResources}}};
+
+    use super::*;
+
+    pub(crate) struct WorldFixture {
+        pub(crate) world: World,
+        // Alive male human villager
+        pub(crate) creature_a1: CreatureId,
+        // Alive female human villager
+        pub(crate) creature_a2: CreatureId,
+        // Alive male human villager
+        pub(crate) creature_a3: CreatureId,
+        // Alive female human villager
+        pub(crate) creature_a4: CreatureId,
+    }
+
+    impl WorldFixture {
+
+        pub fn new() -> Self {
+            let mut world = World::new(WorldTopology::new(Size2D(10, 10)));
+
+            let mut resources = Resources::new();
+            resources.load();
+
+            let human_id = resources.species.id_of("species:human");
+            let culture = resources.cultures.random();
+
+            let lineage_1 = world.lineages.add(Lineage::new(culture, resources.cultures.get(&culture)));
+            let lineage_2 = world.lineages.add(Lineage::new(culture, resources.cultures.get(&culture)));
+
+            let creature_a1 = world.creatures.add(Creature {
+                birth: WorldDate::new(1, 1, 1),
+                death: None,
+                details: None,
+                experience: 0,
+                father: CreatureId::ancients(),
+                mother: CreatureId::ancients(),
+                gender: CreatureGender::Male,
+                lineage: lineage_1,
+                offspring: Vec::new(),
+                profession: Profession::Peasant,
+                relationships: Vec::new(),
+                sim_flags: SIM_FLAG_INTELIGENT,
+                species: human_id,
+                spouse: None,
+            });
+
+            let creature_a2 = world.creatures.add(Creature {
+                birth: WorldDate::new(1, 1, 1),
+                death: None,
+                details: None,
+                experience: 0,
+                father: CreatureId::ancients(),
+                mother: CreatureId::ancients(),
+                gender: CreatureGender::Female,
+                lineage: lineage_2,
+                offspring: Vec::new(),
+                profession: Profession::Peasant,
+                relationships: Vec::new(),
+                sim_flags: SIM_FLAG_INTELIGENT,
+                species: human_id,
+                spouse: None,
+            });
+
+            let creature_a3 = world.creatures.add(Creature {
+                birth: WorldDate::new(1, 1, 1),
+                death: None,
+                details: None,
+                experience: 0,
+                father: CreatureId::ancients(),
+                mother: CreatureId::ancients(),
+                gender: CreatureGender::Male,
+                lineage: lineage_2,
+                offspring: Vec::new(),
+                profession: Profession::Peasant,
+                relationships: Vec::new(),
+                sim_flags: SIM_FLAG_INTELIGENT,
+                species: human_id,
+                spouse: None,
+            });
+
+            let creature_a4 = world.creatures.add(Creature {
+                birth: WorldDate::new(1, 1, 1),
+                death: None,
+                details: None,
+                experience: 0,
+                father: CreatureId::ancients(),
+                mother: CreatureId::ancients(),
+                gender: CreatureGender::Female,
+                lineage: lineage_2,
+                offspring: Vec::new(),
+                profession: Profession::Peasant,
+                relationships: Vec::new(),
+                sim_flags: SIM_FLAG_INTELIGENT,
+                species: human_id,
+                spouse: None,
+            });
+
+            let _: UnitId = world.units.add(Unit {
+                artifacts: Vec::new(),
+                cemetery: Vec::new(),
+                creatures: vec!(creature_a1, creature_a2, creature_a3, creature_a4),
+                population_peak: (2, 1),
+                resources: UnitResources { food: 0. },
+                settlement: None,
+                unit_type: crate::world::unit::UnitType::Village,
+                xy: Coord2::xy(1, 1)
+            });
+
+            return WorldFixture {
+                world,
+                creature_a1,
+                creature_a2,
+                creature_a3,
+                creature_a4,
+            }
+        }
+
+        pub(crate) fn creature_a1(&self) -> Ref<Creature> {
+            return self.world.creatures.get(&self.creature_a1);
+        }
+
+        pub(crate) fn creature_a2(&self) -> Ref<Creature> {
+            return self.world.creatures.get(&self.creature_a2);
+        }
+
+        pub(crate) fn creature_a3(&self) -> Ref<Creature> {
+            return self.world.creatures.get(&self.creature_a3);
+        }
+
+        pub(crate) fn creature_a4(&self) -> Ref<Creature> {
+            return self.world.creatures.get(&self.creature_a4);
+        }
+
+        pub(crate) fn creature_a3_mut(&mut self) -> RefMut<Creature> {
+            return self.world.creatures.get_mut(&self.creature_a3);
+        }
+
+        pub(crate) fn creature_a4_mut(&mut self) -> RefMut<Creature> {
+            return self.world.creatures.get_mut(&self.creature_a4);
+        }
+
+    }
+
+}

@@ -1,13 +1,16 @@
+use std::usize;
+
 use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
 pub(crate) struct CreatureId(usize);
 impl CreatureId {
     pub(crate) fn ancients() -> CreatureId {
-        return CreatureId(0);
+        // TODO(esa51vK6): Workaround
+        return CreatureId(usize::MAX);
     }
 }
 impl crate::commons::id_vec::Id for CreatureId {
@@ -39,6 +42,7 @@ pub(crate) struct Creature {
     pub(crate) experience: u32,
     pub(crate) details: Option<CreatureDetails>,
     pub(crate) sim_flags: u8,
+    pub(crate) relationships: Vec<Relationship>,
 }
 
 impl Creature {
@@ -79,6 +83,25 @@ impl Creature {
 
     pub(crate) fn sim_flag_is_great_beast(&self) -> bool {
         return bitmask_get(self.sim_flags, SIM_FLAG_GREAT_BEAST)
+    }
+
+    pub(crate) fn relationship_find_mut_or_insert(&mut self, self_creature_id: &CreatureId, other_creature_id: CreatureId, other_creature: &Creature) -> &mut Relationship {
+        let pos = self.relationships.binary_search_by(|r| r.creature_id.cmp(&other_creature_id));
+        match pos {
+            Ok(pos) => self.relationships.get_mut(pos).expect("Just checked"),
+            Err(pos) => {
+                self.relationships.insert(pos, Relationship::new(self_creature_id, &self, other_creature_id, other_creature));
+                self.relationships.get_mut(pos).expect("Just checked")
+            }
+        }
+    }
+
+    pub(crate) fn relationship_find(&self, other_creature_id: CreatureId) -> Option<&Relationship> {
+        let pos = self.relationships.binary_search_by(|r| r.creature_id.cmp(&other_creature_id));
+        match pos {
+            Ok(pos) => Some(self.relationships.get(pos).expect("Just checked")),
+            Err(_) => None
+        }
     }
 
 }
@@ -174,6 +197,114 @@ impl Profession {
             Profession::Sculptor =>  [5, 20],
             Profession::Ruler =>  [50, 100],
         }
+    }
+
+}
+
+#[derive(Clone, Debug)]
+/// A structure representing the relationship between a creature that holds this creature, and another creature
+pub(crate) struct Relationship {
+    /// Who the relationship is with
+    pub(crate) creature_id: CreatureId,
+    /// A value between -100 and 100 representing the general opinion that this creature holds with the other
+    opinion: i8
+}
+
+impl Relationship {
+
+    pub(crate) fn new(creature_id: &CreatureId, creature: &Creature, other_creature_id: CreatureId, other_creature: &Creature) -> Self {
+        let mut opinion = 0;
+
+        // My child
+        if other_creature.father == *creature_id || other_creature.mother == *creature_id {
+            opinion = 75;
+        }
+
+        // My parent
+        if creature.father == other_creature_id || creature.mother == other_creature_id {
+            opinion = 50;
+        }
+
+        // My sibling or half-sibling
+        if (creature.father == other_creature.father && creature.father != CreatureId::ancients()) || 
+            (creature.mother == other_creature.mother && creature.mother != CreatureId::ancients()) {
+            opinion = 50;
+        }
+
+        Relationship {
+            creature_id: other_creature_id,
+            opinion
+        }
+    }
+
+    pub(crate) fn add_opinion(&mut self, opinion: i8) {
+        self.opinion = (self.opinion.saturating_add(opinion)).clamp(-100, 100);
+    }
+
+    pub(crate) fn rival_or_worse(&self) -> bool {
+        return self.opinion <= -20;
+    }
+
+    pub(crate) fn friend_or_better(&self) -> bool {
+        return self.opinion >= 20;
+    }
+
+}
+
+#[cfg(test)]
+mod tests_relationship {
+    use crate::world::world::fixture::WorldFixture;
+
+    use super::*;
+
+    #[test]
+    fn test_init() {
+        let mut world = WorldFixture::new();
+
+        world.creature_a3_mut().father = world.creature_a1;
+        world.creature_a3_mut().mother = world.creature_a2;
+        world.creature_a4_mut().father = world.creature_a1;
+        world.creature_a4_mut().mother = world.creature_a2;
+
+        // Unknown
+        let relationship = Relationship::new(&world.creature_a1, &world.creature_a1(), world.creature_a2, &world.creature_a2());
+        assert_eq!(relationship.opinion, 0);
+
+        // Father > Child
+        let relationship = Relationship::new(&world.creature_a1, &world.creature_a1(), world.creature_a3, &world.creature_a3());
+        assert_eq!(relationship.opinion, 75);
+
+        // Child > Parent
+        let relationship = Relationship::new(&world.creature_a3, &world.creature_a3(), world.creature_a1, &world.creature_a1());
+        assert_eq!(relationship.opinion, 50);
+
+        // Siblings
+        let relationship = Relationship::new(&world.creature_a3, &world.creature_a3(), world.creature_a4, &world.creature_a4());
+        assert_eq!(relationship.opinion, 50);
+
+
+    }
+
+    #[test]
+    fn test_add_opiinion() {
+        let world = WorldFixture::new();
+        let mut relationship = Relationship::new(&world.creature_a1, &world.creature_a1(), world.creature_a2, &world.creature_a2());
+
+        // Shouldn't overflow
+        relationship.add_opinion(75);
+        assert_eq!(relationship.opinion, 75);
+        relationship.add_opinion(75);
+        assert_eq!(relationship.opinion, 100);
+        relationship.add_opinion(75);
+        assert_eq!(relationship.opinion, 100);
+
+        let mut relationship = Relationship::new(&world.creature_a1, &world.creature_a1(), world.creature_a2, &world.creature_a2());
+        relationship.add_opinion(-75);
+        assert_eq!(relationship.opinion, -75);
+        relationship.add_opinion(-75);
+        assert_eq!(relationship.opinion, -100);
+        relationship.add_opinion(-75);
+        assert_eq!(relationship.opinion, -100);
     }
 
 }

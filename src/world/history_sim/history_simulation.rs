@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::battle_simulator::BattleSimulator, item::ItemQuality, unit::{Demographics, SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::{battle_simulator::BattleSimulator, interactions::{simplified_interaction}}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -108,52 +108,22 @@ impl HistorySimulation {
 
 
 
-        let mut stats = (0, 0, 0, Demographics::new());
-
         for id in world.units.iter_ids::<UnitId>() {
-            self.simulate_step_unit(world, &step, &self.date.clone(), self.params.rng.clone(), &id, &mut stats);
+            self.simulate_step_unit(world, &step, &self.date.clone(), self.params.rng.clone(), &id);
             self.params.rng.next();
         }
 
 
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
-        println!("Memory: {:?}b", stats.0);
         println!("Year: {}", self.date.year());
         println!("Total creatures: {}", world.creatures.len());
         println!("Total events: {}", world.events.len());
-        println!("Populated units: {}", stats.2);
-        println!("Desolate units: {}", stats.1);
-        stats.3.print_console();
 
-        if stats.0 == 0 {
-            println!("Dead world.");
-
-            let mut map = (0, 0, 0, 0);
-            for creature in world.creatures.iter() {
-                let creature = creature.borrow();
-                if let Some(death) = &creature.death {
-                    match death.1 {
-                        CauseOfDeath::OldAge => { map.0 += 1; },
-                        CauseOfDeath::Starvation => { map.1 += 1; },
-                        CauseOfDeath::Disease => { map.2 += 1; },
-                        CauseOfDeath::KilledInBattle(_) => { map.3 += 1; },
-                    }
-                }
-            }
-
-            println!("Deaths:");
-            println!("Old age: {}", map.0);
-            println!("Starvation: {}", map.1);
-            println!("Disease: {}", map.2);
-            println!("Battle: {}", map.3);
-            return false;
-        }
         return true;
-
     }
 
-    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId, stats: &mut (usize, usize, usize, Demographics)) {
+    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) {
         let mut unit = world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
 
@@ -161,37 +131,32 @@ impl HistorySimulation {
 
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
-        if unit.creatures.len() == 0 {
-            stats.1 += 1;
-        } else {
-            stats.2 += 1;
-        }
-        
-
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);
-            stats.3.count(now, &creature);
 
             let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &mut creature);
             side_effects.push((*creature_id, side_effect));
 
-            stats.0 += std::mem::size_of_val(&creature.species) +
-                    std::mem::size_of_val(&creature.birth) +
-                    std::mem::size_of_val(&creature.gender) +
-                    std::mem::size_of_val(&creature.death) +
-                    std::mem::size_of_val(&creature.profession) +
-                    std::mem::size_of_val(&creature.father) +
-                    std::mem::size_of_val(&creature.mother) +
-                    std::mem::size_of_val(&creature.spouse) +
-                    std::mem::size_of_val(&creature.offspring);
-
-            if creature.death.is_none() {
-                let mut production = creature.profession.base_resource_production();
-                production.food = production.food * unit_tile.soil_fertility;
-                resources = production + resources;
-                resources.food -= 1.0;
+            // Production and consumption
+            let mut production = creature.profession.base_resource_production();
+            production.food = production.food * unit_tile.soil_fertility;
+            resources = production + resources;
+            resources.food -= 1.0;
+            
+            // Interactions
+            if creature.sim_flag_is_inteligent() {
+                // TODO(IhlgIYVA): Magic number
+                let num_interactions = step.days() / 30;
+                for _ in 0..num_interactions {
+                    let interaction_with = rng.item(&unit.creatures);
+                    if let Some(interaction_with) = interaction_with {
+                        if interaction_with != creature_id {
+                            let mut other_creature = world.creatures.get_mut(interaction_with);
+                            simplified_interaction(creature_id, &mut creature, interaction_with, &mut other_creature, &mut rng);
+                        }
+                    }
+                }
             }
-
         }
 
         unit.resources = resources;
@@ -442,6 +407,31 @@ impl HistorySimulation {
                     }
                 }
             }
+
+            // TODO (IhlgIYVA): Extract
+            if let CauseOfDeath::KilledInBattle(killer_id) = &cause_of_death {
+                for relationship in creature.relationships.iter() {
+                    let relationship_creature_id = relationship.creature_id;
+                    let mut relationship_creature = world.creatures.get_mut(&relationship_creature_id);
+                    let relationship = relationship_creature.relationship_find(creature_id);
+                    if let Some(relationship) = relationship {
+                        if relationship.friend_or_better() {
+                            // TODO (IhlgIYVA): How did I get to a point where it killed his own "friend"?
+                            if relationship_creature_id == *killer_id {
+                                println!("rel: {:?} killer: {:?}", relationship_creature_id, killer_id);
+                                continue
+                            }
+                            let killer = world.creatures.get(killer_id);
+                            let killer_relationship = relationship_creature.relationship_find_mut_or_insert(&relationship_creature_id, *killer_id, &killer);
+                            println!("add -75 to killer");
+                            killer_relationship.add_opinion(-75);
+                        }
+                    }
+                }
+            }
+
+            // Purges unnecessary data after death
+            creature.relationships.clear();
 
             drop(creature);
 

@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, Relationship, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -36,7 +36,8 @@ impl CreatureFactory {
                 species: species,
                 experience: 0,
                 details: None,
-                sim_flags: SIM_FLAG_INTELIGENT
+                sim_flags: SIM_FLAG_INTELIGENT,
+                relationships: Vec::new()
             });
             return vec!(creature_id)
         } else {
@@ -58,7 +59,8 @@ impl CreatureFactory {
                 species: species,
                 experience: 0,
                 details: None,
-                sim_flags: SIM_FLAG_INTELIGENT
+                sim_flags: SIM_FLAG_INTELIGENT,
+                relationships: Vec::new()
             });
             family.push(father_id);
             
@@ -75,7 +77,8 @@ impl CreatureFactory {
                 species: species,
                 experience: 0,
                 details: None,
-                sim_flags: SIM_FLAG_INTELIGENT
+                sim_flags: SIM_FLAG_INTELIGENT,
+                relationships: Vec::new()
             });
             family.push(mother_id);
 
@@ -109,7 +112,8 @@ impl CreatureFactory {
             offspring: Vec::new(),
             species: species,
             details: None,
-            sim_flags
+            sim_flags,
+            relationships: Vec::new()
         });
         return creature_id
     }

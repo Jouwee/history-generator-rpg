@@ -6,6 +6,7 @@ const DAYS_IN_YEAR: i32 = DAYS_IN_MONTH * MONTHS_IN_YEAR;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct WorldDate {
+    /// Timestamp - Number of days since 1-1-1
     timestamp: i32,
 }
 
@@ -25,6 +26,10 @@ impl WorldDate {
 
     pub(crate) fn day(&self) -> i32 {
         return self.timestamp % DAYS_IN_MONTH;
+    }
+
+    pub(crate) fn days(&self) -> u32 {
+        return self.timestamp as u32;
     }
 
 }

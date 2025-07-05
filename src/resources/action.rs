@@ -160,6 +160,9 @@ impl ActionRunner {
                         codex.add_name();
                         let creature = action_params.world.creatures.get(&creature_id);
                         println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &action_params.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
+                        // TODO(IhlgIYVA): Debug print
+                        println!("Relationships: {:?}", creature.relationships)
+
                     }
                 }
                 if let Some((_, item)) = &action_params.item_on_ground {
