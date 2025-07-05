@@ -1,17 +1,11 @@
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
-
-
 use std::{time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{asset::assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
+use sdl2_window::Sdl2Window;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
-use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::{event_loop::{EventSettings, Events}, ButtonArgs, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
@@ -134,11 +128,12 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    // Create a Glutin window.
-    let mut window: Window = WindowSettings::new("spinning-square", [200, 200])
-        .graphics_api(opengl)
-        .build()
-        .unwrap();
+    let mut window: Sdl2Window =
+        WindowSettings::new("opengl_graphics: colored_image_test", [300, 300])
+            // .exit_on_esc(true)
+            .graphics_api(opengl)
+            .build()
+            .unwrap();
 
     let resources = Resources::new();
 

@@ -1,6 +1,7 @@
-use graphics::{image, rectangle, Context, Text};
+use graphics::{image, rectangle, Context, Text, Transformed};
 use opengl_graphics::{GlGraphics, Texture};
-use crate::{graphics::Transformed, Assets};
+
+use crate::engine::asset::assets::Assets;
 
 use super::{asset::{font::Font, image::ImageAsset, image_sheet::ImageSheetAsset}, Color};
 
