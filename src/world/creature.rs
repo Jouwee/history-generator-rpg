@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, Resources};
+use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
@@ -70,7 +70,7 @@ impl Creature {
             CreatureGender::Female => &culture.first_name_female_model,
         };
         let name = name_model.generate(&Rng::seeded(id.as_usize()), 5, 13);
-        return format!("{} {}", name, lineage.name)
+        return format!("{} {}", Strings::capitalize(&name), Strings::capitalize(&lineage.name))
     }
 
     pub(crate) fn networth_range(&self) -> [i32; 2] {

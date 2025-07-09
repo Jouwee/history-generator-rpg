@@ -7,7 +7,7 @@ impl Strings {
             if i == 0 {
                 capitalized.push(char.to_ascii_uppercase());
             } else {
-                capitalized.push(char.to_ascii_lowercase());
+                capitalized.push(char);
             }
         }
         return capitalized;

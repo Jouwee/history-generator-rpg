@@ -115,9 +115,17 @@ impl UINode for CodexDialog {
             ctx.text_shadow(&death, game_ctx.assets.font_standard(), [layout[0] + 70, layout[1]], &Color::from_hex("ffffff")); 
 
             // ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 103, layout[1]], &Color::from_hex("ffffff"));
-            // layout[1] += 11;
+            layout[1] += 11;
 
             // TODO(hu2htwck): Other info
+
+            for event_i in codex.events() {
+                let event = state.events.get(*event_i).expect("Should not return invalid");
+
+                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("ffffff"));
+                layout[1] += 11;
+
+            }
 
         }
 
@@ -134,8 +142,13 @@ impl UINode for CodexDialog {
             }
             layout[1] += 16;
 
-            // ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 103, layout[1]], &Color::from_hex("ffffff"));
-            // layout[1] += 11;
+            for event_i in codex.events() {
+                let event = state.events.get(*event_i).expect("Should not return invalid");
+
+                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("ffffff"));
+                layout[1] += 11;
+
+            }
 
             // TODO(hu2htwck): Other info
 

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, slice::Iter};
 
 use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId}};
 
@@ -110,6 +110,14 @@ impl CreatureCodex {
         self.facts_bitmask = bitmask_set(self.facts_bitmask, CREATURE_FACT_MOTHER);
     }
 
+    pub(crate) fn add_event(&mut self, event: usize) {
+        self.events.push(event)
+    }
+
+    pub(crate) fn events(&self) -> Iter<usize> {
+        return self.events.iter()
+    }
+
 }
 
 const ARTIFACT_FACT_NAME: u8 = 0b0000_0001;
@@ -127,6 +135,14 @@ impl ArtifactCodex {
 
     pub(crate) fn add_name(&mut self) {
         self.facts_bitmask = bitmask_set(self.facts_bitmask, ARTIFACT_FACT_NAME);
+    }
+
+    pub(crate) fn add_event(&mut self, event: usize) {
+        self.events.push(event)
+    }
+
+    pub(crate) fn events(&self) -> Iter<usize> {
+        return self.events.iter()
     }
 
 }

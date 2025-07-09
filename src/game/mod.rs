@@ -112,12 +112,28 @@ impl GameSceneState {
         c.add_death();
         c.add_father();
         c.add_mother();
+        for (i, event) in world.events.iter().enumerate() {
+            if event.relates_to_creature(&id1) {
+                c.add_event(i)
+            }
+        }
+
         let c = world.codex.creature_mut(&id2);
         c.add_name();
+        for (i, event) in world.events.iter().enumerate() {
+            if event.relates_to_creature(&id2) {
+                c.add_event(i)
+            }
+        }
         let c = world.codex.creature_mut(&id3);
         c.add_birth();
         c.add_father();
         c.add_mother();
+        for (i, event) in world.events.iter().enumerate() {
+            if event.relates_to_creature(&id3) {
+                c.add_event(i)
+            }
+        }
 
         GameSceneState {
             world,

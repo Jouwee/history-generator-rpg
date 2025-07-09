@@ -423,7 +423,6 @@ impl HistorySimulation {
                             }
                             let killer = world.creatures.get(killer_id);
                             let killer_relationship = relationship_creature.relationship_find_mut_or_insert(&relationship_creature_id, *killer_id, &killer);
-                            println!("add -75 to killer");
                             killer_relationship.add_opinion(-75);
                         }
                     }
