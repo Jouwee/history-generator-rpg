@@ -19,8 +19,9 @@ use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
+use crate::game::chunk::PLAYER_IDX;
 use crate::game::gui::codex_dialog::CodexDialog;
-use crate::resources::action::{ActionParams, ActionRunner, ActionType, ActionUseParams};
+use crate::resources::action::{ActionRunner, ActionType};
 use crate::world::creature::CreatureId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -48,7 +49,6 @@ pub(crate) trait Renderable {
 
 // TODO: Wtf is this?
 pub(crate) struct InputEvent {
-    pub(crate) mouse_pos_cam: [f64; 2],
     pub(crate) button_args: ButtonArgs,
     pub(crate) evt: NewInputEvent
 }
@@ -87,7 +87,7 @@ pub(crate) struct GameSceneState {
 
 impl GameSceneState {
     pub(crate) fn new(mut world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
-        let player_pathfinding = AStar::new(chunk.size, chunk.player.xy);
+        let player_pathfinding = AStar::new(chunk.size, chunk.player().xy);
 
         let mut button_map = Button::text("Map");
         button_map.layout_component().anchor_bottom_center(-172.0, -1.0);
@@ -163,7 +163,7 @@ impl GameSceneState {
     }
 
     fn save_creature_appearances(&mut self) {
-        for npc in self.chunk.npcs.iter() {
+        for npc in self.chunk.actors.iter() {
             if let Some(_id) = npc.creature_id {
                 // TODO:
                 // let mut creature = self.world.creatures.get_mut(&id).unwrap();
@@ -177,52 +177,52 @@ impl GameSceneState {
 
     pub(crate) fn next_turn(&mut self, ctx: &mut GameContext) {
         if self.turn_controller.is_player_turn() {
-            self.chunk.player.ap.fill();
-            self.chunk.player.stamina.recover_turn();
-            self.chunk.player.hp.recover_turn();
+            self.chunk.player_mut().ap.fill();
+            self.chunk.player_mut().stamina.recover_turn();
+            self.chunk.player_mut().hp.recover_turn();
         } else {
-            let actor_ending = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+            let actor_ending = self.chunk.actors.get_mut(self.turn_controller.npc_idx()).unwrap();
             actor_ending.ap.fill();
             actor_ending.stamina.recover_turn();
             actor_ending.hp.recover_turn();
         }
         self.turn_controller.next_turn();
         if self.turn_controller.is_player_turn() {
-            self.chunk.player.start_of_round(&mut self.effect_layer);
+            self.chunk.player_mut().start_of_round(&mut self.effect_layer);
         } else {       
             {
-                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+                let npc = self.chunk.actors.get_mut(self.turn_controller.npc_idx()).unwrap();
                 npc.start_of_round(&mut self.effect_layer);
                 if npc.hp.health_points() == 0. {
-                    self.chunk.player.add_xp(100);
+                    self.chunk.player_mut().add_xp(100);
                     self.remove_npc(self.turn_controller.npc_idx(), ctx);
                     self.next_turn(ctx);
                     return
                 }
             }
             {
-                let npc = self.chunk.npcs.get(self.turn_controller.npc_idx()).unwrap();
+                let npc = self.chunk.actors.get(self.turn_controller.npc_idx()).unwrap();
                 let ai = AiSolver::choose_actions(&ctx.resources.actions, &npc, &self.chunk, ctx);
-                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+                let npc = self.chunk.actors.get_mut(self.turn_controller.npc_idx()).unwrap();
                 npc.ai = ai;
             }
         }
     }
 
     fn realtime_end_turn(&mut self, actor_idx: usize, ctx: &mut GameContext) {
-        let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
+        let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
         actor.ap.fill();
         actor.stamina.recover_turn();
         actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
-        let actor = self.chunk.npcs.get(actor_idx).unwrap();
+        let actor = self.chunk.actors.get(actor_idx).unwrap();
         let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, &self.chunk, ctx);
-        let actor = self.chunk.npcs.get_mut(actor_idx).unwrap();
+        let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
         actor.ai = ai;
     }
 
     fn realtime_player_end_turn(&mut self) {
-        let actor = &mut self.chunk.player;
+        let actor = self.chunk.player_mut();
         actor.ap.fill();
         actor.stamina.recover_turn();
         actor.hp.recover_turn();
@@ -230,19 +230,13 @@ impl GameSceneState {
     }
 
     pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
-        let id;
-        {
-            let npc = self.chunk.npcs.get_mut(i).unwrap();
-            id = npc.creature_id;
-            for item in npc.inventory.take_all() {
-                let texture = item.make_texture(&ctx.resources.materials);
-                self.chunk.items_on_ground.push((npc.xy, item, texture));
-            }
+        let npc = self.chunk.actors.get_mut(i).unwrap();
+        for item in npc.inventory.take_all() {
+            let texture = item.make_texture(&ctx.resources.materials);
+            self.chunk.map.items_on_ground.push((npc.xy, item, texture));
         }
-        self.chunk.npcs.remove(i);
-        if let Some(id) = id {
-            self.chunk.killed_people.push(id);
-        }
+
+        self.chunk.actors.remove(i);
         self.turn_controller.remove(i);
     }
 
@@ -257,7 +251,7 @@ impl GameSceneState {
         if let TurnMode::RealTime = self.turn_mode {
             return true
         }
-        for npc in self.chunk.npcs.iter() {
+        for npc in self.chunk.actors.iter() {
             if npc.actor_type == ActorType::Hostile {
                 return false
             }
@@ -267,7 +261,7 @@ impl GameSceneState {
 
     fn move_to_chunk(&mut self, world_pos: Coord2, ctx: &mut GameContext) {
         // Move player to opposite side
-        let mut player = self.chunk.player.clone();
+        let mut player = self.chunk.player().clone();
         let offset = world_pos - self.world_pos;
         if offset.x < 0 {
             player.xy.x = self.chunk.size.x() as i32 - 2;
@@ -307,10 +301,10 @@ impl GameSceneState {
 impl Scene for GameSceneState {
     fn init(&mut self, ctx: &mut GameContext) {
         self.save_creature_appearances();
-        self.turn_controller.roll_initiative(self.chunk.npcs.len());
-        self.hotbar.init(&self.chunk.player.inventory, ctx);
+        self.turn_controller.roll_initiative(self.chunk.actors.len());
+        self.hotbar.init(&self.chunk.player().inventory, ctx);
         self.game_context_menu.init(&(), ctx);
-        if self.chunk.npcs.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
+        if self.chunk.actors.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
             ctx.audio.switch_music(TrackMood::Regular);
@@ -324,14 +318,14 @@ impl Scene for GameSceneState {
             return map.render(ctx, game_ctx);
         }
         // Game
-        let center = self.chunk.player.xy;
+        let center = self.chunk.player().xy;
         ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
         self.chunk.render(ctx, game_ctx);
 
         ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
 
         if self.hotbar.selected_action.is_none() {
-            self.player_pathing.render(&self.turn_mode, &self.chunk.player, ctx, game_ctx);
+            self.player_pathing.render(&self.turn_mode, self.chunk.player(), ctx, game_ctx);
         }
 
         // Effects
@@ -339,7 +333,7 @@ impl Scene for GameSceneState {
         // UI
         let _ = ctx.try_pop();
         self.hotbar.render(&(), ctx, game_ctx);
-        self.hud.render(&self.chunk.player, ctx, game_ctx);
+        self.hud.render(self.chunk.player(), ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
         self.button_codex.render(&(), ctx, game_ctx);
         self.button_map.render(&(), ctx, game_ctx);
@@ -351,7 +345,7 @@ impl Scene for GameSceneState {
         }
         self.game_log.render(ctx, game_ctx);
 
-        self.character_dialog.render(&mut self.chunk.player, ctx, game_ctx);
+        self.character_dialog.render(self.chunk.player_mut(), ctx, game_ctx);
         self.codex_dialog.render(&mut self.world, ctx, game_ctx);
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
@@ -365,14 +359,14 @@ impl Scene for GameSceneState {
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
         // TODO (OLaU4Dth): Ideally not every update
-        if self.chunk.player.xy != *self.player_pathfinding.to() {
-            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player.xy);
+        if self.chunk.player().xy != *self.player_pathfinding.to() {
+            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
         }
         if self.turn_mode == TurnMode::TurnBased {
-            self.hud.preview_action_points(&self.chunk.player, self.player_pathing.get_preview_ap_cost());
+            self.hud.preview_action_points(self.chunk.player(), self.player_pathing.get_preview_ap_cost());
         }
 
-        self.hud.update(&self.chunk.player, update, ctx);
+        self.hud.update(self.chunk.player(), update, ctx);
         if self.can_change_turn_mode() {
             match self.turn_mode {
                 TurnMode::RealTime => self.button_toggle_turn_based.set_text("Trn"),
@@ -383,11 +377,11 @@ impl Scene for GameSceneState {
         self.effect_layer.update(update, ctx);
 
         let mut hostile = false;
-        for npc in self.chunk.npcs.iter_mut() {
+        for npc in self.chunk.actors.iter_mut() {
             npc.update(update.delta_time);
             hostile = hostile || npc.actor_type == ActorType::Hostile;
         }
-        self.chunk.player.update(update.delta_time);
+        self.chunk.player_mut().update(update.delta_time);
         if hostile {
             self.set_turn_mode(TurnMode::TurnBased);
             ctx.audio.switch_music(TrackMood::Battle);
@@ -396,19 +390,19 @@ impl Scene for GameSceneState {
         }
 
         // Check movement between chunks
-        if self.chunk.player.xy.x <= 1 {
+        if self.chunk.player().xy.x <= 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(-1, 0), ctx);
             return
         }
-        if self.chunk.player.xy.y <= 1 {
+        if self.chunk.player().xy.y <= 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(0, -1), ctx);
             return
         }
-        if self.chunk.player.xy.x >= self.chunk.size.x() as i32 - 1 {
+        if self.chunk.player().xy.x >= self.chunk.size.x() as i32 - 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(1, 0), ctx);
             return
         }
-        if self.chunk.player.xy.y >= self.chunk.size.y() as i32 - 1 {
+        if self.chunk.player().xy.y >= self.chunk.size.y() as i32 - 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(0, 1), ctx);
             return
         }
@@ -421,7 +415,7 @@ impl Scene for GameSceneState {
                     }
                     return
                 }
-                let npc = self.chunk.npcs.get_mut(self.turn_controller.npc_idx()).unwrap();
+                let npc = self.chunk.actors.get_mut(self.turn_controller.npc_idx()).unwrap();
 
                 if npc.ai.waiting_delay(update.delta_time) {
                     return
@@ -451,7 +445,7 @@ impl Scene for GameSceneState {
                 }
 
                 let mut end_turns_idxs = Vec::new();
-                for (idx, npc) in self.chunk.npcs.iter_mut().enumerate() {
+                for (idx, npc) in self.chunk.actors.iter_mut().enumerate() {
                     if npc.ai.waiting_delay(update.delta_time) {
                         return
                     }
@@ -470,7 +464,7 @@ impl Scene for GameSceneState {
                 for idx in end_turns_idxs {
                     self.realtime_end_turn(idx, ctx);
                 }
-                self.chunk.player.ap.fill();
+                self.chunk.player_mut().ap.fill();
             }
         }
 
@@ -490,10 +484,10 @@ impl Scene for GameSceneState {
         }
 
         self.hotbar.input(&mut (), &evt.evt, ctx)?;
-        self.hud.input(&self.chunk.player, &evt.evt, ctx);
+        self.hud.input(self.chunk.player(), &evt.evt, ctx);
 
-        if self.character_dialog.input(&mut self.chunk.player, &evt.evt, ctx).is_break() {
-            self.hotbar.equip(&self.chunk.player.inventory, ctx);
+        if self.character_dialog.input(self.chunk.player_mut(), &evt.evt, ctx).is_break() {
+            self.hotbar.equip(&self.chunk.player().inventory, ctx);
             return ControlFlow::Break(());
         }
         self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
@@ -502,22 +496,17 @@ impl Scene for GameSceneState {
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
-            let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
-            let item_on_ground = self.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
-            let tile_metadata = self.chunk.tiles_metadata.get(&cursor).and_then(|m| Some(m));
-            let object_tile = self.chunk.map.get_object_idx(cursor);
+            let result = ActionRunner::try_use(
+                action,
+                PLAYER_IDX,
+                cursor,
+                &mut self.chunk,
+                &mut self.world,
+                &mut self.effect_layer,
+                &mut self.game_log,
+                ctx
+            );
 
-            let mut action_params = ActionUseParams {
-                actor: &mut self.chunk.player,
-                cursor_pos: cursor,
-                target,
-                item_on_ground: item_on_ground.and_then(|(i, t)| Some((i, &t.1))),
-                tile_metadata,
-                object_tile,
-                world: &mut self.world
-            };
-
-            let result = ActionRunner::try_use(action, &mut action_params, &mut self.effect_layer, &mut self.game_log, ctx);
             if let Ok(side_effects) = result {
                 for side_effect in side_effects {
                     side_effect.run(self, ctx);
@@ -555,7 +544,7 @@ impl Scene for GameSceneState {
 
             // TODO(xYMCADko): init logic is weird
             let mut d = CharacterDialog::new();
-            d.init(&self.chunk.player, ctx);
+            d.init(self.chunk.player(), ctx);
             self.character_dialog.show(d);
 
             return ControlFlow::Break(());
@@ -578,7 +567,7 @@ impl Scene for GameSceneState {
                 }
             },
             TurnMode::RealTime => {
-                self.chunk.player.ap.fill();
+                self.chunk.player_mut().ap.fill();
             }
         }
 
@@ -608,44 +597,24 @@ impl Scene for GameSceneState {
 
         match evt.evt {
             NewInputEvent::Click { button: MouseButton::Right, pos } => {
-                let tile_pos = Coord2::xy(evt.mouse_pos_cam[0] as i32 / 24, evt.mouse_pos_cam[1] as i32 / 24);
-                let target = self.chunk.npcs.iter().find(|npc| npc.xy == tile_pos);
-                let item_on_ground = self.chunk.items_on_ground.iter().find(|(xy, _item, _tex)| *xy == tile_pos);
-                let tile_metadata = self.chunk.tiles_metadata.get(&tile_pos);
-                let object_tile = self.chunk.map.get_object_idx(tile_pos);
-                let action_params = ActionParams {
-                    actor: &self.chunk.player,
-                    cursor_pos: tile_pos,
-                    target,
-                    item_on_ground: item_on_ground.and_then(|i| Some(&i.1)),
-                    tile_metadata,
-                    object_tile
-                };
-                self.game_context_menu.show(&self.chunk.player, &action_params, ctx, pos, self.cursor_pos);
+                self.game_context_menu.show(PLAYER_IDX, self.cursor_pos, &mut self.chunk, ctx, pos);
             }
 
 
             NewInputEvent::Click { button: MouseButton::Left, pos: _ } => {
                 if let Some(action_id) = &self.hotbar.selected_action {
 
-                    let target = self.chunk.npcs.iter_mut().enumerate().find(|(_, npc)| npc.xy == self.cursor_pos);
-                    let item_on_ground = self.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == self.cursor_pos);
-                    let tile_metadata = self.chunk.tiles_metadata.get(&self.cursor_pos).and_then(|m| Some(m));
-                    let object_tile = self.chunk.map.get_object_idx(self.cursor_pos);
-
-                    let mut action_params = ActionUseParams {
-                        actor: &mut self.chunk.player,
-                        cursor_pos: self.cursor_pos,
-                        target,
-                        item_on_ground: item_on_ground.and_then(|(i, t)| Some((i, &t.1))),
-                        tile_metadata,
-                        object_tile,
-                        world: &mut self.world
-                    };
-
-
                     let action = ctx.resources.actions.get(action_id);
-                    let result = ActionRunner::try_use(action, &mut action_params, &mut self.effect_layer, &mut self.game_log, ctx);
+                    let result = ActionRunner::try_use(
+                        action,
+                        PLAYER_IDX,
+                        self.cursor_pos,
+                        &mut self.chunk,
+                        &mut self.world,
+                        &mut self.effect_layer,
+                        &mut self.game_log,
+                        ctx
+                    );
                     if let Ok(side_effects) = result {
                         for side_effect in side_effects {
                             side_effect.run(self, ctx);
@@ -660,7 +629,7 @@ impl Scene for GameSceneState {
             _ => (),
         }
         if self.turn_mode == TurnMode::RealTime {
-            self.chunk.player.ap.fill();
+            self.chunk.player_mut().ap.fill();
         }
         return ControlFlow::Continue(())
     }

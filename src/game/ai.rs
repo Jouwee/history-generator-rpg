@@ -84,7 +84,7 @@ impl AiSolver {
             return runner
         }
 
-        let mut astar = AStar::new(chunk.size, chunk.player.xy);
+        let mut astar = AStar::new(chunk.size, chunk.player().xy);
         
         astar.find_path(ctx.xy, |xy| {
             if !chunk.size.in_bounds(xy) || chunk.map.blocks_movement(xy) {
@@ -137,7 +137,7 @@ impl AiSolver {
                     paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                 },
                 ActionType::Targeted { damage, inflicts } => {
-                    if ctx.xy.dist_squared(&chunk.player.xy) < 3. {
+                    if ctx.xy.dist_squared(&chunk.player().xy) < 3. {
                         let mut ctx = ctx.clone();
                         ctx.ap -= action.ap_cost as i32;
                         ctx.stamina -= action.stamina_cost;
@@ -171,7 +171,7 @@ impl AiSolver {
     }
 
     fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &Chunk) -> f64 {
-        let dist = ctx.xy.dist(&chunk.player.xy) as f64;
+        let dist = ctx.xy.dist(&chunk.player().xy) as f64;
         if dist < 3. {
             return 0.;
         }        

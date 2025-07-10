@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, game::{self, actor::health_component::BodyPart}, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
+use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 

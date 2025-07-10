@@ -209,7 +209,6 @@ fn main() {
             // TODO: Fake event
             let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
             let input_event = OldInputEvent {
-                mouse_pos_cam: [k[0] / app.display_context.scale + app.display_context.camera_rect[0], k[1] / app.display_context.scale + app.display_context.camera_rect[1]],
                 button_args: b,
                 evt: InputEvent::from_mouse_move(k, &app.display_context, &mut input_state)
             };
@@ -219,9 +218,7 @@ fn main() {
         if let Some(k) = e.button_args() {
             let now: Instant = Instant::now();
             if k.state == ButtonState::Press || k.state == ButtonState::Release {
-                let p = last_mouse_pos;
                 let input_event = OldInputEvent {
-                    mouse_pos_cam: [p[0] / app.display_context.scale + app.display_context.camera_rect[0], p[1] / app.display_context.scale + app.display_context.camera_rect[1]],
                     button_args: k,
                     evt: InputEvent::from_button_args(&k, &mut input_state)
                 };
@@ -262,7 +259,7 @@ fn main() {
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
-                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player, &scene.world);
+                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player().clone(), &scene.world);
                         let mut scene = GameSceneState::new(scene.world, scene.world_pos, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);

@@ -6,15 +6,13 @@ use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::Movemen
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
+pub(crate) const PLAYER_IDX: usize = usize::MAX;
+
 pub(crate) struct Chunk {
     pub(crate) size: Size2D,
     pub(crate) map: ChunkMap,
     pub(crate) player: Actor,
-    pub(crate) npcs: Vec<Actor>,
-    pub(crate) killed_people: Vec<CreatureId>,
-    // TODO: Should probably be on the map
-    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
-    pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
+    pub(crate) actors: Vec<Actor>,
 }
 
 #[derive(Clone)]
@@ -23,6 +21,8 @@ pub(crate) enum TileMetadata {
 }
 
 pub(crate) struct ChunkMap {
+    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
+    pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
     pub(crate) tiles_clone: ResourceMap<TileId, Tile>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
     pub(crate) object_layer: TileMap,
@@ -80,12 +80,33 @@ impl Chunk {
                 tiles_clone: resources.tiles.clone(),
                 ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
                 object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
+                items_on_ground: Vec::new(),
+                tiles_metadata: HashMap::new(),
             },
             player,
-            npcs: Vec::new(),
-            killed_people: Vec::new(),
-            items_on_ground: Vec::new(),
-            tiles_metadata: HashMap::new(),
+            actors: Vec::new(),
+        }
+    }
+
+    pub(crate) fn player(&self) -> &Actor {
+        return &self.player
+    }
+
+    pub(crate) fn player_mut(&mut self) -> &mut Actor {
+        return &mut self.player
+    }
+
+    pub(crate) fn actor(&self, index: usize) -> Option<&Actor> {
+        match index {
+            PLAYER_IDX => Some(&self.player),
+            i => self.actors.get(i),
+        }
+    }
+
+    pub(crate) fn actor_mut(&mut self, index: usize) -> Option<&mut Actor> {
+        match index {
+            PLAYER_IDX => Some(&mut self.player),
+            i => self.actors.get_mut(i),
         }
     }
 
@@ -97,7 +118,7 @@ impl Chunk {
             }
         }
 
-        chunk.player.xy = Coord2::xy(64, 64);
+        chunk.player_mut().xy = Coord2::xy(64, 64);
 
         // Bed
         chunk.map.object_layer.set_tile(36, 34, 3);
@@ -105,7 +126,7 @@ impl Chunk {
         let species_id = &resources.species.id_of("species:varningr");
         let species = resources.species.get(species_id);
         let npc = Actor::from_species(Coord2::xy(64, 50), &resources.species.id_of("species:varningr"), species);
-        chunk.npcs.push(npc);
+        chunk.actors.push(npc);
 
         let mut rng = Rng::seeded("items");
         for i in 0..60 {
@@ -113,12 +134,12 @@ impl Chunk {
             if i < 10 {
                 let item = ItemFactory::weapon(&mut rng, &resources).make();
                 let texture = item.make_texture(&resources.materials);
-                chunk.items_on_ground.push((point, item, texture));
+                chunk.map.items_on_ground.push((point, item, texture));
             } else {
                 let i = rng.randu_range(0, world.artifacts.len());
                 let item = world.artifacts.get(&ItemId::new(i));
                 let texture = item.make_texture(&resources.materials);
-                chunk.items_on_ground.push((point, item.clone(), texture));
+                chunk.map.items_on_ground.push((point, item.clone(), texture));
             }         
         }
 
@@ -150,7 +171,7 @@ impl Renderable for Chunk {
         self.map.ground_layer.render(ctx, game_ctx);
 
         let mut actors_by_position = HashMap::new();
-        actors_by_position.insert(&self.player.xy, vec!(&self.player));
+        actors_by_position.insert(&self.player().xy, vec!(self.player()));
         let cull_start = [
             (ctx.camera_rect[0] / 24. as f64 - 1.).max(0.) as i32,
             (ctx.camera_rect[1] / 24. as f64 - 1.).max(0.) as i32
@@ -159,7 +180,7 @@ impl Renderable for Chunk {
             1 + cull_start[0] + ctx.camera_rect[2] as i32 / 24,
             1 + cull_start[1] + ctx.camera_rect[3] as i32 / 24
         ];
-        for npc in self.npcs.iter() {
+        for npc in self.actors.iter() {
             if npc.xy.x < cull_start[0] || npc.xy.y < cull_start[1] || npc.xy.x > cull_limit[0] || npc.xy.y > cull_limit[1] {
                 continue
             }
@@ -177,7 +198,7 @@ impl Renderable for Chunk {
             }
         });
 
-        for (pos, _item, texture) in self.items_on_ground.iter() {
+        for (pos, _item, texture) in self.map.items_on_ground.iter() {
             ctx.texture_ref(texture, [pos.x as f64 * 24., pos.y as f64 * 24.]);
         }
         // Renders the nav borders

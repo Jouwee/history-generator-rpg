@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, Relationship, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng

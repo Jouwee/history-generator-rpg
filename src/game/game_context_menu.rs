@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}, resources::action::{ActionId, ActionParams, ActionRunner}, Actor, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}, game::chunk::Chunk, resources::action::{ActionId, ActionRunner}, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,
@@ -18,10 +18,12 @@ impl GameContextMenu {
         }
     }
 
-    pub(crate) fn show(&mut self, actor: &Actor, action_params: &ActionParams, ctx: &mut GameContext, position: [f64; 2], cursor: Coord2) {
+    pub(crate) fn show(&mut self, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, ctx: &mut GameContext, position: [f64; 2]) {
+        let actor = chunk.actor(actor_index).unwrap();
+
         let actions: Vec<(i32, String)> = actor.get_all_available_actions(ctx).iter()
             .map(|id| (*id, ctx.resources.actions.get(id)))
-            .filter(|(_id, action)| ActionRunner::can_use(action, action_params).is_ok())
+            .filter(|(_id, action)| ActionRunner::can_use(action, actor_index, cursor, chunk).is_ok())
             .map(|(id, action)| (id.as_usize() as i32, action.name.clone()))
             .collect();
 

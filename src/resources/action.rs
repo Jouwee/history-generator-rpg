@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState, Item};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -99,36 +99,41 @@ impl ActionRunner {
         return false
     }
 
-    pub(crate) fn can_use(action: &Action, action_params: &ActionParams) -> Result<(), ActionFailReason> {
-        if !action_params.actor.ap.can_use(action.ap_cost) {
+    pub(crate) fn can_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk) -> Result<(), ActionFailReason> {
+        let actor = chunk.actor_mut(actor_index).unwrap();
+        if !actor.ap.can_use(action.ap_cost) {
             return Err(ActionFailReason::NotEnoughAP);
         }
-        if !action_params.actor.stamina.can_use(action.stamina_cost) {
+        if !actor.stamina.can_use(action.stamina_cost) {
             return Err(ActionFailReason::NotEnoughStamina);
         }
-        if action_params.actor.xy.dist_squared(&action_params.cursor_pos) >= 3. {
+        if actor.xy.dist_squared(&cursor) >= 3. {
             return Err(ActionFailReason::CantReach);
         }
         match action.action_type {
             ActionType::Inspect => (),
             ActionType::Targeted { damage: _, inflicts: _ } => {
-                if action_params.target.is_none() {
+                let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
+                if target.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
             ActionType::PickUp => {
-                if action_params.item_on_ground.is_none() {
+                let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
+                if item_on_ground.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
             ActionType::Dig => {
-                if action_params.tile_metadata.is_none() {
+                let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                if tile_metadata.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
             ActionType::Sleep =>  {
                 // TODO: Bed
-                if action_params.object_tile != 3 {
+                let object_tile = chunk.map.get_object_idx(cursor);
+                if object_tile != 3 {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
@@ -138,38 +143,42 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn try_use(action: &Action, action_params: &mut ActionUseParams, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<Vec<ActionSideEffect>, ActionFailReason> {
-        let r = Self::can_use(action, &action_params.as_simple_params());
+    pub(crate) fn try_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<Vec<ActionSideEffect>, ActionFailReason> {
+        let r = Self::can_use(action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
         }
         drop(r);
+
+        let mut target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
+        let mut item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
+        let mut tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
 
         match action.action_type {
             ActionType::Inspect => {
 
                 // TODO(hu2htwck): Add info to codex
 
-                println!("Inspect at {:?}", action_params.cursor_pos);
-                if let Some((_, target)) = &action_params.target {
+                println!("Inspect at {:?}", cursor);
+                if let Some((_, target)) = &target {
                     let creature_id = target.creature_id;
                     if let Some(creature_id) = creature_id {
-                        let codex = action_params.world.codex.creature_mut(&creature_id);
+                        let codex = world.codex.creature_mut(&creature_id);
                         // TODO(hu2htwck): Not this
                         codex.add_appearance();
                         codex.add_name();
-                        let creature = action_params.world.creatures.get(&creature_id);
-                        println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &action_params.world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
+                        let creature = world.creatures.get(&creature_id);
+                        println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
                         // TODO(IhlgIYVA): Debug print
                         println!("Relationships: {:?}", creature.relationships)
 
                     }
                 }
-                if let Some((_, item)) = &action_params.item_on_ground {
-                    println!("{}", item.description(&ctx.resources, &action_params.world));
+                if let Some((_, (_, item, _))) = &item_on_ground {
+                    println!("{}", item.description(&ctx.resources, &world));
                 }
-                let tile = action_params.object_tile;
-                let tile_meta = &action_params.tile_metadata;
+                let tile = chunk.map.get_object_idx(cursor);
+                let tile_meta = &tile_metadata;
                 match tile {
                     1 => println!("A wall."),
                     2 => println!("A tree."),
@@ -183,9 +192,9 @@ impl ActionRunner {
                 if let Some(meta) = tile_meta {
                     match meta {
                         TileMetadata::BurialPlace(creature_id) => {
-                            let creature = action_params.world.creatures.get(creature_id);
+                            let creature = world.creatures.get(creature_id);
                             if let Some(death) = creature.death {
-                                let codex = action_params.world.codex.creature_mut(&creature_id);
+                                let codex = world.codex.creature_mut(&creature_id);
                                 codex.add_name();
                                 codex.add_death();
                                 // TODO(hu2htwck): Event
@@ -197,11 +206,14 @@ impl ActionRunner {
                 }
             },
             ActionType::Targeted { damage: _, inflicts: _ } => {
-                if let Some((i, target)) = &mut action_params.target {
-                    if ActionRunner::targeted_try_use(action, &mut action_params.actor, target, effect_layer, game_log, &action_params.world, ctx) {
+                if let Some((i, target)) = &mut target {
+                    // TODO(QZ94ei4M): Borrow issues
+                    // let mut actor = chunk.actor_mut(actor_index).unwrap();
+                    let mut actor = &mut chunk.player;
+                    if ActionRunner::targeted_try_use(action, &mut actor, target, effect_layer, game_log, &world, ctx) {
                         let mut side_effects = Vec::new();
                         if target.hp.health_points() == 0. {
-                            action_params.actor.add_xp(100);
+                            actor.add_xp(100);
                             side_effects.push(ActionSideEffect::RemoveNpc(*i));
                         }
                         if target.actor_type != ActorType::Player {
@@ -212,21 +224,24 @@ impl ActionRunner {
                 }
             },
             ActionType::PickUp => {
-                let (i, item) = action_params.item_on_ground.as_mut().expect("msg");
-                if let Ok(_) = action_params.actor.inventory.add(item.clone()) {
+                let (i, (_, item, _)) = item_on_ground.as_mut().expect("msg");
+                // TODO(QZ94ei4M): Borrow issues
+                // let mut actor = chunk.actor_mut(actor_index).unwrap();
+                let actor = &mut chunk.player;
+                if let Ok(_) = actor.inventory.add(item.clone()) {
                     return Ok(vec!(ActionSideEffect::RemoveItemOnGround(*i)))
                 }
             },
             ActionType::Dig => {
-                if let Some(meta) = &mut action_params.tile_metadata {
+                if let Some(meta) = &mut tile_metadata {
                     match meta {
                         TileMetadata::BurialPlace(creature_id) => {
                             let mut side_effects = Vec::new();
-                            side_effects.push(ActionSideEffect::RemoveObject(action_params.cursor_pos));
-                            let creature = action_params.world.creatures.get(creature_id);
+                            side_effects.push(ActionSideEffect::RemoveObject(cursor));
+                            let creature = world.creatures.get(creature_id);
                             if let Some(details) = &creature.details {
                                 for item in details.inventory.iter() {
-                                    side_effects.push(ActionSideEffect::AddArtifactOnGround(action_params.cursor_pos, *item));
+                                    side_effects.push(ActionSideEffect::AddArtifactOnGround(cursor, *item));
                                 }
                             }
                             return Ok(side_effects)
@@ -332,49 +347,6 @@ impl ActionRunner {
     }
 }
 
-pub(crate) struct ActionParams<'a> {
-    pub(crate) actor: &'a Actor,
-    pub(crate) cursor_pos: Coord2,
-    pub(crate) target: Option<&'a Actor>,
-    pub(crate) item_on_ground: Option<&'a Item>,
-    pub(crate) tile_metadata: Option<&'a TileMetadata>,
-    pub(crate) object_tile: usize
-}
-
-pub(crate) struct ActionUseParams<'a> {
-    pub(crate) actor: &'a mut Actor,
-    pub(crate) cursor_pos: Coord2,
-    pub(crate) target: Option<(usize, &'a mut Actor)>,
-    pub(crate) item_on_ground: Option<(usize, &'a Item)>,
-    pub(crate) tile_metadata: Option<&'a TileMetadata>,
-    pub(crate) object_tile: usize,
-    pub(crate) world: &'a mut World,
-}
-
-impl<'a> ActionUseParams<'a> {
-
-    fn as_simple_params(&'a self) -> ActionParams<'a> {
-        ActionParams {
-            actor: &self.actor,
-            cursor_pos: self.cursor_pos,
-            target: match &self.target {
-                None => None,
-                Some((_, v)) => Some(v)
-            },
-            item_on_ground: match &self.item_on_ground {
-                None => None,
-                Some((_, v)) => Some(v)
-            },
-            tile_metadata: match &self.tile_metadata {
-                None => None,
-                Some(v) => Some(v)
-            },
-            object_tile: self.object_tile,
-        }
-    }
-
-}
-
 #[derive(Debug)]
 pub(crate) enum ActionFailReason {
     NotEnoughAP,
@@ -398,20 +370,20 @@ impl ActionSideEffect {
         match self {
             Self::RemoveNpc(i) => game.remove_npc(*i, ctx),
             Self::MakeNpcsHostile => {
-                for p in game.chunk.npcs.iter_mut() {
+                for p in game.chunk.actors.iter_mut() {
                     p.actor_type = ActorType::Hostile;
                 }
             },
             Self::RemoveItemOnGround(i) => {
-                game.chunk.items_on_ground.remove(*i);
+                game.chunk.map.items_on_ground.remove(*i);
             },
             Self::RemoveObject(pos) => {
                 game.chunk.map.remove_object(*pos);
-                game.chunk.tiles_metadata.remove(pos);
+                game.chunk.map.tiles_metadata.remove(pos);
             },
             Self::AddArtifactOnGround(pos, item) => {
                 let item = game.world.artifacts.get(item);
-                game.chunk.items_on_ground.push((*pos, item.clone(), item.make_texture(&ctx.resources.materials)));
+                game.chunk.map.items_on_ground.push((*pos, item.clone(), item.make_texture(&ctx.resources.materials)));
             }
         }
     }

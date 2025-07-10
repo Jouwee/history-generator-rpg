@@ -8,7 +8,6 @@ use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::{geometry
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
 struct ChunkFeaturePools {
-    main_pool: Option<String>,
     detached_housing_pool: Option<String>,
     cemetery_pool: Option<String>,
     artifacts_pool: Option<String>,
@@ -93,13 +92,11 @@ impl ChunkGenerator {
     fn get_pools(&self, unit: &Unit) -> ChunkFeaturePools {
         match unit.unit_type {
             UnitType::Village => ChunkFeaturePools {
-                main_pool: None,
                 detached_housing_pool: Some(String::from("village_house_start")),
                 artifacts_pool: Some(String::from("village_plaza")),
                 cemetery_pool: Some(String::from("village_cemetery"))
             },
             UnitType::BanditCamp => ChunkFeaturePools {
-                main_pool: None,
                 detached_housing_pool: Some(String::from("camp_start")),
                 artifacts_pool: None,
                 cemetery_pool: None
@@ -207,7 +204,7 @@ impl ChunkGenerator {
 
                 for creature in slice.iter() {
                     self.chunk.map.object_layer.set_tile(x as usize, y as usize, 6);
-                    self.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
+                    self.chunk.map.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
 
 
                     x = x + 2;
@@ -302,7 +299,7 @@ impl ChunkGenerator {
                     let creature = world.creatures.get(creature_id);
                     let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
                     let species = resources.species.get(&creature.species);
-                    self.chunk.npcs.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world, resources));
+                    self.chunk.actors.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world, resources));
                     lx += 1;
                     if lx >= 3 {
                         lx = 0;
@@ -421,7 +418,7 @@ impl ChunkGenerator {
                 Some(spot) => {
                     let item = world.artifacts.get(item);
                     let texture = item.make_texture(&resources.materials);
-                    self.chunk.items_on_ground.push((spot, item.clone(), texture));
+                    self.chunk.map.items_on_ground.push((spot, item.clone(), texture));
                 }
             }
         }
