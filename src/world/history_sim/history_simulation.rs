@@ -1,36 +1,33 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_sim::{battle_simulator::BattleSimulator, interactions::{simplified_interaction}}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{battle_simulator::BattleSimulator, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
 pub(crate) struct HistorySimulation {
     pub(crate) date: WorldDate,
-    params: HistorySimParams
-}
-
-pub(crate) struct HistorySimParams {
+    generation_params: WorldGenerationParameters,
     pub(crate) rng: Rng,
     pub(crate) resources: Resources,
-    pub(crate) number_of_seed_cities: u16,
-    pub(crate) seed_cities_population: u32,
 }
 
 impl HistorySimulation {
-    pub(crate) fn new(params: HistorySimParams) -> Self {
+    pub(crate) fn new(rng: Rng, resources: Resources, generation_params: WorldGenerationParameters) -> Self {
         HistorySimulation {
             date: WorldDate::new(0, 0, 0),
-            params
+            generation_params,
+            rng,
+            resources
         }
     }
 
     pub(crate) fn seed(&mut self, world: &mut World) {
 
-        let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
+        let mut factory = CreatureFactory::new(self.rng.derive("creature"));
 
-        for _ in 0..self.params.number_of_seed_cities {
+        for _ in 0..self.generation_params.number_of_seed_cities {
 
-            let pos = self.find_unit_suitable_pos(&mut self.params.rng.clone(), &world);
+            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), &world);
             let pos = match pos {
                 None => break,
                 Some(candidate) => candidate,
@@ -42,7 +39,7 @@ impl HistorySimulation {
                 cemetery: Vec::new(),
                 resources: UnitResources {
                     // Enough food for a year
-                    food: self.params.seed_cities_population as f32
+                    food: self.generation_params.seed_cities_population as f32
                 },
                 settlement: Some(SettlementComponent {
                     leader: None,
@@ -53,16 +50,16 @@ impl HistorySimulation {
                 unit_type: UnitType::Village
             };
 
-            while unit.creatures.len() < self.params.seed_cities_population as usize {
+            while unit.creatures.len() < self.generation_params.seed_cities_population as usize {
                 
-                let family = factory.make_family_or_single(&self.date, self.params.resources.species.id_of("species:human"), world, &self.params.resources);
+                let family = factory.make_family_or_single(&self.date, self.resources.species.id_of("species:human"), world, &self.resources);
                 for creature_id in family {
                     unit.creatures.push(creature_id);
                 }
 
             }
 
-            self.params.rng.next();
+            self.rng.next();
 
             world.units.add::<UnitId>(unit);
         }
@@ -75,13 +72,13 @@ impl HistorySimulation {
 
 
         // TODO(tfWpiQPF): Find a cooler way to spawn
-        if self.params.rng.rand_chance(0.3) {
-            let pos = self.find_unit_suitable_pos(&mut self.params.rng.clone(), world);
+        if self.rng.rand_chance(0.3) {
+            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
-                let species = self.params.resources.species.id_of("species:varningr");
-                let mut factory = CreatureFactory::new(self.params.rng.derive("creature"));
-                let creature = factory.make_single(species, 10, SIM_FLAG_GREAT_BEAST, world, &self.params.resources);
+                let species = self.resources.species.id_of("species:varningr");
+                let mut factory = CreatureFactory::new(self.rng.derive("creature"));
+                let creature = factory.make_single(species, 10, SIM_FLAG_GREAT_BEAST, world, &self.resources);
                 let unit = Unit {
                     // TODO(PaZs1uBR): These don't make sense
                     artifacts: Vec::new(),
@@ -109,8 +106,8 @@ impl HistorySimulation {
 
 
         for id in world.units.iter_ids::<UnitId>() {
-            self.simulate_step_unit(world, &step, &self.date.clone(), self.params.rng.clone(), &id);
-            self.params.rng.next();
+            self.simulate_step_unit(world, &step, &self.date.clone(), self.rng.clone(), &id);
+            self.rng.next();
         }
 
 
@@ -171,7 +168,7 @@ impl HistorySimulation {
         for (creature_id, side_effect) in side_effects.into_iter() {
             match side_effect {
                 CreatureSideEffect::None => (),
-                CreatureSideEffect::Death(cause_of_death) => Self::kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.params.resources),
+                CreatureSideEffect::Death(cause_of_death) => Self::kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.resources),
                 CreatureSideEffect::HaveChild => {
 
                     let unit = world.units.get(unit_id);
@@ -208,7 +205,7 @@ impl HistorySimulation {
                 CreatureSideEffect::LookForNewJob => {
                     change_job_pool.push(creature_id);
                 },
-                CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng, &mut self.params.resources),
+                CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng, &mut self.resources),
                 CreatureSideEffect::ArtisanLookingForComission => {
                     artisan_pool.push(creature_id);
                 }
@@ -268,7 +265,7 @@ impl HistorySimulation {
                     let mut creature = world.creatures.get_mut(&creature_id);
                     creature.profession = Profession::Bandit;
                 },
-                CreatureSideEffect::AttackNearbyUnits => Self::attack_nearby_unit(world, &mut rng, *unit_id, &mut self.params.resources)
+                CreatureSideEffect::AttackNearbyUnits => Self::attack_nearby_unit(world, &mut rng, *unit_id, &mut self.resources)
             }
         }
 
@@ -345,7 +342,7 @@ impl HistorySimulation {
                 break;
             }
             let artisan_id = artisan_pool.remove(rng.randu_range(0, artisan_pool.len()));
-            Self::make_artifact(&artisan_id, Some(&comission_creature_id), unit_id, world, &mut rng, &mut self.params.resources);
+            Self::make_artifact(&artisan_id, Some(&comission_creature_id), unit_id, world, &mut rng, &mut self.resources);
         }
 
         for creature_id in change_job_pool {

@@ -1,13 +1,17 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::{WorldTopology, WorldTopologyGenerationParameters}}};
+use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
 
 use super::world::World;
-
 
 #[derive(Clone)]
 pub(crate) struct WorldGenerationParameters {
     pub(crate) seed: u32,
+    // Terain
+    pub(crate) num_plate_tectonics: u8,
+    // History
+    pub(crate) number_of_seed_cities: u16,
+    pub(crate) seed_cities_population: u32,
 }
 
 pub(crate) struct WorldHistoryGenerator {
@@ -20,19 +24,14 @@ pub(crate) struct WorldHistoryGenerator {
 impl WorldHistoryGenerator {
 
     pub(crate) fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
-        let rng = Rng::seeded(parameters.seed);
-       
-        let mut params = WorldTopologyGenerationParameters {
-            rng: rng.derive("topology"),
-            num_plate_tectonics: 25
-        };
+        let mut rng = Rng::seeded(parameters.seed);
 
         let mut world_map = WorldTopology::new(Size2D(256, 256));
         let now = Instant::now();
-        world_map.plate_tectonics(&mut params);
+        world_map.plate_tectonics(&mut rng, parameters.num_plate_tectonics);
         println!("Plate tectonics in {:.2?}", now.elapsed());
         let now: Instant = Instant::now();
-        world_map.precipitation(&mut params);
+        world_map.precipitation(&mut rng);
         println!("Precipitation {:.2?}", now.elapsed());
         // let now: Instant = Instant::now();
         // world_map.erosion(&mut params);
@@ -41,12 +40,7 @@ impl WorldHistoryGenerator {
 
         let mut world = World::new(world_map);
 
-        let mut history_sim = HistorySimulation::new(crate::world::history_sim::history_simulation::HistorySimParams {
-            rng: rng.derive("history"),
-            resources: resources.clone(),
-            number_of_seed_cities: 1000,
-            seed_cities_population: 20
-        });
+        let mut history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters);
         history_sim.seed(&mut world);
 
 

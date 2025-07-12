@@ -41,9 +41,9 @@ impl WorldTopology {
         }
     }
 
-    pub(crate) fn plate_tectonics(&mut self, params: &mut WorldTopologyGenerationParameters) {
+    pub(crate) fn plate_tectonics(&mut self, rng: &mut Rng, num_plate_tectonics: u8) {
         let idx = MatrixIndex::new((self.size.0, self.size.1));
-        let noise = Perlin::new(params.rng.derive("noise").seed());
+        let noise = Perlin::new(rng.derive("noise").seed());
         let mut plate_map = vec![0; self.size.area()];
         struct PlateTectonics {
             seed: Point2D,
@@ -52,24 +52,24 @@ impl WorldTopology {
         }
         // Generate plates and origins
         let mut plates = BTreeMap::new();
-        for i in 1..params.num_plate_tectonics+1 {
-            let seed = Point2D(params.rng.randu_range(0, self.size.x()), params.rng.randu_range(0, self.size.y()));
+        for i in 1..num_plate_tectonics+1 {
+            let seed = Point2D(rng.randu_range(0, self.size.x()), rng.randu_range(0, self.size.y()));
             let dist_to_edge = seed.dist_squared(&Point2D(0, 0))
                 .min(seed.dist_squared(&Point2D(self.size.x(), 0)))
                 .min(seed.dist_squared(&Point2D(0, self.size.y())))
                 .min(seed.dist_squared(&Point2D(self.size.x(), self.size.y())));
             let dist_to_edge = (dist_to_edge.sqrt() / (self.size.x() / 2) as f32).clamp(0., 1.); // TODO: Use diagonal instead of clamp
-            let oceanic_plate = params.rng.rand_chance(1. - dist_to_edge.powf(3.));
+            let oceanic_plate = rng.rand_chance(1. - dist_to_edge.powf(3.));
             let elevation;
             if oceanic_plate {
-                elevation = params.rng.randf_range(-64., -32.) as i32;
+                elevation = rng.randf_range(-64., -32.) as i32;
             } else {
-                elevation = params.rng.randf_range(32., 64.) as i32;
+                elevation = rng.randf_range(32., 64.) as i32;
             }
             plates.insert(i, PlateTectonics {
                 base_elevation: elevation,
                 seed,
-                direction: Vector2::new(params.rng.randf_range(0., 2.*PI), params.rng.randf())
+                direction: Vector2::new(rng.randf_range(0., 2.*PI), rng.randf())
             });
         }
         // Flood-fill
@@ -77,7 +77,7 @@ impl WorldTopology {
         for (i, v) in plates.iter() {
             ff_queue.push_back((v.seed, *i));
         }
-        let shuffle_frequency = params.rng.randu_range(5, 13);
+        let shuffle_frequency = rng.randu_range(5, 13);
         let mut i_f = 0;
         while ff_queue.len() > 0 {
             let (point, id) = ff_queue.pop_front().unwrap();
@@ -197,9 +197,9 @@ impl WorldTopology {
         }
     }
 
-    pub(crate) fn precipitation(&mut self, params: &mut WorldTopologyGenerationParameters) {
+    pub(crate) fn precipitation(&mut self, rng: &mut Rng) {
         let idx = MatrixIndex::new((self.size.0, self.size.1));
-        let noise = Perlin::new(params.rng.derive("noise").seed());
+        let noise = Perlin::new(rng.derive("noise").seed());
         for y in 0..self.size.y() {
             for x in 0..self.size.x() {
                 let i = idx.idx(x, y);
@@ -263,11 +263,6 @@ impl WorldTopology {
 
 }
 
-pub(crate) struct WorldTopologyGenerationParameters {
-    pub(crate) rng: Rng,
-    pub(crate) num_plate_tectonics: u8
-}
-
 #[derive(Debug)]
 pub(crate) struct WorldTileData {
     // pub(crate) xy: Point2D,
@@ -289,25 +284,18 @@ mod tests {
     #[test]
     fn check_determinism() {
 
-        let rng = Rng::seeded("test");
-        let mut params_a = WorldTopologyGenerationParameters {
-            rng: rng.derive("topology"),
-            num_plate_tectonics: 25
-        };
-        let mut params_b = WorldTopologyGenerationParameters {
-            rng: rng.derive("topology"),
-            num_plate_tectonics: 25
-        };
+        let mut rng_a = Rng::seeded("topology");
+        let mut rng_b = Rng::seeded("topology");
 
         let mut world_a = WorldTopology::new(Size2D(32, 32));
         let mut world_b = WorldTopology::new(Size2D(32, 32));
 
-        world_a.plate_tectonics(&mut params_a);
-        world_b.plate_tectonics(&mut params_b);
+        world_a.plate_tectonics(&mut rng_a, 25);
+        world_b.plate_tectonics(&mut rng_b, 25);
         compare(&world_a, &world_b);
 
-        world_a.precipitation(&mut params_a);
-        world_b.precipitation(&mut params_b);
+        world_a.precipitation(&mut rng_a);
+        world_b.precipitation(&mut rng_b);
         compare(&world_a, &world_b);
 
         let mut biomes = Biomes::new();
@@ -324,8 +312,8 @@ mod tests {
             soil_fertility_range: (0.8, 1.2),
         });
 
-        world_a.noise(&params_a.rng, &biomes);
-        world_b.noise(&params_b.rng, &biomes);
+        world_a.noise(&mut rng_a, &biomes);
+        world_b.noise(&mut rng_b, &biomes);
         compare(&world_a, &world_b);
 
     }

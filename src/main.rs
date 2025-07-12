@@ -175,8 +175,11 @@ fn main() {
     app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/fantasy-pagan-medieval-cinematic-epic-war-battle-119770.mp3"));
 
     app.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
-            seed: 1234567
-        }, &app.context.resources));
+        seed: 1234567,
+        number_of_seed_cities: 1000,
+        seed_cities_population: 20,
+        num_plate_tectonics: 25
+    }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
         scene.init(&mut app.context);
