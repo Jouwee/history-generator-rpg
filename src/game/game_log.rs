@@ -36,12 +36,12 @@ impl GameLog {
 }
 
 pub(crate) struct GameLogEntry {
-    parts: Vec<Part>
+    parts: Vec<GameLogPart>
 }
 
 impl GameLogEntry {
 
-    fn from_parts(parts: Vec<Part>) -> Self {
+    pub(crate) fn from_parts(parts: Vec<GameLogPart>) -> Self {
         return Self {
             parts
         }
@@ -50,31 +50,31 @@ impl GameLogEntry {
     pub(crate) fn damage(actor: &Actor, target: &Actor, damage: &DamageOutput, world: &World, resources: &Resources) -> Self {
         match damage {
             DamageOutput::Dodged => GameLogEntry::from_parts(vec!(
-                Part::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                Part::Text(String::from(" dodged ")),
-                Part::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                Part::Text(String::from("'s attack")),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Text(String::from(" dodged ")),
+                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
+                GameLogPart::Text(String::from("'s attack")),
             )),
             DamageOutput::Hit(damage) => GameLogEntry::from_parts(vec!(
-                Part::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                Part::Text(String::from(" hit ")),
-                Part::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                Part::Text(String::from(" for ")),
-                Part::Damage(format!("{:.2}", damage)),
-                Part::Text(String::from(" damage")),
+                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
+                GameLogPart::Text(String::from(" hit ")),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Text(String::from(" for ")),
+                GameLogPart::Damage(format!("{:.2}", damage)),
+                GameLogPart::Text(String::from(" damage")),
             )),
             DamageOutput::CriticalHit(damage) => GameLogEntry::from_parts(vec!(
-                Part::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                Part::Text(String::from(" critically hit ")),
-                Part::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                Part::Text(String::from(" for ")),
-                Part::Damage(format!("{:.2}", damage)),
-                Part::Text(String::from(" damage")),
+                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
+                GameLogPart::Text(String::from(" critically hit ")),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Text(String::from(" for ")),
+                GameLogPart::Damage(format!("{:.2}", damage)),
+                GameLogPart::Text(String::from(" damage")),
             ))
         }
     }
 
-    fn actor_name(actor: &Actor, world: &World, resources: &Resources) -> String {
+    pub(crate) fn actor_name(actor: &Actor, world: &World, resources: &Resources) -> String {
         if let Some(creature_id) = &actor.creature_id {
             let creature = world.creatures.get(creature_id);
             return creature.name(creature_id, world, resources)
@@ -85,13 +85,13 @@ impl GameLogEntry {
 
 }
 
-enum Part {
+pub(crate) enum GameLogPart {
     Text(String),
     Damage(String),
     Actor(String, ActorType)
 }
 
-impl Part {
+impl GameLogPart {
 
     fn text(&self) -> &str {
         match self {

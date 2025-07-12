@@ -202,7 +202,7 @@ impl GameSceneState {
             }
             {
                 let npc = self.chunk.actors.get(self.turn_controller.npc_idx()).unwrap();
-                let ai = AiSolver::choose_actions(&ctx.resources.actions, &npc, &self.chunk, ctx);
+                let ai = AiSolver::choose_actions(&ctx.resources.actions, &npc, self.turn_controller.npc_idx(), &self.chunk, ctx);
                 let npc = self.chunk.actors.get_mut(self.turn_controller.npc_idx()).unwrap();
                 npc.ai = ai;
             }
@@ -216,7 +216,7 @@ impl GameSceneState {
         actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
         let actor = self.chunk.actors.get(actor_idx).unwrap();
-        let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, &self.chunk, ctx);
+        let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, self.turn_controller.npc_idx(), &self.chunk, ctx);
         let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
         actor.ai = ai;
     }
@@ -422,10 +422,14 @@ impl Scene for GameSceneState {
                 }
 
                 let next = npc.ai.next_action(&ctx.resources.actions);
-                if let Some(action) = next {
+                if let Some((action, cursor)) = next {
                     let _ = match action.action_type {
                         ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
                         ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
+                        ActionType::Spell { target: _, area: _, effect: _ } => {
+                            let v = ActionRunner::try_use(action, self.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                            v.is_ok()
+                        }
                         _ => true
                     };
                 } else {
@@ -451,10 +455,16 @@ impl Scene for GameSceneState {
                     }
 
                     let next = npc.ai.next_action(&ctx.resources.actions);
-                    if let Some(action) = next {
+                    if let Some((action, _cursor)) = next {
                         let _ = match action.action_type {
                             ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
                             ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
+                            // TODO(QZ94ei4M): Borrow issues
+                            // ActionType::Spell { target: _, area: _, effect: _ } => {
+                            //     // TODO: Cursor
+                            //     let v = ActionRunner::try_use(action, self.turn_controller.npc_idx(), self.cursor_pos, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                            //     v.is_ok()
+                            // }
                             _ => true
                         };
                     } else {

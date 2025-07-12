@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -27,6 +27,11 @@ pub(crate) struct Action {
 #[derive(Clone)]
 pub(crate) enum ActionType {
     Move { offset: Coord2 },
+    Spell {
+        target: SpellTarget,
+        area: SpellArea,
+        effect: SpellEffect,
+    },
     Targeted {
         damage: Option<DamageType>,
         inflicts: Option<Infliction>
@@ -35,6 +40,42 @@ pub(crate) enum ActionType {
     Dig,
     PickUp,
     Sleep
+}
+
+#[derive(Clone)]
+pub(crate) enum SpellTarget {
+    /// Action is cast at the actors location
+    Actor,
+}
+
+#[derive(Clone)]
+pub(crate) enum SpellArea {
+    /// Affects in an circle area
+    Circle { radius: u16 },
+}
+
+impl SpellArea {
+
+    pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A>) -> impl Iterator<Item = (usize, A)> where A: std::borrow::Borrow<Actor> + 'a, {
+        match self {
+            SpellArea::Circle { radius } => {
+                let radius = (radius * radius) as f32;
+                return iter.enumerate().filter(move |(idx, actor)| {
+                    if *idx == actor_index {
+                        return false;
+                    }
+                    return actor.borrow().xy.dist_squared(&center) < radius
+                })
+            }
+        }
+    }
+    
+}
+
+#[derive(Clone)]
+pub(crate) enum SpellEffect {
+    /// Inflicts an effect on the target
+    Inflicts { affliction: Affliction },
 }
 
 #[derive(Clone, Debug)]
@@ -107,30 +148,44 @@ impl ActionRunner {
         if !actor.stamina.can_use(action.stamina_cost) {
             return Err(ActionFailReason::NotEnoughStamina);
         }
-        if actor.xy.dist_squared(&cursor) >= 3. {
-            return Err(ActionFailReason::CantReach);
-        }
-        match action.action_type {
+        match &action.action_type {
             ActionType::Inspect => (),
             ActionType::Targeted { damage: _, inflicts: _ } => {
+                if actor.xy.dist_squared(&cursor) >= 3. {
+                    return Err(ActionFailReason::CantReach);
+                }
                 let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
                 if target.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
+            ActionType::Spell { target, area: _, effect: _ } => {
+                match target {
+                    SpellTarget::Actor => return Ok(())
+                }
+            },
             ActionType::PickUp => {
+                if actor.xy.dist_squared(&cursor) >= 3. {
+                    return Err(ActionFailReason::CantReach);
+                }
                 let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
                 if item_on_ground.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
             ActionType::Dig => {
+                if actor.xy.dist_squared(&cursor) >= 3. {
+                    return Err(ActionFailReason::CantReach);
+                }
                 let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
                 if tile_metadata.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
             ActionType::Sleep =>  {
+                if actor.xy.dist_squared(&cursor) >= 3. {
+                    return Err(ActionFailReason::CantReach);
+                }
                 // TODO: Bed
                 let object_tile = chunk.map.get_object_idx(cursor);
                 if object_tile != 3 {
@@ -154,7 +209,7 @@ impl ActionRunner {
         let mut item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
         let mut tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
 
-        match action.action_type {
+        match &action.action_type {
             ActionType::Inspect => {
 
                 // TODO(hu2htwck): Add info to codex
@@ -221,6 +276,36 @@ impl ActionRunner {
                         }
                         return Ok(side_effects);
                     }
+                }
+            },
+            ActionType::Spell { target, area, effect } => {
+                let actor = chunk.actor(actor_index).unwrap();
+
+                game_log.log(GameLogEntry::from_parts(vec!(
+                    GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
+                    GameLogPart::Text(format!(" used {}", action.name))
+                )));
+
+                let pos = match target {
+                    SpellTarget::Actor => actor.xy.clone(),
+                };
+
+                for (_i, actor) in area.filter(pos, actor_index, chunk.actors_iter_mut()) {
+                    match effect {
+                        SpellEffect::Inflicts { affliction } => {
+                            let (name, color) = affliction.name_color();
+                            game_log.log(GameLogEntry::from_parts(vec!(
+                                GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
+                                GameLogPart::Text(format!(" is {}", name))
+                            )));
+                            effect_layer.add_text_indicator(actor.xy, name, color);
+                            actor.add_affliction(&affliction)
+                        }
+                    }
+                }
+
+                if let Some(fx) = &action.sound_effect {
+                    ctx.audio.play_once(fx.clone());
                 }
             },
             ActionType::PickUp => {

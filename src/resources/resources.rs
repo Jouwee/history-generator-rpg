@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{SpellArea, SpellEffect, SpellTarget}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -193,6 +193,21 @@ impl Resources {
                 inflicts: None
             }
         });
+
+        self.actions.add("act:deafening_howl", Action {
+            name: String::from("Deafening howl"),
+            description: String::from("A deafening howl"),
+            icon: ImageAsset::new("missing.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            ap_cost: 40,
+            stamina_cost: 5.,
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor,
+                area: SpellArea::Circle { radius: 8 },
+                effect: SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
+            }
+        });
+
         // self.actions.add("act:talk", Action {
         //     name: String::from("Talk"),
         //     description: String::from("Talk with a friendly NPC"),
@@ -302,8 +317,7 @@ impl Resources {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!(self.materials.id_of("mat:varningr_bone")))
-            // TODO:
-            .innate_actions(vec!(self.actions.id_of("act:bite")))
+            .innate_actions(vec!(self.actions.id_of("act:bite"), self.actions.id_of("act:deafening_howl")))
         );
     }
 

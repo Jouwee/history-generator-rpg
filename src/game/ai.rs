@@ -1,12 +1,12 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType, SpellEffect, SpellTarget}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
 #[derive(Clone)]
 pub(crate) struct AiRunner {
-    pub(crate) actions: VecDeque<ActionId>,
+    pub(crate) actions: VecDeque<(ActionId, Coord2)>,
     pub(crate) delay: f64,
     pub(crate) delay_target: f64,
 }
@@ -21,13 +21,13 @@ impl AiRunner {
         }
     }
 
-    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<&'a Action> {
+    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<(&'a Action, Coord2)> {
         let action = self.actions.pop_front();
-        if let Some(action) = action {
+        if let Some((action, pos)) = action {
             let action = actions.get(&action);
             self.delay = 0.;
             self.delay_target = action.ap_cost as f64 / 200.;
-            return Some(action)
+            return Some((action, pos))
         }
         return None
     }
@@ -45,7 +45,7 @@ pub(crate) struct AiSolver {
 
 impl AiSolver {
 
-    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
+    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
 
         let now = Instant::now();
 
@@ -67,6 +67,7 @@ impl AiSolver {
         }
 
         let ctx = SimContext {
+            actor_idx,
             actions: Vec::new(),
             xy: actor.xy,
             ap: actor.ap.action_points,
@@ -131,7 +132,7 @@ impl AiSolver {
                     ctx.ap -= action.ap_cost as i32;
                     ctx.stamina -= action.stamina_cost;
                     ctx.depth += 1;
-                    ctx.actions.push(*action_id);
+                    ctx.actions.push((*action_id, ctx.xy));
                     ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                     ctx.compute_final_score();
                     paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
@@ -142,7 +143,7 @@ impl AiSolver {
                         ctx.ap -= action.ap_cost as i32;
                         ctx.stamina -= action.stamina_cost;
                         ctx.depth += 1;
-                        ctx.actions.push(*action_id);
+                        ctx.actions.push((*action_id, chunk.player().xy));
                         if let Some(damage) = damage {
                             match &damage {
                                 DamageType::Fixed(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64,
@@ -164,6 +165,34 @@ impl AiSolver {
                         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                     }
                 },
+                ActionType::Spell { target, area, effect } => {
+                    let points_to_check = match target {
+                        SpellTarget::Actor => vec!(ctx.xy)
+                    };
+                    for point in points_to_check {
+                        let mut ctx = ctx.clone();
+                        ctx.ap -= action.ap_cost as i32;
+                        ctx.stamina -= action.stamina_cost;
+                        ctx.depth += 1;
+                        ctx.actions.push((*action_id, point));
+
+                        for (_i, _actor) in area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
+                            match effect {
+                                SpellEffect::Inflicts { affliction } => {
+                                    let score = match affliction {
+                                        Affliction::Bleeding { duration } => 1. * *duration as f64,
+                                        Affliction::Stunned { duration } => 0.8 * *duration as f64,
+                                        Affliction::Poisoned { duration } => 0.8 * *duration as f64,
+                                    };
+                                    ctx.damage_score += score;
+                                }
+                            }
+                        }
+
+                        ctx.compute_final_score();
+                        paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
+                    }
+                }
                 _ => ()
             }
         }
@@ -200,7 +229,8 @@ impl AiSolver {
 
 #[derive(Debug, Clone)]
 struct SimContext {
-    actions: Vec<ActionId>,
+    actor_idx: usize,
+    actions: Vec<(ActionId, Coord2)>,
     xy: Coord2,
     ap: i32,
     stamina: f32,
@@ -213,7 +243,7 @@ struct SimContext {
 impl SimContext {
 
     fn compute_final_score(&mut self) {
-        // Tiny boost for simplicity, mostly to choose between ties
+        // Tiny boost for simplicity (less actions), mostly to choose between ties
         let simplicity_boost = 0.01 / self.actions.len() as f64;
         self.score = self.position_score + self.damage_score + simplicity_boost
     }

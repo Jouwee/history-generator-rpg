@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, iter};
 
 use opengl_graphics::Texture;
 
@@ -108,6 +108,20 @@ impl Chunk {
             PLAYER_IDX => Some(&mut self.player),
             i => self.actors.get_mut(i),
         }
+    }
+
+    // TODO(QZ94ei4M): Remove
+    pub(crate) fn actors_iter(&self) -> impl Iterator<Item = &Actor> {
+        let player = iter::once(&self.player);
+        let others = self.actors.iter();
+        others.chain(player)
+    }
+
+    // TODO(QZ94ei4M): Remove
+    pub(crate) fn actors_iter_mut(&mut self) -> impl Iterator<Item = &mut Actor> {
+        let player = iter::once(&mut self.player);
+        let others = self.actors.iter_mut();
+        others.chain(player)
     }
 
     pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> Chunk {
