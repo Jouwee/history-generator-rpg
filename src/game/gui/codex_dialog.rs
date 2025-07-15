@@ -1,13 +1,14 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::gui::{button::Button, layout_component::LayoutComponent, UINode}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World}, Color, GameContext, RenderContext};
+use crate::{engine::{asset::assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World}, Color, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
     creatures_button: Button,
     artifacts_button: Button,
     buttons: Vec<(Selection, Button)>,
-    selected: Selection
+    selected: Selection,
+    info_container: SimpleContainer
 }
 
 impl CodexDialog {
@@ -23,12 +24,16 @@ impl CodexDialog {
         let mut artifacts_button = Button::text("Artifacts");
         artifacts_button.layout_component().anchor_top_left(80., 16.);
 
+        let mut info_container = SimpleContainer::new();
+        info_container.layout_component().anchor_top_left(130., 16.);
+
         Self {
             layout,
             creatures_button,
             artifacts_button,
             buttons: Vec::new(),
-            selected: Selection::None
+            selected: Selection::None,
+            info_container
         }
     }
 
@@ -56,6 +61,76 @@ impl CodexDialog {
         }
     }
 
+    fn update_info(&mut self, world: &World, ctx: &mut GameContext) {
+        self.info_container.clear();
+        if let Selection::Creature(creature_id) = &self.selected {
+            let codex = world.codex.creature(creature_id).expect("Shouldn't have shown the button");
+            let creature = world.creatures.get(creature_id);
+
+            let name = Label::text(&self.creature_name(creature_id, world, ctx)).font(Assets::font_heading_asset());
+            self.info_container.add(name);
+
+            let birth = match codex.know_birth() {
+                true => format!("* {}-{}-{}", creature.birth.year(), creature.birth.month(), creature.birth.day()),
+                false => String::from("* ?-?-?")
+            };
+            let birth = Label::text(&birth);
+            self.info_container.add(birth);
+
+            let death = match codex.know_death() {
+                true => {
+                    if let Some((date, _cause)) = creature.death {
+                        format!("+ {}-{}-{}", date.year(), date.month(), date.day())
+                    } else {
+                        String::from("Alive")
+                    }
+                    
+                },
+                false => String::from("+ ?-?-?")
+            };
+            let death = Label::text(&death);
+            self.info_container.add(death);
+
+            if codex.know_father() {
+                let name = creature.name(&creature.father, world, &ctx.resources);
+
+                let father = Label::text(&format!("Father: {}", name));
+                self.info_container.add(father);
+            };
+
+            if codex.know_mother() {
+                let name = creature.name(&creature.mother, world, &ctx.resources);
+
+                let mother = Label::text(&format!("Mother: {}", name));
+                self.info_container.add(mother);
+            };
+            
+            if codex.events().len() > 0 {
+                let event = Label::text(&"Events").font(Assets::font_heading_asset());
+                self.info_container.add(event);
+            }
+
+            for event_i in codex.events() {
+                let event = world.events.get(*event_i).expect("Should not return invalid");
+
+                let event = Label::text(&event.event_text(&ctx.resources, &world));
+                self.info_container.add(event);
+
+            }
+        }
+    }
+
+    fn creature_name(&self, creature_id: &CreatureId, world: &World, ctx: &GameContext) -> String {
+        let codex = world.codex.creature(creature_id).expect("Shouldn't have shown the button");
+        let creature = world.creatures.get(creature_id);
+
+        if codex.know_name() {
+            return creature.name(creature_id, world, &ctx.resources);
+        }
+
+        return String::from("???????");
+    }
+
 }
 
 impl UINode for CodexDialog {
@@ -73,7 +148,7 @@ impl UINode for CodexDialog {
     fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         perf().start("codex");
         let copy = ctx.layout_rect;
-        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx);
+        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         self.creatures_button.render(&(), ctx, game_ctx);
         self.artifacts_button.render(&(), ctx, game_ctx);
@@ -82,52 +157,7 @@ impl UINode for CodexDialog {
             button.render(&(), ctx, game_ctx);
         }
 
-        if let Selection::Creature(creature_id) = &self.selected {
-            let codex = state.codex.creature(creature_id).expect("Shouldn't have shown the button");
-            let creature = state.creatures.get(creature_id);
-
-            let mut layout = [ctx.layout_rect[0] as i32 + 130, ctx.layout_rect[1] as i32 + 16];
-
-            if codex.know_name() {
-                ctx.text_shadow(&creature.name(creature_id, state, &game_ctx.resources), game_ctx.assets.font_heading(), [layout[0], layout[1]], &Color::from_hex("ffffff"));            
-            } else {
-                ctx.text_shadow("?????", game_ctx.assets.font_heading(), [layout[0], layout[1]], &Color::from_hex("ffffff"));            
-            }
-            layout[1] += 16;
-
-            let birth = match codex.know_birth() {
-                true => format!("* {}-{}-{}", creature.birth.year(), creature.birth.month(), creature.birth.day()),
-                false => String::from("* ?-?-?")
-            };
-            ctx.text_shadow(&birth, game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("ffffff")); 
-
-            let death = match codex.know_birth() {
-                true => {
-                    if let Some((date, _cause)) = creature.death {
-                        format!("+ {}-{}-{}", date.year(), date.month(), date.day())
-                    } else {
-                        String::from("Alive")
-                    }
-                    
-                },
-                false => String::from("+ ?-?-?")
-            };
-            ctx.text_shadow(&death, game_ctx.assets.font_standard(), [layout[0] + 70, layout[1]], &Color::from_hex("ffffff")); 
-
-            // ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 103, layout[1]], &Color::from_hex("ffffff"));
-            layout[1] += 11;
-
-            // TODO(hu2htwck): Other info
-
-            for event_i in codex.events() {
-                let event = state.events.get(*event_i).expect("Should not return invalid");
-
-                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("ffffff"));
-                layout[1] += 11;
-
-            }
-
-        }
+        self.info_container.render(&(), ctx, game_ctx);
 
         if let Selection::Artifact(artifact_id) = &self.selected {
             let codex = state.codex.artifact(artifact_id).expect("Shouldn't have shown the button");
@@ -177,6 +207,7 @@ impl UINode for CodexDialog {
         for (selection, button) in self.buttons.iter_mut() {
             if button.input(&mut (), evt, ctx).is_break() {
                 self.selected = *selection;
+                self.update_info(&state, ctx);
                 return ControlFlow::Break(())
             }
         }

@@ -42,4 +42,15 @@ impl Font {
         return self.glyphs.width(self.size, text).unwrap_or(0.);
     }
 
+    pub(crate) fn line_height(&mut self) -> f64 {
+        let mut height: f64 = 0.0;
+        for ch in ['W', 'q'] {
+            let character = self.glyphs.character(self.size, ch);
+            if let Ok(character) = character {
+                height = height.max(character.atlas_size[1]);
+            }
+        }
+        return height
+    }
+
 }

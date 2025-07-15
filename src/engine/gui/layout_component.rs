@@ -1,6 +1,3 @@
-use crate::RenderContext;
-
-
 #[derive(Debug)]
 pub(crate) struct LayoutComponent {
     padding: [f64; 4],
@@ -22,24 +19,24 @@ impl LayoutComponent {
         }
     }
 
-    pub(crate) fn compute_layout_rect(&mut self, ctx: &RenderContext) -> [f64; 4] {
+    pub(crate) fn compute_layout_rect(&mut self, layout_rect: [f64; 4]) -> [f64; 4] {
         let size = self.size;
         let x = match &self.anchor {
-            Anchor::TopLeft => ctx.layout_rect[0] + self.anchor_margin[0],
-            Anchor::Center | Anchor::BottomCenter => ctx.layout_rect[0] + (ctx.layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
-            Anchor::TopRight => ctx.layout_rect[0] + ctx.layout_rect[2] - self.anchor_margin[2] - size[0],
+            Anchor::TopLeft => layout_rect[0] + self.anchor_margin[0],
+            Anchor::Center | Anchor::BottomCenter => layout_rect[0] + (layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
+            Anchor::TopRight => layout_rect[0] + layout_rect[2] - self.anchor_margin[2] - size[0],
         };
         let y = match &self.anchor {
-            Anchor::TopLeft | Anchor::TopRight => ctx.layout_rect[1] + self.anchor_margin[1],
-            Anchor::Center => ctx.layout_rect[1] + (ctx.layout_rect[3] / 2.) - (size[1] / 2.) + self.anchor_margin[1],
-            Anchor::BottomCenter => ctx.layout_rect[1] + ctx.layout_rect[3] - size[1] + self.anchor_margin[3],
+            Anchor::TopLeft | Anchor::TopRight => layout_rect[1] + self.anchor_margin[1],
+            Anchor::Center => layout_rect[1] + (layout_rect[3] / 2.) - (size[1] / 2.) + self.anchor_margin[1],
+            Anchor::BottomCenter => layout_rect[1] + layout_rect[3] - size[1] + self.anchor_margin[3],
         };
         self.last_layout = [x, y, size[0], size[1]];
         return self.last_layout;
     }
 
-    pub(crate) fn compute_inner_layout_rect(&mut self, ctx: &RenderContext) -> [f64; 4] {
-        let base_rect = self.compute_layout_rect(ctx);
+    pub(crate) fn compute_inner_layout_rect(&mut self, layout_rect: [f64; 4]) -> [f64; 4] {
+        let base_rect = self.compute_layout_rect(layout_rect);
         return [
             base_rect[0] + self.padding[0],
             base_rect[1] + self.padding[1],

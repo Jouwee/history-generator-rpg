@@ -42,12 +42,20 @@ impl Assets {
         &mut self.fonts.get_mut(&params).expect(format!("Font {} does not exist", params.path).as_str()).value
     }
 
+    pub(crate) fn font_standard_asset() -> FontAsset {
+        return FontAsset::new("Everyday_Standard.ttf", 6)
+    }
+
     pub(crate) fn font_standard(&mut self) -> &mut Font {
-        return self.font(&FontAsset::new("Everyday_Standard.ttf", 6))
+        return self.font(&Self::font_standard_asset())
+    }
+
+    pub(crate) fn font_heading_asset() -> FontAsset {
+        return FontAsset::new("Fabled.ttf", 11)
     }
 
     pub(crate) fn font_heading(&mut self) -> &mut Font {
-        return self.font(&FontAsset::new("Fabled.ttf", 11))
+        return self.font(&Self::font_heading_asset())
     }
 
 }

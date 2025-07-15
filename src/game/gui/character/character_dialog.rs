@@ -60,7 +60,7 @@ impl UINode for CharacterDialog {
         let copy = ctx.layout_rect;
 
 
-        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx);
+        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         
         let copy2 = ctx.layout_rect;

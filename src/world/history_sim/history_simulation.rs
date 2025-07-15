@@ -477,12 +477,6 @@ impl HistorySimulation {
                 battle = BattleSimulator::simulate_attack(unit_id, &unit, *target, &target_unit, rng, world);
             }
 
-            // TODO(PaZs1uBR): Log
-            println!("#B Battle ---------");
-            for l in battle.log.iter() {
-                println!("#B {}", l);
-            }
-
             for (id, unit_id, killer) in battle.deaths {
                 let cause_of_death = CauseOfDeath::KilledInBattle(killer);
                 Self::kill_creature(world, id, unit_id, *target, cause_of_death, resources);

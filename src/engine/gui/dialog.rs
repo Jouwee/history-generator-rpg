@@ -35,7 +35,7 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
 
     pub(crate) fn render(&mut self, state: &mut S, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         if let Some(v) = &mut self.value {
-            let rect = v.layout_component().compute_layout_rect(ctx);
+            let rect = v.layout_component().compute_layout_rect(ctx.layout_rect);
             let position = [rect[0], rect[1]];
             let size = [rect[2], rect[3]];
             // TODO: Better spritesheets, and scaling
@@ -66,7 +66,7 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
             v.render(state, ctx, game_ctx);
 
             let copy = ctx.layout_rect;
-            ctx.layout_rect = v.layout_component().compute_layout_rect(ctx);
+            ctx.layout_rect = v.layout_component().compute_layout_rect(ctx.layout_rect);
             self.close_button.render(&(), ctx, game_ctx);
             ctx.layout_rect = copy;
 

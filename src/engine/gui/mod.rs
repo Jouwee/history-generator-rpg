@@ -3,9 +3,11 @@ use std::ops::ControlFlow;
 use crate::{engine::gui::layout_component::LayoutComponent, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) mod button;
+pub(crate) mod containers;
 pub(crate) mod context_menu;
 pub(crate) mod dialog;
 pub(crate) mod layout_component;
+pub(crate) mod label;
 pub(crate) mod tooltip;
 
 
@@ -14,6 +16,8 @@ pub(crate) trait UINode {
     type Input;
 
     fn layout_component(&mut self) -> &mut LayoutComponent;
+
+    fn recompute_layout(&mut self, _game_ctx: &mut GameContext) {}
 
     fn init(&mut self, _state: &Self::State, _game_ctx: &mut GameContext) {}
 

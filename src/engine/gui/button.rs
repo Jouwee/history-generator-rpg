@@ -98,7 +98,7 @@ impl UINode for Button {
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let layout = self.layout.compute_inner_layout_rect(ctx);
+        let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         let background = game_ctx.assets.image(&self.background);
 

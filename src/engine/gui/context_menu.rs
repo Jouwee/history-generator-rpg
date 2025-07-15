@@ -47,9 +47,9 @@ impl UINode for ContextMenu {
 
     fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let copy = ctx.layout_rect;
-        let full_rect = self.layout.compute_layout_rect(ctx);
+        let full_rect = self.layout.compute_layout_rect(ctx.layout_rect);
         ctx.rectangle_fill(full_rect, Color::from_hex("090714"));
-        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx);
+        ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
         ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("24232a"));
         let hover_i = self.hover_index.unwrap_or(9999);
         let mut y = 0;

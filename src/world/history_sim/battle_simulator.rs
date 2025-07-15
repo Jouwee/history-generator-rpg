@@ -18,14 +18,12 @@ impl BattleSimulator {
 
         // TODO(PaZs1uBR): Multiple attackers
 
-        println!("#B attackers: {}", attacker.creatures.len());
         for id in attacker.creatures.iter() {
             let creature = world.creatures.get(id);
             creatures.push(BattleCreature { id: *id, unit_id: attacker_id, creature, hp: 100., team: 0, tactic: Tactic::Fight })
         }
 
         // TODO(PaZs1uBR): Idea: Have zones. Start creatures randomly and zones. The ones that want to flee, can move to further away zones.
-        println!("#B defenders: {}", defender.creatures.len());
         for id in defender.creatures.iter() {
             let creature = world.creatures.get(id);
             let tactic = match creature.profession {
