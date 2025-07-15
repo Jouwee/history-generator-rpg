@@ -53,7 +53,8 @@ impl Unit {
                 } else {
                     return Profession::Guard;
                 }
-            }
+            },
+            UnitType::VarningrLair => Profession::None,
         }
     }
 
@@ -108,6 +109,7 @@ mod tests_unit {
 pub(crate) enum UnitType {
     Village,
     BanditCamp,
+    VarningrLair,
 }
 
 #[derive(Clone, Copy)]

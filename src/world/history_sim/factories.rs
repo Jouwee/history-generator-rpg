@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{bitmask::bitmask_get, rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -26,7 +26,7 @@ impl CreatureFactory {
             let creature_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
-                lineage,
+                lineage: Some(lineage),
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,
@@ -48,7 +48,7 @@ impl CreatureFactory {
             let father_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age, 0, 0),
                 death: None,
-                lineage,
+                lineage: Some(lineage),
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,
@@ -67,7 +67,7 @@ impl CreatureFactory {
             let mother_id = world.creatures.add(Creature {
                 birth: *now - WorldDate::new(age + self.rng.randi_range(-5, 5), 0 ,0),
                 death: None,
-                lineage,
+                lineage: Some(lineage),
                 father: CreatureId::ancients(),
                 mother: CreatureId::ancients(),
                 profession: Profession::Peasant,
@@ -87,13 +87,7 @@ impl CreatureFactory {
         }
     }
 
-    pub(crate) fn make_single(&mut self, species: SpeciesId, level: u16, sim_flags: u8, world: &mut World, resources: &Resources) -> CreatureId {
-        
-        // TODO(PaZs1uBR): A beast doesn't have a lineage
-        let culture_id = resources.cultures.random();
-        let culture = resources.cultures.get(&culture_id);
-        let lineage = world.lineages.add(Lineage::new(resources.cultures.random(), &culture));
-
+    pub(crate) fn make_single(&mut self, species: SpeciesId, level: u16, sim_flags: u8, world: &mut World) -> CreatureId {
         let mut gender = CreatureGender::Male;
         if self.rng.rand_chance(0.5) {
             gender = CreatureGender::Female;
@@ -101,11 +95,13 @@ impl CreatureFactory {
         let creature_id = world.creatures.add(Creature {
             birth: world.date.clone(),
             death: None,
-            lineage,
+            lineage: None,
             father: CreatureId::ancients(),
             mother: CreatureId::ancients(),
-            // TODO(PaZs1uBR): A creature doesn't have a profession
-            profession: Profession::Peasant,
+            profession: match bitmask_get(sim_flags, SIM_FLAG_INTELIGENT) {
+                true => Profession::Peasant,
+                false => Profession::None
+            },
             spouse: None,
             experience: level_to_xp(level),
             gender,

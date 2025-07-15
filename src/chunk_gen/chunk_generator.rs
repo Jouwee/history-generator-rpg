@@ -101,6 +101,12 @@ impl ChunkGenerator {
                 artifacts_pool: None,
                 cemetery_pool: None
             },
+            // TODO(PaZs1uBR): Generate lair
+            UnitType::VarningrLair => ChunkFeaturePools {
+                detached_housing_pool: Some(String::from("camp_start")),
+                artifacts_pool: None,
+                cemetery_pool: None
+            },
         }
     }
 

@@ -82,9 +82,11 @@ impl Actor {
             actor_type = ActorType::Hostile;
         }
         // TODO: Determinate
-        // TODO(PaZs1uBR): Animals souldn't have equipment
         let mut rng = Rng::seeded(creature_id);
-        let inventory = EquipmentGenerator::generate(&creature_id, &mut rng, world, resources);
+        let inventory = match creature.sim_flag_is_inteligent() {
+            true => EquipmentGenerator::generate(&creature_id, &mut rng, world, resources),
+            false => Inventory::new()
+        };
        
         let mut hints = HashMap::new();
         if creature.gender.is_male() {

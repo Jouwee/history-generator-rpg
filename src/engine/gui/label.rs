@@ -39,7 +39,6 @@ impl UINode for Label {
     fn recompute_layout(&mut self, game_ctx: &mut GameContext) {
         let font = game_ctx.assets.font(&self.font);
         let with = font.width(&self.text);
-        // TODO: Height
         // TODO: Line-break
         self.layout.size([with, font.line_height()]);
     }

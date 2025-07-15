@@ -5,6 +5,8 @@ use crate::{commons::xp_table::xp_to_level, world::{creature::{Creature, Creatur
 pub(crate) struct BattleSimulator {
 }
 
+const CIVILIAN_FIGHT_CHANCE: f32 = 0.1;
+
 impl BattleSimulator {
 
     pub(crate) fn simulate_attack(attacker_id: UnitId, attacker: &Unit, defender_id: UnitId, defender: &Unit, rng: &mut Rng, world: &World) -> Battle {
@@ -16,22 +18,18 @@ impl BattleSimulator {
 
         let mut creatures = Vec::new();
 
-        // TODO(PaZs1uBR): Multiple attackers
-
         for id in attacker.creatures.iter() {
             let creature = world.creatures.get(id);
             creatures.push(BattleCreature { id: *id, unit_id: attacker_id, creature, hp: 100., team: 0, tactic: Tactic::Fight })
         }
 
-        // TODO(PaZs1uBR): Idea: Have zones. Start creatures randomly and zones. The ones that want to flee, can move to further away zones.
         for id in defender.creatures.iter() {
             let creature = world.creatures.get(id);
             let tactic = match creature.profession {
                 Profession::Guard | Profession::Bandit | Profession::Ruler => Tactic::Fight,
                 Profession::None => Tactic::Hide,
                 _ => { 
-                    // TODO(PaZs1uBR): Magic number
-                    if rng.rand_chance(0.1) {
+                    if rng.rand_chance(CIVILIAN_FIGHT_CHANCE) {
                         Tactic::Fight
                     } else {
                         Tactic::Hide
@@ -102,7 +100,6 @@ impl BattleSimulator {
             if creature.team == team {
                 continue;
             }
-            // TODO(PaZs1uBR): This is unnecessary with zones
             if let Tactic::Hide = creature.tactic {
                 if rng.rand_chance(0.9) {
                     continue;

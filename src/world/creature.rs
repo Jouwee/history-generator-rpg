@@ -38,7 +38,7 @@ pub(crate) struct Creature {
     pub(crate) mother: CreatureId,
     pub(crate) spouse: Option<CreatureId>,
     pub(crate) offspring: Vec<CreatureId>,
-    pub(crate) lineage: LineageId,
+    pub(crate) lineage: Option<LineageId>,
     pub(crate) experience: u32,
     pub(crate) details: Option<CreatureDetails>,
     pub(crate) sim_flags: u8,
@@ -57,20 +57,20 @@ impl Creature {
     }
 
     pub(crate) fn name(&self, id: &CreatureId, world: &World, resources: &Resources) -> String {
-        if self.sim_flag_is_great_beast() {
-            let species = resources.species.get(&self.species);
-            return format!("the {}", species.name);
+
+        if let Some(lineage) = &self.lineage {
+            let lineage = world.lineages.get(lineage);
+            let culture = resources.cultures.get(&lineage.culture);
+            let name_model = match &self.gender {
+                CreatureGender::Male => &culture.first_name_male_model,
+                CreatureGender::Female => &culture.first_name_female_model,
+            };
+            let name = name_model.generate(&Rng::seeded(id.as_usize()), 5, 13);
+            return format!("{} {}", Strings::capitalize(&name), Strings::capitalize(&lineage.name));
         }
 
-
-        let lineage = world.lineages.get(&self.lineage);
-        let culture = resources.cultures.get(&lineage.culture);
-        let name_model = match &self.gender {
-            CreatureGender::Male => &culture.first_name_male_model,
-            CreatureGender::Female => &culture.first_name_female_model,
-        };
-        let name = name_model.generate(&Rng::seeded(id.as_usize()), 5, 13);
-        return format!("{} {}", Strings::capitalize(&name), Strings::capitalize(&lineage.name))
+        let species = resources.species.get(&self.species);
+        return format!("the {}", species.name);
     }
 
     pub(crate) fn networth_range(&self) -> [i32; 2] {
@@ -139,7 +139,6 @@ pub(crate) enum CauseOfDeath {
     OldAge,
     Starvation,
     Disease,
-    // TODO(PaZs1uBR): Battle ID
     KilledInBattle(CreatureId)
 }
 
