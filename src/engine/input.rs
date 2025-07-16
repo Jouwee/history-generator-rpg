@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use piston::{Button, ButtonArgs, ButtonState, MouseButton};
+use piston::{Button, ButtonArgs, ButtonState, Key, MouseButton};
 
 use crate::DisplayContext;
 
@@ -8,7 +8,8 @@ pub(crate) enum InputEvent {
     None,
     Click { button: MouseButton, pos: [f64; 2] },
     MouseMove { pos: [f64; 2] },
-    Drag { button: MouseButton, offset: [f64; 2] }
+    Drag { button: MouseButton, offset: [f64; 2] },
+    Key { key: Key }
 }
 
 impl InputEvent {
@@ -24,6 +25,7 @@ impl InputEvent {
             if !was_dragging {
                 match args.button {
                     Button::Mouse(btn) => return InputEvent::Click { pos: state.last_mouse, button: btn.clone() },
+                    Button::Keyboard(key) => return InputEvent::Key { key },
                     _ => ()
                 }
             }

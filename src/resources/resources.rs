@@ -467,6 +467,9 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/flowers.png", Size2D(24, 24));
         self.object_tiles.add("obj:flowers", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
+        let image = ImageSheetAsset::new("chunk_tiles/small_game_carcass.png", Size2D(24, 24));
+        self.object_tiles.add("obj:small_game_carcass", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
+
     }
 
     fn load_item_blueprints(&mut self) {

@@ -193,7 +193,7 @@ mod tests_jigsaw_solver {
 }
 
 pub(crate) struct JigsawPiecePool {
-    pieces: HashMap<String, JigsawPiece>
+    pub(crate) pieces: HashMap<String, JigsawPiece>
 }
 
 impl JigsawPiecePool {
@@ -216,7 +216,7 @@ pub(crate) struct JigsawPiece {
     pub(crate) tiles: Vec<JigsawPieceTile>
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum JigsawPieceTile {
     Air,
     Empty,

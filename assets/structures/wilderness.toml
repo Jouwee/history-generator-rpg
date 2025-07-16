@@ -1,0 +1,57 @@
+[symbols]
+'a' = { ground= 1, object= 13 }
+'A' = { connect = "varningr_lair" }
+'B' = { connect = "varningr_lair_extra" }
+
+[varningr_lair]
+
+[varningr_lair.a]
+size = [3, 3]
+template = """
+.B.
+BaB
+.B.
+"""
+
+[varningr_lair_extra]
+
+[varningr_lair_extra.a]
+size = [3, 3]
+allow_flip_hor = true
+template = """
+...
+Ba.
+...
+"""
+
+[varningr_lair_extra.b]
+size = [3, 3]
+allow_flip_ver = true
+template = """
+.B.
+.a.
+...
+"""
+
+[varningr_lair_extra.connector_a]
+size = [1, 7]
+allow_flip_ver = true
+template = """
+A.....B
+"""
+
+[varningr_lair_extra.connector_b]
+size = [7, 1]
+allow_flip_hor = true
+template = """
+A.....B
+"""
+
+[varningr_lair_extra.connector_c]
+size = [3, 3]
+allow_flip_hor = true
+template = """
+.B.
+..B
+.B.
+"""

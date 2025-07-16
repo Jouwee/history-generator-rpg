@@ -8,6 +8,7 @@ use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::{geometry
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
 struct ChunkFeaturePools {
+    start_pool: Option<String>,
     detached_housing_pool: Option<String>,
     cemetery_pool: Option<String>,
     artifacts_pool: Option<String>,
@@ -92,18 +93,20 @@ impl ChunkGenerator {
     fn get_pools(&self, unit: &Unit) -> ChunkFeaturePools {
         match unit.unit_type {
             UnitType::Village => ChunkFeaturePools {
+                start_pool: None,
                 detached_housing_pool: Some(String::from("village_house_start")),
                 artifacts_pool: Some(String::from("village_plaza")),
                 cemetery_pool: Some(String::from("village_cemetery"))
             },
             UnitType::BanditCamp => ChunkFeaturePools {
+                start_pool: None,
                 detached_housing_pool: Some(String::from("camp_start")),
                 artifacts_pool: None,
                 cemetery_pool: None
             },
-            // TODO(PaZs1uBR): Generate lair
             UnitType::VarningrLair => ChunkFeaturePools {
-                detached_housing_pool: Some(String::from("camp_start")),
+                start_pool: None,
+                detached_housing_pool: Some(String::from("varningr_lair")),
                 artifacts_pool: None,
                 cemetery_pool: None
             },
@@ -149,6 +152,18 @@ impl ChunkGenerator {
                 return Ordering::Less;
             }
         });
+
+        if let Some(start_pool) = &pools.start_pool {
+            let pos = building_seed_cloud.pop().unwrap();
+            let structure = solver.solve_structure(start_pool, pos, &mut self.rng);
+            if let Some(structure) = structure {
+                for (pos, piece) in structure.vec.iter() {
+                    self.place_template(*pos, &piece);
+                }
+            } else {
+                println!("failed to spawn structure")
+            }
+        }
 
         if unit.artifacts.len() > 0 {
             if let Some(artifacts_pool) = &pools.artifacts_pool {
@@ -433,11 +448,24 @@ impl ChunkGenerator {
     fn get_jigsaw_solver(&self) -> JigsawSolver {
         let mut solver = JigsawSolver::new(self.chunk.size.clone(), self.rng.clone());
         
-        let parser = JigsawParser::new("assets/structures/village.toml");
-        let _ = parser.parse(&mut solver);
+        let parser = JigsawParser::new();
+        if let Ok(pools) = parser.parse_file("assets/structures/village.toml") {
+            for (name, pool) in pools {
+                solver.add_pool(&name, pool);
+            }
+        }
 
-        let parser = JigsawParser::new("assets/structures/bandit_camp.toml");
-        let _ = parser.parse(&mut solver);
+        if let Ok(pools) = parser.parse_file("assets/structures/bandit_camp.toml") {
+            for (name, pool) in pools {
+                solver.add_pool(&name, pool);
+            }
+        }
+
+        if let Ok(pools) = parser.parse_file("assets/structures/wilderness.toml") {
+            for (name, pool) in pools {
+                solver.add_pool(&name, pool);
+            }
+        }
 
         return solver;
     }

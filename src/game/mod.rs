@@ -20,6 +20,7 @@ use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::game::chunk::PLAYER_IDX;
+use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::resources::action::{ActionRunner, ActionType};
 use crate::world::creature::CreatureId;
@@ -30,6 +31,7 @@ pub(crate) mod actor;
 pub(crate) mod ai;
 pub(crate) mod chunk;
 pub(crate) mod codex;
+pub(crate) mod console;
 pub(crate) mod effect_layer;
 pub(crate) mod factory;
 pub(crate) mod game_log;
@@ -83,6 +85,7 @@ pub(crate) struct GameSceneState {
     game_log: GameLog,
     player_pathing: PlayerPathing,
     player_pathfinding: AStar,
+    console: Console
 }
 
 impl GameSceneState {
@@ -159,6 +162,7 @@ impl GameSceneState {
             game_log: GameLog::new(),
             player_pathing: PlayerPathing::new(),
             player_pathfinding,
+            console: Console::new()
         }
     }
 
@@ -350,6 +354,8 @@ impl Scene for GameSceneState {
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
+
+        self.console.render(ctx, game_ctx);
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
@@ -481,6 +487,11 @@ impl Scene for GameSceneState {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
+
+        if self.console.input(&mut self.chunk, &evt.evt, ctx).is_break() {
+            return ControlFlow::Break(());
+        }
+
         if let Some(map) = &mut self.map_modal {
             match map.input(evt, ctx) {
                 MapModalEvent::Close => self.map_modal = None,
@@ -685,7 +696,8 @@ impl TurnController {
     }
 
     pub(crate) fn npc_idx(&self) -> usize {
-        return self.initiative[self.turn_idx] - 1
+        // TODO: Attempt to subtract with overflow on loading a city
+        return ((self.initiative[self.turn_idx] as i64 - 1) % self.initiative.len() as i64) as usize
     }
 
     pub(crate) fn next_turn(&mut self) {

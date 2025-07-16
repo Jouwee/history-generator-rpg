@@ -134,9 +134,6 @@ impl Chunk {
 
         chunk.player_mut().xy = Coord2::xy(64, 64);
 
-        // Bed
-        chunk.map.object_layer.set_tile(36, 34, 3);
-
         let species_id = &resources.species.id_of("species:varningr");
         let species = resources.species.get(species_id);
         let npc = Actor::from_species(Coord2::xy(64, 50), &resources.species.id_of("species:varningr"), species);
