@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::image::ImageAsset, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -289,6 +289,7 @@ impl Actor {
 impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        ctx.image(&ImageAsset::new("species/shadow.png"), [pos[0] as i32 + 11, pos[1] as i32 + 42], &mut game_ctx.assets);
         // Applies the animation to the rendering
         pos[0] += self.animation.translate[0];
         pos[1] += self.animation.translate[1];
