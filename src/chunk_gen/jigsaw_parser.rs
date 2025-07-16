@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs};
 
 use toml::{Table, Value};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, engine::geometry::Size2D, resources::tile};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, engine::geometry::Size2D};
 
 use super::jigsaw_structure_generator::{JigsawPiece, JigsawPiecePool};
 
