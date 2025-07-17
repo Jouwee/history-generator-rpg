@@ -37,7 +37,9 @@ impl CreatureFactory {
                 experience: 0,
                 details: None,
                 sim_flags: SIM_FLAG_INTELIGENT,
-                relationships: Vec::new()
+                relationships: Vec::new(),
+                goals: Vec::new(),
+                supports_plot: None,
             });
             return vec!(creature_id)
         } else {
@@ -60,7 +62,9 @@ impl CreatureFactory {
                 experience: 0,
                 details: None,
                 sim_flags: SIM_FLAG_INTELIGENT,
-                relationships: Vec::new()
+                relationships: Vec::new(),
+                goals: Vec::new(),
+                supports_plot: None,
             });
             family.push(father_id);
             
@@ -78,7 +82,9 @@ impl CreatureFactory {
                 experience: 0,
                 details: None,
                 sim_flags: SIM_FLAG_INTELIGENT,
-                relationships: Vec::new()
+                relationships: Vec::new(),
+                goals: Vec::new(),
+                supports_plot: None,
             });
             family.push(mother_id);
 
@@ -109,7 +115,9 @@ impl CreatureFactory {
             species: species,
             details: None,
             sim_flags,
-            relationships: Vec::new()
+            relationships: Vec::new(),
+            goals: Vec::new(),
+            supports_plot: None,
         });
         return creature_id
     }

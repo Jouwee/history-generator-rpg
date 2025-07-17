@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, Resources};
+use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, world::plot::{PlotGoal, PlotId}, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
@@ -43,6 +43,9 @@ pub(crate) struct Creature {
     pub(crate) details: Option<CreatureDetails>,
     pub(crate) sim_flags: u8,
     pub(crate) relationships: Vec<Relationship>,
+    pub(crate) supports_plot: Option<PlotId>,
+    // TODO(IhlgIYVA): Set maybe?
+    pub(crate) goals: Vec<Goal>,
 }
 
 impl Creature {
@@ -240,6 +243,9 @@ impl Relationship {
         self.opinion = (self.opinion.saturating_add(opinion)).clamp(-100, 100);
     }
 
+    pub(crate) fn mortal_enemy_or_worse(&self) -> bool {
+        return self.opinion <= -75;
+    }
     pub(crate) fn rival_or_worse(&self) -> bool {
         return self.opinion <= -20;
     }
@@ -304,6 +310,29 @@ mod tests_relationship {
         assert_eq!(relationship.opinion, -100);
         relationship.add_opinion(-75);
         assert_eq!(relationship.opinion, -100);
+    }
+
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum Goal {
+    /// Wants a creature dead, by any means necessary
+    KillBeast(CreatureId)
+}
+
+impl Goal {
+
+    pub(crate) fn as_plot_goal(&self) -> Option<PlotGoal> {
+        match self {
+            Self::KillBeast(id) => Some(PlotGoal::KillBeast(*id))
+        }
+    }
+
+
+    pub(crate) fn check_completed(&self, world: &World) -> bool {
+        match self {
+            Self::KillBeast(id) => world.creatures.get(id).death.is_some()
+        }
     }
 
 }

@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, resources::resources::Resources, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{attack_nearby_unit, kill_creature}, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -101,7 +101,10 @@ impl HistorySimulation {
 
         }
 
-
+        // Check plot completion
+        for plot in world.plots.iter() {
+            plot.borrow_mut().verify_success(world);
+        }
 
         for id in world.units.iter_ids::<UnitId>() {
             self.simulate_step_unit(world, &step, &self.date.clone(), self.rng.clone(), &id);
@@ -129,7 +132,13 @@ impl HistorySimulation {
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);
 
-            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &mut creature);
+            // SMELL: Doing things outside of the method because of borrow issues
+            let plot = creature.supports_plot.and_then(|plot_id| Some(world.plots.get(&plot_id)));
+            creature.goals.retain(|goal| {
+                !goal.check_completed(world)
+            });
+
+            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &creature, plot);
             side_effects.push((*creature_id, side_effect));
 
             // Production and consumption
@@ -138,6 +147,7 @@ impl HistorySimulation {
             resources = production + resources;
             resources.food -= 1.0;
             
+            // TODO(IhlgIYVA): Maybe run only if no action was selected?
             // Interactions
             if creature.sim_flag_is_inteligent() {
                 // TODO(IhlgIYVA): Magic number
@@ -164,6 +174,18 @@ impl HistorySimulation {
         let mut comissions_pool = Vec::new();
         // TODO: Move all of these to a impl
         for (creature_id, side_effect) in side_effects.into_iter() {
+
+            // SMELL: Creature could've died from another creature action, but it already decided it's own action.
+            //        This happens because I choose the action for ALL creatures, and THEN execute them.
+            let creature = world.creatures.get(&creature_id);
+            if creature.death.is_some() {
+                println!("[WARN] Simulated creature is dead");
+                continue;
+            }
+            drop(creature);
+
+            history_trace!("creature_action creature_id:{:?} action:{:?}", creature_id, side_effect);
+
             match side_effect {
                 CreatureSideEffect::None => (),
                 CreatureSideEffect::Death(cause_of_death) => kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.resources),
@@ -263,7 +285,10 @@ impl HistorySimulation {
                     let mut creature = world.creatures.get_mut(&creature_id);
                     creature.profession = Profession::Bandit;
                 },
-                CreatureSideEffect::AttackNearbyUnits => attack_nearby_unit(world, &mut rng, *unit_id, &mut self.resources)
+                CreatureSideEffect::AttackNearbyUnits => attack_nearby_unit(world, &mut rng, *unit_id, &mut self.resources),
+                CreatureSideEffect::StartPlot(goal) => start_plot(world, creature_id, goal),
+                CreatureSideEffect::FindSupportersForPlot => find_supporters_for_plot(world, creature_id),
+                CreatureSideEffect::ExecutePlot => execute_plot(world, *unit_id, creature_id, &mut rng, &mut self.resources),
             }
         }
 

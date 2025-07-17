@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, io::Write};
 
-use crate::{game::codex::Codex, world::item::ItemId, Event, Item, Resources};
+use crate::{game::codex::Codex, world::{item::ItemId, plot::Plots}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -12,6 +12,7 @@ pub(crate) struct World {
     pub(crate) units: Units,
     pub(crate) lineages: Lineages,
     pub(crate) creatures: Creatures,
+    pub(crate) plots: Plots,
     pub(crate) events: Vec<Event>,
     pub(crate) artifacts: IdVec<Item>,
     pub(crate) codex: Codex,
@@ -27,6 +28,7 @@ impl World {
             units: Units::new(),
             creatures: Creatures::new(),
             lineages: Lineages::new(),
+            plots: Plots::new(),
             artifacts: IdVec::new(),
             events: Vec::new(),
             codex: Codex::new(),
@@ -162,6 +164,8 @@ pub(crate) mod fixture {
                 sim_flags: SIM_FLAG_INTELIGENT,
                 species: human_id,
                 spouse: None,
+                goals: Vec::new(),
+                supports_plot: None,
             });
 
             let creature_a2 = world.creatures.add(Creature {
@@ -179,6 +183,8 @@ pub(crate) mod fixture {
                 sim_flags: SIM_FLAG_INTELIGENT,
                 species: human_id,
                 spouse: None,
+                goals: Vec::new(),
+                supports_plot: None,
             });
 
             let creature_a3 = world.creatures.add(Creature {
@@ -196,6 +202,8 @@ pub(crate) mod fixture {
                 sim_flags: SIM_FLAG_INTELIGENT,
                 species: human_id,
                 spouse: None,
+                goals: Vec::new(),
+                supports_plot: None,
             });
 
             let creature_a4 = world.creatures.add(Creature {
@@ -213,6 +221,8 @@ pub(crate) mod fixture {
                 sim_flags: SIM_FLAG_INTELIGENT,
                 species: human_id,
                 spouse: None,
+                goals: Vec::new(),
+                supports_plot: None,
             });
 
             let _: UnitId = world.units.add(Unit {

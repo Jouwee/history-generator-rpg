@@ -1,7 +1,10 @@
-use crate::{commons::rng::Rng, resources::resources::Resources, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, unit::{Unit, UnitId}, world::World}};
+use std::cell::Ref;
+
+use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
+#[derive(Debug)]
 pub(crate) enum CreatureSideEffect {
     None,
     Death(CauseOfDeath),
@@ -13,6 +16,9 @@ pub(crate) enum CreatureSideEffect {
     ArtisanLookingForComission,
     BecomeBandit,
     AttackNearbyUnits,
+    StartPlot(PlotGoal),
+    FindSupportersForPlot,
+    ExecutePlot,
 }
 
 const YEARLY_CHANCE_MARRY: f32 = 0.4;
@@ -25,8 +31,9 @@ const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 0.5;
 const CHANCE_TO_BECOME_BANDIT: f32 = 0.005;
 
 impl CreatureSimulation {
+
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
@@ -45,6 +52,29 @@ impl CreatureSimulation {
 
         // Get a profession
         if creature.sim_flag_is_inteligent() {
+
+            match supported_plot {
+                None => {
+                    for goal in creature.goals.iter() {
+                        let plot = goal.as_plot_goal();
+                        if let Some(plot) = plot {
+                            // TODO(IhlgIYVA): Magic number
+                            if rng.rand_chance(0.3) {
+                                return CreatureSideEffect::StartPlot(plot);
+                            }
+                        }
+                    }
+                },
+                Some(plot) => {
+                    if rng.rand_chance(1. - plot.success_chance()) {
+                        return CreatureSideEffect::FindSupportersForPlot;
+                    } else {
+                        return CreatureSideEffect::ExecutePlot;
+                    }
+                    
+                }
+            }
+
             if age >= 14 && creature.profession == Profession::None {
                 return CreatureSideEffect::LookForNewJob;
             }
@@ -157,7 +187,9 @@ impl CreatureSimulation {
                 details: None,
                 experience: 0,
                 sim_flags: father.sim_flags,
-                relationships: Vec::new()
+                relationships: vec!(),
+                goals: vec!(),
+                supports_plot: None,
             };
             return Some(child)
         }
@@ -206,6 +238,129 @@ pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: Unit
     }
 }
 
+// Plot stuff
+
+pub(crate) fn start_plot(world: &mut World, creature_id: CreatureId, goal: PlotGoal) {
+    let plot = Plot::new(goal, creature_id, world);
+    let plot_id = world.plots.add(plot);
+    history_trace!("plot_start creature_id:{:?} plot_id:{:?}", creature_id, plot_id);
+
+    let mut creature = world.creatures.get_mut(&creature_id);
+    creature.supports_plot = Some(plot_id);
+
+}
+
+pub(crate) fn find_supporters_for_plot(world: &mut World, creature_id: CreatureId) {
+    let creature = world.creatures.get(&creature_id);
+    let plot_id_o = creature.supports_plot;
+    // TODO(IhlgIYVA): Kind of a smell
+    if plot_id_o.is_none() {
+        return;
+    }
+    let plot_id = plot_id_o.expect("Shouldn't happen");
+    let mut plot = world.plots.get_mut(&plot_id);
+
+    for relationship in creature.relationships.iter() {
+
+        if relationship.rival_or_worse() {
+            continue;
+        }
+
+        // TODO(IhlgIYVA): Check if duplicate
+        let mut relation = world.creatures.get_mut(&relationship.creature_id);
+
+        if relation.supports_plot.is_some() || relation.death.is_some() {
+            continue;
+        }
+
+        let mut can_support = false;
+
+        // If shares a goal
+        for goal in relation.goals.iter() {
+            let plot_goal = goal.as_plot_goal();
+            if let Some(plot_goal) = plot_goal {
+                if plot_goal == plot.goal {
+                    can_support = true;
+                    break;
+
+                }
+            }
+        }
+
+        if can_support {
+            history_trace!("plot_new_supporter creature_id:{:?} plot_id:{:?}", relationship.creature_id, plot_id);
+            plot.add_supporter(plot_id, relationship.creature_id, &mut relation);
+        }
+
+    }
+
+}
+
+pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: CreatureId, rng: &mut Rng, resources: &mut Resources) {
+    let creature = world.creatures.get(&creature_id);
+    let plot_id_o = creature.supports_plot;
+    // TODO(IhlgIYVA): Kind of a smell
+    if plot_id_o.is_none() {
+        return;
+    }
+    let plot_id = plot_id_o.expect("Shouldn't happen");
+    let plot = world.plots.get(&plot_id);
+    history_trace!("execute_plot creature_id:{:?} plot_id:{:?} plot:{:?}", creature_id, plot_id, plot);
+
+    let goal = plot.goal.clone();
+    drop(creature);
+    drop(plot);
+
+    match goal {
+        PlotGoal::KillBeast(target_id) => {
+
+            // TODO(IhlgIYVA): Bug
+            let creature = world.creatures.get(&target_id);
+            if creature.death.is_some() {
+                println!("plot: creature is already dead");
+                return;
+            }
+            drop(creature);
+
+            // TODO(IhlgIYVA): Performance for Unit
+            let ret = world.units.iter_id_val::<UnitId>().find(|(_id, unit)| unit.borrow().creatures.contains(&target_id));
+            if let Some((target_id, _)) = ret {
+
+                // TODO(IhlgIYVA): Dupped code
+                // TODO(IhlgIYVA): Separate plotters from unit
+                // TODO(IhlgIYVA): Die outside of unit
+
+                let battle;
+                {
+                    let unit = world.units.get(&unit_id);
+                    let target_unit = world.units.get(&target_id);
+                    battle = BattleSimulator::simulate_attack(unit_id, &unit, target_id, &target_unit, rng, world);
+                }
+        
+                for (id, unit_id, killer) in battle.deaths {
+                    let cause_of_death = CauseOfDeath::KilledInBattle(killer);
+                    kill_creature(world, id, unit_id, target_id, cause_of_death, resources);
+                }
+        
+                for (id, xp) in battle.xp_add {
+                    let mut creature = world.creatures.get_mut(&id);
+                    creature.experience += xp;
+                }
+
+            } else {
+                // TODO(IhlgIYVA): Error handling
+                println!("<plot> How????")
+            }
+
+        }
+    }
+
+    let mut plot = world.plots.get_mut(&plot_id);
+    plot.verify_success(&world);
+
+}
+
+
 // Global functions
 
 pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_from_id: UnitId, unit_death_id: UnitId, cause_of_death: CauseOfDeath, resources: &mut Resources) {
@@ -225,6 +380,11 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
         let mut unit = world.units.get_mut(&unit_from_id);
         let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
         let id = unit.creatures.remove(i);
+
+        if let Some(plot_id) = creature.supports_plot {
+            let mut plot = world.plots.get_mut(&plot_id);
+            plot.remove_supporter(creature_id, &mut creature);
+        }
 
         // Else, the body is lost
         if died_home {
@@ -257,7 +417,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
             }
         }
 
-        // TODO (IhlgIYVA): Extract
+        // TODO(IhlgIYVA): Extract
         if let CauseOfDeath::KilledInBattle(killer_id) = &cause_of_death {
             for relationship in creature.relationships.iter() {
                 let relationship_creature_id = relationship.creature_id;
@@ -265,7 +425,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
                 let relationship = relationship_creature.relationship_find(creature_id);
                 if let Some(relationship) = relationship {
                     if relationship.friend_or_better() {
-                        // TODO (IhlgIYVA): How did I get to a point where it killed his own "friend"?
+                        // TODO(IhlgIYVA): How did I get to a point where it killed his own "friend"?
                         if relationship_creature_id == *killer_id {
                             println!("rel: {:?} killer: {:?}", relationship_creature_id, killer_id);
                             continue
@@ -273,6 +433,17 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
                         let killer = world.creatures.get(killer_id);
                         let killer_relationship = relationship_creature.relationship_find_mut_or_insert(&relationship_creature_id, *killer_id, &killer);
                         killer_relationship.add_opinion(-75);
+
+                        if killer_relationship.mortal_enemy_or_worse() {
+                            // TODO(IhlgIYVA): Determinate
+                            // TODO(IhlgIYVA): Magic number
+                            if Rng::rand().rand_chance(0.8) {
+                                let goal = Goal::KillBeast(*killer_id);
+                                history_trace!("creature_add_goall creature_id:{:?} goal:{:?}", relationship_creature_id, goal);
+                                relationship_creature.goals.push(goal);
+                            }
+                        }
+
                     }
                 }
             }
