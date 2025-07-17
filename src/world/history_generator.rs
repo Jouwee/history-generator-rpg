@@ -8,8 +8,12 @@ use super::world::World;
 pub(crate) struct WorldGenerationParameters {
     pub(crate) seed: u32,
     // Terain
+    /// Size of the world, in chunks
+    pub(crate) world_size: Size2D,
     pub(crate) num_plate_tectonics: u8,
     // History
+    /// Number of years to simulate
+    pub(crate) history_length: u16,
     pub(crate) number_of_seed_cities: u16,
     pub(crate) seed_cities_population: u32,
 }
@@ -17,6 +21,7 @@ pub(crate) struct WorldGenerationParameters {
 pub(crate) struct WorldHistoryGenerator {
     pub(crate) year: u32,
     pub(crate) world: World,
+    pub(crate) parameters: WorldGenerationParameters,
     history_sim: HistorySimulation,
     pub(crate) stop: bool
 }
@@ -26,7 +31,7 @@ impl WorldHistoryGenerator {
     pub(crate) fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
         let mut rng = Rng::seeded(parameters.seed);
 
-        let mut world_map = WorldTopology::new(Size2D(256, 256));
+        let mut world_map = WorldTopology::new(parameters.world_size);
         let now = Instant::now();
         world_map.plate_tectonics(&mut rng, parameters.num_plate_tectonics);
         println!("Plate tectonics in {:.2?}", now.elapsed());
@@ -40,11 +45,12 @@ impl WorldHistoryGenerator {
 
         let mut world = World::new(world_map);
 
-        let mut history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters);
+        let mut history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters.clone());
         history_sim.seed(&mut world);
 
 
         let generator = WorldHistoryGenerator {
+            parameters,
             history_sim,
             world,
             year: 1,

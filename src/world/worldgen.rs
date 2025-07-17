@@ -66,9 +66,9 @@ impl WorldGenScene {
         let black = Color::from_hex("14233a");
 
         let mut scene = WorldGenScene {
-            generator: WorldHistoryGenerator::seed_world(params, resources),
+            generator: WorldHistoryGenerator::seed_world(params.clone(), resources),
             total_time: Duration::new(0, 0),
-            tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 4, 4),
+            tilemap: LayeredDualgridTilemap::new(dual_tileset, params.world_size.0, params.world_size.1, 4, 4),
             banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
             faction_colors: [
                 (red, black),
@@ -151,13 +151,12 @@ impl Scene for WorldGenScene {
     }
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
-        let end_year = 500;
-        if self.generator.stop || self.generator.year >= end_year {
+        if self.generator.stop || self.generator.year >= self.generator.parameters.history_length as u32 {
             return
         }
         let start = Instant::now();
         loop {
-            if self.generator.year < end_year {
+            if self.generator.year < self.generator.parameters.history_length as u32 {
                 println!("Year {}, {} people to process", self.generator.year, self.generator.world.creatures.len());
                 let now = Instant::now();
                 self.generator.simulate_year();
