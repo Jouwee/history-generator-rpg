@@ -21,6 +21,7 @@ impl crate::commons::id_vec::Id for ItemId {
 pub(crate) struct Item {
     pub(crate) name: String,
     pub(crate) special_name: Option<String>,
+    pub(crate) owner: Option<CreatureId>,
     pub(crate) placed_sprite: PalleteSprite,
     pub(crate) action_provider: Option<ActionProviderComponent>,
     pub(crate) equippable: Option<EquippableComponent>,

@@ -180,7 +180,7 @@ fn main() {
         seed: 1234567,
         world_size: Size2D(64, 48),
         history_length: 500,
-        number_of_seed_cities: 1000,
+        number_of_seed_cities: 200,
         seed_cities_population: 20,
         num_plate_tectonics: 25
     }, &app.context.resources));

@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -115,7 +115,9 @@ impl HistorySimulation {
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
         println!("Year: {}", self.date.year());
+        println!("Total units: {}", world.units.len());
         println!("Total creatures: {}", world.creatures.len());
+        println!("Total artifacts: {}", world.artifacts.len());
         println!("Total events: {}", world.events.len());
 
         return true;
@@ -433,7 +435,8 @@ impl HistorySimulation {
                         unit.artifacts.push(id);
                     },
                     None => {
-                        creature.details().inventory.push(id);
+                        let mut item = world.artifacts.get_mut(&id);
+                        add_item_to_inventory(id, &mut item, *who_gets_item, &mut creature);
                     },
                 }
             }
@@ -466,6 +469,9 @@ impl HistorySimulation {
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();
+                if unit.creatures.len() > 0 {
+                    return false;
+                }
                 return unit.xy.dist_squared(&candidate) < 5. * 5.
             });
             if too_close {

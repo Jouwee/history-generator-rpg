@@ -9,7 +9,7 @@ pub(crate) enum Event {
     CreatureProfessionChange { date: WorldDate, creature_id: CreatureId, new_profession: Profession },
     ArtifactCreated { date: WorldDate, artifact: ItemId, creator: CreatureId },
     InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ItemId },
-    BurriedWithPosessions { date: WorldDate, creature_id: CreatureId },
+    BurriedWithPosessions { date: WorldDate, creature_id: CreatureId, items_ids: Vec<ItemId> },
     ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ItemId },
     NewLeaderElected { date: WorldDate, unit_id: UnitId, creature_id: CreatureId },
     JoinBanditCamp { date: WorldDate, creature_id: CreatureId, unit_id: UnitId, new_unit_id: UnitId },
@@ -26,7 +26,7 @@ impl Event {
             Self::CreatureProfessionChange { date: _, creature_id, new_profession: _ } => vec!(*creature_id),
             Self::ArtifactCreated { date: _, artifact: _, creator } => vec!(*creator),
             Self::InheritedArtifact { date: _, creature_id, from, item: _ } => vec!(*creature_id, *from),
-            Self::BurriedWithPosessions { date: _, creature_id } => vec!(*creature_id),
+            Self::BurriedWithPosessions { date: _, creature_id, items_ids: _ } => vec!(*creature_id),
             Self::ArtifactComission { date: _, creature_id, creator_id, item_id: _ } => vec!(*creature_id, *creator_id),
             Self::NewLeaderElected { date: _, unit_id: _, creature_id } => vec!(*creature_id),
             Self::JoinBanditCamp { date: _, creature_id, unit_id: _, new_unit_id: _ } => vec!(*creature_id),
@@ -46,7 +46,7 @@ impl Event {
             Self::CreatureProfessionChange { date: _, creature_id: _, new_profession: _ } => vec!(),
             Self::ArtifactCreated { date: _, artifact, creator: _ } => vec!(*artifact),
             Self::InheritedArtifact { date: _, creature_id: _, from: _, item } => vec!(*item),
-            Self::BurriedWithPosessions { date: _, creature_id: _ } => vec!(),
+            Self::BurriedWithPosessions { date: _, creature_id: _, items_ids } => items_ids.clone(),
             Self::ArtifactComission { date: _, creature_id: _, creator_id: _, item_id } => vec!(*item_id),
             Self::NewLeaderElected { date: _, unit_id: _, creature_id: _ } => vec!(),
             Self::JoinBanditCamp { date: _, creature_id: _, unit_id: _, new_unit_id: _ } => vec!(),
@@ -85,7 +85,7 @@ impl Event {
                 let artifact = world.artifacts.get(artifact);
                 return format!("> {}, {} created {:?}", world.date_desc(date), name, artifact.name(&resources.materials));
             },
-            Event::BurriedWithPosessions { date, creature_id } => {
+            Event::BurriedWithPosessions { date, creature_id, items_ids: _ } => {
                 let name = world.creature_desc(creature_id, resources);
                 return format!("> {}, {} was buried with their possessions", world.date_desc(date), name);
             },

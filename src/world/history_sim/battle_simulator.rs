@@ -26,7 +26,7 @@ impl BattleSimulator {
         for id in defender.creatures.iter() {
             let creature = world.creatures.get(id);
             let tactic = match creature.profession {
-                Profession::Guard | Profession::Bandit | Profession::Ruler => Tactic::Fight,
+                Profession::Guard | Profession::Beast | Profession::Bandit | Profession::Ruler => Tactic::Fight,
                 Profession::None => Tactic::Hide,
                 _ => { 
                     if rng.rand_chance(CIVILIAN_FIGHT_CHANCE) {

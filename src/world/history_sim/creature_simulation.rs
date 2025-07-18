@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
+use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -349,7 +349,7 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
 
             } else {
                 // TODO(IhlgIYVA): Error handling
-                println!("<plot> How????")
+                println!("<plot> How????");
             }
 
         }
@@ -397,9 +397,9 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
                     settlement.add_material(drop, 1);
                 }
             }
-        }         
+        }    
 
-        // TODO(UzRAfaxM): If they didn't die home, inheritance shouldn't take place. But where do artifacts go?
+        drop(unit);
 
         let mut inheritor = None;
         let mut has_possession = false;
@@ -407,11 +407,13 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
         if let Some(details) = &creature.details {
             if details.inventory.len() > 0 {
                 has_possession = true;
-                for candidate_id in creature.offspring.iter() {
-                    let candidate = world.creatures.get(candidate_id);
-                    if candidate.death.is_none() {
-                        inheritor = Some((*candidate_id, details.inventory.clone()));
-                        break;
+                if died_home {
+                    for candidate_id in creature.offspring.iter() {
+                        let candidate = world.creatures.get(candidate_id);
+                        if candidate.death.is_none() {
+                            inheritor = Some(*candidate_id);
+                            break;
+                        }
                     }
                 }
             }
@@ -439,7 +441,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
                             // TODO(IhlgIYVA): Magic number
                             if Rng::rand().rand_chance(0.8) {
                                 let goal = Goal::KillBeast(*killer_id);
-                                history_trace!("creature_add_goall creature_id:{:?} goal:{:?}", relationship_creature_id, goal);
+                                history_trace!("creature_add_goal creature_id:{:?} goal:{:?}", relationship_creature_id, goal);
                                 relationship_creature.goals.push(goal);
                             }
                         }
@@ -455,18 +457,18 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
         drop(creature);
 
         if has_possession {
-            if let Some((inheritor_id, inventory)) = inheritor {
-                let mut inheritor = world.creatures.get_mut(&inheritor_id);
-                let mut creature = world.creatures.get_mut(&creature_id);
-                creature.details().inventory.clear();
-                inheritor.details().inventory.append(&mut inventory.clone());
-                drop(creature);
-                drop(inheritor);
-                for item in inventory.iter() {
-                    world.events.push(Event::InheritedArtifact { date: now.clone(), creature_id: inheritor_id, from: creature_id, item: *item });
-                }
+            if let Some(inheritor_id) = inheritor {
+                transfer_inventory(creature_id, inheritor_id, world);
             } else {
-                world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id });
+                if died_home {
+                    let creature = world.creatures.get(&creature_id);
+                    if let Some(details) = &creature.details {
+                        let inventory = details.inventory.clone();
+                        world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id, items_ids: inventory });
+                    }
+                } else {
+                    drop_inventory(creature_id, world);
+                }
             }
         }
 
@@ -474,4 +476,43 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
 
     }
     world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
+}
+
+// Artifact operations
+
+
+pub(crate) fn add_item_to_inventory(item_id: ItemId, item: &mut Item, new_owner_id: CreatureId, new_owner: &mut Creature) {
+    new_owner.details().inventory.push(item_id);
+    item.owner = Some(new_owner_id);
+}
+
+
+fn transfer_inventory(current_id: CreatureId, new_owner_id: CreatureId, world: &mut World) {
+    let mut current = world.creatures.get_mut(&current_id);
+    let mut inventory: Vec<ItemId> = current.details().inventory.drain(..).collect();
+    for item_id in inventory.iter() {
+        let mut item = world.artifacts.get_mut(item_id);
+        item.owner = Some(new_owner_id);
+    }
+
+    history_trace!("transfer_inventory {:?}", current_id, new_owner_id);
+
+    let mut new_owner = world.creatures.get_mut(&new_owner_id);
+    new_owner.details().inventory.append(&mut inventory);
+    for item in inventory.iter() {
+        world.events.push(Event::InheritedArtifact { date: world.date.clone(), creature_id: new_owner_id, from: current_id, item: *item });
+    }
+}
+
+fn drop_inventory(creature_id: CreatureId, world: &mut World) {
+    history_trace!("drop_inventory {:?}", creature_id);
+
+    let mut current = world.creatures.get_mut(&creature_id);
+    let inventory: Vec<ItemId> = current.details().inventory.drain(..).collect();
+    for item_id in inventory.iter() {
+        let mut item = world.artifacts.get_mut(item_id);
+        item.owner = None;
+    }
+
+    // TODO(NJ5nTVIV): Add to death unit
 }

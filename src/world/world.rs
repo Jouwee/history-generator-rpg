@@ -51,17 +51,30 @@ impl World {
         for (id, item) in self.artifacts.iter_id_val::<ItemId>() {
             let i_item = item.borrow();
 
-            // TODO(NJ5nTVIV): Select ownerless
-            // TODO(NJ5nTVIV): Older = cooler
-
+            // Ignores artworks
+            if i_item.artwork_scene.is_some() {
+                continue;
+            }
+            
             let mut score = 1.;
+
+            if let Some(owner) = i_item.owner {
+                let owner = self.creatures.get(&owner);
+                if owner.death.is_some() {
+                    // Dead owner - Viable, but less preferable
+                    score -= 1.;
+                } else {
+                    // Ignore alive owners
+                    continue;
+                }
+            }
 
             // More arcane damage = More interesting
             let extra = i_item.extra_damage(&resources.materials);
             score += extra.arcane;
             
             // More events = More interesting
-            score += *events_per_item.get(&id).unwrap_or(&0) as f32;
+            score += *events_per_item.get(&id).unwrap_or(&0) as f32 * 2.;
 
             if let Some(quality) = &i_item.quality {
                 score = score * quality.quality.main_stat_multiplier();
@@ -91,6 +104,8 @@ impl World {
             }
 
 
+        } else {
+            println!("NO GOAL FOUND");
         }
     }
 

@@ -106,7 +106,7 @@ impl CreatureFactory {
             mother: CreatureId::ancients(),
             profession: match bitmask_get(sim_flags, SIM_FLAG_INTELIGENT) {
                 true => Profession::Peasant,
-                false => Profession::None
+                false => Profession::Beast
             },
             spouse: None,
             experience: level_to_xp(level),

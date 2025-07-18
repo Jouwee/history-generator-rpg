@@ -150,6 +150,7 @@ pub(crate) enum CauseOfDeath {
 pub(crate) enum Profession {
     // Someone that doesn't work. Usually children and elders, but could be reserved for nitwits.
     None,
+    Beast,
     // Outlaws
     Bandit,
     // Workers
@@ -177,6 +178,7 @@ impl Profession {
             Profession::Blacksmith => UnitResources { food: 0. },
             Profession::Sculptor => UnitResources { food: 0. },
             Profession::Ruler => UnitResources { food: 0. },
+            Profession::Beast => UnitResources { food: 1.5 },
         }
     }
 
@@ -185,6 +187,7 @@ impl Profession {
             Profession::None | Profession::Peasant | Profession::Farmer  | Profession::Guard | Profession::Blacksmith | Profession::Sculptor => false,
             Profession::Bandit => true,
             Profession::Ruler => true,
+            Profession::Beast => true,
         }
     }
 
@@ -198,6 +201,7 @@ impl Profession {
             Profession::Blacksmith =>  [5, 20],
             Profession::Sculptor =>  [5, 20],
             Profession::Ruler =>  [50, 100],
+            Profession::Beast => [0, 0],
         }
     }
 

@@ -54,7 +54,7 @@ impl Unit {
                     return Profession::Guard;
                 }
             },
-            UnitType::VarningrLair => Profession::None,
+            UnitType::VarningrLair => Profession::Beast,
         }
     }
 

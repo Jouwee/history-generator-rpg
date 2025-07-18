@@ -20,6 +20,7 @@ impl ItemFactory {
             placed_sprite: PalleteSprite::new(image),
             quality: None,
             special_name: None,
+            owner: None,
         }
     }
 

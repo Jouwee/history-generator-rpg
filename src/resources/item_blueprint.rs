@@ -36,6 +36,7 @@ impl ItemBlueprint {
             placed_sprite: self.placed_sprite.clone(),
             action_provider: self.action_provider.clone(),
             equippable: self.equippable.clone(),
+            owner: None,
             material: match &self.material {
                 Some(material_blueprint) => Some(material_blueprint.make(&arguments)),
                 None => None,
