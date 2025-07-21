@@ -217,7 +217,7 @@ impl Resources {
         self.actions.add("act:firebolt", Action {
             name: String::from("Firebolt"),
             description: String::from("Firebolt"),
-            icon: ImageAsset::new("missing.png"),
+            icon: ImageAsset::new("gui/icons/actions/firebolt.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,

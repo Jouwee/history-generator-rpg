@@ -13,6 +13,7 @@ use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
+use crate::commons::interpolate::{lerp, Interpolate};
 use crate::engine::asset::image::ImageAsset;
 use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;
@@ -86,6 +87,7 @@ pub(crate) struct GameSceneState {
     player_pathfinding: AStar,
     console: Console,
     action_runner: ActionRunner,
+    camera_offset: [f64; 2],
 }
 
 impl GameSceneState {
@@ -163,6 +165,7 @@ impl GameSceneState {
             player_pathfinding,
             console: Console::new(),
             action_runner: ActionRunner::new(),
+            camera_offset: [0.; 2]
         }
     }
 
@@ -323,7 +326,12 @@ impl Scene for GameSceneState {
         }
         // Game
         let center = self.chunk.player().xy;
-        ctx.center_camera_on([center.x as f64 * 24., center.y as f64 * 24.]);
+        self.camera_offset = [
+            lerp(self.camera_offset[0], center.x as f64 * 24., 0.2),
+            lerp(self.camera_offset[1], center.y as f64 * 24., 0.2),
+        ];
+        ctx.center_camera_on(self.camera_offset);
+
         self.chunk.render(ctx, game_ctx);
 
         ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
