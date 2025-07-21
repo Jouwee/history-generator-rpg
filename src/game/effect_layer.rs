@@ -64,10 +64,11 @@ impl EffectLayer {
             let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
             println!("{:?}", angle_degrees);
             let transform = ctx.context.transform.trans(x * 24. + 12., y * 24. + 12.).rot_deg(angle_degrees);
-            image(sheet.get(projectile.sprite_index).unwrap(), transform, ctx.gl);
+            let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
+            image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
 
             // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
-            projectile.sprite_index = (projectile.sprite_index + 1) % sheet.len();
+            // projectile.sprite_index = (projectile.sprite_index + 1) % sheet.len();
             // ctx.image(sheet., position, assets);
 
             ctx.context.transform = copy;
@@ -96,6 +97,7 @@ impl EffectLayer {
             projectile.lifetime = projectile.lifetime + update.delta_time;
         }
         self.projectiles.retain(|n| n.lifetime < n.duration);
+        
     }
 
     pub(crate) fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
@@ -121,8 +123,7 @@ impl EffectLayer {
             to,
             duration,
             lifetime: 0.,
-            sprite,
-            sprite_index: 0
+            sprite
         })
     }
 
@@ -147,7 +148,6 @@ struct Projectile {
     duration: f64,
     lifetime: f64,
     sprite: ImageSheetAsset,
-    sprite_index: usize,
 }
 
 struct Sprite {

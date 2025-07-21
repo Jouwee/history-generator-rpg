@@ -229,7 +229,7 @@ impl Resources {
                 ),
                 projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
-                impact_sound: Some(SoundEffect::new(vec!("sfx/explosion.wav")))
+                impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
         });
 

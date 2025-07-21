@@ -323,8 +323,8 @@ impl ActionRunner {
             ActionType::Spell { target, area, effects, projectile, impact, impact_sound } => {
                 let actor = chunk.actor_mut(actor_index).unwrap();
 
-                actor.ap.consume(action.ap_cost);
-                actor.stamina.consume(action.stamina_cost);
+                // actor.ap.consume(action.ap_cost);
+                // actor.stamina.consume(action.stamina_cost);
 
                 game_log.log(GameLogEntry::from_parts(vec!(
                     GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
