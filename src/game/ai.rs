@@ -79,7 +79,6 @@ impl AiSolver {
         };
 
         if actor.actor_type == ActorType::Passive {
-            // println!("Actor is passive. skiping AI");
             let mut runner = AiRunner::new();
             runner.actions = VecDeque::from(ctx.actions.clone());
             return runner
@@ -196,7 +195,7 @@ impl AiSolver {
                                         };
                                         ctx.damage_score += score;
                                     },
-                                    SpellEffect::ReplaceObject { tile } => {
+                                    SpellEffect::ReplaceObject { tile: _ } => {
                                         // TODO:
                                     }
                                 }

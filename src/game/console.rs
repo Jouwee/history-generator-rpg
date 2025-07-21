@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{Species, SpeciesId, SpeciesMap}, GameContext};
+use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,

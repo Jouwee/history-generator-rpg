@@ -13,7 +13,7 @@ use map_modal::{MapModal, MapModalEvent};
 use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
-use crate::commons::interpolate::{lerp, Interpolate};
+use crate::commons::interpolate::lerp;
 use crate::engine::asset::image::ImageAsset;
 use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;

@@ -524,8 +524,6 @@ impl ActionRunner {
 
                                                 let dead = target.hp.health_points();
 
-                                                drop(target);
-
                                                 if dead == 0. {
                                                     let actor = chunk.actor_mut(action.actor).unwrap();
                                                     actor.add_xp(100);
