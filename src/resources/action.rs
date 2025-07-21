@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -55,6 +55,8 @@ pub(crate) enum SpellTarget {
     Caster,
     /// Action is targeted at a actors location
     Actor { range: u16 },
+    /// Any tile
+    Tile { range: u16 },
 }
 
 #[derive(Clone)]
@@ -63,6 +65,8 @@ pub(crate) enum SpellArea {
     Target,
     /// Affects in an circle area
     Circle { radius: u16 },
+    /// Affects in an rectangular area
+    Rectangle(Size2D),
 }
 
 #[derive(Clone)]
@@ -71,6 +75,21 @@ pub(crate) enum SpellProjectile {
 }
 
 impl SpellArea {
+
+    pub(crate) fn point_in_area(&self, center: Coord2, point: Coord2) -> bool {
+        match self {
+            SpellArea::Target => point == center,
+            SpellArea::Circle { radius } => {
+                let radius = (radius * radius) as f32;
+                return point.dist_squared(&center) < radius
+            },
+            SpellArea::Rectangle(size) => {
+                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                return point.x >= start.x && point.y >= start.y && point.x <= end.x && point.y <= end.y;
+            }
+        }
+    }
 
     pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Box<dyn Iterator<Item = (usize, A)> + 'a> where A: std::borrow::Borrow<Actor> + 'a, {
         match self {
@@ -87,6 +106,17 @@ impl SpellArea {
                     }
                     return actor.borrow().xy.dist_squared(&center) < radius
                 }));
+            },
+            SpellArea::Rectangle(size) => {
+                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                return Box::new(iter.enumerate().filter(move |(idx, actor): &(usize, A)| {
+                    if *idx == actor_index {
+                        return false;
+                    }
+                    let pos = actor.borrow().xy;
+                    return pos.x >= start.x && pos.y >= start.y && pos.x <= end.x && pos.y <= end.y;
+                }));
             }
         }
     }
@@ -99,6 +129,8 @@ pub(crate) enum SpellEffect {
     Damage(DamageComponent),
     /// Inflicts an effect on the target
     Inflicts { affliction: Affliction },
+    /// Replaces tiles in the object layer
+    ReplaceObject { tile: usize },
 }
 
 #[derive(Clone, Debug)]
@@ -203,6 +235,11 @@ impl ActionRunner {
                         let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
                         if target.is_none() {
                             return Err(ActionFailReason::NoValidTarget);
+                        }
+                    },
+                    SpellTarget::Tile { range } => {
+                        if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
+                            return Err(ActionFailReason::CantReach);
                         }
                     }
                 }
@@ -335,12 +372,13 @@ impl ActionRunner {
                 let pos = match target {
                     SpellTarget::Caster => actor.xy.clone(),
                     SpellTarget::Actor { range: _ } => cursor,
+                    SpellTarget::Tile { range: _ } => cursor,
                 };
 
-                let target_actors = area
-                    .filter(pos, actor_index, chunk.actors_iter_mut())
-                    .map(|(i, _actor)| i)
-                    .collect();
+                // let target_actors = area
+                //     .filter(pos, actor_index, chunk.actors_iter_mut())
+                //     .map(|(i, _actor)| i)
+                //     .collect();
 
                 let mut steps = VecDeque::new();
                 if let Some(cast) = cast {
@@ -364,7 +402,9 @@ impl ActionRunner {
 
                 self.running_action = Some(RunningAction {
                     actor: actor_index,
-                    target_actors,
+                    spell_area: area.clone(),
+                    center: pos,
+                    // target_actors,
                     current_step: None,
                     steps
                 });
@@ -422,86 +462,121 @@ impl ActionRunner {
 
                     match &step {
                         RunningActionStep::Effect(effects) => {
-                            for i in action.target_actors.iter() {
-                                let target = chunk.actor_mut(*i).unwrap();
+                            // for i in action.target_actors.iter() {
+                            //     let target = chunk.actor_mut(*i).unwrap();
 
                                 for effect in effects.iter() {
                                     match effect {
                                         SpellEffect::Damage(model) => {
-                                            let mut parts = vec!(
-                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
-                                                GameLogPart::Text(String::from(" takes "))
-                                            );
-                                            // TODO(w0ScmN4f): Others
-                                            if model.fire > 0. {
-                                                // TODO(w0ScmN4f): Random damage
-                                                // TODO(w0ScmN4f): Random body part
-                                                parts.push(GameLogPart::Damage(format!("{:.2}", model.fire)));
-                                                parts.push(GameLogPart::Text(String::from(" fire damage ")));
-                                            }
 
-                                            game_log.log(GameLogEntry::from_parts(parts));
-                                            
-                                            // TODO(w0ScmN4f):
-                                            // effect_layer.add_text_indicator(actor.xy, name, color);
-                                            // actor.add_affliction(&affliction)
+                                            // TODO: Dupped code
+                                            let target_actors: Vec<usize> = action.spell_area
+                                                .filter(action.center, action.actor, chunk.actors_iter_mut())
+                                                .map(|(i, _actor)| i)
+                                                .collect();
+                                            for i in target_actors.iter() {
+                                                let target = chunk.actor_mut(*i).unwrap();
 
-                                            let target_body_part = BodyPart::random(&mut Rng::rand());
-                                            let damage = resolve_damage(&model, &target.stats(), &target_body_part, &target.stats());
-                
-                                            match damage {
-                                                DamageOutput::Dodged => {
-                                                    effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
-                                                },
-                                                DamageOutput::Hit(damage) => {
-                                                    target.hp.hit(target_body_part, damage);
-                                                    effect_layer.add_damage_number(target.xy, damage);
-                                                },
-                                                DamageOutput::CriticalHit(damage) => {
-                                                    target.hp.critical_hit(target_body_part, damage);
-                                                    effect_layer.add_damage_number(target.xy, damage);
-                                                },
-                                            }
-                
-                                            game_log.log(GameLogEntry::damage(target, target, &damage, &world, &ctx.resources));
-                
-                                            // if let Some(fx) = &action.sound_effect {
-                                            //     ctx.audio.play_once(fx.clone());
-                                            // }
-                                            // Animations
-                                            let dir = target.xy - target.xy;
-                                            target.animation.play(&Self::build_attack_anim(dir));
-                                            target.animation.play(&&Self::build_hurt_anim(dir));
+                                                let mut parts = vec!(
+                                                    GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
+                                                    GameLogPart::Text(String::from(" takes "))
+                                                );
+                                                // TODO(w0ScmN4f): Others
+                                                if model.fire > 0. {
+                                                    // TODO(w0ScmN4f): Random damage
+                                                    // TODO(w0ScmN4f): Random body part
+                                                    parts.push(GameLogPart::Damage(format!("{:.2}", model.fire)));
+                                                    parts.push(GameLogPart::Text(String::from(" fire damage ")));
+                                                }
 
-
-                                            if target.hp.health_points() == 0. {
-                                                target.add_xp(100);
-                                                // side_effects.push(ActionSideEffect::RemoveNpc(*i));
+                                                game_log.log(GameLogEntry::from_parts(parts));
+                                                
                                                 // TODO(w0ScmN4f):
-                                                // chunk.remove_npc(*i, ctx);
-                                            }
-                                            if target.actor_type != ActorType::Player {
-                                                // TODO(w0ScmN4f):
-                                                // side_effects.push(ActionSideEffect::MakeNpcsHostile);
+                                                // effect_layer.add_text_indicator(actor.xy, name, color);
+                                                // actor.add_affliction(&affliction)
+
+                                                let target_body_part = BodyPart::random(&mut Rng::rand());
+                                                let damage = resolve_damage(&model, &target.stats(), &target_body_part, &target.stats());
+                    
+                                                match damage {
+                                                    DamageOutput::Dodged => {
+                                                        effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
+                                                    },
+                                                    DamageOutput::Hit(damage) => {
+                                                        target.hp.hit(target_body_part, damage);
+                                                        effect_layer.add_damage_number(target.xy, damage);
+                                                    },
+                                                    DamageOutput::CriticalHit(damage) => {
+                                                        target.hp.critical_hit(target_body_part, damage);
+                                                        effect_layer.add_damage_number(target.xy, damage);
+                                                    },
+                                                }
+                    
+                                                game_log.log(GameLogEntry::damage(target, target, &damage, &world, &ctx.resources));
+                    
+                                                // if let Some(fx) = &action.sound_effect {
+                                                //     ctx.audio.play_once(fx.clone());
+                                                // }
+                                                // Animations
+                                                let dir = target.xy - target.xy;
+                                                target.animation.play(&Self::build_attack_anim(dir));
+                                                target.animation.play(&&Self::build_hurt_anim(dir));
+
+
+                                                if target.hp.health_points() == 0. {
+                                                    target.add_xp(100);
+                                                    // side_effects.push(ActionSideEffect::RemoveNpc(*i));
+                                                    // TODO(w0ScmN4f):
+                                                    // chunk.remove_npc(*i, ctx);
+                                                }
+                                                if target.actor_type != ActorType::Player {
+                                                    // TODO(w0ScmN4f):
+                                                    // side_effects.push(ActionSideEffect::MakeNpcsHostile);
+                                                }
                                             }
 
                                         },
                                         SpellEffect::Inflicts { affliction } => {
-                                            let (name, color) = affliction.name_color();
-                                            game_log.log(GameLogEntry::from_parts(vec!(
-                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
-                                                GameLogPart::Text(format!(" is {}", name))
-                                            )));
-                                            effect_layer.add_text_indicator(target.xy, name, color);
-                                            target.add_affliction(&affliction)
+                                            // TODO: Dupped code
+                                            let target_actors: Vec<usize> = action.spell_area
+                                                .filter(action.center, action.actor, chunk.actors_iter_mut())
+                                                .map(|(i, _actor)| i)
+                                                .collect();
+                                            for i in target_actors.iter() {
+                                                let target = chunk.actor_mut(*i).unwrap();
+
+
+                                                let (name, color) = affliction.name_color();
+                                                game_log.log(GameLogEntry::from_parts(vec!(
+                                                    GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
+                                                    GameLogPart::Text(format!(" is {}", name))
+                                                )));
+                                                effect_layer.add_text_indicator(target.xy, name, color);
+                                                target.add_affliction(&affliction)
+                                            }
+                                        },
+                                        SpellEffect::ReplaceObject { tile } => {
+                                            // TODO: Bounding box
+                                            for x in 0..chunk.size.0 {
+                                                for y in 0..chunk.size.1 {
+                                                    if action.spell_area.point_in_area(action.center, Coord2::xy(x as i32, y as i32)) {
+                                                        chunk.map.object_layer.set_tile(x, y, *tile);
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
+                            // }
                         },
                         RunningActionStep::Projectile(projectile) => {
+                            // TODO: Dupped code
+                            let target_actors: Vec<usize> = action.spell_area
+                                .filter(action.center, action.actor, chunk.actors_iter_mut())
+                                .map(|(i, _actor)| i)
+                                .collect();
                             let actor = chunk.actor(action.actor).unwrap();
-                            for i in action.target_actors.iter() {
+                            for i in target_actors.iter() {
                                 let target = chunk.actor(*i).unwrap();
                                 match projectile {
                                     SpellProjectile::Projectile { sprite, duration } => {
@@ -512,7 +587,13 @@ impl ActionRunner {
                         },
                         // TODO(w0ScmN4f):: Naming doesn't make sense
                         RunningActionStep::Sprite(sprite) => {
-                            for i in action.target_actors.iter() {
+                            // TODO: Dupped code
+                            let target_actors: Vec<usize> = action.spell_area
+                                .filter(action.center, action.actor, chunk.actors_iter_mut())
+                                .map(|(i, _actor)| i)
+                                .collect();
+
+                            for i in target_actors.iter() {
                                 let target = chunk.actor(*i).unwrap();
                                 effect_layer.play_sprite(target.xy, sprite.clone());
                             }
@@ -643,7 +724,9 @@ impl ActionRunner {
 
 struct RunningAction {
     actor: usize,
-    target_actors: Vec<usize>,
+    center: Coord2,
+    spell_area: SpellArea,
+    // target_actors: Vec<usize>,
     current_step: Option<(RunningActionStep, f64, f64)>,
     steps: VecDeque<RunningActionStep>
 }

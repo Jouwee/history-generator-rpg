@@ -171,6 +171,7 @@ impl AiSolver {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement
                         SpellTarget::Actor { range: _ } => vec!(),
+                        SpellTarget::Tile { range: _ } => vec!(),
                     };
                     for point in points_to_check {
                         let mut ctx = ctx.clone();
@@ -195,6 +196,9 @@ impl AiSolver {
                                         };
                                         ctx.damage_score += score;
                                     },
+                                    SpellEffect::ReplaceObject { tile } => {
+                                        // TODO:
+                                    }
                                 }
                             }
                         }
