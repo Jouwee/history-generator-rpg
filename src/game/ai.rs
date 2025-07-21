@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType, SpellEffect, SpellTarget}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType, SpellEffect, SpellTarget}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -156,6 +156,7 @@ impl AiSolver {
                             };
                             let score = match inflicts.affliction {
                                 Affliction::Bleeding { duration } => 1. * duration as f64,
+                                Affliction::OnFire { duration } => 1. * duration as f64,
                                 Affliction::Stunned { duration } => 0.8 * duration as f64,
                                 Affliction::Poisoned { duration } => 0.8 * duration as f64,
                             };
@@ -165,9 +166,11 @@ impl AiSolver {
                         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                     }
                 },
-                ActionType::Spell { target, area, effect } => {
+                ActionType::Spell { target, area, effects, projectile: _, impact: _, impact_sound: _ } => {
                     let points_to_check = match target {
-                        SpellTarget::Actor => vec!(ctx.xy)
+                        SpellTarget::Caster => vec!(ctx.xy),
+                        // TODO(REUw3poo): implement
+                        SpellTarget::Actor { range: _ } => vec!(),
                     };
                     for point in points_to_check {
                         let mut ctx = ctx.clone();
@@ -177,14 +180,21 @@ impl AiSolver {
                         ctx.actions.push((*action_id, point));
 
                         for (_i, _actor) in area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
-                            match effect {
-                                SpellEffect::Inflicts { affliction } => {
-                                    let score = match affliction {
-                                        Affliction::Bleeding { duration } => 1. * *duration as f64,
-                                        Affliction::Stunned { duration } => 0.8 * *duration as f64,
-                                        Affliction::Poisoned { duration } => 0.8 * *duration as f64,
-                                    };
-                                    ctx.damage_score += score;
+                            for effect in effects.iter() {
+                                match effect {
+                                    SpellEffect::Damage(damage_model) => {
+                                        // SMELL: Easy to forget
+                                        ctx.damage_score += (damage_model.bludgeoning + damage_model.slashing + damage_model.piercing + damage_model.arcane + damage_model.fire) as f64;
+                                    }
+                                    SpellEffect::Inflicts { affliction } => {
+                                        let score = match affliction {
+                                            Affliction::Bleeding { duration } => 1. * *duration as f64,
+                                            Affliction::OnFire { duration } => 1. * *duration as f64,
+                                            Affliction::Stunned { duration } => 0.8 * *duration as f64,
+                                            Affliction::Poisoned { duration } => 0.8 * *duration as f64,
+                                        };
+                                        ctx.damage_score += score;
+                                    },
                                 }
                             }
                         }

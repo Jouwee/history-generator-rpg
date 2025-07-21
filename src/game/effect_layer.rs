@@ -1,16 +1,22 @@
 use std::f64::consts::PI;
 
-use crate::{commons::rng::Rng, engine::{geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
+use graphics::{image, Transformed};
+
+use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{asset::image_sheet::ImageSheetAsset, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
 pub(crate) struct EffectLayer {
-    damage_numbers: Vec<DamageNumber>
+    damage_numbers: Vec<DamageNumber>,
+    projectiles: Vec<Projectile>,
+    sprites: Vec<Sprite>,
 }
 
 impl EffectLayer {
 
     pub(crate) fn new() -> EffectLayer {
         EffectLayer {
-            damage_numbers: Vec::new()
+            damage_numbers: Vec::new(),
+            projectiles: Vec::new(),
+            sprites: Vec::new(),
         }
     }
 
@@ -45,6 +51,40 @@ impl EffectLayer {
             ctx.text(&dn.text, game_ctx.assets.font_standard(), pos, &dn.color.color());
         }
 
+        for projectile in self.projectiles.iter_mut() {
+            let sheet = game_ctx.assets.image_sheet(&projectile.sprite);
+
+            // let pct = Interpolate::EaseOutSine.interpolate(projectile.lifetime / projectile.duration);
+            let pct = projectile.lifetime / projectile.duration;
+            let x = lerp(projectile.from.x as f64, projectile.to.x as f64, pct);
+            let y = lerp(projectile.from.y as f64, projectile.to.y as f64, pct);
+
+            // TODO(w0ScmN4f):
+            let copy: [[f64; 3]; 2] = ctx.context.transform;
+            let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
+            println!("{:?}", angle_degrees);
+            let transform = ctx.context.transform.trans(x * 24. + 12., y * 24. + 12.).rot_deg(angle_degrees);
+            image(sheet.get(projectile.sprite_index).unwrap(), transform, ctx.gl);
+
+            // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
+            projectile.sprite_index = (projectile.sprite_index + 1) % sheet.len();
+            // ctx.image(sheet., position, assets);
+
+            ctx.context.transform = copy;
+        }
+
+        for sprite in self.sprites.iter_mut() {
+            let sheet = game_ctx.assets.image_sheet(&sprite.sprite);
+            ctx.texture_ref(sheet.get(sprite.sprite_index).unwrap(), [sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)]);
+            sprite.sprite_index = sprite.sprite_index + 1;
+            if sprite.sprite_index >= sheet.len() {
+                // TODO(w0ScmN4f): Ugly
+                sprite.done = true;
+            }
+        }
+        self.sprites.retain(|n| !n.done);
+
+
     }
 
     pub(crate) fn update(&mut self, update: &Update, _ctx: &mut GameContext) {
@@ -52,6 +92,10 @@ impl EffectLayer {
             damage_number.lifetime = damage_number.lifetime + update.delta_time;
         }
         self.damage_numbers.retain(|n| n.lifetime < 1.);
+        for projectile in self.projectiles.iter_mut() {
+            projectile.lifetime = projectile.lifetime + update.delta_time;
+        }
+        self.projectiles.retain(|n| n.lifetime < n.duration);
     }
 
     pub(crate) fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
@@ -71,6 +115,21 @@ impl EffectLayer {
         });
     }
 
+    pub(crate) fn add_projectile(&mut self, from: Coord2, to: Coord2, duration: f64, sprite: ImageSheetAsset) {
+        self.projectiles.push(Projectile {
+            from,
+            to,
+            duration,
+            lifetime: 0.,
+            sprite,
+            sprite_index: 0
+        })
+    }
+
+    pub(crate) fn play_sprite(&mut self, pos: Coord2, sprite: ImageSheetAsset) {
+        self.sprites.push(Sprite { pos, sprite, sprite_index: 0, done: false });
+    }
+
 }
 
 struct DamageNumber {
@@ -80,4 +139,20 @@ struct DamageNumber {
     text: String,
     color: Palette,
     lifetime: f64
+}
+
+struct Projectile {
+    from: Coord2,
+    to: Coord2,
+    duration: f64,
+    lifetime: f64,
+    sprite: ImageSheetAsset,
+    sprite_index: usize,
+}
+
+struct Sprite {
+    pos: Coord2,
+    sprite: ImageSheetAsset,
+    done: bool,
+    sprite_index: usize,
 }

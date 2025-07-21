@@ -1,4 +1,6 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image::ImageAsset, audio::SoundEffect, geometry::Coord2, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use std::collections::VecDeque;
+
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -30,7 +32,11 @@ pub(crate) enum ActionType {
     Spell {
         target: SpellTarget,
         area: SpellArea,
-        effect: SpellEffect,
+        effects: Vec<SpellEffect>,
+        // Effects
+        projectile: Option<SpellProjectile>,
+        impact: Option<(ImageSheetAsset, f32)>,
+        impact_sound: Option<SoundEffect>,
     },
     Targeted {
         damage: Option<DamageType>,
@@ -44,28 +50,42 @@ pub(crate) enum ActionType {
 
 #[derive(Clone)]
 pub(crate) enum SpellTarget {
-    /// Action is cast at the actors location
-    Actor,
+    /// Action is cast at the casters location
+    Caster,
+    /// Action is targeted at a actors location
+    Actor { range: u16 },
 }
 
 #[derive(Clone)]
 pub(crate) enum SpellArea {
+    /// Affects only the targeted tile
+    Target,
     /// Affects in an circle area
     Circle { radius: u16 },
 }
 
+#[derive(Clone)]
+pub(crate) enum SpellProjectile {
+    Projectile { sprite: ImageSheetAsset, duration: f32 }
+}
+
 impl SpellArea {
 
-    pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A>) -> impl Iterator<Item = (usize, A)> where A: std::borrow::Borrow<Actor> + 'a, {
+    pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Box<dyn Iterator<Item = (usize, A)> + 'a> where A: std::borrow::Borrow<Actor> + 'a, {
         match self {
+            SpellArea::Target => {
+                return Box::new(iter.enumerate().filter(move |(_idx, actor): &(usize, A)| {
+                    return actor.borrow().xy == center
+                }));
+            },
             SpellArea::Circle { radius } => {
                 let radius = (radius * radius) as f32;
-                return iter.enumerate().filter(move |(idx, actor)| {
+                return Box::new(iter.enumerate().filter(move |(idx, actor): &(usize, A)| {
                     if *idx == actor_index {
                         return false;
                     }
                     return actor.borrow().xy.dist_squared(&center) < radius
-                })
+                }));
             }
         }
     }
@@ -74,6 +94,8 @@ impl SpellArea {
 
 #[derive(Clone)]
 pub(crate) enum SpellEffect {
+    /// Damages the target
+    Damage(DamageComponent),
     /// Inflicts an effect on the target
     Inflicts { affliction: Affliction },
 }
@@ -99,6 +121,7 @@ pub(crate) enum AfflictionChance {
 pub(crate) enum Affliction {
     Bleeding { duration: usize },
     Poisoned { duration: usize },
+    OnFire { duration: usize },
     Stunned { duration: usize }
 }
 
@@ -107,14 +130,24 @@ impl Affliction {
         match self {
             Affliction::Bleeding { duration: _ } => ("Bleeding", Palette::Red),
             Affliction::Poisoned { duration: _ } => ("Poisoned", Palette::Green),
+            Affliction::OnFire { duration: _ } => ("On Fire", Palette::Red),
             Affliction::Stunned { duration: _ } => ("Stunned", Palette::Gray),
         }
     }
 }
 
-pub(crate) struct ActionRunner { }
+pub(crate) struct ActionRunner {
+    running_action: Option<RunningAction>
+}
 
 impl ActionRunner {
+
+    pub(crate) fn new() -> Self {
+        return Self {
+            running_action: None
+        }
+    }
+
     pub(crate) fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
         match &action.action_type {
             ActionType::Move { offset } => {
@@ -159,9 +192,18 @@ impl ActionRunner {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
-            ActionType::Spell { target, area: _, effect: _ } => {
+            ActionType::Spell { target, area: _, effects: _, projectile: _, impact: _, impact_sound: _ } => {
                 match target {
-                    SpellTarget::Actor => return Ok(())
+                    SpellTarget::Caster => return Ok(()),
+                    SpellTarget::Actor { range } => {
+                        if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
+                            return Err(ActionFailReason::CantReach);
+                        }
+                        let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
+                        if target.is_none() {
+                            return Err(ActionFailReason::NoValidTarget);
+                        }
+                    }
                 }
             },
             ActionType::PickUp => {
@@ -198,7 +240,7 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn try_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<Vec<ActionSideEffect>, ActionFailReason> {
+    pub(crate) fn try_use(&mut self, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<Vec<ActionSideEffect>, ActionFailReason> {
         let r = Self::can_use(action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
@@ -278,8 +320,11 @@ impl ActionRunner {
                     }
                 }
             },
-            ActionType::Spell { target, area, effect } => {
-                let actor = chunk.actor(actor_index).unwrap();
+            ActionType::Spell { target, area, effects, projectile, impact, impact_sound } => {
+                let actor = chunk.actor_mut(actor_index).unwrap();
+
+                actor.ap.consume(action.ap_cost);
+                actor.stamina.consume(action.stamina_cost);
 
                 game_log.log(GameLogEntry::from_parts(vec!(
                     GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
@@ -287,23 +332,37 @@ impl ActionRunner {
                 )));
 
                 let pos = match target {
-                    SpellTarget::Actor => actor.xy.clone(),
+                    SpellTarget::Caster => actor.xy.clone(),
+                    SpellTarget::Actor { range: _ } => cursor,
                 };
 
-                for (_i, actor) in area.filter(pos, actor_index, chunk.actors_iter_mut()) {
-                    match effect {
-                        SpellEffect::Inflicts { affliction } => {
-                            let (name, color) = affliction.name_color();
-                            game_log.log(GameLogEntry::from_parts(vec!(
-                                GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
-                                GameLogPart::Text(format!(" is {}", name))
-                            )));
-                            effect_layer.add_text_indicator(actor.xy, name, color);
-                            actor.add_affliction(&affliction)
-                        }
-                    }
+                let target_actors = area
+                    .filter(pos, actor_index, chunk.actors_iter_mut())
+                    .map(|(i, _actor)| i)
+                    .collect();
+
+                let mut steps = VecDeque::new();
+                if let Some(projectile) = projectile {
+                    steps.push_back(RunningActionStep::Projectile(projectile.clone()));
                 }
 
+                steps.push_back(RunningActionStep::Effect(effects.clone()));
+
+                if let Some(impact_sound) = impact_sound {
+                    steps.push_back(RunningActionStep::Sound(impact_sound.clone()));
+                }
+                if let Some(impact) = impact {
+                    steps.push_back(RunningActionStep::Sprite(impact.0.clone()));
+                }
+
+                self.running_action = Some(RunningAction {
+                    actor: actor_index,
+                    target_actors,
+                    current_step: None,
+                    steps
+                });
+
+                // TODO(w0ScmN4f): Move down
                 if let Some(fx) = &action.sound_effect {
                     ctx.audio.play_once(fx.clone());
                 }
@@ -342,6 +401,145 @@ impl ActionRunner {
         }
 
         return Ok(vec!());
+    }
+
+    pub(crate) fn update(&mut self, update: &Update, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) {
+        let mut clear_running_action = false;
+        if let Some(action) = &mut self.running_action {
+
+            if action.current_step.is_none() {
+                let step = action.steps.pop_front();
+                if let Some(step) = step {
+                    let duration = step.duration();
+
+
+                    match &step {
+                        RunningActionStep::Effect(effects) => {
+                            for i in action.target_actors.iter() {
+                                let target = chunk.actor_mut(*i).unwrap();
+
+                                for effect in effects.iter() {
+                                    match effect {
+                                        SpellEffect::Damage(model) => {
+                                            let mut parts = vec!(
+                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
+                                                GameLogPart::Text(String::from(" takes "))
+                                            );
+                                            // TODO(w0ScmN4f): Others
+                                            if model.fire > 0. {
+                                                // TODO(w0ScmN4f): Random damage
+                                                // TODO(w0ScmN4f): Random body part
+                                                parts.push(GameLogPart::Damage(format!("{:.2}", model.fire)));
+                                                parts.push(GameLogPart::Text(String::from(" fire damage ")));
+                                            }
+
+                                            game_log.log(GameLogEntry::from_parts(parts));
+                                            
+                                            // TODO(w0ScmN4f):
+                                            // effect_layer.add_text_indicator(actor.xy, name, color);
+                                            // actor.add_affliction(&affliction)
+
+                                            let target_body_part = BodyPart::random(&mut Rng::rand());
+                                            let damage = resolve_damage(&model, &target.stats(), &target_body_part, &target.stats());
+                
+                                            match damage {
+                                                DamageOutput::Dodged => {
+                                                    effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
+                                                },
+                                                DamageOutput::Hit(damage) => {
+                                                    target.hp.hit(target_body_part, damage);
+                                                    effect_layer.add_damage_number(target.xy, damage);
+                                                },
+                                                DamageOutput::CriticalHit(damage) => {
+                                                    target.hp.critical_hit(target_body_part, damage);
+                                                    effect_layer.add_damage_number(target.xy, damage);
+                                                },
+                                            }
+                
+                                            game_log.log(GameLogEntry::damage(target, target, &damage, &world, &ctx.resources));
+                
+                                            // if let Some(fx) = &action.sound_effect {
+                                            //     ctx.audio.play_once(fx.clone());
+                                            // }
+                                            // Animations
+                                            let dir = target.xy - target.xy;
+                                            target.animation.play(&Self::build_attack_anim(dir));
+                                            target.animation.play(&&Self::build_hurt_anim(dir));
+
+
+                                            if target.hp.health_points() == 0. {
+                                                target.add_xp(100);
+                                                // side_effects.push(ActionSideEffect::RemoveNpc(*i));
+                                                // TODO(w0ScmN4f):
+                                                // chunk.remove_npc(*i, ctx);
+                                            }
+                                            if target.actor_type != ActorType::Player {
+                                                // TODO(w0ScmN4f):
+                                                // side_effects.push(ActionSideEffect::MakeNpcsHostile);
+                                            }
+
+                                        },
+                                        SpellEffect::Inflicts { affliction } => {
+                                            let (name, color) = affliction.name_color();
+                                            game_log.log(GameLogEntry::from_parts(vec!(
+                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
+                                                GameLogPart::Text(format!(" is {}", name))
+                                            )));
+                                            effect_layer.add_text_indicator(target.xy, name, color);
+                                            target.add_affliction(&affliction)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        RunningActionStep::Projectile(projectile) => {
+                            let actor = chunk.actor(action.actor).unwrap();
+                            for i in action.target_actors.iter() {
+                                let target = chunk.actor(*i).unwrap();
+                                match projectile {
+                                    SpellProjectile::Projectile { sprite, duration } => {
+                                        effect_layer.add_projectile(actor.xy, target.xy, *duration as f64, sprite.clone());
+                                    }
+                                }
+                            }
+                        },
+                        // TODO(w0ScmN4f):: Naming doesn't make sense
+                        RunningActionStep::Sprite(sprite) => {
+                            for i in action.target_actors.iter() {
+                                let target = chunk.actor(*i).unwrap();
+                                effect_layer.play_sprite(target.xy, sprite.clone());
+                            }
+                        },
+                        RunningActionStep::Sound(sound) => {
+                            ctx.audio.play_once(sound.clone());
+                        }
+                    }
+
+
+                    action.current_step = Some((step, 0., duration)); 
+
+
+                } else {
+                    action.current_step = None; 
+                }
+            }
+
+            if action.current_step.is_none() {
+                clear_running_action = true;
+            }
+
+            if let Some(step) = &mut action.current_step {
+                step.1 += update.delta_time;
+
+                if step.1 > step.2 {
+                    action.current_step = None;
+                }
+            }
+
+        }
+        if clear_running_action {
+            self.running_action = None;
+        }
     }
 
     pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, game_log: &mut GameLog, world: &World, ctx: &GameContext) -> bool {
@@ -430,6 +628,33 @@ impl ActionRunner {
             .translate(0.08, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
             .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
     }
+}
+
+struct RunningAction {
+    actor: usize,
+    target_actors: Vec<usize>,
+    current_step: Option<(RunningActionStep, f64, f64)>,
+    steps: VecDeque<RunningActionStep>
+}
+
+enum RunningActionStep {
+    Projectile(SpellProjectile),
+    Effect(Vec<SpellEffect>),
+    Sprite(ImageSheetAsset),
+    Sound(SoundEffect),
+}
+
+impl RunningActionStep {
+
+    fn duration(&self) -> f64 {
+        match self {
+            Self::Projectile(SpellProjectile::Projectile { sprite: _, duration }) => *duration as f64,
+            Self::Effect(_) => 0.,
+            Self::Sprite(_) => 0.,
+            Self::Sound(_) => 0.
+        }
+    }
+
 }
 
 #[derive(Debug)]

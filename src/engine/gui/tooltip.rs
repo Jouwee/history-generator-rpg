@@ -220,6 +220,7 @@ impl TooltipLine {
             Self::Inflicts(inflicts) => {
                 let text = match &inflicts.affliction {
                     Affliction::Bleeding { duration } => format!("Target is Bleeding for {duration} turns"),
+                    Affliction::OnFire { duration } => format!("Target is On Fire for {duration} turns"),
                     Affliction::Poisoned { duration } => format!("Target is Poisoned for {duration} turns"),
                     Affliction::Stunned { duration } => format!("Target is Stunned for {duration} turns"),
                 };

@@ -85,7 +85,8 @@ pub(crate) struct GameSceneState {
     game_log: GameLog,
     player_pathing: PlayerPathing,
     player_pathfinding: AStar,
-    console: Console
+    console: Console,
+    action_runner: ActionRunner,
 }
 
 impl GameSceneState {
@@ -162,7 +163,8 @@ impl GameSceneState {
             game_log: GameLog::new(),
             player_pathing: PlayerPathing::new(),
             player_pathfinding,
-            console: Console::new()
+            console: Console::new(),
+            action_runner: ActionRunner::new(),
         }
     }
 
@@ -413,8 +415,11 @@ impl Scene for GameSceneState {
             return
         }
 
+        self.action_runner.update(update, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+
         match self.turn_mode {
             TurnMode::TurnBased => {
+                
                 if self.turn_controller.is_player_turn() {
                     if self.player_pathing.is_running() {
                         self.player_pathing.update_running(&mut self.chunk.player, &self.chunk.map, update, ctx);
@@ -432,8 +437,8 @@ impl Scene for GameSceneState {
                     let _ = match action.action_type {
                         ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
                         ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
-                        ActionType::Spell { target: _, area: _, effect: _ } => {
-                            let v = ActionRunner::try_use(action, self.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                        ActionType::Spell { target: _, area: _, effects: _, projectile: _, impact: _, impact_sound: _ } => {
+                            let v = self.action_runner.try_use(action, self.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                             v.is_ok()
                         }
                         _ => true
@@ -517,7 +522,7 @@ impl Scene for GameSceneState {
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
-            let result = ActionRunner::try_use(
+            let result = self.action_runner.try_use(
                 action,
                 PLAYER_IDX,
                 cursor,
@@ -626,7 +631,7 @@ impl Scene for GameSceneState {
                 if let Some(action_id) = &self.hotbar.selected_action {
 
                     let action = ctx.resources.actions.get(action_id);
-                    let result = ActionRunner::try_use(
+                    let result = self.action_runner.try_use(
                         action,
                         PLAYER_IDX,
                         self.cursor_pos,

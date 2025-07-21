@@ -2,6 +2,7 @@ pub(crate) mod astar;
 pub(crate) mod bitmask;
 pub(crate) mod damage_model;
 pub(crate) mod id_vec;
+pub(crate) mod interpolate;
 pub(crate) mod markovchains;
 pub(crate) mod matrix_index;
 pub(crate) mod resource_map;

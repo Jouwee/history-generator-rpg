@@ -6,6 +6,7 @@ pub(crate) struct DamageComponent {
     pub(crate) slashing: f32,
     pub(crate) piercing: f32,
     pub(crate) bludgeoning: f32,
+    pub(crate) fire: f32,
     pub(crate) arcane: f32,
 }
 
@@ -16,6 +17,7 @@ impl DamageComponent {
             slashing: slashing.max(0.),
             piercing: piercing.max(0.),
             bludgeoning: bludgeoning.max(0.),
+            fire: 0.,
             arcane: 0.
         }
     }
@@ -25,6 +27,7 @@ impl DamageComponent {
             slashing: 0.,
             piercing: 0.,
             bludgeoning: 0.,
+            fire: 0.,
             arcane: arcane.max(0.),
         }
     }
@@ -34,6 +37,7 @@ impl DamageComponent {
             slashing: self.slashing * mult,
             piercing: self.piercing * mult,
             bludgeoning: self.bludgeoning * mult,
+            fire: self.fire * mult,
             arcane: self.arcane * mult,
         }
     }
@@ -47,6 +51,7 @@ impl Add for DamageComponent {
             slashing: self.slashing + rhs.slashing,
             piercing: self.piercing + rhs.piercing,
             bludgeoning: self.bludgeoning + rhs.bludgeoning,
+            fire: self.fire + rhs.fire,
             arcane: self.arcane + rhs.arcane,
         }
     }
@@ -61,6 +66,7 @@ impl Sub for DamageComponent {
             slashing: self.slashing - rhs.slashing,
             piercing: self.piercing - rhs.piercing,
             bludgeoning: self.bludgeoning - rhs.bludgeoning,
+            fire: self.fire - rhs.fire,
             arcane: self.arcane - rhs.arcane,
         }
     }

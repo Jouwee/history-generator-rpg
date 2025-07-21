@@ -129,6 +129,11 @@ impl Actor {
                     // self.hp.damage(1.);
                     effect_layer.add_damage_number(self.xy, 1.);
                 },
+                Affliction::OnFire { duration: _ } => {
+                    // TODO: Rethink
+                    // self.hp.damage(1.);
+                    effect_layer.add_damage_number(self.xy, 1.);
+                },
                 Affliction::Poisoned { duration: _ } => {
                     // TODO: Rethink
                     // self.hp.damage(1.);
@@ -142,6 +147,7 @@ impl Actor {
         self.afflictions.retain(|affliction| {
             match affliction.affliction {
                 Affliction::Bleeding { duration } => affliction.delta < duration,
+                Affliction::OnFire { duration } => affliction.delta < duration,
                 Affliction::Poisoned { duration } => affliction.delta < duration,
                 Affliction::Stunned { duration } => affliction.delta < duration,
             }
