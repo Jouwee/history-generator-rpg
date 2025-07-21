@@ -522,17 +522,21 @@ impl ActionRunner {
                                                 target.animation.play(&Self::build_attack_anim(dir));
                                                 target.animation.play(&&Self::build_hurt_anim(dir));
 
+                                                let dead = target.hp.health_points();
 
-                                                if target.hp.health_points() == 0. {
-                                                    target.add_xp(100);
+                                                drop(target);
+
+                                                if dead == 0. {
+                                                    let actor = chunk.actor_mut(action.actor).unwrap();
+                                                    actor.add_xp(100);
                                                     // side_effects.push(ActionSideEffect::RemoveNpc(*i));
                                                     // TODO(w0ScmN4f):
-                                                    // chunk.remove_npc(*i, ctx);
+                                                    chunk.remove_npc(*i, ctx);
                                                 }
-                                                if target.actor_type != ActorType::Player {
-                                                    // TODO(w0ScmN4f):
-                                                    // side_effects.push(ActionSideEffect::MakeNpcsHostile);
-                                                }
+                                                // if target.actor_type != ActorType::Player {
+                                                //     // TODO(w0ScmN4f):
+                                                //     // side_effects.push(ActionSideEffect::MakeNpcsHostile);
+                                                // }
                                             }
 
                                         },
@@ -774,7 +778,7 @@ impl ActionSideEffect {
 
     pub(crate) fn run(&self, game: &mut GameSceneState, ctx: &mut GameContext) {
         match self {
-            Self::RemoveNpc(i) => game.remove_npc(*i, ctx),
+            Self::RemoveNpc(i) => game.chunk.remove_npc(*i, ctx),
             Self::MakeNpcsHostile => {
                 for p in game.chunk.actors.iter_mut() {
                     p.actor_type = ActorType::Hostile;

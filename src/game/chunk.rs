@@ -159,6 +159,17 @@ impl Chunk {
         self.actors.push(actor);
     }
 
+    pub(crate) fn remove_npc(&mut self, i: usize, ctx: &GameContext) {
+        let npc = self.actors.get_mut(i).unwrap();
+        for item in npc.inventory.take_all() {
+            let texture = item.make_texture(&ctx.resources.materials);
+            self.map.items_on_ground.push((npc.xy, item, texture));
+        }
+
+        self.actors.remove(i);
+        self.turn_controller.remove(i);
+    }
+
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();

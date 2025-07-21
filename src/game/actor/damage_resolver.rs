@@ -16,7 +16,7 @@ pub(crate) fn resolve_damage(damage: &DamageComponent, attacker_stats: &ActorSta
     let random = rng.randf_range(0.85, 1.15);
     damage = damage.multiply(random);
 
-    let total_damage = damage.slashing + damage.bludgeoning + damage.piercing;
+    let total_damage = damage.slashing + damage.bludgeoning + damage.piercing + damage.arcane + damage.fire;
 
     if rng.rand_chance(attacker_stats.critical_hit_chance()) {
         return DamageOutput::CriticalHit(total_damage * attacker_stats.critical_hit_multiplier());    

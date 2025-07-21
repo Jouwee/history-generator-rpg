@@ -202,7 +202,7 @@ impl GameSceneState {
                 npc.start_of_round(&mut self.effect_layer);
                 if npc.hp.health_points() == 0. {
                     self.chunk.player_mut().add_xp(100);
-                    self.remove_npc(self.chunk.turn_controller.npc_idx(), ctx);
+                    self.chunk.remove_npc(self.chunk.turn_controller.npc_idx(), ctx);
                     self.next_turn(ctx);
                     return
                 }
@@ -234,17 +234,6 @@ impl GameSceneState {
         actor.stamina.recover_turn();
         actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
-    }
-
-    pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
-        let npc = self.chunk.actors.get_mut(i).unwrap();
-        for item in npc.inventory.take_all() {
-            let texture = item.make_texture(&ctx.resources.materials);
-            self.chunk.map.items_on_ground.push((npc.xy, item, texture));
-        }
-
-        self.chunk.actors.remove(i);
-        self.chunk.turn_controller.remove(i);
     }
 
     fn can_end_turn(&self) -> bool {
