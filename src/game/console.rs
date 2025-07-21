@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, GameContext};
+use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{Species, SpeciesId, SpeciesMap}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -132,7 +132,7 @@ impl Console {
             },
             Some("/spawn") => {
                 let species = parts.next().ok_or("Param 1 should be the species")?;
-                let species_id = ctx.resources.species.id_of(species);
+                let species_id = parse_species(species, &ctx.resources.species)?;
                 let species = ctx.resources.species.get(&species_id);
 
                 //let position = parts.next().ok_or("Param 2 should be the position")?;
@@ -184,4 +184,12 @@ impl Console {
         }
     }
 
+}
+
+fn parse_species(string: &str, species: &SpeciesMap) -> Result<SpeciesId, String> {
+    let mut string = String::from(string);
+    if !string.starts_with("species:") {
+        string = String::from("species:") + &string;
+    }
+    Ok(species.id_of(&string))
 }

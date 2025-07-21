@@ -207,6 +207,7 @@ impl Resources {
                 effects: vec!(
                     SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
                 ),
+                cast: None,
                 projectile: None,
                 impact: None,
                 impact_sound: None,
@@ -227,6 +228,7 @@ impl Resources {
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
                     SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
                 ),
+                cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
                 projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))

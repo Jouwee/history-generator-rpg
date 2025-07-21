@@ -166,7 +166,7 @@ impl AiSolver {
                         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                     }
                 },
-                ActionType::Spell { target, area, effects, projectile: _, impact: _, impact_sound: _ } => {
+                ActionType::Spell { target, area, effects, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                     let points_to_check = match target {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement

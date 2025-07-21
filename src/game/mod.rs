@@ -435,7 +435,7 @@ impl Scene for GameSceneState {
                     let _ = match action.action_type {
                         ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
                         ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
-                        ActionType::Spell { target: _, area: _, effects: _, projectile: _, impact: _, impact_sound: _ } => {
+                        ActionType::Spell { target: _, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                             let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                             v.is_ok()
                         }

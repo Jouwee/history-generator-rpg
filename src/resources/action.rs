@@ -34,6 +34,7 @@ pub(crate) enum ActionType {
         area: SpellArea,
         effects: Vec<SpellEffect>,
         // Effects
+        cast: Option<(ImageSheetAsset, f32)>,
         projectile: Option<SpellProjectile>,
         impact: Option<(ImageSheetAsset, f32)>,
         impact_sound: Option<SoundEffect>,
@@ -192,7 +193,7 @@ impl ActionRunner {
                     return Err(ActionFailReason::NoValidTarget);
                 }
             },
-            ActionType::Spell { target, area: _, effects: _, projectile: _, impact: _, impact_sound: _ } => {
+            ActionType::Spell { target, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                 match target {
                     SpellTarget::Caster => return Ok(()),
                     SpellTarget::Actor { range } => {
@@ -320,7 +321,7 @@ impl ActionRunner {
                     }
                 }
             },
-            ActionType::Spell { target, area, effects, projectile, impact, impact_sound } => {
+            ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } => {
                 let actor = chunk.actor_mut(actor_index).unwrap();
 
                 // actor.ap.consume(action.ap_cost);
@@ -342,6 +343,12 @@ impl ActionRunner {
                     .collect();
 
                 let mut steps = VecDeque::new();
+                if let Some(cast) = cast {
+                    // TODO: Wait
+                    // TODO: Position
+                    steps.push_back(RunningActionStep::CastSprite(cast.0.clone(), cast.1 as f64));
+                }
+
                 if let Some(projectile) = projectile {
                     steps.push_back(RunningActionStep::Projectile(projectile.clone()));
                 }
@@ -510,6 +517,10 @@ impl ActionRunner {
                                 effect_layer.play_sprite(target.xy, sprite.clone());
                             }
                         },
+                        RunningActionStep::CastSprite(sprite, _) => {
+                            let actor = chunk.actor(action.actor).unwrap();
+                            effect_layer.play_sprite(actor.xy, sprite.clone());
+                        },
                         RunningActionStep::Sound(sound) => {
                             ctx.audio.play_once(sound.clone());
                         }
@@ -640,6 +651,7 @@ struct RunningAction {
 enum RunningActionStep {
     Projectile(SpellProjectile),
     Effect(Vec<SpellEffect>),
+    CastSprite(ImageSheetAsset, f64),
     Sprite(ImageSheetAsset),
     Sound(SoundEffect),
 }
@@ -651,6 +663,7 @@ impl RunningActionStep {
             Self::Projectile(SpellProjectile::Projectile { sprite: _, duration }) => *duration as f64,
             Self::Effect(_) => 0.,
             Self::Sprite(_) => 0.,
+            Self::CastSprite(_, d) => *d,
             Self::Sound(_) => 0.
         }
     }
