@@ -2,7 +2,7 @@ use std::{collections::HashMap, iter};
 
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -13,6 +13,7 @@ pub(crate) struct Chunk {
     pub(crate) map: ChunkMap,
     pub(crate) player: Actor,
     pub(crate) actors: Vec<Actor>,
+    pub(crate) turn_controller: TurnController,
 }
 
 #[derive(Clone)]
@@ -85,6 +86,7 @@ impl Chunk {
             },
             player,
             actors: Vec::new(),
+            turn_controller: TurnController::new()
         }
     }
 
@@ -134,11 +136,6 @@ impl Chunk {
 
         chunk.player_mut().xy = Coord2::xy(64, 64);
 
-        let species_id = &resources.species.id_of("species:varningr");
-        let species = resources.species.get(species_id);
-        let npc = Actor::from_species(Coord2::xy(64, 50), &resources.species.id_of("species:varningr"), species);
-        chunk.actors.push(npc);
-
         let mut rng = Rng::seeded("items");
         for i in 0..60 {
             let point = Coord2::xy(60 + (i % 10), 68 + (i / 10));
@@ -155,6 +152,11 @@ impl Chunk {
         }
 
         return chunk
+    }
+
+    pub(crate) fn spawn(&mut self, actor: Actor) {
+        self.turn_controller.initiative.push(self.actors.len());
+        self.actors.push(actor);
     }
 
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {

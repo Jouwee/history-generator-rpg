@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::chunk::Chunk, GameContext};
+use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -69,6 +69,7 @@ impl Console {
                 Key::Y => self.command = self.command.clone() + "y",
                 Key::Z => self.command = self.command.clone() + "z",
                 Key::Space => self.command = self.command.clone() + " ",
+                Key::Semicolon => self.command = self.command.clone() + ":",
                 // TODO:
                 Key::Minus => self.command = self.command.clone() + "_",
                 Key::Underscore => self.command = self.command.clone() + "_",
@@ -90,7 +91,7 @@ impl Console {
         return ControlFlow::Continue(())
     }
 
-    fn run_command(&mut self, chunk: &mut Chunk, _ctx: &mut GameContext) -> Result<String, String> {
+    fn run_command(&mut self, chunk: &mut Chunk, ctx: &mut GameContext) -> Result<String, String> {
         let mut parts = self.command.split(' ');
         let command = parts.next();
         match command {
@@ -128,6 +129,21 @@ impl Console {
                 }
 
                 
+            },
+            Some("/spawn") => {
+                let species = parts.next().ok_or("Param 1 should be the species")?;
+                let species_id = ctx.resources.species.id_of(species);
+                let species = ctx.resources.species.get(&species_id);
+
+                //let position = parts.next().ok_or("Param 2 should be the position")?;
+
+                let xy = chunk.player().xy.clone() + Coord2::xy(8, 0);
+
+                let actor = Actor::from_species(xy, &species_id, species);
+
+                chunk.spawn(actor);
+
+                return Result::Ok(format!("Spawned"));
             },
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))
         }
