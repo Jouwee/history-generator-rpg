@@ -200,6 +200,9 @@ impl AiSolver {
                                     },
                                     SpellEffect::TeleportActor => {
                                         // TODO:
+                                    },
+                                    SpellEffect::Inspect => {
+                                        // TODO:
                                     }
                                 }
                             }

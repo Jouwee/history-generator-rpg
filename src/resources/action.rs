@@ -44,7 +44,6 @@ pub(crate) enum ActionType {
         damage: Option<DamageType>,
         inflicts: Option<Infliction>
     },
-    Inspect,
     Dig,
     PickUp,
     Sleep
@@ -179,7 +178,9 @@ pub(crate) enum SpellEffect {
     /// Replaces tiles in the object layer
     ReplaceObject { tile: usize },
     /// Teleport the actor to the target
-    TeleportActor
+    TeleportActor,
+    /// Inspects the target
+    Inspect
 }
 
 #[derive(Clone, Debug)]
@@ -264,7 +265,6 @@ impl ActionRunner {
             return Err(ActionFailReason::NotEnoughStamina);
         }
         match &action.action_type {
-            ActionType::Inspect => (),
             ActionType::Targeted { damage: _, inflicts: _ } => {
                 if actor.xy.dist_squared(&cursor) >= 3. {
                     return Err(ActionFailReason::CantReach);
@@ -339,56 +339,6 @@ impl ActionRunner {
         let mut tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
 
         match &action.action_type {
-            ActionType::Inspect => {
-
-                // TODO(hu2htwck): Add info to codex
-
-                println!("Inspect at {:?}", cursor);
-                if let Some((_, target)) = &target {
-                    let creature_id = target.creature_id;
-                    if let Some(creature_id) = creature_id {
-                        let codex = world.codex.creature_mut(&creature_id);
-                        // TODO(hu2htwck): Not this
-                        codex.add_appearance();
-                        codex.add_name();
-                        let creature = world.creatures.get(&creature_id);
-                        println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
-                        // TODO(IhlgIYVA): Debug print
-                        println!("Relationships: {:?}", creature.relationships)
-
-                    }
-                }
-                if let Some((_, (_, item, _))) = &item_on_ground {
-                    println!("{}", item.description(&ctx.resources, &world));
-                }
-                let tile = chunk.map.get_object_idx(cursor);
-                let tile_meta = &tile_metadata;
-                match tile {
-                    1 => println!("A wall."),
-                    2 => println!("A tree."),
-                    3 => println!("A bed."),
-                    4 => println!("A table."),
-                    5 => println!("A stool."),
-                    6 => println!("A tombstone."),            
-                    _ => ()                                
-                };
-
-                if let Some(meta) = tile_meta {
-                    match meta {
-                        TileMetadata::BurialPlace(creature_id) => {
-                            let creature = world.creatures.get(creature_id);
-                            if let Some(death) = creature.death {
-                                let codex = world.codex.creature_mut(&creature_id);
-                                codex.add_name();
-                                codex.add_death();
-                                // TODO(hu2htwck): Event
-                                println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
-                            }
-                            
-                        }
-                    }
-                }
-            },
             ActionType::Targeted { damage: _, inflicts: _ } => {
                 if let Some((i, target)) = &mut target {
                     // TODO(QZ94ei4M): Borrow issues
@@ -655,6 +605,64 @@ impl ActionRunner {
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             actor.xy = action.center
                                         },
+                                        SpellEffect::Inspect => {
+
+                                            // TODO(hu2htwck): Add info to codex
+
+                                            println!("Inspect at {:?}", action.center);
+
+                                            // TODO: Dupped code
+                                            let target_actors: Vec<usize> = action.spell_area
+                                                .filter(action.center, action.actor, chunk.actors_iter_mut())
+                                                .map(|(i, _actor)| i)
+                                                .collect();
+                                            for i in target_actors.iter() {
+                                                let target = chunk.actor_mut(*i).unwrap();
+
+                                                let creature_id = target.creature_id;
+                                                if let Some(creature_id) = creature_id {
+                                                    let codex = world.codex.creature_mut(&creature_id);
+                                                    // TODO(hu2htwck): Not this
+                                                    codex.add_appearance();
+                                                    codex.add_name();
+                                                    let creature = world.creatures.get(&creature_id);
+                                                    println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
+                                                    // TODO(IhlgIYVA): Debug print
+                                                    println!("Relationships: {:?}", creature.relationships)
+
+                                                }
+                                            }
+                                            // if let Some((_, (_, item, _))) = &item_on_ground {
+                                            //     println!("{}", item.description(&ctx.resources, &world));
+                                            // }
+                                            // let tile = chunk.map.get_object_idx(cursor);
+                                            // let tile_meta = &tile_metadata;
+                                            // match tile {
+                                            //     1 => println!("A wall."),
+                                            //     2 => println!("A tree."),
+                                            //     3 => println!("A bed."),
+                                            //     4 => println!("A table."),
+                                            //     5 => println!("A stool."),
+                                            //     6 => println!("A tombstone."),            
+                                            //     _ => ()                                
+                                            // };
+
+                                            // if let Some(meta) = tile_meta {
+                                            //     match meta {
+                                            //         TileMetadata::BurialPlace(creature_id) => {
+                                            //             let creature = world.creatures.get(creature_id);
+                                            //             if let Some(death) = creature.death {
+                                            //                 let codex = world.codex.creature_mut(&creature_id);
+                                            //                 codex.add_name();
+                                            //                 codex.add_death();
+                                            //                 // TODO(hu2htwck): Event
+                                            //                 println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
+                                            //             }
+                                                        
+                                            //         }
+                                            //     }
+                                            // }
+                                        }
                                     }
                                 }
                             // }

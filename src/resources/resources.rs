@@ -314,7 +314,17 @@ impl Resources {
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            action_type: ActionType::Inspect
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 5 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Inspect
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
+            }
         });
         self.actions.add("act:dig", Action {
             name: String::from("Dig"),
