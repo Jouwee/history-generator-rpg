@@ -281,22 +281,20 @@ impl Resources {
         self.actions.add("act:teleport", Action {
             name: String::from("Teleport"),
             description: String::from("Teleports"),
-            icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            icon: ImageAsset::new("gui/icons/actions/teleport.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 10 },
+                target: SpellTarget::Tile { range: 13 },
                 area: SpellArea::Target,
                 effects: vec!(
-                    // SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
-                    // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } },
                     SpellEffect::TeleportActor
                 ),
-                cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile { wait: false, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
-                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
-                impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+                cast: Some((ImageSheetAsset::new("visual_effects/teleport_source.png", Size2D(24, 48)), 0.1)),
+                projectile: None,
+                impact: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), 0.5, ImpactPosition::Cursor, false)),
+                impact_sound: None
             }
         });
 
