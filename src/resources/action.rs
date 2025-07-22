@@ -476,25 +476,7 @@ impl ActionRunner {
                                                 .collect();
                                             for i in target_actors.iter() {
                                                 let target = chunk.actor_mut(*i).unwrap();
-
-                                                let mut parts = vec!(
-                                                    GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
-                                                    GameLogPart::Text(String::from(" takes "))
-                                                );
-                                                // TODO(w0ScmN4f): Others
-                                                if model.fire > 0. {
-                                                    // TODO(w0ScmN4f): Random damage
-                                                    // TODO(w0ScmN4f): Random body part
-                                                    parts.push(GameLogPart::Damage(format!("{:.2}", model.fire)));
-                                                    parts.push(GameLogPart::Text(String::from(" fire damage ")));
-                                                }
-
-                                                game_log.log(GameLogEntry::from_parts(parts));
                                                 
-                                                // TODO(w0ScmN4f):
-                                                // effect_layer.add_text_indicator(actor.xy, name, color);
-                                                // actor.add_affliction(&affliction)
-
                                                 let target_body_part = BodyPart::random(&mut Rng::rand());
                                                 let damage = resolve_damage(&model, &target.stats(), &target_body_part, &target.stats());
                     
@@ -511,8 +493,7 @@ impl ActionRunner {
                                                         effect_layer.add_damage_number(target.xy, damage);
                                                     },
                                                 }
-                    
-                                                game_log.log(GameLogEntry::damage(target, target, &damage, &world, &ctx.resources));
+                                                game_log.log(GameLogEntry::damage(target, &damage, &world, &ctx.resources));
                     
                                                 // if let Some(fx) = &action.sound_effect {
                                                 //     ctx.audio.play_once(fx.clone());
@@ -523,18 +504,20 @@ impl ActionRunner {
                                                 target.animation.play(&&Self::build_hurt_anim(dir));
 
                                                 let dead = target.hp.health_points();
+                                                let actor_type = target.actor_type;
 
                                                 if dead == 0. {
                                                     let actor = chunk.actor_mut(action.actor).unwrap();
                                                     actor.add_xp(100);
-                                                    // side_effects.push(ActionSideEffect::RemoveNpc(*i));
-                                                    // TODO(w0ScmN4f):
                                                     chunk.remove_npc(*i, ctx);
                                                 }
-                                                // if target.actor_type != ActorType::Player {
-                                                //     // TODO(w0ScmN4f):
-                                                //     // side_effects.push(ActionSideEffect::MakeNpcsHostile);
-                                                // }
+                                                if actor_type != ActorType::Player {
+                                                    for p in chunk.actors_iter_mut() {
+                                                        if p.actor_type != ActorType::Player {
+                                                            p.actor_type = ActorType::Hostile;
+                                                        }
+                                                    }
+                                                }
                                             }
 
                                         },
@@ -673,7 +656,7 @@ impl ActionRunner {
                                 },
                             }
 
-                            game_log.log(GameLogEntry::damage(actor, target, &damage, &world, &ctx.resources));
+                            game_log.log(GameLogEntry::damage(target, &damage, &world, &ctx.resources));
 
                             if let Some(fx) = &action.sound_effect {
                                 ctx.audio.play_once(fx.clone());

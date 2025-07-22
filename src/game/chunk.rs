@@ -169,8 +169,8 @@ impl Chunk {
     }
 
     pub(crate) fn spawn(&mut self, actor: Actor) {
-        self.turn_controller.initiative.push(self.actors.len());
         self.actors.push(actor);
+        self.turn_controller.initiative.push(self.actors.len());
     }
 
     pub(crate) fn remove_npc(&mut self, i: usize, ctx: &GameContext) {
@@ -188,7 +188,7 @@ impl Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
-        let mut generator = ChunkGenerator::new(resources, player, Size2D(128, 128), rng);
+        let mut generator = ChunkGenerator::new(resources, player, Size2D(64, 64), rng);
         generator.generate(world, xy, resources);
         return generator.into_chunk();
     }

@@ -47,29 +47,23 @@ impl GameLogEntry {
         }
     }
 
-    pub(crate) fn damage(actor: &Actor, target: &Actor, damage: &DamageOutput, world: &World, resources: &Resources) -> Self {
+    pub(crate) fn damage(target: &Actor, damage: &DamageOutput, world: &World, resources: &Resources) -> Self {
         match damage {
             DamageOutput::Dodged => GameLogEntry::from_parts(vec!(
                 GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                GameLogPart::Text(String::from(" dodged ")),
-                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                GameLogPart::Text(String::from("'s attack")),
+                GameLogPart::Text(String::from(" dodged the attack")),
             )),
             DamageOutput::Hit(damage) => GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                GameLogPart::Text(String::from(" hit ")),
                 GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                GameLogPart::Text(String::from(" for ")),
+                GameLogPart::Text(String::from(" takes ")),
                 GameLogPart::Damage(format!("{:.2}", damage)),
                 GameLogPart::Text(String::from(" damage")),
             )),
             DamageOutput::CriticalHit(damage) => GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(Self::actor_name(actor, world, resources), actor.actor_type),
-                GameLogPart::Text(String::from(" critically hit ")),
                 GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
-                GameLogPart::Text(String::from(" for ")),
+                GameLogPart::Text(String::from(" takes ")),
                 GameLogPart::Damage(format!("{:.2}", damage)),
-                GameLogPart::Text(String::from(" damage")),
+                GameLogPart::Text(String::from(" damage (crit)")),
             ))
         }
     }
