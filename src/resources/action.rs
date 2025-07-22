@@ -36,7 +36,8 @@ pub(crate) enum ActionType {
         // Effects
         cast: Option<(ImageSheetAsset, f32)>,
         projectile: Option<SpellProjectile>,
-        impact: Option<(ImageSheetAsset, f32)>,
+        // TODO: Struct
+        impact: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
         impact_sound: Option<SoundEffect>,
     },
     Targeted {
@@ -47,6 +48,13 @@ pub(crate) enum ActionType {
     Dig,
     PickUp,
     Sleep
+}
+
+#[derive(Clone)]
+pub(crate) enum ImpactPosition {
+    Cursor,
+    EachTarget,
+    EachTile,
 }
 
 #[derive(Clone)]
@@ -70,9 +78,17 @@ pub(crate) enum SpellArea {
 }
 
 #[derive(Clone)]
-pub(crate) enum SpellProjectile {
-    Projectile { sprite: ImageSheetAsset, duration: f32 }
+pub(crate) struct SpellProjectile {
+    pub(crate) position: ImpactPosition,
+    pub(crate) wait: bool,
+    pub(crate) projectile_type: SpellProjectileType
 }
+
+#[derive(Clone)]
+pub(crate) enum SpellProjectileType {
+    Projectile { sprite: ImageSheetAsset, speed: f32 }
+}
+
 
 impl SpellArea {
 
@@ -421,17 +437,69 @@ impl ActionRunner {
                 }
 
                 if let Some(projectile) = projectile {
-                    steps.push_back(RunningActionStep::Projectile(projectile.clone()));
-                }
 
-                steps.push_back(RunningActionStep::Effect(effects.clone()));
+                    // TODO: Dupped code
+                    match projectile.position {
+                        ImpactPosition::Cursor => steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos)),
+                        ImpactPosition::EachTarget => {
+                            // TODO: Dupped code
+                            let target_actors: Vec<usize> = area
+                                .filter(pos, actor_index, chunk.actors_iter_mut())
+                                .map(|(i, _actor)| i)
+                                .collect();
+                            for i in target_actors.iter() {
+                                let actor = chunk.actor(*i).unwrap();
+                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()))
+                            }
+                        }
+                        ImpactPosition::EachTile => {
+                            for p in area.points(pos) {
+                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), p))
+                            }
+                        }
+                    }
+
+                    if projectile.wait {
+                        match projectile.projectile_type {
+                            // TODO: Compute wait
+                            SpellProjectileType::Projectile { sprite: _, speed } => steps.push_back(RunningActionStep::Wait(0.2))
+                        }
+                        
+                    }
+                }
 
                 if let Some(impact_sound) = impact_sound {
                     steps.push_back(RunningActionStep::Sound(impact_sound.clone()));
                 }
                 if let Some(impact) = impact {
-                    steps.push_back(RunningActionStep::Sprite(impact.0.clone()));
+                    // TODO: Dupped code
+                    match impact.2 {
+                        ImpactPosition::Cursor => steps.push_back(RunningActionStep::Sprite(impact.0.clone(), pos)),
+                        ImpactPosition::EachTarget => {
+                            // TODO: Dupped code
+                            let target_actors: Vec<usize> = area
+                                .filter(pos, actor_index, chunk.actors_iter_mut())
+                                .map(|(i, _actor)| i)
+                                .collect();
+                            for i in target_actors.iter() {
+                                let actor = chunk.actor(*i).unwrap();
+                                steps.push_back(RunningActionStep::Sprite(impact.0.clone(), actor.xy.clone()))
+                            }
+                        }
+                        ImpactPosition::EachTile => {
+                            for p in area.points(pos) {
+                                steps.push_back(RunningActionStep::Sprite(impact.0.clone(), p))
+                            }
+                        }
+                    }
+                    if impact.3 {
+                        // TODO: Compute duration
+                        steps.push_back(RunningActionStep::Wait(impact.1 as f64));
+                    }
                 }
+
+                steps.push_back(RunningActionStep::Effect(effects.clone()));
+
 
                 self.running_action = Some(RunningAction {
                     actor: actor_index,
@@ -586,39 +654,23 @@ impl ActionRunner {
                                         SpellEffect::TeleportActor => {
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             actor.xy = action.center
-                                        }
+                                        },
                                     }
                                 }
                             // }
                         },
-                        RunningActionStep::Projectile(projectile) => {
-                            // TODO: Dupped code
-                            let target_actors: Vec<usize> = action.spell_area
-                                .filter(action.center, action.actor, chunk.actors_iter_mut())
-                                .map(|(i, _actor)| i)
-                                .collect();
+                        RunningActionStep::Wait(_) => {}
+                        RunningActionStep::Projectile(projectile, to) => {
                             let actor = chunk.actor(action.actor).unwrap();
-                            for i in target_actors.iter() {
-                                let target = chunk.actor(*i).unwrap();
-                                match projectile {
-                                    SpellProjectile::Projectile { sprite, duration } => {
-                                        effect_layer.add_projectile(actor.xy, target.xy, *duration as f64, sprite.clone());
-                                    }
+                            match &projectile.projectile_type {
+                                SpellProjectileType::Projectile { sprite, speed } => {
+                                    effect_layer.add_projectile(actor.xy, *to, *speed as f64, sprite.clone());
                                 }
                             }
                         },
                         // TODO(w0ScmN4f):: Naming doesn't make sense
-                        RunningActionStep::Sprite(sprite) => {
-                            // TODO: Dupped code
-                            let target_actors: Vec<usize> = action.spell_area
-                                .filter(action.center, action.actor, chunk.actors_iter_mut())
-                                .map(|(i, _actor)| i)
-                                .collect();
-
-                            for i in target_actors.iter() {
-                                let target = chunk.actor(*i).unwrap();
-                                effect_layer.play_sprite(target.xy, sprite.clone());
-                            }
+                        RunningActionStep::Sprite(sprite, pos) => {
+                            effect_layer.play_sprite(*pos, sprite.clone());
                         },
                         RunningActionStep::CastSprite(sprite, _) => {
                             let actor = chunk.actor(action.actor).unwrap();
@@ -754,10 +806,12 @@ struct RunningAction {
 }
 
 enum RunningActionStep {
-    Projectile(SpellProjectile),
+    Projectile(SpellProjectile, Coord2),
     Effect(Vec<SpellEffect>),
+    // TODO: Sprite + Wait
     CastSprite(ImageSheetAsset, f64),
-    Sprite(ImageSheetAsset),
+    Wait(f64),
+    Sprite(ImageSheetAsset, Coord2),
     Sound(SoundEffect),
 }
 
@@ -765,9 +819,10 @@ impl RunningActionStep {
 
     fn duration(&self) -> f64 {
         match self {
-            Self::Projectile(SpellProjectile::Projectile { sprite: _, duration }) => *duration as f64,
+            Self::Projectile(_, _) => 0.,
             Self::Effect(_) => 0.,
-            Self::Sprite(_) => 0.,
+            Self::Sprite(_, _) => 0.,
+            Self::Wait(d) => *d,
             Self::CastSprite(_, d) => *d,
             Self::Sound(_) => 0.
         }

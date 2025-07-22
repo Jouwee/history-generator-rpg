@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{SpellArea, SpellEffect, SpellProjectile, SpellTarget}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -229,8 +229,8 @@ impl Resources {
                     SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
-                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
         });
@@ -250,8 +250,8 @@ impl Resources {
                     // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
-                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
         });
@@ -272,8 +272,8 @@ impl Resources {
                     SpellEffect::ReplaceObject { tile: 1 }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
-                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
         });
@@ -294,9 +294,9 @@ impl Resources {
                     SpellEffect::TeleportActor
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
-                impact: None,
-                impact_sound: None
+                projectile: Some(SpellProjectile { wait: false, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
+                impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
         });
 
