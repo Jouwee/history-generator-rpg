@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{asset::image_sheet::ImageSheetAsset, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
+use crate::{commons::{interpolate::{lerp, Interpolate}, rng::Rng}, engine::{asset::{font::FontAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -21,34 +21,34 @@ impl EffectLayer {
     }
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+        let font = game_ctx.assets.font(&FontAsset::new("High_Birth.ttf", 12));
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
             if dn.width == 0. {
-                dn.width = game_ctx.assets.font_standard().width(&dn.text);
+                dn.width = font.width(&dn.text);
             }
             pos[0] += 12. - (dn.width / 2.);
             // Animate upwards - Ease out
-            pos[0] += dn.speed.x as f64 * f64::sin((dn.lifetime * PI) / 2.) * 16.;
-            pos[1] += dn.speed.y as f64 * f64::sin((dn.lifetime * PI) / 2.) * 16.;
+            pos[1] = lerp(pos[1], pos[1] - 24., Interpolate::EaseOutSine.interpolate(dn.lifetime));
             let pos = [pos[0] as i32, pos[1] as i32];
             // black border - the stupid way
             {
                 let mut lpos = pos;
                 lpos[0] -= 1;
-                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
                 lpos[0] += 1;
-                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
                 lpos[1] -= 1;
-                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
                 let mut lpos = pos;
                 lpos[1] += 1;
-                ctx.text(&dn.text, game_ctx.assets.font_standard(), lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
             }
             // actual text
-            ctx.text(&dn.text, game_ctx.assets.font_standard(), pos, &dn.color.color());
+            ctx.text(&dn.text, font, pos, &dn.color.color());
         }
 
         for projectile in self.projectiles.iter_mut() {
@@ -63,7 +63,7 @@ impl EffectLayer {
             let copy: [[f64; 3]; 2] = ctx.context.transform;
             let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
             let transform = ctx.context.transform.trans(x * 24. + 12., y * 24. + 12.).rot_deg(angle_degrees);
-            let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
+            let sprite_index = ((projectile.lifetime * 24.) as usize) % sheet.len();
             image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
 
             // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
@@ -75,11 +75,12 @@ impl EffectLayer {
 
         for sprite in self.sprites.iter_mut() {
             let sheet = game_ctx.assets.image_sheet(&sprite.sprite);
-            ctx.texture_ref(sheet.get(sprite.sprite_index).unwrap(), [sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)]);
-            sprite.sprite_index = sprite.sprite_index + 1;
-            if sprite.sprite_index >= sheet.len() {
+            let sprite_index = ((sprite.lifetime * 24.) as usize);
+            if sprite_index >= sheet.len() {
                 // TODO(w0ScmN4f): Ugly
                 sprite.done = true;
+            } else {
+                ctx.texture_ref(sheet.get(sprite_index).unwrap(), [sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)]);
             }
         }
         self.sprites.retain(|n| !n.done);
@@ -96,7 +97,9 @@ impl EffectLayer {
             projectile.lifetime = projectile.lifetime + update.delta_time;
         }
         self.projectiles.retain(|n| n.lifetime < n.duration);
-        
+        for sprite in self.sprites.iter_mut() {
+            sprite.lifetime = sprite.lifetime + update.delta_time;
+        }
     }
 
     pub(crate) fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
@@ -127,7 +130,7 @@ impl EffectLayer {
     }
 
     pub(crate) fn play_sprite(&mut self, pos: Coord2, sprite: ImageSheetAsset) {
-        self.sprites.push(Sprite { pos, sprite, sprite_index: 0, done: false });
+        self.sprites.push(Sprite { pos, sprite, lifetime: 0., done: false });
     }
 
 }
@@ -153,5 +156,5 @@ struct Sprite {
     pos: Coord2,
     sprite: ImageSheetAsset,
     done: bool,
-    sprite_index: usize,
+    lifetime: f64,
 }

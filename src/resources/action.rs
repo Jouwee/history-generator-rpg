@@ -383,7 +383,10 @@ impl ActionRunner {
                 if let Some(cast) = cast {
                     // TODO: Wait
                     // TODO: Position
-                    steps.push_back(RunningActionStep::CastSprite(cast.0.clone(), cast.1 as f64));
+                    // steps.push_back(RunningActionStep::CastSprite(cast.0.clone(), cast.1 as f64));
+                    steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
+                    // TODO: Compute wait
+                    steps.push_back(RunningActionStep::Wait(0.2))
                 }
 
                 if let Some(projectile) = projectile {
@@ -508,7 +511,7 @@ impl ActionRunner {
             if action.current_step.is_none() {
                 let step = action.steps.pop_front();
                 if let Some(step) = step {
-                    let duration = step.duration();
+                    let mut duration = 0.;
 
 
                     match &step {
@@ -667,7 +670,7 @@ impl ActionRunner {
                                 }
                             // }
                         },
-                        RunningActionStep::Wait(_) => {}
+                        RunningActionStep::Wait(d) => duration = *d,
                         RunningActionStep::Projectile(projectile, to) => {
                             let actor = chunk.actor(action.actor).unwrap();
                             match &projectile.projectile_type {
@@ -679,10 +682,6 @@ impl ActionRunner {
                         // TODO(w0ScmN4f):: Naming doesn't make sense
                         RunningActionStep::Sprite(sprite, pos) => {
                             effect_layer.play_sprite(*pos, sprite.clone());
-                        },
-                        RunningActionStep::CastSprite(sprite, _) => {
-                            let actor = chunk.actor(action.actor).unwrap();
-                            effect_layer.play_sprite(actor.xy, sprite.clone());
                         },
                         RunningActionStep::Sound(sound) => {
                             ctx.audio.play_once(sound.clone());
@@ -814,13 +813,16 @@ struct RunningAction {
 }
 
 enum RunningActionStep {
-    Projectile(SpellProjectile, Coord2),
+    /// Run the effects of the spell
     Effect(Vec<SpellEffect>),
-    // TODO: Sprite + Wait
-    CastSprite(ImageSheetAsset, f64),
-    Wait(f64),
+    /// Spawns an animated sprite
     Sprite(ImageSheetAsset, Coord2),
+    /// Plays a sound
     Sound(SoundEffect),
+    /// Spawns a projectile
+    Projectile(SpellProjectile, Coord2),
+    /// Wait
+    Wait(f64),
 }
 
 impl RunningActionStep {
@@ -831,7 +833,6 @@ impl RunningActionStep {
             Self::Effect(_) => 0.,
             Self::Sprite(_, _) => 0.,
             Self::Wait(d) => *d,
-            Self::CastSprite(_, d) => *d,
             Self::Sound(_) => 0.
         }
     }
