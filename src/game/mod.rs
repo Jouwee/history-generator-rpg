@@ -20,6 +20,7 @@ use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
+use crate::engine::Color;
 use crate::game::chunk::PLAYER_IDX;
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
@@ -324,6 +325,14 @@ impl Scene for GameSceneState {
         self.chunk.render(ctx, game_ctx);
 
         ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
+        if let Some(action) = &self.hotbar.selected_action {
+            let action = game_ctx.resources.actions.get(action);
+            if let ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } = &action.action_type {
+                for point in area.points(self.cursor_pos) {
+                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], Color::from_hex("ffffff30"));
+                }
+            }
+        }
 
         if self.hotbar.selected_action.is_none() {
             self.player_pathing.render(&self.turn_mode, self.chunk.player(), ctx, game_ctx);

@@ -300,6 +300,16 @@ impl Renderable for Actor {
         pos[0] += self.animation.translate[0];
         pos[1] += self.animation.translate[1];
         self.render_layers(pos, ctx, game_ctx);
+
+        for affliction in self.afflictions.iter() {
+            match affliction.affliction {
+                Affliction::OnFire { duration: _ } => {
+                    ctx.image(&ImageAsset::new("status/onfire.png"), [pos[0] as i32 + 11, pos[1] as i32 + 42], &mut game_ctx.assets);
+                },
+                _ => ()
+            }
+        }
+
     }
 }
 

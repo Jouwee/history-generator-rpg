@@ -197,6 +197,9 @@ impl AiSolver {
                                     },
                                     SpellEffect::ReplaceObject { tile: _ } => {
                                         // TODO:
+                                    },
+                                    SpellEffect::TeleportActor => {
+                                        // TODO:
                                     }
                                 }
                             }

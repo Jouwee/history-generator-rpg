@@ -64,7 +64,7 @@ pub(crate) enum SpellArea {
     /// Affects only the targeted tile
     Target,
     /// Affects in an circle area
-    Circle { radius: u16 },
+    Circle { radius: f32 },
     /// Affects in an rectangular area
     Rectangle(Size2D),
 }
@@ -76,12 +76,43 @@ pub(crate) enum SpellProjectile {
 
 impl SpellArea {
 
+    pub(crate) fn bounding_box(&self, center: Coord2) -> (Coord2, Coord2) {
+        match self {
+            SpellArea::Target => (center, center),
+            SpellArea::Circle { radius } => {
+                let radius = *radius as i32;
+                let start = center - Coord2::xy(radius, radius);
+                let end = center + Coord2::xy(radius, radius);
+                (start, end)
+            },
+            SpellArea::Rectangle(size) => {
+                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
+                (start, end)
+            }
+        }
+    }
+
+    pub(crate) fn points(&self, center: Coord2) -> Vec<Coord2> {
+        let mut vec = Vec::new();
+        let (start, end) = self.bounding_box(center);
+        for x in start.x..end.x+1 {
+            for y in start.y..end.y+1 {
+                let point = Coord2::xy(x, y);
+                if self.point_in_area(center, point) {
+                    vec.push(point);
+                }
+            }
+        }
+        return vec;
+    }
+
     pub(crate) fn point_in_area(&self, center: Coord2, point: Coord2) -> bool {
         match self {
             SpellArea::Target => point == center,
             SpellArea::Circle { radius } => {
                 let radius = (radius * radius) as f32;
-                return point.dist_squared(&center) < radius
+                return point.dist_squared(&center) <= radius
             },
             SpellArea::Rectangle(size) => {
                 let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
@@ -131,6 +162,8 @@ pub(crate) enum SpellEffect {
     Inflicts { affliction: Affliction },
     /// Replaces tiles in the object layer
     ReplaceObject { tile: usize },
+    /// Teleport the actor to the target
+    TeleportActor
 }
 
 #[derive(Clone, Debug)]
@@ -549,6 +582,10 @@ impl ActionRunner {
                                                     }
                                                 }
                                             }
+                                        },
+                                        SpellEffect::TeleportActor => {
+                                            let actor = chunk.actor_mut(action.actor).unwrap();
+                                            actor.xy = action.center
                                         }
                                     }
                                 }

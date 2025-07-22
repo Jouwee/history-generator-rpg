@@ -30,7 +30,9 @@ impl Hotbar {
     pub(crate) fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
         self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:firebolt"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:fireball"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:rockwall"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:teleport"));
         self.equip(inventory, ctx);
     }
 

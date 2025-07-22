@@ -203,7 +203,7 @@ impl Resources {
             stamina_cost: 5.,
             action_type: ActionType::Spell {
                 target: SpellTarget::Caster,
-                area: SpellArea::Circle { radius: 8 },
+                area: SpellArea::Circle { radius: 8.2 },
                 effects: vec!(
                     SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
                 ),
@@ -235,6 +235,27 @@ impl Resources {
             }
         });
 
+        self.actions.add("act:fireball", Action {
+            name: String::from("Fireball"),
+            description: String::from("Fireball"),
+            icon: ImageAsset::new("missing.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            ap_cost: 80,
+            stamina_cost: 5.,
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 10 },
+                area: SpellArea::Circle { radius: 3.2 },
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
+                    // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
+                ),
+                cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
+                impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
+                impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            }
+        });
+
         self.actions.add("act:rockwall", Action {
             name: String::from("Rock Wall"),
             description: String::from("Summons a wall of rock"),
@@ -254,6 +275,28 @@ impl Resources {
                 projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            }
+        });
+
+        self.actions.add("act:teleport", Action {
+            name: String::from("Teleport"),
+            description: String::from("Teleports"),
+            icon: ImageAsset::new("missing.png"),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            ap_cost: 80,
+            stamina_cost: 5.,
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 10 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    // SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
+                    // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } },
+                    SpellEffect::TeleportActor
+                ),
+                cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+                projectile: Some(SpellProjectile::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), duration: 0.4 }),
+                impact: None,
+                impact_sound: None
             }
         });
 
