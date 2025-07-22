@@ -24,7 +24,7 @@ use crate::engine::Color;
 use crate::game::chunk::PLAYER_IDX;
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
-use crate::resources::action::{ActionRunner, ActionType};
+use crate::resources::action::{ActionRunner, ActionType, SpellArea};
 use crate::world::creature::CreatureId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -328,8 +328,10 @@ impl Scene for GameSceneState {
         if let Some(action) = &self.hotbar.selected_action {
             let action = game_ctx.resources.actions.get(action);
             if let ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } = &action.action_type {
-                for point in area.points(self.cursor_pos) {
-                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], Color::from_hex("ffffff30"));
+                if area != &SpellArea::Target {
+                    for point in area.points(self.cursor_pos) {
+                        ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], Color::from_hex("ffffff30"));
+                    }
                 }
             }
         }

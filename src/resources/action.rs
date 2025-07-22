@@ -66,7 +66,7 @@ pub(crate) enum SpellTarget {
     Tile { range: u16 },
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum SpellArea {
     /// Affects only the targeted tile
     Target,
@@ -823,20 +823,6 @@ enum RunningActionStep {
     Projectile(SpellProjectile, Coord2),
     /// Wait
     Wait(f64),
-}
-
-impl RunningActionStep {
-
-    fn duration(&self) -> f64 {
-        match self {
-            Self::Projectile(_, _) => 0.,
-            Self::Effect(_) => 0.,
-            Self::Sprite(_, _) => 0.,
-            Self::Wait(d) => *d,
-            Self::Sound(_) => 0.
-        }
-    }
-
 }
 
 #[derive(Debug)]

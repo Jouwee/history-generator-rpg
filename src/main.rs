@@ -131,7 +131,7 @@ fn main() {
     let opengl = OpenGL::V3_2;
 
     let mut window: Sdl2Window =
-        WindowSettings::new("opengl_graphics: colored_image_test", [300, 300])
+        WindowSettings::new("Tales of Kathay", [1024, 768])
             // .exit_on_esc(true)
             .graphics_api(opengl)
             .build()

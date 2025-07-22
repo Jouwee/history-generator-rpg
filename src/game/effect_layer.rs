@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::{interpolate::{lerp, Interpolate}, rng::Rng}, engine::{asset::{font::FontAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
+use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::{font::FontAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -75,7 +75,7 @@ impl EffectLayer {
 
         for sprite in self.sprites.iter_mut() {
             let sheet = game_ctx.assets.image_sheet(&sprite.sprite);
-            let sprite_index = ((sprite.lifetime * 24.) as usize);
+            let sprite_index = (sprite.lifetime * 24.) as usize;
             if sprite_index >= sheet.len() {
                 // TODO(w0ScmN4f): Ugly
                 sprite.done = true;
@@ -107,11 +107,8 @@ impl EffectLayer {
     }
 
     pub(crate) fn add_text_indicator(&mut self, pos: Coord2, text: &str, color: Palette) {
-        let mut rng = Rng::rand();
-        let speed = Vec2::xy(rng.randf() * 1.6 - 0.8, -3. + rng.randf());
         self.damage_numbers.push(DamageNumber {
             pos,
-            speed,
             width: 0.,
             text: String::from(text),
             color,
@@ -137,7 +134,6 @@ impl EffectLayer {
 
 struct DamageNumber {
     pos: Coord2,
-    speed: Vec2,
     width: f64,
     text: String,
     color: Palette,

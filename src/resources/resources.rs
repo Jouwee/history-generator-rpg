@@ -283,7 +283,7 @@ impl Resources {
             description: String::from("Teleports"),
             icon: ImageAsset::new("gui/icons/actions/teleport.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
-            ap_cost: 80,
+            ap_cost: 50,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
                 target: SpellTarget::Tile { range: 13 },
