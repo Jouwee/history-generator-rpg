@@ -14,11 +14,17 @@ impl crate::commons::id_vec::Id for ObjectTileId {
 #[derive(Clone)]
 pub(crate) struct ObjectTile {
     pub(crate) tile: Tile,
+    pub(crate) casts_shadow: bool,
     pub(crate) blocks_movement: bool
 }
 
 impl ObjectTile {
     pub(crate) fn new(tile: Tile, blocks_movement: bool) -> Self {
-        Self { tile, blocks_movement }
+        Self { tile, blocks_movement, casts_shadow: false }
+    }
+
+    pub(crate) fn with_shadow(mut self) -> Self {
+        self.casts_shadow = true;
+        return self
     }
 }

@@ -481,10 +481,10 @@ impl Resources {
     pub(crate) fn load_object_tiles(&mut self) {
         
         let image = ImageSheetAsset::new("chunk_tiles/stone_walls.png", Size2D(24, 48));
-        self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true));
+        self.object_tiles.add("obj:wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true).with_shadow());
 
         let image = ImageSheetAsset::new("chunk_tiles/tree.png", Size2D(64, 64));
-        self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
+        self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true).with_shadow());
 
         let image = ImageAsset::new("bed.png");
         self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
@@ -496,19 +496,19 @@ impl Resources {
         self.object_tiles.add("obj:stool", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
         
         let image = ImageSheetAsset::new("chunk_tiles/tombstone.png", Size2D(24, 24));
-        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true));
+        self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true).with_shadow());
         
         let image = ImageAsset::new("chunk_tiles/anvil.png");
         self.object_tiles.add("obj:anvil", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
         
         let image = ImageAsset::new("chunk_tiles/barrel.png");
-        self.object_tiles.add("obj:barrel", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        self.object_tiles.add("obj:barrel", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
         
         let image = ImageSheetAsset::new("chunk_tiles/grass_decal.png", Size2D(24, 24));
         self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
         let image = ImageAsset::new("chunk_tiles/tent.png");
-        self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
 
         let image = ImageSheetAsset::new("chunk_tiles/pebbles.png", Size2D(24, 24));
         self.object_tiles.add("obj:pebbles", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));

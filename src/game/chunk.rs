@@ -42,6 +42,20 @@ impl ChunkMap {
         return true
     }
 
+    // SMELL: This -1 +1 thing is prone to errors
+    pub(crate) fn set_object_key(&mut self, pos: Coord2, tile: &str, resources: &Resources) {
+        let id = resources.object_tiles.id_of(tile);
+        let shadow = resources.object_tiles.get(&id).casts_shadow;
+        self.object_layer.set_tile(pos.x as usize, pos.y as usize, id.as_usize() + 1);
+        self.object_layer.set_shadow(pos.x as usize, pos.y as usize, shadow);
+    }
+
+    pub(crate) fn set_object_idx(&mut self, pos: Coord2, id: usize, resources: &Resources) {
+        let shadow = resources.object_tiles.try_get(id - 1).unwrap().casts_shadow;
+        self.object_layer.set_tile(pos.x as usize, pos.y as usize, id);
+        self.object_layer.set_shadow(pos.x as usize, pos.y as usize, shadow);
+    }
+
     pub(crate) fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
     }

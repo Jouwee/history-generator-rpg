@@ -44,18 +44,18 @@ impl ChunkGenerator {
         let mut found_sett = None;
         for unit in world.units.iter() {
             let unit = unit.borrow();
-            if unit.xy.x as i32 == xy.x && unit.xy.y as i32 == xy.y {
+            if unit.xy == xy {
                 found_sett = Some(unit)
             }
         }
-        println!("[Chunk gen] Unit search: {:.2?}", now.elapsed());
+        println!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", xy, found_sett.is_some(), now.elapsed());
 
         if let Some(unit) = found_sett {
 
             let pools = self.get_pools(&unit);
 
             let now = Instant::now();
-            self.generate_large_structures(&unit, &mut solver, &pools);
+            self.generate_large_structures(&unit, &mut solver, &pools, resources);
             println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
 
             println!("Chunk has {} creatures, {} artifacts, {} graves. Peak was {} in {}", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len(), unit.population_peak.1, unit.population_peak.0);
@@ -64,7 +64,7 @@ impl ChunkGenerator {
             println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
 
             let now = Instant::now();
-            self.generate_ruins(&unit, &mut solver, &pools, world);
+            self.generate_ruins(&unit, &mut solver, &pools, world, resources);
             println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
 
             if self.statue_spots.len() > 0 {
@@ -82,7 +82,7 @@ impl ChunkGenerator {
         }
 
         let now = Instant::now();
-        self.collapse_decor();
+        self.collapse_decor(resources);
         println!("[Chunk gen] Decor: {:.2?}", now.elapsed());
     }
 
@@ -133,7 +133,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools) {
+    fn generate_large_structures(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, resources: &Resources) {
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..50 {
             building_seed_cloud.insert(Coord2::xy(
@@ -158,7 +158,7 @@ impl ChunkGenerator {
             let structure = solver.solve_structure(start_pool, pos, &mut self.rng);
             if let Some(structure) = structure {
                 for (pos, piece) in structure.vec.iter() {
-                    self.place_template(*pos, &piece);
+                    self.place_template(*pos, &piece, resources);
                 }
             } else {
                 println!("failed to spawn structure")
@@ -174,7 +174,7 @@ impl ChunkGenerator {
                     let structure = solver.solve_structure(artifacts_pool, pos, &mut self.rng);
                     if let Some(structure) = structure {
                         for (pos, piece) in structure.vec.iter() {
-                            self.place_template(*pos, &piece);
+                            self.place_template(*pos, &piece, resources);
                         }
                         break;
                     }
@@ -199,7 +199,7 @@ impl ChunkGenerator {
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
-                            self.place_template(*pos, &piece);
+                            self.place_template(*pos, &piece, resources);
                         }
                         break;
                     }
@@ -295,7 +295,7 @@ impl ChunkGenerator {
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
-                            self.place_template(*pos, &piece);
+                            self.place_template(*pos, &piece, resources);
                         }
                         break;
                     }
@@ -333,7 +333,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World) {
+    fn generate_ruins(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World, resources: &Resources) {
         let mut building_seed_cloud = HashSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
@@ -375,7 +375,7 @@ impl ChunkGenerator {
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
-                            self.place_template_filtered(*pos, &piece, AbandonedStructureFilter::new(self.rng.clone(), age as u32));
+                            self.place_template_filtered(*pos, &piece, resources, AbandonedStructureFilter::new(self.rng.clone(), age as u32));
                         }
                         break;
                     }
@@ -470,7 +470,7 @@ impl ChunkGenerator {
         return solver;
     }
 
-    fn collapse_decor(&mut self) {
+    fn collapse_decor(&mut self, resources: &Resources) {
         let tree_noise = Perlin::new(Rng::rand().derive("trees").seed());
         let flower_noise = Perlin::new(Rng::rand().derive("flower").seed());
         for x in 1..self.chunk.size.x()-1 {
@@ -480,7 +480,7 @@ impl ChunkGenerator {
                         if ground == 1 || ground == 6 || ground == 7 {
                             if tree_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                                 if self.rng.rand_chance(0.1) {
-                                    self.chunk.map.object_layer.set_tile(x as usize, y as usize, 2);
+                                    self.chunk.map.set_object_key(Coord2::xy(x as i32, y as i32), "obj:tree", resources);
                                     continue;
                                 }
                             }
@@ -502,11 +502,11 @@ impl ChunkGenerator {
         }
     }
 
-    fn place_template(&mut self, origin: Coord2, template: &JigsawPiece) {
-        self.place_template_filtered(origin, template, NoopFilter {});
+    fn place_template(&mut self, origin: Coord2, template: &JigsawPiece, resources: &Resources) {
+        self.place_template_filtered(origin, template, resources, NoopFilter {});
     }
 
-    fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, mut filter: F) where F: StructureFilter {
+    fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, resources: &Resources, mut filter: F) where F: StructureFilter {
         for i in 0..template.size.area() {
             let x = origin.x as usize + i % template.size.x();
             let y = origin.y as usize + i / template.size.x();
@@ -525,7 +525,7 @@ impl ChunkGenerator {
                 JigsawPieceTile::Fixed { ground, object, statue_spot } => {
                     self.chunk.map.ground_layer.set_tile(x, y, ground);
                     if let Some(object) = object {
-                        self.chunk.map.object_layer.set_tile(x, y, object)
+                        self.chunk.map.set_object_idx(Coord2::xy(x as i32, y as i32), object, resources);
                     }
                     if statue_spot {
                         self.statue_spots.push(Coord2::xy(x as i32, y as i32))
