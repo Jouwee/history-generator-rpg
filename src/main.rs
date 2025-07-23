@@ -32,6 +32,8 @@ enum SceneEnum {
 
 pub(crate) struct App {
     gl: GlGraphics, // OpenGL drawing backend.
+    sprite_i: usize,
+    sprite_c: f64,
     context: GameContext,
     scene: SceneEnum,
     debug_overlay: DebugOverlay,
@@ -68,6 +70,7 @@ impl App {
             transform_queue: vec!(c.transform.clone()),
             gl: &mut self.gl,
             textures: Vec::new(),
+            sprite_i: self.sprite_i,
         };
         match &mut self.scene {
             SceneEnum::None => {},
@@ -97,6 +100,13 @@ impl App {
         update.delta_time = args.dt;
         let p = last_mouse_pos;
         update.mouse_pos_cam = [p[0] / self.display_context.scale + self.display_context.camera_rect[0], p[1] / self.display_context.scale + self.display_context.camera_rect[1]];
+
+        self.sprite_c += args.dt;
+        const FPS_24: f64 = 1. / 16.;
+        if self.sprite_c > FPS_24 {
+            self.sprite_i += 1;
+            self.sprite_c -= FPS_24;
+        }
 
         self.context.audio.update(&update);
         self.debug_overlay.update(&update);
@@ -160,6 +170,8 @@ fn main() {
             },
             drag_item: None,
         },
+        sprite_i: 0,
+        sprite_c: 0.,
         scene: SceneEnum::None,
         debug_overlay: DebugOverlay::new(),
         display_context: DisplayContext {

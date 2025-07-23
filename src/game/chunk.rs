@@ -42,6 +42,29 @@ impl ChunkMap {
         return true
     }
 
+    pub(crate) fn check_line_of_sight(&self, from: &Coord2, to: &Coord2) -> bool {
+        let angle_degrees = f64::atan2((to.y - from.y) as f64, (to.x - from.x) as f64);
+        let dist = from.dist(to) as f64;
+        let mut step = 0.;
+
+        let mut pos = from.clone();
+        let mut last = pos.clone();
+        while step < dist {
+            if pos != last {               
+                if self.blocks_movement(pos) {
+                    return false;
+                }
+                last = pos.clone();
+            }
+            step += 0.1;
+            pos = Coord2::xy(
+                from.x + (step * angle_degrees.cos()) as i32,
+                from.y + (step * angle_degrees.sin()) as i32,
+             );
+         }
+        return true;
+    }
+
     // SMELL: This -1 +1 thing is prone to errors
     pub(crate) fn set_object_key(&mut self, pos: Coord2, tile: &str, resources: &Resources) {
         let id = resources.object_tiles.id_of(tile);

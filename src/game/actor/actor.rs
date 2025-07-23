@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::image::ImageAsset, geometry::Coord2, render::RenderContext}, game::{ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -130,9 +130,9 @@ impl Actor {
                     effect_layer.add_damage_number(self.xy, 1.);
                 },
                 Affliction::OnFire { duration: _ } => {
-                    // TODO: Rethink
-                    // self.hp.damage(1.);
-                    effect_layer.add_damage_number(self.xy, 1.);
+                    let target_body_part = BodyPart::random(&mut Rng::rand());
+                    self.hp.hit(target_body_part, 2.);
+                    effect_layer.add_damage_number(self.xy, 2.);
                 },
                 Affliction::Poisoned { duration: _ } => {
                     // TODO: Rethink
@@ -304,7 +304,8 @@ impl Renderable for Actor {
         for affliction in self.afflictions.iter() {
             match affliction.affliction {
                 Affliction::OnFire { duration: _ } => {
-                    ctx.image(&ImageAsset::new("status/onfire.png"), [pos[0] as i32 + 11, pos[1] as i32 + 42], &mut game_ctx.assets);
+                    let sheet = game_ctx.assets.image_sheet(&ImageSheetAsset::new("status/onfire.png", Size2D(24, 24)));
+                    ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [pos[0] as f64 + 11., pos[1] as f64+24.]);
                 },
                 _ => ()
             }

@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_OCCUPY}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -216,20 +216,20 @@ impl Resources {
 
         self.actions.add("act:firebolt", Action {
             name: String::from("Firebolt"),
-            description: String::from("Firebolt"),
+            description: String::from("Throws a fiery bolt"),
             icon: ImageAsset::new("gui/icons/actions/firebolt.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 10 },
+                target: SpellTarget::Actor { range: 10, filter_mask: FILTER_CAN_VIEW },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
                     SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
@@ -237,7 +237,7 @@ impl Resources {
 
         self.actions.add("act:fireball", Action {
             name: String::from("Fireball"),
-            description: String::from("Fireball"),
+            description: String::from("Casts an explosive ball of fire"),
             icon: ImageAsset::new("missing.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 80,
@@ -250,7 +250,7 @@ impl Resources {
                     // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
@@ -272,7 +272,7 @@ impl Resources {
                     SpellEffect::ReplaceObject { tile: 1 }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 1. } }),
+                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
                 impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
             }
@@ -280,7 +280,7 @@ impl Resources {
 
         self.actions.add("act:teleport", Action {
             name: String::from("Teleport"),
-            description: String::from("Teleports"),
+            description: String::from("Instantly teleports away"),
             icon: ImageAsset::new("gui/icons/actions/teleport.png"),
             sound_effect: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
             ap_cost: 50,

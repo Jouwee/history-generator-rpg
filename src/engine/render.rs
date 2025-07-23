@@ -11,7 +11,8 @@ pub(crate) struct RenderContext<'a> {
     pub(crate) layout_rect: [f64; 4],
     pub(crate) camera_rect: [f64; 4],
     pub(crate) transform_queue: Vec<[[f64; 3]; 2]>,
-    pub(crate) textures: Vec<Texture>
+    pub(crate) textures: Vec<Texture>,
+    pub(crate) sprite_i: usize,
 }
 
 impl<'a> RenderContext<'a> {

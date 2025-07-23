@@ -57,13 +57,14 @@ pub(crate) enum ImpactPosition {
 }
 
 pub(crate) const FILTER_CAN_OCCUPY: u8 = 0b0000_0001;
+pub(crate) const FILTER_CAN_VIEW: u8 = 0b0000_0010;
 
 #[derive(Clone)]
 pub(crate) enum SpellTarget {
     /// Action is cast at the casters location
     Caster,
     /// Action is targeted at a actors location
-    Actor { range: u16 },
+    Actor { range: u16, filter_mask: u8 },
     /// Any tile
     Tile { range: u16, filter_mask: u8 },
 }
@@ -258,8 +259,8 @@ impl ActionRunner {
         return false
     }
 
-    pub(crate) fn can_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk) -> Result<(), ActionFailReason> {
-        let actor = chunk.actor_mut(actor_index).unwrap();
+    pub(crate) fn can_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &Chunk) -> Result<(), ActionFailReason> {
+        let actor = chunk.actor(actor_index).unwrap();
         if !actor.ap.can_use(action.ap_cost) {
             return Err(ActionFailReason::NotEnoughAP);
         }
@@ -271,7 +272,7 @@ impl ActionRunner {
                 if actor.xy.dist_squared(&cursor) >= 3. {
                     return Err(ActionFailReason::CantReach);
                 }
-                let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
+                let target = chunk.actors.iter().enumerate().find(|(_, npc)| npc.xy == cursor);
                 if target.is_none() {
                     return Err(ActionFailReason::NoValidTarget);
                 }
@@ -279,11 +280,16 @@ impl ActionRunner {
             ActionType::Spell { target, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                 match target {
                     SpellTarget::Caster => return Ok(()),
-                    SpellTarget::Actor { range } => {
+                    SpellTarget::Actor { range, filter_mask } => {
                         if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
                             return Err(ActionFailReason::CantReach);
                         }
-                        let target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
+                        if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                            if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
+                        }
+                        let target = chunk.actors.iter().enumerate().find(|(_, npc)| npc.xy == cursor);
                         if target.is_none() {
                             return Err(ActionFailReason::NoValidTarget);
                         }
@@ -294,6 +300,12 @@ impl ActionRunner {
                         }
                         if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
                             if chunk.map.blocks_movement(cursor) {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
+                        }
+                        if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                            if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
+                                println!("ha");
                                 return Err(ActionFailReason::NoValidTarget);
                             }
                         }
@@ -377,7 +389,7 @@ impl ActionRunner {
 
                 let pos = match target {
                     SpellTarget::Caster => actor.xy.clone(),
-                    SpellTarget::Actor { range: _ } => cursor,
+                    SpellTarget::Actor { range: _, filter_mask: _ } => cursor,
                     SpellTarget::Tile { range: _, filter_mask: _ } => cursor,
                 };
 
@@ -398,9 +410,17 @@ impl ActionRunner {
 
                 if let Some(projectile) = projectile {
 
+                    let actor = chunk.actor(actor_index).unwrap();
+                    let from = actor.xy.clone();
+
+                    let mut longest_distance: f32 = 0.;
+
                     // TODO: Dupped code
                     match projectile.position {
-                        ImpactPosition::Cursor => steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos)),
+                        ImpactPosition::Cursor => {
+                            steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos));
+                            longest_distance = longest_distance.max(from.dist(&pos));
+                        },
                         ImpactPosition::EachTarget => {
                             // TODO: Dupped code
                             let target_actors: Vec<usize> = area
@@ -409,12 +429,14 @@ impl ActionRunner {
                                 .collect();
                             for i in target_actors.iter() {
                                 let actor = chunk.actor(*i).unwrap();
-                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()))
+                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()));
+                                longest_distance = longest_distance.max(from.dist(&actor.xy));
                             }
                         }
                         ImpactPosition::EachTile => {
                             for p in area.points(pos) {
-                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), p))
+                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), p));
+                                longest_distance = longest_distance.max(from.dist(&p));
                             }
                         }
                     }
@@ -422,7 +444,10 @@ impl ActionRunner {
                     if projectile.wait {
                         match projectile.projectile_type {
                             // TODO: Compute wait
-                            SpellProjectileType::Projectile { sprite: _, speed } => steps.push_back(RunningActionStep::Wait(0.2))
+                            SpellProjectileType::Projectile { sprite: _, speed } => {
+                                let wait = longest_distance / speed;
+                                steps.push_back(RunningActionStep::Wait(wait as f64))
+                            }
                         }
                         
                     }

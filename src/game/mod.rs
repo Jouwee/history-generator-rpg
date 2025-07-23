@@ -6,6 +6,7 @@ use chunk::Chunk;
 use effect_layer::EffectLayer;
 use game_context_menu::GameContextMenu;
 use game_log::GameLog;
+use graphics::{Image, Transformed};
 use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
@@ -324,16 +325,26 @@ impl Scene for GameSceneState {
 
         self.chunk.render(ctx, game_ctx);
 
-        ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         if let Some(action) = &self.hotbar.selected_action {
+            // TODO: Cleanup
             let action = game_ctx.resources.actions.get(action);
+            let can_use = ActionRunner::can_use(action, PLAYER_IDX, self.cursor_pos, &self.chunk);
+            let color = match can_use {
+                Ok(_) => (Color::from_hex("ffffff30"), Color::from_hex("ffffffff")),
+                Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
+            };
             if let ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } = &action.action_type {
                 if area != &SpellArea::Target {
                     for point in area.points(self.cursor_pos) {
-                        ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], Color::from_hex("ffffff30"));
+                        ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
                     }
                 }
             }
+            let image = game_ctx.assets.image(&ImageAsset::new("gui/cursor.png"));
+            let transform = ctx.context.transform.trans(self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.);
+            Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
+        } else {
+            ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         }
 
         if self.hotbar.selected_action.is_none() {

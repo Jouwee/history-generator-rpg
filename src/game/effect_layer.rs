@@ -63,7 +63,8 @@ impl EffectLayer {
             let copy: [[f64; 3]; 2] = ctx.context.transform;
             let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
             let transform = ctx.context.transform.trans(x * 24. + 12., y * 24. + 12.).rot_deg(angle_degrees);
-            let sprite_index = ((projectile.lifetime * 24.) as usize) % sheet.len();
+            // TODO: FPS
+            let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
             image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
 
             // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
@@ -75,7 +76,8 @@ impl EffectLayer {
 
         for sprite in self.sprites.iter_mut() {
             let sheet = game_ctx.assets.image_sheet(&sprite.sprite);
-            let sprite_index = (sprite.lifetime * 24.) as usize;
+            // TODO: FPS
+            let sprite_index = (sprite.lifetime * 16.) as usize;
             if sprite_index >= sheet.len() {
                 // TODO(w0ScmN4f): Ugly
                 sprite.done = true;
@@ -116,7 +118,8 @@ impl EffectLayer {
         });
     }
 
-    pub(crate) fn add_projectile(&mut self, from: Coord2, to: Coord2, duration: f64, sprite: ImageSheetAsset) {
+    pub(crate) fn add_projectile(&mut self, from: Coord2, to: Coord2, speed: f64, sprite: ImageSheetAsset) {
+        let duration = from.dist(&to) as f64 / speed;
         self.projectiles.push(Projectile {
             from,
             to,

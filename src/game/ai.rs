@@ -169,7 +169,7 @@ impl AiSolver {
                     let points_to_check = match target {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement
-                        SpellTarget::Actor { range: _ } => vec!(),
+                        SpellTarget::Actor { range: _, filter_mask: _ } => vec!(),
                         SpellTarget::Tile { range: _, filter_mask: _ } => vec!(),
                     };
                     for point in points_to_check {
