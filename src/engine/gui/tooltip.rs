@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, resources::action::{Affliction, DamageType, Infliction}, GameContext};
+use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent
@@ -162,8 +162,6 @@ pub(crate) enum TooltipLine {
     Body(String),
     ApCost(u16),
     StaminaCost(f32),
-    Damage(DamageType),
-    Inflicts(Infliction)
 }
 
 impl TooltipLine {
@@ -173,59 +171,16 @@ impl TooltipLine {
             Self::Title(title) => [font.width(&title), 8.],
             Self::Body(body) => [font.width(&body), 8.],
             Self::ApCost(_ap_cost) => [8., 8.],
-            Self::Damage(damage) => {
-                let damage = match damage {
-                    DamageType::Fixed(dmg) => dmg,
-                    DamageType::FromWeapon(dmg) => dmg,
-                };
-                let mut lines = 0;
-                if damage.slashing > 0. {
-                    lines += 1;
-                }
-                if damage.piercing > 0. {
-                    lines += 1;
-                }
-                if damage.bludgeoning > 0. {
-                    lines += 1;
-                }
-                return [8., 8. * lines as f64]
-            }
             _ => [8., 8.]
         }
     }
 
-    fn render(&self, mut pos: [i32; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&self, pos: [i32; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         match &self {
             Self::Title(title) => ctx.text(&title, game_ctx.assets.font_standard(), pos, &Color::from_hex("ffffff")),
             Self::Body(body) => ctx.text(&body, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069")),
             Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), game_ctx.assets.font_standard(), pos, &Color::from_hex("446d99")),
             Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), game_ctx.assets.font_standard(), pos, &Color::from_hex("88ae59")),
-            Self::Damage(damage) => {
-                let damage = match damage {
-                    DamageType::Fixed(dmg) => dmg,
-                    DamageType::FromWeapon(dmg) => dmg,
-                };
-                if damage.slashing > 0. {
-                    ctx.text(&format!("{} slashing", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
-                    pos[1] += 8;
-                }
-                if damage.piercing > 0. {
-                    ctx.text(&format!("{} piercing", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
-                    pos[1] += 8;
-                }
-                if damage.bludgeoning > 0. {
-                    ctx.text(&format!("{} bludgeoning", damage.slashing), game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"));
-                }
-            }
-            Self::Inflicts(inflicts) => {
-                let text = match &inflicts.affliction {
-                    Affliction::Bleeding { duration } => format!("Target is Bleeding for {duration} turns"),
-                    Affliction::OnFire { duration } => format!("Target is On Fire for {duration} turns"),
-                    Affliction::Poisoned { duration } => format!("Target is Poisoned for {duration} turns"),
-                    Affliction::Stunned { duration } => format!("Target is Stunned for {duration} turns"),
-                };
-                ctx.text(&text, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069"))
-            }
         }
     }
 

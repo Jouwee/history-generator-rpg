@@ -2,9 +2,9 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
-use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
+use super::{action::{Action, ActionType, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
 pub(crate) struct Resources {
@@ -107,9 +107,17 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::FromWeapon(DamageComponent::new(1., 0., 0.))),
-                inflicts: None
+
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 1., piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. })
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:sword:bleeding_cut", Action {
@@ -119,12 +127,17 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::FromWeapon(DamageComponent::new(0.8, 0.0, 0.))),
-                inflicts: Some(Infliction {
-                    chance: AfflictionChance::OnHit,
-                    affliction: Affliction::Bleeding { duration: 5 }
-                })
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0.8, piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. }),
+                    SpellEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:mace:smash", Action {
@@ -134,9 +147,16 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::FromWeapon(DamageComponent::new(0., 0., 1.))),
-                inflicts: None
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:mace:concussive_strike", Action {
@@ -146,12 +166,17 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::FromWeapon(DamageComponent::new(1.0, 0.0, 0.))),
-                inflicts: Some(Infliction {
-                    chance: AfflictionChance::OnHit,
-                    affliction: Affliction::Stunned { duration: 1 }
-                })
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                    SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 1 } }
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:punch", Action {
@@ -161,9 +186,16 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::Fixed(DamageComponent::new(0., 0., 1.))),
-                inflicts: None
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:spider_bite", Action {
@@ -173,12 +205,17 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::Fixed(DamageComponent::new(0., 10., 0.))),
-                inflicts: Some(Infliction {
-                    chance: AfflictionChance::OnHit,
-                    affliction: Affliction::Poisoned { duration: 10 }
-                })
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                    SpellEffect::Inflicts { affliction: Affliction::Poisoned { duration: 10 } }
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
         self.actions.add("act:bite", Action {
@@ -188,9 +225,16 @@ impl Resources {
             sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            action_type: ActionType::Targeted {
-                damage: Some(DamageType::Fixed(DamageComponent::new(0., 10., 0.))),
-                inflicts: None
+            action_type: ActionType::Spell {
+                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
             }
         });
 
@@ -331,7 +375,17 @@ impl Resources {
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            action_type: ActionType::Dig
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_CAN_DIG },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Dig
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
+            }
         });
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
@@ -340,7 +394,17 @@ impl Resources {
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 1.,
-            action_type: ActionType::PickUp
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_ITEM },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::PickUp
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
+            }
         });
         self.actions.add("act:sleep", Action {
             name: String::from("Sleep"),
@@ -349,7 +413,17 @@ impl Resources {
             sound_effect: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            action_type: ActionType::Sleep
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_CAN_SLEEP },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::Sleep
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
+            }
         });
         self.actions.add("act:move_left", Action {
             name: String::from("Move Left"),

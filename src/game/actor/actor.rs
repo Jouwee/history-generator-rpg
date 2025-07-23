@@ -306,13 +306,11 @@ impl Renderable for Actor {
                 Affliction::OnFire { duration: _ } => {
                     let sheet = game_ctx.assets.image_sheet(&ImageSheetAsset::new("status/onfire.png", Size2D(24, 24)));
                     ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [pos[0] as f64 + 11., pos[1] as f64+24.]);
+                    ctx.render_light([pos[0] as f64 + 24., pos[1] as f64+32.]);
                 },
                 _ => ()
             }
         }
-
-        ctx.render_light(pos);
-
     }
 }
 

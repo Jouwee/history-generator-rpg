@@ -1,6 +1,6 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext}, resources::action::{Action, ActionId, ActionType, Actions}, GameContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext}, resources::action::{Action, ActionId, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory};
 
@@ -58,17 +58,6 @@ impl Hotbar {
         let mut tooltip = Tooltip::new(action.name.clone());
         tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
         tooltip.add_line(TooltipLine::StaminaCost(action.stamina_cost));
-        match &action.action_type {
-            ActionType::Targeted { damage, inflicts } => {
-                if let Some(damage) = damage {
-                    tooltip.add_line(TooltipLine::Damage(damage.clone()));
-                }
-                if let Some(inflicts) = inflicts {
-                    tooltip.add_line(TooltipLine::Inflicts(inflicts.clone()));
-                }
-            }
-            _ => ()
-        };
         tooltip.add_line(TooltipLine::Body(action.description.clone()));
         return tooltip;
     }

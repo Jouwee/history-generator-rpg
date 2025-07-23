@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -39,14 +39,7 @@ pub(crate) enum ActionType {
         // TODO: Struct
         impact: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
         impact_sound: Option<SoundEffect>,
-    },
-    Targeted {
-        damage: Option<DamageType>,
-        inflicts: Option<Infliction>
-    },
-    Dig,
-    PickUp,
-    Sleep
+    }
 }
 
 #[derive(Clone)]
@@ -58,6 +51,9 @@ pub(crate) enum ImpactPosition {
 
 pub(crate) const FILTER_CAN_OCCUPY: u8 = 0b0000_0001;
 pub(crate) const FILTER_CAN_VIEW: u8 = 0b0000_0010;
+pub(crate) const FILTER_CAN_DIG: u8 = 0b0000_0100;
+pub(crate) const FILTER_CAN_SLEEP: u8 = 0b0000_1000;
+pub(crate) const FILTER_ITEM: u8 = 0b0001_0000;
 
 #[derive(Clone)]
 pub(crate) enum SpellTarget {
@@ -143,7 +139,10 @@ impl SpellArea {
     pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Box<dyn Iterator<Item = (usize, A)> + 'a> where A: std::borrow::Borrow<Actor> + 'a, {
         match self {
             SpellArea::Target => {
-                return Box::new(iter.enumerate().filter(move |(_idx, actor): &(usize, A)| {
+                return Box::new(iter.enumerate().filter(move |(idx, actor): &(usize, A)| {
+                    if *idx == actor_index {
+                        return false;
+                    }
                     return actor.borrow().xy == center
                 }));
             },
@@ -183,24 +182,15 @@ pub(crate) enum SpellEffect {
     /// Teleport the actor to the target
     TeleportActor,
     /// Inspects the target
-    Inspect
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum DamageType {
-    FromWeapon(DamageComponent),
-    Fixed(DamageComponent)
-}
-
-#[derive(Clone)]
-pub(crate) struct Infliction {
-    pub(crate) chance: AfflictionChance,
-    pub(crate) affliction: Affliction,
-}
-
-#[derive(Clone)]
-pub(crate) enum AfflictionChance {
-    OnHit
+    Inspect,
+    /// Digs graves
+    Dig,
+    /// Sleeps
+    Sleep,
+    /// PickUp items
+    PickUp,
+    /// Moves the actor
+    Move { offset: Coord2 },
 }
 
 #[derive(Clone)]
@@ -268,15 +258,6 @@ impl ActionRunner {
             return Err(ActionFailReason::NotEnoughStamina);
         }
         match &action.action_type {
-            ActionType::Targeted { damage: _, inflicts: _ } => {
-                if actor.xy.dist_squared(&cursor) >= 3. {
-                    return Err(ActionFailReason::CantReach);
-                }
-                let target = chunk.actors.iter().enumerate().find(|(_, npc)| npc.xy == cursor);
-                if target.is_none() {
-                    return Err(ActionFailReason::NoValidTarget);
-                }
-            },
             ActionType::Spell { target, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                 match target {
                     SpellTarget::Caster => return Ok(()),
@@ -289,7 +270,7 @@ impl ActionRunner {
                                 return Err(ActionFailReason::NoValidTarget);
                             }
                         }
-                        let target = chunk.actors.iter().enumerate().find(|(_, npc)| npc.xy == cursor);
+                        let target = chunk.actors_iter().find(|npc| npc.xy == cursor);
                         if target.is_none() {
                             return Err(ActionFailReason::NoValidTarget);
                         }
@@ -303,6 +284,25 @@ impl ActionRunner {
                                 return Err(ActionFailReason::NoValidTarget);
                             }
                         }
+                        if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
+                            let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                            if tile_metadata.is_none() {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
+                        }
+                        if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
+                            // TODO: Bed
+                            let object_tile = chunk.map.get_object_idx(cursor);
+                            if object_tile != 3 {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
+                        }
+                        if bitmask_get(*filter_mask, FILTER_ITEM) {
+                            let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
+                            if item_on_ground.is_none() {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
+                        }
                         if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
                             if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
                                 println!("ha");
@@ -312,70 +312,20 @@ impl ActionRunner {
                     }
                 }
             },
-            ActionType::PickUp => {
-                if actor.xy.dist_squared(&cursor) >= 3. {
-                    return Err(ActionFailReason::CantReach);
-                }
-                let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
-                if item_on_ground.is_none() {
-                    return Err(ActionFailReason::NoValidTarget);
-                }
-            },
-            ActionType::Dig => {
-                if actor.xy.dist_squared(&cursor) >= 3. {
-                    return Err(ActionFailReason::CantReach);
-                }
-                let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
-                if tile_metadata.is_none() {
-                    return Err(ActionFailReason::NoValidTarget);
-                }
-            },
-            ActionType::Sleep =>  {
-                if actor.xy.dist_squared(&cursor) >= 3. {
-                    return Err(ActionFailReason::CantReach);
-                }
-                // TODO: Bed
-                let object_tile = chunk.map.get_object_idx(cursor);
-                if object_tile != 3 {
-                    return Err(ActionFailReason::NoValidTarget);
-                }
-            },
             // TODO:
             ActionType::Move { offset:_ } => (),
         }
         return Ok(());
     }
 
-    pub(crate) fn try_use(&mut self, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<Vec<ActionSideEffect>, ActionFailReason> {
+    pub(crate) fn try_use(&mut self, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
         let r = Self::can_use(action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
         }
         drop(r);
 
-        let mut target = chunk.actors.iter_mut().enumerate().find(|(_, npc)| npc.xy == cursor);
-        let mut item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
-        let mut tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
-
         match &action.action_type {
-            ActionType::Targeted { damage: _, inflicts: _ } => {
-                if let Some((i, target)) = &mut target {
-                    // TODO(QZ94ei4M): Borrow issues
-                    // let mut actor = chunk.actor_mut(actor_index).unwrap();
-                    let mut actor = &mut chunk.player;
-                    if ActionRunner::targeted_try_use(action, &mut actor, target, effect_layer, game_log, &world, ctx) {
-                        let mut side_effects = Vec::new();
-                        if target.hp.health_points() == 0. {
-                            actor.add_xp(100);
-                            side_effects.push(ActionSideEffect::RemoveNpc(*i));
-                        }
-                        if target.actor_type != ActorType::Player {
-                            side_effects.push(ActionSideEffect::MakeNpcsHostile);
-                        }
-                        return Ok(side_effects);
-                    }
-                }
-            },
             ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } => {
                 let actor = chunk.actor_mut(actor_index).unwrap();
 
@@ -500,40 +450,10 @@ impl ActionRunner {
                     ctx.audio.play_once(fx.clone());
                 }
             },
-            ActionType::PickUp => {
-                let (i, (_, item, _)) = item_on_ground.as_mut().expect("msg");
-                // TODO(QZ94ei4M): Borrow issues
-                // let mut actor = chunk.actor_mut(actor_index).unwrap();
-                let actor = &mut chunk.player;
-                if let Ok(_) = actor.inventory.add(item.clone()) {
-                    return Ok(vec!(ActionSideEffect::RemoveItemOnGround(*i)))
-                }
-            },
-            ActionType::Dig => {
-                if let Some(meta) = &mut tile_metadata {
-                    match meta {
-                        TileMetadata::BurialPlace(creature_id) => {
-                            let mut side_effects = Vec::new();
-                            side_effects.push(ActionSideEffect::RemoveObject(cursor));
-                            let creature = world.creatures.get(creature_id);
-                            if let Some(details) = &creature.details {
-                                for item in details.inventory.iter() {
-                                    side_effects.push(ActionSideEffect::AddArtifactOnGround(cursor, *item));
-                                }
-                            }
-                            return Ok(side_effects)
-                        }
-                    }
-                }
-            },
-            ActionType::Sleep =>  {
-                // TODO: This healing doesn't work anymore.
-                // self.chunk.player.hp.refill();
-            },
             ActionType::Move { offset:_ } => (),
         }
 
-        return Ok(vec!());
+        return Ok(());
     }
 
     pub(crate) fn update(&mut self, update: &Update, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) {
@@ -697,6 +617,58 @@ impl ActionRunner {
                                             //         }
                                             //     }
                                             // }
+                                        },
+                                        SpellEffect::Dig => {
+                                            for point in action.spell_area.points(action.center) {
+                                                let tile_metadata = chunk.map.tiles_metadata.get(&point).cloned();
+                                                if let Some(meta) = &tile_metadata {
+                                                    match meta {
+                                                        TileMetadata::BurialPlace(creature_id) => {
+
+                                                            chunk.map.remove_object(point.clone());
+                                                            chunk.map.tiles_metadata.remove(&point);
+
+                                                            let creature = world.creatures.get(creature_id);
+                                                            if let Some(details) = &creature.details {
+                                                                for item in details.inventory.iter() {
+                                                                    let item = world.artifacts.get(item);
+                                                                    chunk.map.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources.materials)));
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        SpellEffect::Sleep =>  {
+                                            // TODO: This healing doesn't work anymore.
+                                            // let mut actor = chunk.actor_mut(action.actor).unwrap();
+                                            // self.chunk.player.hp.refill();
+                                        },
+                                        SpellEffect::PickUp => {
+                                            let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center);
+                                            if let Some((i, (_, item, _))) = item_on_ground {
+                                                // TODO(QZ94ei4M): Borrow issues
+                                                // let mut actor = chunk.actor_mut(actor_index).unwrap();
+                                                let actor = &mut chunk.player;
+                                                if let Ok(_) = actor.inventory.add(item.clone()) {
+                                                    chunk.map.items_on_ground.remove(i);
+                                                }
+                                            }
+                                        },
+                                        SpellEffect::Move { offset } => {
+                                            let actor = chunk.actor(action.actor).unwrap();
+                                            let xy = actor.xy.clone();
+                                            let pos = xy + *offset;
+                                            if !chunk.map.blocks_movement(pos) {
+                                                let actor = chunk.actor_mut(action.actor).unwrap();
+                                                actor.xy = pos;
+                                                actor.animation.play(&Self::build_walk_anim());
+                                                if let Some(sound) = chunk.map.get_step_sound(xy) {
+                                                    // TODO: Use actual camera
+                                                    ctx.audio.play_positional(sound, xy.to_vec2(), pos.to_vec2());
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -745,72 +717,6 @@ impl ActionRunner {
         if clear_running_action {
             self.running_action = None;
         }
-    }
-
-    pub(crate) fn targeted_try_use(action: &Action, actor: &mut Actor, target: &mut Actor, effect_layer: &mut EffectLayer, game_log: &mut GameLog, world: &World, ctx: &GameContext) -> bool {
-        match &action.action_type {
-            ActionType::Targeted { damage, inflicts } => {
-                if actor.ap.can_use(action.ap_cost) && actor.stamina.can_use(action.stamina_cost) {
-                    if actor.xy.dist_squared(&target.xy) < 3. {
-                        actor.ap.consume(action.ap_cost);
-                        actor.stamina.consume(action.stamina_cost);
-                        let mut hit = true;
-                        if let Some(damage) = damage {
-                            // Compute damage
-                            let damage = match &damage {
-                                DamageType::Fixed(dmg) => dmg.clone(),
-                                DamageType::FromWeapon(dmg) => {
-                                    let item = actor.inventory.equipped(&EquipmentType::Hand).expect("Used equipped action with no equipped item");
-                                    let damage = dmg.multiply(item.damage_mult());
-                                    let damage = damage + item.extra_damage(&ctx.resources.materials);
-                                    damage
-                                }
-                            };
-                            let target_body_part = BodyPart::random(&mut Rng::rand());
-                            let damage = resolve_damage(&damage, &actor.stats(), &target_body_part, &target.stats());
-
-                            match damage {
-                                DamageOutput::Dodged => {
-                                    hit = false;
-                                    effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
-                                },
-                                DamageOutput::Hit(damage) => {
-                                    target.hp.hit(target_body_part, damage);
-                                    effect_layer.add_damage_number(target.xy, damage);
-                                },
-                                DamageOutput::CriticalHit(damage) => {
-                                    target.hp.critical_hit(target_body_part, damage);
-                                    effect_layer.add_damage_number(target.xy, damage);
-                                },
-                            }
-
-                            game_log.log(GameLogEntry::damage(target, &damage, &world, &ctx.resources));
-
-                            if let Some(fx) = &action.sound_effect {
-                                ctx.audio.play_once(fx.clone());
-                            }
-                            // Animations
-                            let dir = target.xy - actor.xy;
-                            actor.animation.play(&Self::build_attack_anim(dir));
-                            target.animation.play(&&Self::build_hurt_anim(dir));
-                        }
-                        if let Some(inflicts) = inflicts {
-                            let inflict = match inflicts.chance {
-                                AfflictionChance::OnHit => hit
-                            };
-                            if inflict {
-                                let (name, color) = inflicts.affliction.name_color();
-                                effect_layer.add_text_indicator(target.xy, name, color);
-                                target.add_affliction(&inflicts.affliction)
-                            }
-                        }
-                        return true
-                    }
-                }
-            }
-            _ => ()
-        }
-        return false
     }
 
     fn build_walk_anim() -> Animation {
@@ -863,39 +769,4 @@ pub(crate) enum ActionFailReason {
     NotEnoughStamina,
     CantReach,
     NoValidTarget
-}
-
-#[derive(Debug)]
-pub(crate) enum ActionSideEffect {
-    RemoveNpc(usize),
-    MakeNpcsHostile,
-    RemoveItemOnGround(usize),
-    RemoveObject(Coord2),
-    AddArtifactOnGround(Coord2, ItemId),
-}
-
-impl ActionSideEffect {
-
-    pub(crate) fn run(&self, game: &mut GameSceneState, ctx: &mut GameContext) {
-        match self {
-            Self::RemoveNpc(i) => game.chunk.remove_npc(*i, ctx),
-            Self::MakeNpcsHostile => {
-                for p in game.chunk.actors.iter_mut() {
-                    p.actor_type = ActorType::Hostile;
-                }
-            },
-            Self::RemoveItemOnGround(i) => {
-                game.chunk.map.items_on_ground.remove(*i);
-            },
-            Self::RemoveObject(pos) => {
-                game.chunk.map.remove_object(*pos);
-                game.chunk.map.tiles_metadata.remove(pos);
-            },
-            Self::AddArtifactOnGround(pos, item) => {
-                let item = game.world.artifacts.get(item);
-                game.chunk.map.items_on_ground.push((*pos, item.clone(), item.make_texture(&ctx.resources.materials)));
-            }
-        }
-    }
-
 }

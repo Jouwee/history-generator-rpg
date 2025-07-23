@@ -341,8 +341,12 @@ impl Scene for GameSceneState {
                 }
             }
             let image = game_ctx.assets.image(&ImageAsset::new("gui/cursor.png"));
-            let transform = ctx.context.transform.trans(self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.);
+            let pos = [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.];
+            let transform = ctx.context.transform.trans(pos[0], pos[1]);
             Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
+            if let Err(msg) = can_use {
+                ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &Color::from_hex("ffffffff"));
+            }
         } else {
             ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         }
@@ -456,12 +460,14 @@ impl Scene for GameSceneState {
                 if let Some((action, cursor)) = next {
                     let _ = match action.action_type {
                         ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                        ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
+                        // ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                         ActionType::Spell { target: _, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                             let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                            if let Err(v) = &v {
+                                println!("AI tried to use action invalid: {:?}", v);
+                            }
                             v.is_ok()
                         }
-                        _ => true
                     };
                 } else {
                     self.next_turn(ctx);
@@ -489,7 +495,7 @@ impl Scene for GameSceneState {
                     if let Some((action, _cursor)) = next {
                         let _ = match action.action_type {
                             ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                            ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
+                            // ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                             // TODO(QZ94ei4M): Borrow issues
                             // ActionType::Spell { target: _, area: _, effect: _ } => {
                             //     // TODO: Cursor
@@ -542,7 +548,7 @@ impl Scene for GameSceneState {
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
-            let result = self.action_runner.try_use(
+            let _ = self.action_runner.try_use(
                 action,
                 PLAYER_IDX,
                 cursor,
@@ -553,12 +559,6 @@ impl Scene for GameSceneState {
                 ctx
             );
 
-            if let Ok(side_effects) = result {
-                for side_effect in side_effects {
-                    side_effect.run(self, ctx);
-                }
-            }
-            
             return ControlFlow::Break(());
         }
 
@@ -651,7 +651,7 @@ impl Scene for GameSceneState {
                 if let Some(action_id) = &self.hotbar.selected_action {
 
                     let action = ctx.resources.actions.get(action_id);
-                    let result = self.action_runner.try_use(
+                    let _ = self.action_runner.try_use(
                         action,
                         PLAYER_IDX,
                         self.cursor_pos,
@@ -661,11 +661,6 @@ impl Scene for GameSceneState {
                         &mut self.game_log,
                         ctx
                     );
-                    if let Ok(side_effects) = result {
-                        for side_effect in side_effects {
-                            side_effect.run(self, ctx);
-                        }
-                    }
                 } else {
                     if let Some(path) = &mut self.player_pathing.get_preview() {
                         self.player_pathing.start_running(path.clone());

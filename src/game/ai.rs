@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, AfflictionChance, DamageType, SpellEffect, SpellTarget}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, SpellEffect, SpellTarget}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -136,40 +136,53 @@ impl AiSolver {
                     ctx.compute_final_score();
                     paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                 },
-                ActionType::Targeted { damage, inflicts } => {
-                    if ctx.xy.dist_squared(&chunk.player().xy) < 3. {
-                        let mut ctx = ctx.clone();
-                        ctx.ap -= action.ap_cost as i32;
-                        ctx.stamina -= action.stamina_cost;
-                        ctx.depth += 1;
-                        ctx.actions.push((*action_id, chunk.player().xy));
-                        if let Some(damage) = damage {
-                            match &damage {
-                                DamageType::Fixed(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64,
-                                DamageType::FromWeapon(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64 * 2.,
-                            }
-                        }
-                        if let Some(inflicts) = inflicts {
-                            let score_mult = match inflicts.chance {
-                                AfflictionChance::OnHit => 1.,
-                            };
-                            let score = match inflicts.affliction {
-                                Affliction::Bleeding { duration } => 1. * duration as f64,
-                                Affliction::OnFire { duration } => 1. * duration as f64,
-                                Affliction::Stunned { duration } => 0.8 * duration as f64,
-                                Affliction::Poisoned { duration } => 0.8 * duration as f64,
-                            };
-                            ctx.damage_score += score * score_mult;
-                        }
-                        ctx.compute_final_score();
-                        paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
-                    }
-                },
+                // ActionType::Targeted { damage, inflicts } => {
+                //     if ctx.xy.dist_squared(&chunk.player().xy) < 3. {
+                //         let mut ctx = ctx.clone();
+                //         ctx.ap -= action.ap_cost as i32;
+                //         ctx.stamina -= action.stamina_cost;
+                //         ctx.depth += 1;
+                //         ctx.actions.push((*action_id, chunk.player().xy));
+                //         if let Some(damage) = damage {
+                //             match &damage {
+                //                 DamageType::Fixed(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64,
+                //                 DamageType::FromWeapon(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64 * 2.,
+                //             }
+                //         }
+                //         if let Some(inflicts) = inflicts {
+                //             let score_mult = match inflicts.chance {
+                //                 AfflictionChance::OnHit => 1.,
+                //             };
+                //             let score = match inflicts.affliction {
+                //                 Affliction::Bleeding { duration } => 1. * duration as f64,
+                //                 Affliction::OnFire { duration } => 1. * duration as f64,
+                //                 Affliction::Stunned { duration } => 0.8 * duration as f64,
+                //                 Affliction::Poisoned { duration } => 0.8 * duration as f64,
+                //             };
+                //             ctx.damage_score += score * score_mult;
+                //         }
+                //         ctx.compute_final_score();
+                //         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
+                //     }
+                // },
                 ActionType::Spell { target, area, effects, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                     let points_to_check = match target {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement
-                        SpellTarget::Actor { range: _, filter_mask: _ } => vec!(),
+                        SpellTarget::Actor { range, filter_mask: _ } => {
+                            let range= *range as i32;
+                            let range_s = (range * range) as f32;
+                            let mut points = Vec::new();
+                            for x in ctx.xy.x-range..ctx.xy.x+range {
+                                for y in ctx.xy.y-range..ctx.xy.y+range {
+                                    let p = Coord2::xy(x, y);
+                                    if p != ctx.xy && ctx.xy.dist_squared(&p) < range_s {
+                                        points.push(p);
+                                    }
+                                }
+                            }
+                            points
+                        },
                         SpellTarget::Tile { range: _, filter_mask: _ } => vec!(),
                     };
                     for point in points_to_check {
@@ -203,6 +216,18 @@ impl AiSolver {
                                     },
                                     SpellEffect::Inspect => {
                                         // TODO:
+                                    },
+                                    SpellEffect::Dig => {
+                                        // TODO:
+                                    },
+                                    SpellEffect::Sleep => {
+                                        // TODO:
+                                    },
+                                    SpellEffect::PickUp => {
+                                        // TODO:
+                                    },
+                                    SpellEffect::Move { offset } => {
+                                        
                                     }
                                 }
                             }
@@ -212,7 +237,6 @@ impl AiSolver {
                         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
                     }
                 }
-                _ => ()
             }
         }
         return paths

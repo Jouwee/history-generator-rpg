@@ -139,14 +139,26 @@ impl Chunk {
     pub(crate) fn actor(&self, index: usize) -> Option<&Actor> {
         match index {
             PLAYER_IDX => Some(&self.player),
-            i => self.actors.get(i),
+            i => {
+                if i == self.actors.len() {
+                    Some(&self.player)
+                } else  {
+                    self.actors.get(i)
+                }
+            },
         }
     }
 
     pub(crate) fn actor_mut(&mut self, index: usize) -> Option<&mut Actor> {
         match index {
             PLAYER_IDX => Some(&mut self.player),
-            i => self.actors.get_mut(i),
+            i => {
+                if i == self.actors.len() {
+                    Some(&mut self.player)
+                } else  {
+                    self.actors.get_mut(i)
+                }
+            },
         }
     }
 
