@@ -170,7 +170,7 @@ impl AiSolver {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement
                         SpellTarget::Actor { range: _ } => vec!(),
-                        SpellTarget::Tile { range: _ } => vec!(),
+                        SpellTarget::Tile { range: _, filter_mask: _ } => vec!(),
                     };
                     for point in points_to_check {
                         let mut ctx = ctx.clone();

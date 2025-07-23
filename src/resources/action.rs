@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -56,6 +56,8 @@ pub(crate) enum ImpactPosition {
     EachTile,
 }
 
+pub(crate) const FILTER_CAN_OCCUPY: u8 = 0b0000_0001;
+
 #[derive(Clone)]
 pub(crate) enum SpellTarget {
     /// Action is cast at the casters location
@@ -63,7 +65,7 @@ pub(crate) enum SpellTarget {
     /// Action is targeted at a actors location
     Actor { range: u16 },
     /// Any tile
-    Tile { range: u16 },
+    Tile { range: u16, filter_mask: u8 },
 }
 
 #[derive(Clone, PartialEq)]
@@ -286,9 +288,14 @@ impl ActionRunner {
                             return Err(ActionFailReason::NoValidTarget);
                         }
                     },
-                    SpellTarget::Tile { range } => {
+                    SpellTarget::Tile { range, filter_mask } => {
                         if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
                             return Err(ActionFailReason::CantReach);
+                        }
+                        if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
+                            if chunk.map.blocks_movement(cursor) {
+                                return Err(ActionFailReason::NoValidTarget);
+                            }
                         }
                     }
                 }
@@ -371,7 +378,7 @@ impl ActionRunner {
                 let pos = match target {
                     SpellTarget::Caster => actor.xy.clone(),
                     SpellTarget::Actor { range: _ } => cursor,
-                    SpellTarget::Tile { range: _ } => cursor,
+                    SpellTarget::Tile { range: _, filter_mask: _ } => cursor,
                 };
 
                 // let target_actors = area

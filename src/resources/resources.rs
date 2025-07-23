@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_OCCUPY}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction, AfflictionChance, DamageType, Infliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -243,7 +243,7 @@ impl Resources {
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 10 },
+                target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Circle { radius: 3.2 },
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
@@ -264,7 +264,7 @@ impl Resources {
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 10 },
+                target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Rectangle(Size2D(1, 5)),
                 effects: vec!(
                     // SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
@@ -286,7 +286,7 @@ impl Resources {
             ap_cost: 50,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 13 },
+                target: SpellTarget::Tile { range: 13, filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::TeleportActor
@@ -315,7 +315,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 5 },
+                target: SpellTarget::Tile { range: 5, filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Inspect
