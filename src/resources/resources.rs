@@ -36,12 +36,12 @@ impl Resources {
     pub(crate) fn load(&mut self) {
         let now = Instant::now();
         self.load_materials();
+        self.load_tiles();
+        self.load_object_tiles();
         self.load_actions();
         self.load_species();
         self.load_cultures();
         self.load_biomes();
-        self.load_tiles();
-        self.load_object_tiles();
         self.load_item_blueprints();
         println!("Loading resources took {:.2?}", now.elapsed())
     }
@@ -244,7 +244,7 @@ impl Resources {
             stamina_cost: 5.,
             action_type: ActionType::Spell {
                 target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
-                area: SpellArea::Circle { radius: 3.2 },
+                area: SpellArea::Circle { radius: 2.5 },
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
                     // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
@@ -260,21 +260,19 @@ impl Resources {
             name: String::from("Rock Wall"),
             description: String::from("Summons a wall of rock"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            sound_effect: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
                 target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
-                area: SpellArea::Rectangle(Size2D(1, 5)),
+                area: SpellArea::Rectangle(Size2D(5, 1)),
                 effects: vec!(
-                    // SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
-                    // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } },
-                    SpellEffect::ReplaceObject { tile: 1 }
+                    SpellEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:cave_wall") }
                 ),
                 cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-                projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
+                projectile: None,
                 impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
-                impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+                impact_sound: None
             }
         });
 
@@ -569,6 +567,9 @@ impl Resources {
 
         let image = ImageSheetAsset::new("chunk_tiles/small_game_carcass.png", Size2D(24, 24));
         self.object_tiles.add("obj:small_game_carcass", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
+
+        let image = ImageSheetAsset::new("chunk_tiles/cave_walls.png", Size2D(24, 48));
+        self.object_tiles.add("obj:cave_wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true).with_shadow());
 
     }
 

@@ -36,7 +36,8 @@ impl ChunkMap {
             return false
         }
         // TODO: Resources
-        if self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize) == 9 || self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize) == 11 || self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize) == 12 {
+        let i = self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize);
+        if i == 9 || i == 11 || i == 12 {
             return false
         }
         return true

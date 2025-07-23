@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::{item::ItemId, world::World}, Actor, EquipmentType, GameContext, GameSceneState};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -179,7 +179,7 @@ pub(crate) enum SpellEffect {
     /// Inflicts an effect on the target
     Inflicts { affliction: Affliction },
     /// Replaces tiles in the object layer
-    ReplaceObject { tile: usize },
+    ReplaceObject { tile: ObjectTileId },
     /// Teleport the actor to the target
     TeleportActor,
     /// Inspects the target
@@ -631,7 +631,7 @@ impl ActionRunner {
                                             for x in 0..chunk.size.0 {
                                                 for y in 0..chunk.size.1 {
                                                     if action.spell_area.point_in_area(action.center, Coord2::xy(x as i32, y as i32)) {
-                                                        chunk.map.object_layer.set_tile(x, y, *tile);
+                                                        chunk.map.object_layer.set_tile(x, y, tile.as_usize() + 1);
                                                     }
                                                 }
                                             }

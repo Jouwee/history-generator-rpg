@@ -1,0 +1,121 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
+<project xmlns="http://audacity.sourceforge.net/xml/" projname="rockwall_data" version="1.3.0" audacityversion="2.4.2" sel0="3.4624321456" sel1="3.4624321456" vpos="160" h="0.0000000000" zoom="145.8512336897" rate="24000.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+	<tags/>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="1" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="287471">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f6bf.au" len="261615" min="-0.889043" max="0.900509" rms="0.189441"/>
+				</waveblock>
+				<waveblock start="261615">
+					<simpleblockfile filename="eff1f545.au" len="25856" min="-0.06651" max="0.060395" rms="0.006327"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="1" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="287471">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f78c.au" len="261615" min="-0.856951" max="0.902499" rms="0.188832"/>
+				</waveblock>
+				<waveblock start="261615">
+					<simpleblockfile filename="eff1f1a6.au" len="25856" min="-0.046076" max="0.036341" rms="0.005183"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="1" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="83098">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f978.au" len="83098" min="-0.889043" max="0.900509" rms="0.244133"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="5">
+				<controlpoint t="0.000000000000" val="0.000000100000"/>
+				<controlpoint t="0.034281506392" val="0.098591566086"/>
+				<controlpoint t="0.239970544743" val="1.000000000000"/>
+				<controlpoint t="1.611230800420" val="1.000000000000"/>
+				<controlpoint t="2.639675992177" val="0.042253494263"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="1" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="83098">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fa35.au" len="83098" min="-0.856951" max="0.902499" rms="0.243941"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="5">
+				<controlpoint t="0.000000000000" val="0.000000100000"/>
+				<controlpoint t="0.034281506392" val="0.098591566086"/>
+				<controlpoint t="0.239970544743" val="1.000000000000"/>
+				<controlpoint t="1.611230800420" val="1.000000000000"/>
+				<controlpoint t="2.639675992177" val="0.042253494263"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="31100">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fe57.au" len="31100" min="-0.827083" max="0.81726" rms="0.238843"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.233114243465" val="1.000000000000"/>
+				<controlpoint t="0.932456973860" val="0.028169035912"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="31100">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f31c.au" len="31100" min="-0.835283" max="0.815473" rms="0.23848"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.233114243465" val="1.000000000000"/>
+				<controlpoint t="0.932456973860" val="0.028169035912"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="94453">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f29f.au" len="68597" min="-0.5535" max="0.6443" rms="0.108869"/>
+				</waveblock>
+				<waveblock start="68597">
+					<simpleblockfile filename="eff1f545.au" len="25856" min="-0.06651" max="0.060395" rms="0.006327"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.014084517956"/>
+				<controlpoint t="1.624943402977" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="052256_cracking-earthquake-cracking-soil-cracking-stone-86770" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="24000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="94453">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fe43.au" len="68597" min="-0.565071" max="0.65749" rms="0.107618"/>
+				</waveblock>
+				<waveblock start="68597">
+					<simpleblockfile filename="eff1f1a6.au" len="25856" min="-0.046076" max="0.036341" rms="0.005183"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.014084517956"/>
+				<controlpoint t="1.624943402977" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+</project>
