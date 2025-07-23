@@ -62,10 +62,13 @@ impl EffectLayer {
             // TODO(w0ScmN4f):
             let copy: [[f64; 3]; 2] = ctx.context.transform;
             let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
-            let transform = ctx.context.transform.trans(x * 24. + 12., y * 24. + 12.).rot_deg(angle_degrees);
+            let pos = [x * 24. + 12., y * 24. + 12.];
+            let transform = ctx.context.transform.trans(pos[0], pos[1]).rot_deg(angle_degrees);
             // TODO: FPS
             let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
             image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
+
+            ctx.render_light(pos);
 
             // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
             // projectile.sprite_index = (projectile.sprite_index + 1) % sheet.len();

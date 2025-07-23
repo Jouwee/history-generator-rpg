@@ -311,6 +311,8 @@ impl Renderable for Actor {
             }
         }
 
+        ctx.render_light(pos);
+
     }
 }
 

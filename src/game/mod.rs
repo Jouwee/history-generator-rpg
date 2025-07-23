@@ -353,6 +353,9 @@ impl Scene for GameSceneState {
 
         // Effects
         self.effect_layer.render(ctx, game_ctx);
+
+        ctx.render_lights();
+
         // UI
         let _ = ctx.try_pop();
         self.hotbar.render(&(), ctx, game_ctx);
