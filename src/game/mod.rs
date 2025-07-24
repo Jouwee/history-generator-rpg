@@ -25,7 +25,7 @@ use crate::engine::Color;
 use crate::game::chunk::PLAYER_IDX;
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
-use crate::resources::action::{ActionRunner, ActionType, SpellArea};
+use crate::resources::action::{ActionRunner, SpellArea};
 use crate::world::creature::CreatureId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -333,11 +333,9 @@ impl Scene for GameSceneState {
                 Ok(_) => (Color::from_hex("ffffff30"), Color::from_hex("ffffffff")),
                 Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
             };
-            if let ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } = &action.action_type {
-                if area != &SpellArea::Target {
-                    for point in area.points(self.cursor_pos) {
-                        ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
-                    }
+            if action.area != SpellArea::Target {
+                for point in action.area.points(self.cursor_pos) {
+                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
                 }
             }
             let image = game_ctx.assets.image(&ImageAsset::new("gui/cursor.png"));
@@ -458,15 +456,10 @@ impl Scene for GameSceneState {
 
                 let next = npc.ai.next_action(&ctx.resources.actions);
                 if let Some((action, cursor)) = next {
-                    let _ = match action.action_type {
-                        ActionType::Spell { target: _, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
-                            let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
-                            if let Err(v) = &v {
-                                println!("AI tried to use action invalid: {:?}", v);
-                            }
-                            v.is_ok()
-                        }
-                    };
+                    let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                    if let Err(v) = &v {
+                        println!("AI tried to use action invalid: {:?}", v);
+                    }
                 } else {
                     self.next_turn(ctx);
                 }
@@ -490,16 +483,12 @@ impl Scene for GameSceneState {
                     }
 
                     let next = npc.ai.next_action(&ctx.resources.actions);
-                    if let Some((action, _cursor)) = next {
-                        let _ = match action.action_type {
-                            // TODO(QZ94ei4M): Borrow issues
-                            // ActionType::Spell { target: _, area: _, effect: _ } => {
-                            //     // TODO: Cursor
-                            //     let v = ActionRunner::try_use(action, self.turn_controller.npc_idx(), self.cursor_pos, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
-                            //     v.is_ok()
-                            // }
-                            _ => true
-                        };
+                    if let Some((action, cursor)) = next {
+                        // TODO: Borrow issues
+                        // let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                        // if let Err(v) = &v {
+                        //     println!("AI tried to use action invalid: {:?}", v);
+                        // }
                     } else {
                         end_turns_idxs.push(idx);
                     }

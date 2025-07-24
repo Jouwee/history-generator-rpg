@@ -23,22 +23,15 @@ pub(crate) struct Action {
     pub(crate) sound_effect: Option<SoundEffect>,
     pub(crate) ap_cost: u16,
     pub(crate) stamina_cost: f32,
-    pub(crate) action_type: ActionType
-}
-
-#[derive(Clone)]
-pub(crate) enum ActionType {
-    Spell {
-        target: SpellTarget,
-        area: SpellArea,
-        effects: Vec<SpellEffect>,
-        // Effects
-        cast: Option<(ImageSheetAsset, f32)>,
-        projectile: Option<SpellProjectile>,
-        // TODO: Struct
-        impact: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
-        impact_sound: Option<SoundEffect>,
-    }
+    pub(crate) target: SpellTarget,
+    pub(crate) area: SpellArea,
+    pub(crate) effects: Vec<SpellEffect>,
+    // Effects
+    pub(crate) cast: Option<(ImageSheetAsset, f32)>,
+    pub(crate) projectile: Option<SpellProjectile>,
+    // TODO: Struct
+    pub(crate) impact: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
+    pub(crate) impact_sound: Option<SoundEffect>,
 }
 
 #[derive(Clone)]
@@ -229,61 +222,57 @@ impl ActionRunner {
         if !actor.stamina.can_use(action.stamina_cost) {
             return Err(ActionFailReason::NotEnoughStamina);
         }
-        match &action.action_type {
-            ActionType::Spell { target, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
-                match target {
-                    SpellTarget::Caster => return Ok(()),
-                    SpellTarget::Actor { range, filter_mask } => {
-                        if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
-                            return Err(ActionFailReason::CantReach);
-                        }
-                        if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                            if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
-                        let target = chunk.actors_iter().find(|npc| npc.xy == cursor);
-                        if target.is_none() {
-                            return Err(ActionFailReason::NoValidTarget);
-                        }
-                    },
-                    SpellTarget::Tile { range, filter_mask } => {
-                        if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
-                            return Err(ActionFailReason::CantReach);
-                        }
-                        if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
-                            if chunk.map.blocks_movement(cursor) {
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
-                        if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
-                            let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
-                            if tile_metadata.is_none() {
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
-                        if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
-                            // TODO: Bed
-                            let object_tile = chunk.map.get_object_idx(cursor);
-                            if object_tile != 3 {
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
-                        if bitmask_get(*filter_mask, FILTER_ITEM) {
-                            let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
-                            if item_on_ground.is_none() {
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
-                        if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                            if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
-                                println!("ha");
-                                return Err(ActionFailReason::NoValidTarget);
-                            }
-                        }
+        match &action.target {
+            SpellTarget::Caster => return Ok(()),
+            SpellTarget::Actor { range, filter_mask } => {
+                if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
+                    return Err(ActionFailReason::CantReach);
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                    if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
+                        return Err(ActionFailReason::NoValidTarget);
                     }
                 }
+                let target = chunk.actors_iter().find(|npc| npc.xy == cursor);
+                if target.is_none() {
+                    return Err(ActionFailReason::NoValidTarget);
+                }
             },
+            SpellTarget::Tile { range, filter_mask } => {
+                if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
+                    return Err(ActionFailReason::CantReach);
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
+                    if chunk.map.blocks_movement(cursor) {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
+                    let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                    if tile_metadata.is_none() {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
+                    // TODO: Bed
+                    let object_tile = chunk.map.get_object_idx(cursor);
+                    if object_tile != 3 {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_ITEM) {
+                    let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
+                    if item_on_ground.is_none() {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                    if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
+                        println!("ha");
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+            }
         }
         return Ok(());
     }
@@ -295,131 +284,127 @@ impl ActionRunner {
         }
         drop(r);
 
-        match &action.action_type {
-            ActionType::Spell { target, area, effects, cast, projectile, impact, impact_sound } => {
-                let actor = chunk.actor_mut(actor_index).unwrap();
+        let actor = chunk.actor_mut(actor_index).unwrap();
 
-                // actor.ap.consume(action.ap_cost);
-                // actor.stamina.consume(action.stamina_cost);
+        // actor.ap.consume(action.ap_cost);
+        // actor.stamina.consume(action.stamina_cost);
 
-                game_log.log(GameLogEntry::from_parts(vec!(
-                    GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
-                    GameLogPart::Text(format!(" used {}", action.name))
-                )));
+        game_log.log(GameLogEntry::from_parts(vec!(
+            GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
+            GameLogPart::Text(format!(" used {}", action.name))
+        )));
 
-                let pos = match target {
-                    SpellTarget::Caster => actor.xy.clone(),
-                    SpellTarget::Actor { range: _, filter_mask: _ } => cursor,
-                    SpellTarget::Tile { range: _, filter_mask: _ } => cursor,
-                };
+        let pos = match &action.target {
+            SpellTarget::Caster => actor.xy.clone(),
+            SpellTarget::Actor { range: _, filter_mask: _ } => cursor,
+            SpellTarget::Tile { range: _, filter_mask: _ } => cursor,
+        };
 
-                // let target_actors = area
-                //     .filter(pos, actor_index, chunk.actors_iter_mut())
-                //     .map(|(i, _actor)| i)
-                //     .collect();
+        // let target_actors = area
+        //     .filter(pos, actor_index, chunk.actors_iter_mut())
+        //     .map(|(i, _actor)| i)
+        //     .collect();
 
-                let mut steps = VecDeque::new();
-                if let Some(cast) = cast {
-                    // TODO: Wait
-                    // TODO: Position
-                    // steps.push_back(RunningActionStep::CastSprite(cast.0.clone(), cast.1 as f64));
-                    steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
+        let mut steps = VecDeque::new();
+        if let Some(cast) = &action.cast {
+            // TODO: Wait
+            // TODO: Position
+            // steps.push_back(RunningActionStep::CastSprite(cast.0.clone(), cast.1 as f64));
+            steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
+            // TODO: Compute wait
+            steps.push_back(RunningActionStep::Wait(0.2))
+        }
+
+        if let Some(projectile) = &action.projectile {
+
+            let actor = chunk.actor(actor_index).unwrap();
+            let from = actor.xy.clone();
+
+            let mut longest_distance: f32 = 0.;
+
+            // TODO: Dupped code
+            match projectile.position {
+                ImpactPosition::Cursor => {
+                    steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos));
+                    longest_distance = longest_distance.max(from.dist(&pos));
+                },
+                ImpactPosition::EachTarget => {
+                    // TODO: Dupped code
+                    let target_actors: Vec<usize> = action.area
+                        .filter(pos, actor_index, chunk.actors_iter_mut())
+                        .map(|(i, _actor)| i)
+                        .collect();
+                    for i in target_actors.iter() {
+                        let actor = chunk.actor(*i).unwrap();
+                        steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()));
+                        longest_distance = longest_distance.max(from.dist(&actor.xy));
+                    }
+                }
+                ImpactPosition::EachTile => {
+                    for p in action.area.points(pos) {
+                        steps.push_back(RunningActionStep::Projectile(projectile.clone(), p));
+                        longest_distance = longest_distance.max(from.dist(&p));
+                    }
+                }
+            }
+
+            if projectile.wait {
+                match projectile.projectile_type {
                     // TODO: Compute wait
-                    steps.push_back(RunningActionStep::Wait(0.2))
+                    SpellProjectileType::Projectile { sprite: _, speed } => {
+                        let wait = longest_distance / speed;
+                        steps.push_back(RunningActionStep::Wait(wait as f64))
+                    }
                 }
+                
+            }
+        }
 
-                if let Some(projectile) = projectile {
-
-                    let actor = chunk.actor(actor_index).unwrap();
-                    let from = actor.xy.clone();
-
-                    let mut longest_distance: f32 = 0.;
-
+        if let Some(impact_sound) = &action.impact_sound {
+            steps.push_back(RunningActionStep::Sound(impact_sound.clone()));
+        }
+        if let Some(impact) = &action.impact {
+            // TODO: Dupped code
+            match impact.2 {
+                ImpactPosition::Cursor => steps.push_back(RunningActionStep::Sprite(impact.0.clone(), pos)),
+                ImpactPosition::EachTarget => {
                     // TODO: Dupped code
-                    match projectile.position {
-                        ImpactPosition::Cursor => {
-                            steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos));
-                            longest_distance = longest_distance.max(from.dist(&pos));
-                        },
-                        ImpactPosition::EachTarget => {
-                            // TODO: Dupped code
-                            let target_actors: Vec<usize> = area
-                                .filter(pos, actor_index, chunk.actors_iter_mut())
-                                .map(|(i, _actor)| i)
-                                .collect();
-                            for i in target_actors.iter() {
-                                let actor = chunk.actor(*i).unwrap();
-                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()));
-                                longest_distance = longest_distance.max(from.dist(&actor.xy));
-                            }
-                        }
-                        ImpactPosition::EachTile => {
-                            for p in area.points(pos) {
-                                steps.push_back(RunningActionStep::Projectile(projectile.clone(), p));
-                                longest_distance = longest_distance.max(from.dist(&p));
-                            }
-                        }
-                    }
-
-                    if projectile.wait {
-                        match projectile.projectile_type {
-                            // TODO: Compute wait
-                            SpellProjectileType::Projectile { sprite: _, speed } => {
-                                let wait = longest_distance / speed;
-                                steps.push_back(RunningActionStep::Wait(wait as f64))
-                            }
-                        }
-                        
+                    let target_actors: Vec<usize> = action.area
+                        .filter(pos, actor_index, chunk.actors_iter_mut())
+                        .map(|(i, _actor)| i)
+                        .collect();
+                    for i in target_actors.iter() {
+                        let actor = chunk.actor(*i).unwrap();
+                        steps.push_back(RunningActionStep::Sprite(impact.0.clone(), actor.xy.clone()))
                     }
                 }
-
-                if let Some(impact_sound) = impact_sound {
-                    steps.push_back(RunningActionStep::Sound(impact_sound.clone()));
-                }
-                if let Some(impact) = impact {
-                    // TODO: Dupped code
-                    match impact.2 {
-                        ImpactPosition::Cursor => steps.push_back(RunningActionStep::Sprite(impact.0.clone(), pos)),
-                        ImpactPosition::EachTarget => {
-                            // TODO: Dupped code
-                            let target_actors: Vec<usize> = area
-                                .filter(pos, actor_index, chunk.actors_iter_mut())
-                                .map(|(i, _actor)| i)
-                                .collect();
-                            for i in target_actors.iter() {
-                                let actor = chunk.actor(*i).unwrap();
-                                steps.push_back(RunningActionStep::Sprite(impact.0.clone(), actor.xy.clone()))
-                            }
-                        }
-                        ImpactPosition::EachTile => {
-                            for p in area.points(pos) {
-                                steps.push_back(RunningActionStep::Sprite(impact.0.clone(), p))
-                            }
-                        }
-                    }
-                    if impact.3 {
-                        // TODO: Compute duration
-                        steps.push_back(RunningActionStep::Wait(impact.1 as f64));
+                ImpactPosition::EachTile => {
+                    for p in action.area.points(pos) {
+                        steps.push_back(RunningActionStep::Sprite(impact.0.clone(), p))
                     }
                 }
+            }
+            if impact.3 {
+                // TODO: Compute duration
+                steps.push_back(RunningActionStep::Wait(impact.1 as f64));
+            }
+        }
 
-                steps.push_back(RunningActionStep::Effect(effects.clone()));
+        steps.push_back(RunningActionStep::Effect(action.effects.clone()));
 
 
-                self.running_action = Some(RunningAction {
-                    actor: actor_index,
-                    spell_area: area.clone(),
-                    center: pos,
-                    // target_actors,
-                    current_step: None,
-                    steps
-                });
+        self.running_action = Some(RunningAction {
+            actor: actor_index,
+            spell_area: action.area.clone(),
+            center: pos,
+            // target_actors,
+            current_step: None,
+            steps
+        });
 
-                // TODO(w0ScmN4f): Move down
-                if let Some(fx) = &action.sound_effect {
-                    ctx.audio.play_once(fx.clone());
-                }
-            },
+        // TODO(w0ScmN4f): Move down
+        if let Some(fx) = &action.sound_effect {
+            ctx.audio.play_once(fx.clone());
         }
 
         return Ok(());
