@@ -6,7 +6,7 @@ use resources::resources::Resources;
 use sdl2_window::Sdl2Window;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
-use opengl_graphics::{GlGraphics, OpenGL, Shaders, Textured, GLSL};
+use opengl_graphics::{GlGraphics, OpenGL};
 use piston::{event_loop::{EventSettings, Events}, ButtonArgs, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
@@ -70,8 +70,7 @@ impl App {
             transform_queue: vec!(c.transform.clone()),
             gl: &mut self.gl,
             textures: Vec::new(),
-            sprite_i: self.sprite_i,
-            lights: Vec::new()
+            sprite_i: self.sprite_i
         };
         match &mut self.scene {
             SceneEnum::None => {},

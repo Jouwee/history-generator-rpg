@@ -1,4 +1,4 @@
-use crate::{engine::asset::image::ImageAsset, game::{chunk::{Chunk, PLAYER_IDX}, effect_layer::EffectLayer, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
+use crate::{engine::asset::image::ImageAsset, game::{chunk::{Chunk, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
 
 use super::TurnMode;
 
@@ -77,13 +77,13 @@ impl PlayerPathing {
         return self.running.is_some()
     }
 
-    pub(crate) fn update_running(&mut self, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, update: &Update, action_runner: &mut ActionRunner, ctx: &mut GameContext) {
+    pub(crate) fn update_running(&mut self, chunk: &mut Chunk, world: &mut World, game_log: &mut GameLog, update: &Update, action_runner: &mut ActionRunner, ctx: &mut GameContext) {
         if self.add_update_delta(update.delta_time) {
             let pos = self.pop_running();
             if let Some(pos) = pos {
                 let action_id = ctx.resources.actions.id_of("act:move");  
                 let action = ctx.resources.actions.get(&action_id);  
-                let result = action_runner.try_use(&action_id, action, PLAYER_IDX, pos, chunk, world, effect_layer, game_log, ctx);
+                let result = action_runner.try_use(&action_id, action, PLAYER_IDX, pos, chunk, world, game_log, ctx);
                 if result.is_err() {
                     self.clear_running();
                 }

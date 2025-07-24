@@ -356,8 +356,6 @@ impl Scene for GameSceneState {
         // Effects
         self.effect_layer.render(ctx, game_ctx);
 
-        ctx.render_lights();
-
         // UI
         let _ = ctx.try_pop();
         self.hotbar.render(&self.chunk.player, ctx, game_ctx);
@@ -444,7 +442,7 @@ impl Scene for GameSceneState {
                 
                 if self.chunk.turn_controller.is_player_turn() {
                     if self.player_pathing.is_running() {
-                        self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, update, &mut self.action_runner, ctx);
+                        self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.game_log, update, &mut self.action_runner, ctx);
                     }
                     return
                 }
@@ -456,7 +454,7 @@ impl Scene for GameSceneState {
 
                 let next = npc.ai.next_action(&ctx.resources.actions);
                 if let Some((action_id, action, cursor)) = next {
-                    let v = self.action_runner.try_use(&action_id, action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                    let v = self.action_runner.try_use(&action_id, action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.game_log, ctx);
                     if let Err(v) = &v {
                         println!("AI tried to use action invalid: {:?}", v);
                     }
@@ -473,7 +471,7 @@ impl Scene for GameSceneState {
                 }
 
                 if self.player_pathing.is_running() {
-                    self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, update, &mut self.action_runner, ctx);
+                    self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.game_log, update, &mut self.action_runner, ctx);
                 }
 
                 let mut end_turns_idxs = Vec::new();
@@ -540,7 +538,6 @@ impl Scene for GameSceneState {
                 cursor,
                 &mut self.chunk,
                 &mut self.world,
-                &mut self.effect_layer,
                 &mut self.game_log,
                 ctx
             );
@@ -644,7 +641,6 @@ impl Scene for GameSceneState {
                         self.cursor_pos,
                         &mut self.chunk,
                         &mut self.world,
-                        &mut self.effect_layer,
                         &mut self.game_log,
                         ctx
                     );

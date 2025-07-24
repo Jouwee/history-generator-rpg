@@ -54,9 +54,6 @@ impl AiSolver {
         
         let mut all_actions = vec!(
             actions.id_of("act:move"),
-            // actions.id_of("act:move_down"),
-            // actions.id_of("act:move_left"),
-            // actions.id_of("act:move_up"),
         );
         let species = ctx.resources.species.get(&actor.species);
         all_actions.extend(species.innate_actions.iter());
@@ -203,7 +200,7 @@ impl AiSolver {
                         ActionEffect::ReplaceObject { tile: _ } => {
                             // TODO:
                         },
-                        ActionEffect::TeleportActor => {
+                        ActionEffect::TeleportActor | ActionEffect::Walk => {
                             ctx.xy = point;
                             ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                         },

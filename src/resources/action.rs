@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, ChunkMap, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -23,6 +23,7 @@ pub(crate) struct Action {
     pub(crate) ap_cost: u16,
     pub(crate) stamina_cost: f32,
     pub(crate) cooldown: u16,
+    pub(crate) log_use: bool,
     pub(crate) target: ActionTarget,
     pub(crate) area: ActionArea,
     pub(crate) effects: Vec<ActionEffect>,
@@ -63,8 +64,6 @@ pub(crate) enum ActionArea {
     Target,
     /// Affects in an circle area
     Circle { radius: f32 },
-    /// Affects in an rectangular area
-    Rectangle(Size2D),
 }
 
 #[derive(Clone)]
@@ -90,11 +89,6 @@ impl ActionArea {
                 let start = center - Coord2::xy(radius, radius);
                 let end = center + Coord2::xy(radius, radius);
                 (start, end)
-            },
-            ActionArea::Rectangle(size) => {
-                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                (start, end)
             }
         }
     }
@@ -119,11 +113,6 @@ impl ActionArea {
             ActionArea::Circle { radius } => {
                 let radius = (radius * radius) as f32;
                 return point.dist_squared(&center) <= radius
-            },
-            ActionArea::Rectangle(size) => {
-                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                return point.x >= start.x && point.y >= start.y && point.x <= end.x && point.y <= end.y;
             }
         }
     }
@@ -146,17 +135,6 @@ impl ActionArea {
                     }
                     return actor.borrow().xy.dist_squared(&center) < radius
                 }));
-            },
-            ActionArea::Rectangle(size) => {
-                let start = center - Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                let end = center + Coord2::xy(size.x() as i32 / 2, size.y() as i32 / 2);
-                return Box::new(iter.enumerate().filter(move |(idx, actor): &(usize, A)| {
-                    if *idx == actor_index {
-                        return false;
-                    }
-                    let pos = actor.borrow().xy;
-                    return pos.x >= start.x && pos.y >= start.y && pos.x <= end.x && pos.y <= end.y;
-                }));
             }
         }
     }
@@ -173,6 +151,8 @@ pub(crate) enum ActionEffect {
     ReplaceObject { tile: ObjectTileId },
     /// Teleport the actor to the target
     TeleportActor,
+    /// Walk the actor to the target
+    Walk,
     /// Inspects the target
     Inspect,
     /// Digs graves
@@ -279,7 +259,7 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
+    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
         let r = Self::can_use(action_id, action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
@@ -288,18 +268,18 @@ impl ActionRunner {
 
         let actor = chunk.actor_mut(actor_index).unwrap();
 
-        // actor.ap.consume(action.ap_cost);
-        // actor.stamina.consume(action.stamina_cost);
+        actor.ap.consume(action.ap_cost);
+        actor.stamina.consume(action.stamina_cost);
         if action.cooldown > 0 {
             actor.cooldowns.push((*action_id, action.cooldown));
         }
 
-        game_log.log(GameLogEntry::from_parts(vec!(
-            GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
-            GameLogPart::Text(format!(" used {}", action.name))
-        )));
-
-        println!("cursor {:?}", cursor);
+        if action.log_use {
+            game_log.log(GameLogEntry::from_parts(vec!(
+                GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
+                GameLogPart::Text(format!(" used {}", action.name))
+            )));
+        }
 
         let pos = match &action.target {
             ActionTarget::Caster => actor.xy.clone(),
@@ -422,7 +402,8 @@ impl ActionRunner {
                             for effect in effects.iter() {
                                 match effect {
                                     ActionEffect::Damage(model) => {
-
+                                        let actor = chunk.actor(action.actor).unwrap();
+                                        let actor_xy = actor.xy.clone();
                                         // TODO: Dupped code
                                         let target_actors: Vec<usize> = action.spell_area
                                             .filter(action.center, action.actor, chunk.actors_iter_mut())
@@ -449,19 +430,17 @@ impl ActionRunner {
                                             }
                                             game_log.log(GameLogEntry::damage(target, &damage, &world, &ctx.resources));
                 
-                                            // if let Some(fx) = &action.sound_effect {
-                                            //     ctx.audio.play_once(fx.clone());
-                                            // }
-                                            // Animations
-                                            let dir = target.xy - target.xy;
-                                            target.animation.play(&Self::build_attack_anim(dir));
-                                            target.animation.play(&&Self::build_hurt_anim(dir));
-
                                             let dead = target.hp.health_points();
                                             let actor_type = target.actor_type;
+                                            let xy = target.xy.clone();
+
+                                            // Animations
+                                            let dir = xy - actor_xy;
+                                            target.animation.play(&Self::build_hurt_anim(dir));
+                                            let actor = chunk.actor_mut(action.actor).unwrap();
+                                            actor.animation.play(&Self::build_attack_anim(dir));
 
                                             if dead == 0. {
-                                                let actor = chunk.actor_mut(action.actor).unwrap();
                                                 actor.add_xp(100);
                                                 chunk.remove_npc(*i, ctx);
                                             }
@@ -496,13 +475,20 @@ impl ActionRunner {
                                     },
                                     ActionEffect::ReplaceObject { tile } => {
                                         for point in action.spell_area.points(action.center) {
-                                            println!("replace {:?} {:?}", point, action.center);
                                             chunk.map.object_layer.set_tile(point.x as usize, point.y as usize, tile.as_usize() + 1);
                                         }
                                     },
                                     ActionEffect::TeleportActor => {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
                                         actor.xy = action.center
+                                    },
+                                    ActionEffect::Walk => {
+                                        let actor = chunk.actor_mut(action.actor).unwrap();
+                                        actor.xy = action.center;
+                                        actor.animation.play(&Self::build_walk_anim());
+                                        if let Some(sound) = chunk.map.get_step_sound(action.center) {
+                                            ctx.audio.play_once(sound);
+                                        }
                                     },
                                     ActionEffect::Inspect => {
 
@@ -600,20 +586,6 @@ impl ActionRunner {
                                             }
                                         }
                                     },
-                                    // SpellEffect::Move { offset } => {
-                                    //     let actor = chunk.actor(action.actor).unwrap();
-                                    //     let xy = actor.xy.clone();
-                                    //     let pos = xy + *offset;
-                                    //     if !chunk.map.blocks_movement(pos) {
-                                    //         let actor = chunk.actor_mut(action.actor).unwrap();
-                                    //         actor.xy = pos;
-                                    //         actor.animation.play(&Self::build_walk_anim());
-                                    //         if let Some(sound) = chunk.map.get_step_sound(xy) {
-                                    //             // TODO: Use actual camera
-                                    //             ctx.audio.play_positional(sound, xy.to_vec2(), pos.to_vec2());
-                                    //         }
-                                    //     }
-                                    // }
                                 }
                             }
                         },
@@ -626,7 +598,6 @@ impl ActionRunner {
                                 }
                             }
                         },
-                        // TODO(w0ScmN4f):: Naming doesn't make sense
                         RunningActionStep::Sprite(sprite, pos) => {
                             effect_layer.play_sprite(*pos, sprite.clone());
                         },

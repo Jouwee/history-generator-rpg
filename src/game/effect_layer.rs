@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::{font::FontAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Vec2}, render::RenderContext, scene::Update, Color, Palette}, GameContext};
+use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::{image_sheet::ImageSheetAsset}, geometry::Coord2, render::RenderContext, scene::Update, Color, Palette}, GameContext};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -21,7 +21,7 @@ impl EffectLayer {
     }
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let font = game_ctx.assets.font(&FontAsset::new("High_Birth.ttf", 12));
+        let font = game_ctx.assets.font_standard();
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
@@ -67,13 +67,6 @@ impl EffectLayer {
             // TODO: FPS
             let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
             image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
-
-            ctx.render_light(pos);
-
-            // ctx.texture_ref(sheet.get(projectile.sprite_index).unwrap(), [x * 24., y * 24.]);
-            // projectile.sprite_index = (projectile.sprite_index + 1) % sheet.len();
-            // ctx.image(sheet., position, assets);
-
             ctx.context.transform = copy;
         }
 

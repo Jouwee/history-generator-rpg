@@ -1,6 +1,5 @@
 use graphics::{image, rectangle, Context, Text, Transformed};
-use ::image::ImageReader;
-use opengl_graphics::{Filter, GlGraphics, Texture, TextureSettings};
+use opengl_graphics::{GlGraphics, Texture};
 
 use crate::engine::asset::assets::Assets;
 
@@ -13,8 +12,7 @@ pub(crate) struct RenderContext<'a> {
     pub(crate) camera_rect: [f64; 4],
     pub(crate) transform_queue: Vec<[[f64; 3]; 2]>,
     pub(crate) textures: Vec<Texture>,
-    pub(crate) sprite_i: usize,
-    pub(crate) lights: Vec<Light>
+    pub(crate) sprite_i: usize
 }
 
 impl<'a> RenderContext<'a> {
@@ -100,32 +98,4 @@ impl<'a> RenderContext<'a> {
         image(texture, transform, self.gl);
     }
 
-    pub(crate) fn render_light(&mut self, pos: [f64; 2]) {
-        self.lights.push(Light {
-            pos
-        });
-    }
-
-    pub(crate) fn render_lights(&mut self) {
-        // self.gl.activate_shader(1);
-        for light in self.lights.drain(..) {
-            let i = ImageReader::open(&"assets/sprites/light.png")
-                .unwrap()
-                .decode().unwrap();
-            let size = [i.width() as f64, i.height() as f64];
-            let settings = TextureSettings::new().filter(Filter::Nearest);
-            let texture = Texture::from_image(&i.to_rgba8(), &settings);
-            self.textures.push(texture);
-            let transform = self.context.transform.trans(light.pos[0] - size[0], light.pos[1] - size[1]).scale(2., 2.);
-            image(self.textures.last().unwrap(), transform, self.gl);
-            // image(&texture, transform, self.gl);
-            // rectangle(Color::from_hex("ff00ff30").f32_arr(), [light.pos[0], light.pos[1], 10., 10.], self.context.transform, self.gl);
-        }
-        // self.gl.activate_shader(0);
-    }
-
-}
-
-pub(crate) struct Light {
-    pos: [f64; 2],
 }
