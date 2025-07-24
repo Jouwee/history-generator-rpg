@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, SpellEffect, SpellTarget}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}, bitmask::bitmask_get}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, ActionType, Actions, Affliction, SpellEffect, SpellTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -53,10 +53,10 @@ impl AiSolver {
         
         
         let mut all_actions = vec!(
-            actions.id_of("act:move_right"),
-            actions.id_of("act:move_down"),
-            actions.id_of("act:move_left"),
-            actions.id_of("act:move_up"),
+            actions.id_of("act:move"),
+            // actions.id_of("act:move_down"),
+            // actions.id_of("act:move_left"),
+            // actions.id_of("act:move_up"),
         );
         let species = ctx.resources.species.get(&actor.species);
         all_actions.extend(species.innate_actions.iter());
@@ -104,6 +104,12 @@ impl AiSolver {
         }
         let elapsed = now.elapsed();
         println!("AI checked {} paths, elapsed {:.2?}", paths, elapsed);
+
+        // println!("all paths:");
+        // for path in results.iter() {
+        //     println!("{:?}", path)
+        // }
+
         return runner
     }
 
@@ -122,68 +128,52 @@ impl AiSolver {
                 continue;
             }
             match &action.action_type {
-                ActionType::Move { offset } => {
-                    let mut ctx = ctx.clone();
-                    ctx.xy = ctx.xy + *offset;
-                    if !chunk.size.in_bounds(ctx.xy) || chunk.map.blocks_movement(ctx.xy) {
-                        continue;
-                    }
-                    ctx.ap -= action.ap_cost as i32;
-                    ctx.stamina -= action.stamina_cost;
-                    ctx.depth += 1;
-                    ctx.actions.push((*action_id, ctx.xy));
-                    ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
-                    ctx.compute_final_score();
-                    paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
-                },
-                // ActionType::Targeted { damage, inflicts } => {
-                //     if ctx.xy.dist_squared(&chunk.player().xy) < 3. {
-                //         let mut ctx = ctx.clone();
-                //         ctx.ap -= action.ap_cost as i32;
-                //         ctx.stamina -= action.stamina_cost;
-                //         ctx.depth += 1;
-                //         ctx.actions.push((*action_id, chunk.player().xy));
-                //         if let Some(damage) = damage {
-                //             match &damage {
-                //                 DamageType::Fixed(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64,
-                //                 DamageType::FromWeapon(damage) => ctx.damage_score += (damage.bludgeoning + damage.piercing + damage.slashing) as f64 * 2.,
-                //             }
-                //         }
-                //         if let Some(inflicts) = inflicts {
-                //             let score_mult = match inflicts.chance {
-                //                 AfflictionChance::OnHit => 1.,
-                //             };
-                //             let score = match inflicts.affliction {
-                //                 Affliction::Bleeding { duration } => 1. * duration as f64,
-                //                 Affliction::OnFire { duration } => 1. * duration as f64,
-                //                 Affliction::Stunned { duration } => 0.8 * duration as f64,
-                //                 Affliction::Poisoned { duration } => 0.8 * duration as f64,
-                //             };
-                //             ctx.damage_score += score * score_mult;
-                //         }
-                //         ctx.compute_final_score();
-                //         paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
-                //     }
-                // },
                 ActionType::Spell { target, area, effects, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                     let points_to_check = match target {
                         SpellTarget::Caster => vec!(ctx.xy),
                         // TODO(REUw3poo): implement
-                        SpellTarget::Actor { range, filter_mask: _ } => {
+                        SpellTarget::Actor { range, filter_mask } => {
                             let range= *range as i32;
                             let range_s = (range * range) as f32;
                             let mut points = Vec::new();
-                            for x in ctx.xy.x-range..ctx.xy.x+range {
-                                for y in ctx.xy.y-range..ctx.xy.y+range {
+                            for x in ctx.xy.x-range..(ctx.xy.x+range+1) {
+                                for y in ctx.xy.y-range..(ctx.xy.y+range+1) {
                                     let p = Coord2::xy(x, y);
-                                    if p != ctx.xy && ctx.xy.dist_squared(&p) < range_s {
-                                        points.push(p);
+                                    // TODO: Dupped
+                                    if p == ctx.xy || ctx.xy.dist_squared(&p) > range_s {
+                                        continue
                                     }
+                                    if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                                        if !chunk.map.check_line_of_sight(&ctx.xy, &p) {
+                                            continue
+                                        }
+                                    }
+                                    points.push(p);
                                 }
                             }
                             points
                         },
-                        SpellTarget::Tile { range: _, filter_mask: _ } => vec!(),
+                        SpellTarget::Tile { range, filter_mask } => {
+                            let range= *range as i32;
+                            let range_s = (range * range) as f32;
+                            let mut points = Vec::new();
+                            for x in ctx.xy.x-range..(ctx.xy.x+range+1) {
+                                for y in ctx.xy.y-range..(ctx.xy.y+range+1) {
+                                    let p = Coord2::xy(x, y);
+                                    // TODO: Dupped
+                                    if p == ctx.xy || ctx.xy.dist_squared(&p) > range_s {
+                                        continue
+                                    }
+                                    if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
+                                        if chunk.map.blocks_movement(p) {
+                                            continue
+                                        }
+                                    }
+                                    points.push(p);
+                                }
+                            }
+                            points
+                        },
                     };
                     for point in points_to_check {
                         let mut ctx = ctx.clone();
@@ -192,14 +182,17 @@ impl AiSolver {
                         ctx.depth += 1;
                         ctx.actions.push((*action_id, point));
 
-                        for (_i, _actor) in area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
-                            for effect in effects.iter() {
-                                match effect {
-                                    SpellEffect::Damage(damage_model) => {
+                    
+                        for effect in effects.iter() {
+                            match effect {
+                                SpellEffect::Damage(damage_model) => {
+                                    for (_i, _actor) in area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                         // SMELL: Easy to forget
                                         ctx.damage_score += (damage_model.bludgeoning + damage_model.slashing + damage_model.piercing + damage_model.arcane + damage_model.fire) as f64;
                                     }
-                                    SpellEffect::Inflicts { affliction } => {
+                                }
+                                SpellEffect::Inflicts { affliction } => {
+                                    for (_i, _actor) in area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                         let score = match affliction {
                                             Affliction::Bleeding { duration } => 1. * *duration as f64,
                                             Affliction::OnFire { duration } => 1. * *duration as f64,
@@ -207,29 +200,27 @@ impl AiSolver {
                                             Affliction::Poisoned { duration } => 0.8 * *duration as f64,
                                         };
                                         ctx.damage_score += score;
-                                    },
-                                    SpellEffect::ReplaceObject { tile: _ } => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::TeleportActor => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::Inspect => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::Dig => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::Sleep => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::PickUp => {
-                                        // TODO:
-                                    },
-                                    SpellEffect::Move { offset } => {
-                                        
                                     }
-                                }
+                                },
+                                SpellEffect::ReplaceObject { tile: _ } => {
+                                    // TODO:
+                                },
+                                SpellEffect::TeleportActor => {
+                                    ctx.xy = point;
+                                    ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
+                                },
+                                SpellEffect::Inspect => {
+                                    // TODO:
+                                },
+                                SpellEffect::Dig => {
+                                    // TODO:
+                                },
+                                SpellEffect::Sleep => {
+                                    // TODO:
+                                },
+                                SpellEffect::PickUp => {
+                                    // TODO:
+                                },
                             }
                         }
 
@@ -244,8 +235,8 @@ impl AiSolver {
 
     fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &Chunk) -> f64 {
         let dist = ctx.xy.dist(&chunk.player().xy) as f64;
-        if dist < 3. {
-            return 0.;
+        if dist <= 1.5 {
+            return 1.;
         }        
         let path = astar.get_path(ctx.xy);
         if path.len() == 0 {
@@ -255,6 +246,7 @@ impl AiSolver {
     }
 
     fn add_to_results(ctx: SimContext, results: &mut Vec<SimContext>) {
+        // TODO: Binary search
         let i = results.iter().enumerate().find(|(_i, c)| c.score < ctx.score);
         match i {
             None => {

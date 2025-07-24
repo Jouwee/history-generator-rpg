@@ -1,6 +1,6 @@
-use crate::{engine::asset::image::ImageAsset, resources::action::ActionRunner, Actor, Coord2, GameContext, RenderContext, Update};
+use crate::{engine::asset::image::ImageAsset, game::{chunk::{Chunk, PLAYER_IDX}, effect_layer::EffectLayer, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
 
-use super::{chunk::ChunkMap, TurnMode};
+use super::TurnMode;
 
 pub(crate) struct PlayerPathing {
     preview: Option<Vec<Coord2>>,
@@ -77,36 +77,13 @@ impl PlayerPathing {
         return self.running.is_some()
     }
 
-    pub(crate) fn update_running(&mut self, actor: &mut Actor, map: &ChunkMap, update: &Update, ctx: &mut GameContext) {
+    pub(crate) fn update_running(&mut self, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, update: &Update, action_runner: &mut ActionRunner, ctx: &mut GameContext) {
         if self.add_update_delta(update.delta_time) {
             let pos = self.pop_running();
             if let Some(pos) = pos {
-                let dir = pos - actor.xy;
-                let dir = (dir.x, dir.y);
-                let walk = match dir {
-                    (0, -1) => {
-                        let action = ctx.resources.actions.find("act:move_up");  
-                        let xy = &actor.xy.clone();
-                        ActionRunner::move_try_use(action, actor, map, ctx, xy)
-                    },
-                    (0, 1) => {
-                        let action = ctx.resources.actions.find("act:move_down");  
-                        let xy = &actor.xy.clone();
-                        ActionRunner::move_try_use(action, actor, map, ctx, xy)
-                    },
-                    (-1, 0) => {
-                        let action = ctx.resources.actions.find("act:move_left");  
-                        let xy = &actor.xy.clone();
-                        ActionRunner::move_try_use(action, actor, map, ctx, xy)
-                    },
-                    (1, 0) => {
-                        let action = ctx.resources.actions.find("act:move_right");  
-                        let xy = &actor.xy.clone();
-                        ActionRunner::move_try_use(action, actor, map, ctx, xy)
-                    },
-                    _ => false
-                };
-                if !walk {
+                let action = ctx.resources.actions.find("act:move");  
+                let result = action_runner.try_use(action, PLAYER_IDX, pos, chunk, world, effect_layer, game_log, ctx);
+                if result.is_err() {
                     self.clear_running();
                 }
             }

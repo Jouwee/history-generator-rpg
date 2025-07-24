@@ -28,7 +28,6 @@ pub(crate) struct Action {
 
 #[derive(Clone)]
 pub(crate) enum ActionType {
-    Move { offset: Coord2 },
     Spell {
         target: SpellTarget,
         area: SpellArea,
@@ -60,9 +59,9 @@ pub(crate) enum SpellTarget {
     /// Action is cast at the casters location
     Caster,
     /// Action is targeted at a actors location
-    Actor { range: u16, filter_mask: u8 },
+    Actor { range: f32, filter_mask: u8 },
     /// Any tile
-    Tile { range: u16, filter_mask: u8 },
+    Tile { range: f32, filter_mask: u8 },
 }
 
 #[derive(Clone, PartialEq)]
@@ -189,8 +188,6 @@ pub(crate) enum SpellEffect {
     Sleep,
     /// PickUp items
     PickUp,
-    /// Moves the actor
-    Move { offset: Coord2 },
 }
 
 #[derive(Clone)]
@@ -224,31 +221,6 @@ impl ActionRunner {
         }
     }
 
-    pub(crate) fn move_try_use(action: &Action, actor: &mut Actor, chunk_map: &ChunkMap, ctx: &GameContext, player_pos: &Coord2) -> bool {
-        match &action.action_type {
-            ActionType::Move { offset } => {
-                let ap_cost = (action.ap_cost as f32 * actor.stats().walk_ap_multiplier()) as u16;
-                if actor.ap.can_use(ap_cost) && actor.stamina.can_use(action.stamina_cost) {
-                    let xy = actor.xy.clone();
-                    let pos = xy + *offset;
-                    if !chunk_map.blocks_movement(pos) {
-                        actor.ap.consume(ap_cost);
-                        actor.stamina.consume(action.stamina_cost);
-                        actor.xy = pos;
-                        actor.animation.play(&Self::build_walk_anim());
-                        if let Some(sound) = chunk_map.get_step_sound(xy) {
-                            // TODO: Use actual camera
-                            ctx.audio.play_positional(sound, xy.to_vec2(), player_pos.to_vec2());
-                        }
-                        return true
-                    }
-                }
-            }
-            _ => ()
-        }
-        return false
-    }
-
     pub(crate) fn can_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &Chunk) -> Result<(), ActionFailReason> {
         let actor = chunk.actor(actor_index).unwrap();
         if !actor.ap.can_use(action.ap_cost) {
@@ -262,7 +234,7 @@ impl ActionRunner {
                 match target {
                     SpellTarget::Caster => return Ok(()),
                     SpellTarget::Actor { range, filter_mask } => {
-                        if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
+                        if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
                             return Err(ActionFailReason::CantReach);
                         }
                         if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
@@ -276,7 +248,7 @@ impl ActionRunner {
                         }
                     },
                     SpellTarget::Tile { range, filter_mask } => {
-                        if actor.xy.dist_squared(&cursor) >= (range*range) as f32 {
+                        if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
                             return Err(ActionFailReason::CantReach);
                         }
                         if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
@@ -312,8 +284,6 @@ impl ActionRunner {
                     }
                 }
             },
-            // TODO:
-            ActionType::Move { offset:_ } => (),
         }
         return Ok(());
     }
@@ -450,7 +420,6 @@ impl ActionRunner {
                     ctx.audio.play_once(fx.clone());
                 }
             },
-            ActionType::Move { offset:_ } => (),
         }
 
         return Ok(());
@@ -656,20 +625,20 @@ impl ActionRunner {
                                                 }
                                             }
                                         },
-                                        SpellEffect::Move { offset } => {
-                                            let actor = chunk.actor(action.actor).unwrap();
-                                            let xy = actor.xy.clone();
-                                            let pos = xy + *offset;
-                                            if !chunk.map.blocks_movement(pos) {
-                                                let actor = chunk.actor_mut(action.actor).unwrap();
-                                                actor.xy = pos;
-                                                actor.animation.play(&Self::build_walk_anim());
-                                                if let Some(sound) = chunk.map.get_step_sound(xy) {
-                                                    // TODO: Use actual camera
-                                                    ctx.audio.play_positional(sound, xy.to_vec2(), pos.to_vec2());
-                                                }
-                                            }
-                                        }
+                                        // SpellEffect::Move { offset } => {
+                                        //     let actor = chunk.actor(action.actor).unwrap();
+                                        //     let xy = actor.xy.clone();
+                                        //     let pos = xy + *offset;
+                                        //     if !chunk.map.blocks_movement(pos) {
+                                        //         let actor = chunk.actor_mut(action.actor).unwrap();
+                                        //         actor.xy = pos;
+                                        //         actor.animation.play(&Self::build_walk_anim());
+                                        //         if let Some(sound) = chunk.map.get_step_sound(xy) {
+                                        //             // TODO: Use actual camera
+                                        //             ctx.audio.play_positional(sound, xy.to_vec2(), pos.to_vec2());
+                                        //         }
+                                        //     }
+                                        // }
                                     }
                                 }
                             // }

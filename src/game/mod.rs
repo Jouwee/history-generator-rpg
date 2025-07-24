@@ -446,7 +446,7 @@ impl Scene for GameSceneState {
                 
                 if self.chunk.turn_controller.is_player_turn() {
                     if self.player_pathing.is_running() {
-                        self.player_pathing.update_running(&mut self.chunk.player, &self.chunk.map, update, ctx);
+                        self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, update, &mut self.action_runner, ctx);
                     }
                     return
                 }
@@ -459,8 +459,6 @@ impl Scene for GameSceneState {
                 let next = npc.ai.next_action(&ctx.resources.actions);
                 if let Some((action, cursor)) = next {
                     let _ = match action.action_type {
-                        ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                        // ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                         ActionType::Spell { target: _, area: _, effects: _, cast: _, projectile: _, impact: _, impact_sound: _ } => {
                             let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                             if let Err(v) = &v {
@@ -482,7 +480,7 @@ impl Scene for GameSceneState {
                 }
 
                 if self.player_pathing.is_running() {
-                    self.player_pathing.update_running(&mut self.chunk.player, &self.chunk.map, update, ctx);
+                    self.player_pathing.update_running(&mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, update, &mut self.action_runner, ctx);
                 }
 
                 let mut end_turns_idxs = Vec::new();
@@ -494,8 +492,6 @@ impl Scene for GameSceneState {
                     let next = npc.ai.next_action(&ctx.resources.actions);
                     if let Some((action, _cursor)) = next {
                         let _ = match action.action_type {
-                            ActionType::Move { offset: _ } => ActionRunner::move_try_use(action, npc, &self.chunk.map, ctx, &self.chunk.player.xy),
-                            // ActionType::Targeted { damage: _, inflicts: _ } => ActionRunner::targeted_try_use(action, npc, &mut self.chunk.player, &mut self.effect_layer, &mut self.game_log, &self.world, ctx),
                             // TODO(QZ94ei4M): Borrow issues
                             // ActionType::Spell { target: _, area: _, effect: _ } => {
                             //     // TODO: Cursor

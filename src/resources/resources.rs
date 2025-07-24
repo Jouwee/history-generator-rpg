@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::{Coord2, Size2D}, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, ActionType, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -109,7 +109,7 @@ impl Resources {
             stamina_cost: 5.,
 
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 1., piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. })
@@ -128,7 +128,7 @@ impl Resources {
             ap_cost: 60,
             stamina_cost: 20.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0.8, piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. }),
@@ -148,7 +148,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
@@ -167,7 +167,7 @@ impl Resources {
             ap_cost: 60,
             stamina_cost: 20.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
@@ -187,7 +187,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
@@ -206,7 +206,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
@@ -226,7 +226,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 2, filter_mask: 0 },
+                target: SpellTarget::Actor { range: 1., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
@@ -266,7 +266,7 @@ impl Resources {
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Actor { range: 10, filter_mask: FILTER_CAN_VIEW },
+                target: SpellTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
@@ -287,7 +287,7 @@ impl Resources {
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
+                target: SpellTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Circle { radius: 2.5 },
                 effects: vec!(
                     SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
@@ -308,7 +308,7 @@ impl Resources {
             ap_cost: 80,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 10, filter_mask: FILTER_CAN_OCCUPY },
+                target: SpellTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Rectangle(Size2D(5, 1)),
                 effects: vec!(
                     SpellEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:cave_wall") }
@@ -328,7 +328,7 @@ impl Resources {
             ap_cost: 50,
             stamina_cost: 5.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 13, filter_mask: FILTER_CAN_OCCUPY },
+                target: SpellTarget::Tile { range: 13., filter_mask: FILTER_CAN_OCCUPY },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::TeleportActor
@@ -357,7 +357,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 5, filter_mask: 0 },
+                target: SpellTarget::Tile { range: 5., filter_mask: 0 },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Inspect
@@ -376,7 +376,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_CAN_DIG },
+                target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_DIG },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Dig
@@ -395,7 +395,7 @@ impl Resources {
             ap_cost: 20,
             stamina_cost: 1.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_ITEM },
+                target: SpellTarget::Tile { range: 1., filter_mask: FILTER_ITEM },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::PickUp
@@ -414,7 +414,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             action_type: ActionType::Spell {
-                target: SpellTarget::Tile { range: 2, filter_mask: FILTER_CAN_SLEEP },
+                target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_SLEEP },
                 area: SpellArea::Target,
                 effects: vec!(
                     SpellEffect::Sleep
@@ -425,41 +425,26 @@ impl Resources {
                 impact_sound: None
             }
         });
-        self.actions.add("act:move_left", Action {
-            name: String::from("Move Left"),
+
+        self.actions.add("act:move", Action {
+            name: String::from("Move"),
             description: String::from("Move"),
             icon: ImageAsset::new("gui/icons/actions/sleep.png"),
             sound_effect: None,
             ap_cost: 20,
             stamina_cost: 0.2,
-            action_type: ActionType::Move { offset: Coord2::xy(-1, 0) }
-        });
-        self.actions.add("act:move_right", Action {
-            name: String::from("Move Right"),
-            description: String::from("Move"),
-            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
-            sound_effect: None,
-            ap_cost: 20,
-            stamina_cost: 0.2,
-            action_type: ActionType::Move { offset: Coord2::xy(1, 0) }
-        });
-        self.actions.add("act:move_up", Action {
-            name: String::from("Move Up"),
-            description: String::from("Move"),
-            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
-            sound_effect: None,
-            ap_cost: 20,
-            stamina_cost: 0.2,
-            action_type: ActionType::Move { offset: Coord2::xy(0, -1) }
-        });
-        self.actions.add("act:move_down", Action {
-            name: String::from("Move Down"),
-            description: String::from("Move"),
-            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
-            sound_effect: None,
-            ap_cost: 20,
-            stamina_cost: 0.2,
-            action_type: ActionType::Move { offset: Coord2::xy(0, 1) }
+            action_type: ActionType::Spell {
+                target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_OCCUPY },
+                area: SpellArea::Target,
+                effects: vec!(
+                    SpellEffect::TeleportActor
+                ),
+                cast: None,
+                projectile: None,
+                impact: None,
+                impact_sound: None
+            }
+
         });
     }
 
