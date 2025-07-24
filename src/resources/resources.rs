@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, SpellArea, SpellEffect, SpellProjectile, SpellProjectileType, SpellTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, ActionArea, ActionEffect, ActionProjectile, SpellProjectileType, ActionTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -104,215 +104,215 @@ impl Resources {
             name: String::from("Slash"),
             description: String::from("A slashing strike"),
             icon: ImageAsset::new("gui/icons/actions/slashing_cut.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 1., piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. })
+                ActionEffect::Damage(DamageComponent { slashing: 1., piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. })
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:sword:bleeding_cut", Action {
             name: String::from("Bleeding Cut"),
             description: String::from("A deep cut that causes bleeding"),
             icon: ImageAsset::new("gui/icons/actions/bleeding_cut.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0.8, piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. }),
-                SpellEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
+                ActionEffect::Damage(DamageComponent { slashing: 0.8, piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:mace:smash", Action {
             name: String::from("Smash"),
             description: String::from("A heavy smash"),
             icon: ImageAsset::new("gui/icons/actions/mace_smash.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:mace:concussive_strike", Action {
             name: String::from("Concussive Strike"),
             description: String::from("An aimed hit at the head"),
             icon: ImageAsset::new("gui/icons/actions/concussive_strike.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
-                SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 1 } }
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Inflicts { affliction: Affliction::Stunned { duration: 1 } }
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
             description: String::from("A good ol' punch"),
             icon: ImageAsset::new("gui/icons/actions/unarmed_attack.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:spider_bite", Action {
             name: String::from("Bite"),
             description: String::from("A spider bite"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
-                SpellEffect::Inflicts { affliction: Affliction::Poisoned { duration: 10 } }
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Inflicts { affliction: Affliction::Poisoned { duration: 10 } }
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:bite", Action {
             name: String::from("Bite"),
             description: String::from("A bite"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 1., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
 
         self.actions.add("act:deafening_howl", Action {
             name: String::from("Deafening howl"),
             description: String::from("A deafening howl"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            target: SpellTarget::Caster,
-            area: SpellArea::Circle { radius: 8.2 },
+            target: ActionTarget::Caster,
+            area: ActionArea::Circle { radius: 8.2 },
             effects: vec!(
-                SpellEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
+                ActionEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None,
+            impact_sprite: None,
+            impact_sfx: None,
         });
 
         self.actions.add("act:firebolt", Action {
             name: String::from("Firebolt"),
             description: String::from("Throws a fiery bolt"),
             icon: ImageAsset::new("gui/icons/actions/firebolt.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
-            target: SpellTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
-            area: SpellArea::Target,
+            target: ActionTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
-                SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
+                ActionEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
             ),
-            cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-            projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
-            impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
-            impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+            projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
+            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
+            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
         });
 
         self.actions.add("act:fireball", Action {
             name: String::from("Fireball"),
             description: String::from("Casts an explosive ball of fire"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
-            target: SpellTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
-            area: SpellArea::Circle { radius: 2.5 },
+            target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
+            area: ActionArea::Circle { radius: 2.5 },
             effects: vec!(
-                SpellEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
+                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
                 // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
             ),
-            cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
-            projectile: Some(SpellProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
-            impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
-            impact_sound: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+            projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
+            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
         });
 
         self.actions.add("act:rockwall", Action {
             name: String::from("Rock Wall"),
             description: String::from("Summons a wall of rock"),
             icon: ImageAsset::new("missing.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
             ap_cost: 80,
             stamina_cost: 5.,
-            target: SpellTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
-            area: SpellArea::Rectangle(Size2D(5, 1)),
+            target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
+            area: ActionArea::Rectangle(Size2D(5, 1)),
             effects: vec!(
-                SpellEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:cave_wall") }
+                ActionEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:cave_wall") }
             ),
-            cast: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+            cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: None,
-            impact: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
-            impact_sound: None
+            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
+            impact_sfx: None
         });
 
         self.actions.add("act:teleport", Action {
             name: String::from("Teleport"),
             description: String::from("Instantly teleports away"),
             icon: ImageAsset::new("gui/icons/actions/teleport.png"),
-            sound_effect: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
             ap_cost: 50,
             stamina_cost: 5.,
-            target: SpellTarget::Tile { range: 13., filter_mask: FILTER_CAN_OCCUPY },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 13., filter_mask: FILTER_CAN_OCCUPY },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::TeleportActor
+                ActionEffect::TeleportActor
             ),
-            cast: Some((ImageSheetAsset::new("visual_effects/teleport_source.png", Size2D(24, 48)), 0.1)),
+            cast_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_source.png", Size2D(24, 48)), 0.1)),
             projectile: None,
-            impact: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), 0.5, ImpactPosition::Cursor, false)),
-            impact_sound: None
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sfx: None
         });
 
         // self.actions.add("act:talk", Action {
@@ -328,87 +328,87 @@ impl Resources {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),
             icon: ImageAsset::new("gui/icons/actions/inspect.png"),
-            sound_effect: None,
+            cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            target: SpellTarget::Tile { range: 5., filter_mask: 0 },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 5., filter_mask: 0 },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Inspect
+                ActionEffect::Inspect
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:dig", Action {
             name: String::from("Dig"),
             description: String::from("Dig the ground"),
             icon: ImageAsset::new("gui/icons/actions/dig.png"),
-            sound_effect: None,
+            cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_DIG },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_DIG },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Dig
+                ActionEffect::Dig
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
             description: String::from("Pick up something from the ground"),
             icon: ImageAsset::new("gui/icons/actions/pickup.png"),
-            sound_effect: None,
+            cast_sfx: None,
             ap_cost: 20,
             stamina_cost: 1.,
-            target: SpellTarget::Tile { range: 1., filter_mask: FILTER_ITEM },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_ITEM },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::PickUp
+                ActionEffect::PickUp
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
         self.actions.add("act:sleep", Action {
             name: String::from("Sleep"),
             description: String::from("Sleep in a bed"),
             icon: ImageAsset::new("gui/icons/actions/sleep.png"),
-            sound_effect: None,
+            cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
-            target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_SLEEP },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_SLEEP },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::Sleep
+                ActionEffect::Sleep
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
         });
 
         self.actions.add("act:move", Action {
             name: String::from("Move"),
             description: String::from("Move"),
             icon: ImageAsset::new("gui/icons/actions/sleep.png"),
-            sound_effect: None,
+            cast_sfx: None,
             ap_cost: 20,
             stamina_cost: 0.2,
-            target: SpellTarget::Tile { range: 1., filter_mask: FILTER_CAN_OCCUPY },
-            area: SpellArea::Target,
+            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_OCCUPY },
+            area: ActionArea::Target,
             effects: vec!(
-                SpellEffect::TeleportActor
+                ActionEffect::TeleportActor
             ),
-            cast: None,
+            cast_sprite: None,
             projectile: None,
-            impact: None,
-            impact_sound: None
+            impact_sprite: None,
+            impact_sfx: None
 
         });
     }

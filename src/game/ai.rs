@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}, bitmask::bitmask_get}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, Actions, Affliction, SpellEffect, SpellTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}, bitmask::bitmask_get}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, Actions, Affliction, ActionEffect, ActionTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -128,9 +128,9 @@ impl AiSolver {
                 continue;
             }
             let points_to_check = match &action.target {
-                SpellTarget::Caster => vec!(ctx.xy),
+                ActionTarget::Caster => vec!(ctx.xy),
                 // TODO(REUw3poo): implement
-                SpellTarget::Actor { range, filter_mask } => {
+                ActionTarget::Actor { range, filter_mask } => {
                     let range= *range as i32;
                     let range_s = (range * range) as f32;
                     let mut points = Vec::new();
@@ -151,7 +151,7 @@ impl AiSolver {
                     }
                     points
                 },
-                SpellTarget::Tile { range, filter_mask } => {
+                ActionTarget::Tile { range, filter_mask } => {
                     let range= *range as i32;
                     let range_s = (range * range) as f32;
                     let mut points = Vec::new();
@@ -183,13 +183,13 @@ impl AiSolver {
             
                 for effect in action.effects.iter() {
                     match effect {
-                        SpellEffect::Damage(damage_model) => {
+                        ActionEffect::Damage(damage_model) => {
                             for (_i, _actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                 // SMELL: Easy to forget
                                 ctx.damage_score += (damage_model.bludgeoning + damage_model.slashing + damage_model.piercing + damage_model.arcane + damage_model.fire) as f64;
                             }
                         }
-                        SpellEffect::Inflicts { affliction } => {
+                        ActionEffect::Inflicts { affliction } => {
                             for (_i, _actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                 let score = match affliction {
                                     Affliction::Bleeding { duration } => 1. * *duration as f64,
@@ -200,23 +200,23 @@ impl AiSolver {
                                 ctx.damage_score += score;
                             }
                         },
-                        SpellEffect::ReplaceObject { tile: _ } => {
+                        ActionEffect::ReplaceObject { tile: _ } => {
                             // TODO:
                         },
-                        SpellEffect::TeleportActor => {
+                        ActionEffect::TeleportActor => {
                             ctx.xy = point;
                             ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                         },
-                        SpellEffect::Inspect => {
+                        ActionEffect::Inspect => {
                             // TODO:
                         },
-                        SpellEffect::Dig => {
+                        ActionEffect::Dig => {
                             // TODO:
                         },
-                        SpellEffect::Sleep => {
+                        ActionEffect::Sleep => {
                             // TODO:
                         },
-                        SpellEffect::PickUp => {
+                        ActionEffect::PickUp => {
                             // TODO:
                         },
                     }

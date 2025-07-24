@@ -25,7 +25,7 @@ use crate::engine::Color;
 use crate::game::chunk::PLAYER_IDX;
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
-use crate::resources::action::{ActionRunner, SpellArea};
+use crate::resources::action::{ActionRunner, ActionArea};
 use crate::world::creature::CreatureId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -333,7 +333,7 @@ impl Scene for GameSceneState {
                 Ok(_) => (Color::from_hex("ffffff30"), Color::from_hex("ffffffff")),
                 Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
             };
-            if action.area != SpellArea::Target {
+            if action.area != ActionArea::Target {
                 for point in action.area.points(self.cursor_pos) {
                     ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
                 }
