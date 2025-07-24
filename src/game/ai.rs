@@ -21,13 +21,13 @@ impl AiRunner {
         }
     }
 
-    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<(&'a Action, Coord2)> {
+    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<(ActionId, &'a Action, Coord2)> {
         let action = self.actions.pop_front();
-        if let Some((action, pos)) = action {
-            let action = actions.get(&action);
+        if let Some((action_id, pos)) = action {
+            let action = actions.get(&action_id);
             self.delay = 0.;
             self.delay_target = action.ap_cost as f64 / 200.;
-            return Some((action, pos))
+            return Some((action_id, action, pos))
         }
         return None
     }

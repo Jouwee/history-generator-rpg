@@ -22,6 +22,7 @@ pub(crate) struct Action {
     pub(crate) description: String,
     pub(crate) ap_cost: u16,
     pub(crate) stamina_cost: f32,
+    pub(crate) cooldown: u16,
     pub(crate) target: ActionTarget,
     pub(crate) area: ActionArea,
     pub(crate) effects: Vec<ActionEffect>,
@@ -213,13 +214,16 @@ impl ActionRunner {
         }
     }
 
-    pub(crate) fn can_use(action: &Action, actor_index: usize, cursor: Coord2, chunk: &Chunk) -> Result<(), ActionFailReason> {
+    pub(crate) fn can_use(action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &Chunk) -> Result<(), ActionFailReason> {
         let actor = chunk.actor(actor_index).unwrap();
         if !actor.ap.can_use(action.ap_cost) {
             return Err(ActionFailReason::NotEnoughAP);
         }
         if !actor.stamina.can_use(action.stamina_cost) {
             return Err(ActionFailReason::NotEnoughStamina);
+        }
+        if actor.cooldowns.iter().any(|cooldown| cooldown.0 == *action_id) {
+            return Err(ActionFailReason::OnCooldown);
         }
         match &action.target {
             ActionTarget::Caster => return Ok(()),
@@ -275,8 +279,8 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn try_use(&mut self, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
-        let r = Self::can_use(action, actor_index, cursor, chunk);
+    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
+        let r = Self::can_use(action_id, action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
         }
@@ -284,10 +288,18 @@ impl ActionRunner {
 
         let actor = chunk.actor_mut(actor_index).unwrap();
 
+        // actor.ap.consume(action.ap_cost);
+        // actor.stamina.consume(action.stamina_cost);
+        if action.cooldown > 0 {
+            actor.cooldowns.push((*action_id, action.cooldown));
+        }
+
         game_log.log(GameLogEntry::from_parts(vec!(
             GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
             GameLogPart::Text(format!(" used {}", action.name))
         )));
+
+        println!("cursor {:?}", cursor);
 
         let pos = match &action.target {
             ActionTarget::Caster => actor.xy.clone(),
@@ -483,13 +495,9 @@ impl ActionRunner {
                                         }
                                     },
                                     ActionEffect::ReplaceObject { tile } => {
-                                        // TODO: Bounding box
-                                        for x in 0..chunk.size.0 {
-                                            for y in 0..chunk.size.1 {
-                                                if action.spell_area.point_in_area(action.center, Coord2::xy(x as i32, y as i32)) {
-                                                    chunk.map.object_layer.set_tile(x, y, tile.as_usize() + 1);
-                                                }
-                                            }
+                                        for point in action.spell_area.points(action.center) {
+                                            println!("replace {:?} {:?}", point, action.center);
+                                            chunk.map.object_layer.set_tile(point.x as usize, point.y as usize, tile.as_usize() + 1);
                                         }
                                     },
                                     ActionEffect::TeleportActor => {
@@ -702,6 +710,7 @@ enum RunningActionStep {
 pub(crate) enum ActionFailReason {
     NotEnoughAP,
     NotEnoughStamina,
+    OnCooldown,
     CantReach,
     NoValidTarget
 }

@@ -107,6 +107,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -124,6 +125,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
+            cooldown: 2,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -142,6 +144,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -159,6 +162,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
+            cooldown: 2,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -177,6 +181,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -194,6 +199,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -212,6 +218,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -230,6 +237,7 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
+            cooldown: 30,
             target: ActionTarget::Caster,
             area: ActionArea::Circle { radius: 8.2 },
             effects: vec!(
@@ -246,8 +254,9 @@ impl Resources {
             description: String::from("Throws a fiery bolt"),
             icon: ImageAsset::new("gui/icons/actions/firebolt.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
-            ap_cost: 80,
+            ap_cost: 50,
             stamina_cost: 5.,
+            cooldown: 2,
             target: ActionTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
             area: ActionArea::Target,
             effects: vec!(
@@ -263,10 +272,11 @@ impl Resources {
         self.actions.add("act:fireball", Action {
             name: String::from("Fireball"),
             description: String::from("Casts an explosive ball of fire"),
-            icon: ImageAsset::new("missing.png"),
+            icon: ImageAsset::new("gui/icons/actions/fireball.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
-            ap_cost: 80,
+            ap_cost: 60,
             stamina_cost: 5.,
+            cooldown: 5,
             target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
             area: ActionArea::Circle { radius: 2.5 },
             effects: vec!(
@@ -275,25 +285,26 @@ impl Resources {
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
-            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/explosion_big.png", Size2D(128, 128)), 0.5, ImpactPosition::Cursor, false)),
             impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
         });
 
-        self.actions.add("act:rockwall", Action {
-            name: String::from("Rock Wall"),
-            description: String::from("Summons a wall of rock"),
-            icon: ImageAsset::new("missing.png"),
+        self.actions.add("act:rockpillar", Action {
+            name: String::from("Rock Pillar"),
+            description: String::from("Summons a pillar of rock"),
+            icon: ImageAsset::new("gui/icons/actions/rock_pillar.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
-            ap_cost: 80,
+            ap_cost: 20,
             stamina_cost: 5.,
+            cooldown: 5,
             target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
-            area: ActionArea::Rectangle(Size2D(5, 1)),
+            area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:cave_wall") }
+                ActionEffect::ReplaceObject { tile: self.object_tiles.id_of("obj:rock_pillar") }
             ),
-            cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
+            cast_sprite: None,
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.1, ImpactPosition::EachTile, true)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/rock_pillar_spawn.png", Size2D(24, 32)), 0.5, ImpactPosition::EachTile, true)),
             impact_sfx: None
         });
 
@@ -302,8 +313,9 @@ impl Resources {
             description: String::from("Instantly teleports away"),
             icon: ImageAsset::new("gui/icons/actions/teleport.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
-            ap_cost: 50,
+            ap_cost: 20,
             stamina_cost: 5.,
+            cooldown: 10,
             target: ActionTarget::Tile { range: 13., filter_mask: FILTER_CAN_OCCUPY },
             area: ActionArea::Target,
             effects: vec!(
@@ -331,6 +343,7 @@ impl Resources {
             cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
+            cooldown: 0,
             target: ActionTarget::Tile { range: 5., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
@@ -348,6 +361,7 @@ impl Resources {
             cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
+            cooldown: 0,
             target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_DIG },
             area: ActionArea::Target,
             effects: vec!(
@@ -365,6 +379,7 @@ impl Resources {
             cast_sfx: None,
             ap_cost: 20,
             stamina_cost: 1.,
+            cooldown: 0,
             target: ActionTarget::Tile { range: 1., filter_mask: FILTER_ITEM },
             area: ActionArea::Target,
             effects: vec!(
@@ -382,6 +397,7 @@ impl Resources {
             cast_sfx: None,
             ap_cost: 0,
             stamina_cost: 0.,
+            cooldown: 0,
             target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_SLEEP },
             area: ActionArea::Target,
             effects: vec!(
@@ -400,6 +416,7 @@ impl Resources {
             cast_sfx: None,
             ap_cost: 20,
             stamina_cost: 0.2,
+            cooldown: 0,
             target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_OCCUPY },
             area: ActionArea::Target,
             effects: vec!(
@@ -592,8 +609,8 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/small_game_carcass.png", Size2D(24, 24));
         self.object_tiles.add("obj:small_game_carcass", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
-        let image = ImageSheetAsset::new("chunk_tiles/cave_walls.png", Size2D(24, 48));
-        self.object_tiles.add("obj:cave_wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true).with_shadow());
+        let image = ImageAsset::new("chunk_tiles/rock_pillar.png");
+        self.object_tiles.add("obj:rock_pillar", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
 
     }
 

@@ -87,7 +87,7 @@ impl TileMap {
             },
             Tile::SingleTile(tile) => {
                 let image = game_ctx.assets.image(&tile.image);
-                size = [image.size.x() as f64, image.size.y() as f64 - self.cell_height as f64];
+                size = [image.size.x() as f64, image.size.y() as f64];
                 texture = &image.texture;
             },
             Tile::TileRandom(tile) => {

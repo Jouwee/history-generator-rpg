@@ -325,10 +325,10 @@ impl Scene for GameSceneState {
 
         self.chunk.render(ctx, game_ctx);
 
-        if let Some(action) = &self.hotbar.selected_action {
+        if let Some(action_id) = &self.hotbar.selected_action {
             // TODO: Cleanup
-            let action = game_ctx.resources.actions.get(action);
-            let can_use = ActionRunner::can_use(action, PLAYER_IDX, self.cursor_pos, &self.chunk);
+            let action = game_ctx.resources.actions.get(action_id);
+            let can_use = ActionRunner::can_use(action_id, action, PLAYER_IDX, self.cursor_pos, &self.chunk);
             let color = match can_use {
                 Ok(_) => (Color::from_hex("ffffff30"), Color::from_hex("ffffffff")),
                 Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
@@ -360,7 +360,7 @@ impl Scene for GameSceneState {
 
         // UI
         let _ = ctx.try_pop();
-        self.hotbar.render(&(), ctx, game_ctx);
+        self.hotbar.render(&self.chunk.player, ctx, game_ctx);
         self.hud.render(self.chunk.player(), ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
         self.button_codex.render(&(), ctx, game_ctx);
@@ -455,8 +455,8 @@ impl Scene for GameSceneState {
                 }
 
                 let next = npc.ai.next_action(&ctx.resources.actions);
-                if let Some((action, cursor)) = next {
-                    let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
+                if let Some((action_id, action, cursor)) = next {
+                    let v = self.action_runner.try_use(&action_id, action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                     if let Err(v) = &v {
                         println!("AI tried to use action invalid: {:?}", v);
                     }
@@ -483,7 +483,7 @@ impl Scene for GameSceneState {
                     }
 
                     let next = npc.ai.next_action(&ctx.resources.actions);
-                    if let Some((action, cursor)) = next {
+                    if let Some((action_id, action, cursor)) = next {
                         // TODO: Borrow issues
                         // let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                         // if let Err(v) = &v {
@@ -520,7 +520,7 @@ impl Scene for GameSceneState {
             return ControlFlow::Continue(());
         }
 
-        self.hotbar.input(&mut (), &evt.evt, ctx)?;
+        self.hotbar.input(&mut self.chunk.player, &evt.evt, ctx)?;
         self.hud.input(self.chunk.player(), &evt.evt, ctx);
 
         if self.character_dialog.input(self.chunk.player_mut(), &evt.evt, ctx).is_break() {
@@ -534,6 +534,7 @@ impl Scene for GameSceneState {
             let action = ctx.resources.actions.get(&action_id);
 
             let _ = self.action_runner.try_use(
+                &action_id,
                 action,
                 PLAYER_IDX,
                 cursor,
@@ -637,6 +638,7 @@ impl Scene for GameSceneState {
 
                     let action = ctx.resources.actions.get(action_id);
                     let _ = self.action_runner.try_use(
+                        action_id,
                         action,
                         PLAYER_IDX,
                         self.cursor_pos,

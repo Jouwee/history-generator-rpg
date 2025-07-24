@@ -27,6 +27,7 @@ pub(crate) struct Actor {
     pub(crate) xp: u32,
     pub(crate) level: u32,
     pub(crate) inventory: Inventory,
+    pub(crate) cooldowns: Vec<(ActionId, u16)>,
     afflictions: Vec<RunningAffliction>
 }
 
@@ -48,7 +49,8 @@ impl Actor {
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type: ActorType::Player,
             inventory: Inventory::new(),
-            afflictions: Vec::new()
+            afflictions: Vec::new(),
+            cooldowns: Vec::new(),
         }
     }
 
@@ -72,7 +74,8 @@ impl Actor {
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             actor_type,
             inventory: Inventory::new(),
-            afflictions: Vec::new()
+            afflictions: Vec::new(),
+            cooldowns: Vec::new(),
         }
     }
 
@@ -112,7 +115,8 @@ impl Actor {
             sprite: species.appearance.collapse(&Rng::rand(), &hints),
             actor_type,
             inventory,
-            afflictions: Vec::new()
+            afflictions: Vec::new(),
+            cooldowns: Vec::new()
         }
     }
 
@@ -152,6 +156,12 @@ impl Actor {
                 Affliction::Stunned { duration } => affliction.delta < duration,
             }
         });
+
+        self.cooldowns.retain_mut(|cooldown| {
+            cooldown.1 -= 1;
+            return cooldown.1 > 0;
+        });
+
     }
 
     pub(crate) fn stats<'a>(&'a self) -> ActorStats<'a> {

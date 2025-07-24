@@ -23,7 +23,7 @@ impl GameContextMenu {
 
         let actions: Vec<(i32, String)> = actor.get_all_available_actions(ctx).iter()
             .map(|id| (*id, ctx.resources.actions.get(id)))
-            .filter(|(_id, action)| ActionRunner::can_use(action, actor_index, cursor, chunk).is_ok())
+            .filter(|(id, action)| ActionRunner::can_use(id, action, actor_index, cursor, chunk).is_ok())
             .map(|(id, action)| (id.as_usize() as i32, action.name.clone()))
             .collect();
 

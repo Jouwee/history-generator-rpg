@@ -1,6 +1,6 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext}, resources::action::{Action, ActionId, Actions}, GameContext};
+use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::actor::actor::Actor, resources::action::{Action, ActionId, Actions}, GameContext};
 
 use super::{inventory::inventory::Inventory};
 
@@ -31,7 +31,7 @@ impl Hotbar {
         self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:firebolt"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:fireball"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:rockwall"));
+        self.available_actions.insert(ctx.resources.actions.id_of("act:rockpillar"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:teleport"));
         self.equip(inventory, ctx);
     }
@@ -64,14 +64,14 @@ impl Hotbar {
 }
 
 impl UINode for Hotbar {
-    type State = ();
+    type State = Actor;
     type Input = ();
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         &mut self.layout
     }
 
-    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let rect = self.layout.compute_layout_rect(ctx.layout_rect);
         ctx.image(&self.background, [rect[0] as i32, rect[1] as i32], &mut game_ctx.assets);
 
@@ -80,9 +80,13 @@ impl UINode for Hotbar {
         ctx.layout_rect[0] += 62.;
         ctx.layout_rect[1] += 1.;
 
-        for (_id, button) in self.buttons.iter_mut() {
+        for (id, button) in self.buttons.iter_mut() {
             ctx.layout_rect[0] += 24.;
             button.render(&(), ctx, game_ctx);
+            let cooldown = state.cooldowns.iter().find(|cooldown| cooldown.0 == *id);
+            if let Some(cooldown) = cooldown {
+                ctx.text_shadow(&format!("{}", cooldown.1), game_ctx.assets.font_standard(), [ctx.layout_rect[0] as i32 + 8, ctx.layout_rect[1] as i32 + 16], &Color::from_hex("ffffffff"));
+            }
         }
         
         ctx.layout_rect = copy;

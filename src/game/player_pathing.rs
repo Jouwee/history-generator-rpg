@@ -81,8 +81,9 @@ impl PlayerPathing {
         if self.add_update_delta(update.delta_time) {
             let pos = self.pop_running();
             if let Some(pos) = pos {
-                let action = ctx.resources.actions.find("act:move");  
-                let result = action_runner.try_use(action, PLAYER_IDX, pos, chunk, world, effect_layer, game_log, ctx);
+                let action_id = ctx.resources.actions.id_of("act:move");  
+                let action = ctx.resources.actions.get(&action_id);  
+                let result = action_runner.try_use(&action_id, action, PLAYER_IDX, pos, chunk, world, effect_layer, game_log, ctx);
                 if result.is_err() {
                     self.clear_running();
                 }
