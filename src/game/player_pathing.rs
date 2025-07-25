@@ -14,7 +14,7 @@ impl PlayerPathing {
         Self { 
             preview: None,
             running: None,
-            wait: 0.
+            wait: 0.,
         }
     }
 
@@ -45,7 +45,11 @@ impl PlayerPathing {
         }
     }
 
-    pub(crate) fn recompute_pathing(&mut self, cursor: Coord2) -> bool {
+    pub(crate) fn invalidate_pathing(&mut self) {
+        self.preview = None
+    }
+
+    pub(crate) fn should_recompute_pathing(&mut self, cursor: Coord2) -> bool {
         return match &self.preview {
             None => true,
             Some(path) => {

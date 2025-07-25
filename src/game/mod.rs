@@ -541,6 +541,9 @@ impl Scene for GameSceneState {
                 &mut self.game_log,
                 ctx
             );
+            // Refreshes pathing
+            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
+            self.player_pathing.invalidate_pathing();
 
             return ControlFlow::Break(());
         }
@@ -600,7 +603,7 @@ impl Scene for GameSceneState {
             }
         }
 
-        if self.player_pathing.recompute_pathing(self.cursor_pos) {
+        if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
             self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
             self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
         }
@@ -644,6 +647,9 @@ impl Scene for GameSceneState {
                         &mut self.game_log,
                         ctx
                     );
+                    // Refreshes pathing
+                    self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
+                    self.player_pathing.invalidate_pathing();
                 } else {
                     if let Some(path) = &mut self.player_pathing.get_preview() {
                         self.player_pathing.start_running(path.clone());
