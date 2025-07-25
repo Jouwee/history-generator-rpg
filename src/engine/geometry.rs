@@ -53,12 +53,6 @@ impl Vec2 {
         (x * x + y * y).sqrt()
     }
 
-    pub(crate) fn dist_squared(&self, another: &Vec2) -> f32 {
-        let x = another.x - self.x;
-        let y = another.y - self.y;
-        return x*x + y*y
-    }
-
 }
 
 impl Add for Vec2 {

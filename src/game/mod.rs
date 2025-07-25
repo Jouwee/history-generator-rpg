@@ -481,7 +481,7 @@ impl Scene for GameSceneState {
                     }
 
                     let next = npc.ai.next_action(&ctx.resources.actions);
-                    if let Some((action_id, action, cursor)) = next {
+                    if let Some((_, _, _)) = next {
                         // TODO: Borrow issues
                         // let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                         // if let Err(v) = &v {

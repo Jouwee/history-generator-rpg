@@ -528,36 +528,40 @@ impl ActionRunner {
 
                                             }
                                         }
-                                        // if let Some((_, (_, item, _))) = &item_on_ground {
-                                        //     println!("{}", item.description(&ctx.resources, &world));
-                                        // }
-                                        // let tile = chunk.map.get_object_idx(cursor);
-                                        // let tile_meta = &tile_metadata;
-                                        // match tile {
-                                        //     1 => println!("A wall."),
-                                        //     2 => println!("A tree."),
-                                        //     3 => println!("A bed."),
-                                        //     4 => println!("A table."),
-                                        //     5 => println!("A stool."),
-                                        //     6 => println!("A tombstone."),            
-                                        //     _ => ()                                
-                                        // };
 
-                                        // if let Some(meta) = tile_meta {
-                                        //     match meta {
-                                        //         TileMetadata::BurialPlace(creature_id) => {
-                                        //             let creature = world.creatures.get(creature_id);
-                                        //             if let Some(death) = creature.death {
-                                        //                 let codex = world.codex.creature_mut(&creature_id);
-                                        //                 codex.add_name();
-                                        //                 codex.add_death();
-                                        //                 // TODO(hu2htwck): Event
-                                        //                 println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
-                                        //             }
+                                        let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center);
+                                        if let Some((_, (_, item, _))) = &item_on_ground {
+                                            println!("{}", item.description(&ctx.resources, &world));
+                                        }
+                                        let tile = chunk.map.get_object_idx(action.center);
+
+                                        let tile_metadata = chunk.map.tiles_metadata.get(&action.center).and_then(|m| Some(m));
+                                        let tile_meta = &tile_metadata;
+                                        match tile {
+                                            1 => println!("A wall."),
+                                            2 => println!("A tree."),
+                                            3 => println!("A bed."),
+                                            4 => println!("A table."),
+                                            5 => println!("A stool."),
+                                            6 => println!("A tombstone."),            
+                                            _ => ()                                
+                                        };
+
+                                        if let Some(meta) = tile_meta {
+                                            match meta {
+                                                TileMetadata::BurialPlace(creature_id) => {
+                                                    let creature = world.creatures.get(creature_id);
+                                                    if let Some(death) = creature.death {
+                                                        let codex = world.codex.creature_mut(&creature_id);
+                                                        codex.add_name();
+                                                        codex.add_death();
+                                                        // TODO(hu2htwck): Event
+                                                        println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
+                                                    }
                                                     
-                                        //         }
-                                        //     }
-                                        // }
+                                                }
+                                            }
+                                        }
                                     },
                                     ActionEffect::Dig => {
                                         for point in action.spell_area.points(action.center) {

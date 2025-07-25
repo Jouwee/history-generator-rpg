@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
+use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -369,7 +369,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
     {
         let mut creature = world.creatures.get_mut(&creature_id);
         if creature.death.is_some() {
-            println!("[WARN] Trying to kill already dead creature");
+            warn!("Trying to kill already dead creature");
             return;
         }
         creature.death = Some((now.clone(), cause_of_death));

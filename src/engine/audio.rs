@@ -4,7 +4,7 @@ use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
 
 use crate::{commons::rng::Rng, game::options::AudioOptions};
 
-use super::{geometry::Vec2, scene::Update};
+use super::scene::Update;
 
 
 pub(crate) struct Audio {
@@ -108,15 +108,6 @@ impl Audio {
 
     pub(crate) fn play_once(&self, sound: impl Sound) {
         if let Err(err) = self.stream_handle.play_raw(sound.source()) {
-            println!("Error playing audio: {err}")
-        }
-    }
-
-    pub(crate) fn play_positional(&self, sound: impl Sound, sound_origin: Vec2, camera: Vec2) {
-        let dist = sound_origin.dist_squared(&camera);
-        let volume = (dist / (48.*48.)).clamp(0., 1.);
-        let volume = 1. - volume;
-        if let Err(err) = self.stream_handle.play_raw(sound.source().amplify(volume)) {
             println!("Error playing audio: {err}")
         }
     }

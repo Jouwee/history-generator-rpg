@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}, game::chunk::Chunk, resources::action::{ActionId, ActionRunner}, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::{gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}}, game::chunk::Chunk, resources::action::{ActionId, ActionRunner}, warn, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,
@@ -65,7 +65,7 @@ impl UINode for GameContextMenu {
                     println!("Clicked option");
                     return ControlFlow::Break((cursor, id))
                 } else {
-                    println!("[WARN] No action found for ID {}", idu);
+                    warn!("No action found for ID {}", idu);
                 }
             }
             if let InputEvent::Click { button: MouseButton::Left, pos: _ } = evt {

@@ -156,45 +156,7 @@ fn main() {
     };
 
     let gl = GlGraphics::new(opengl);
-
-//     let mut vertex_shaders = Shaders::new();
-//     vertex_shaders
-//         .set(GLSL::V1_50, r#"#version 150 core
-// uniform sampler2D s_texture;
-// uniform vec4 color;
-
-// in vec2 pos;
-// in vec2 uv;
-
-// out vec2 v_UV;
-
-// void main() {
-//     v_UV = uv;
-//     gl_Position = vec4(pos, 0.0, 1.0);
-// }
-// "#);
-
-//     let mut fragment_shaders = Shaders::new();
-//     fragment_shaders
-//         .set(GLSL::V1_50, r#"#version 150 core
-// uniform sampler2D s_texture;
-// uniform vec4 color;
-
-// in vec2 v_UV;
-
-// out vec4 o_Color;
-
-// void main()
-// {
-//     // vec2 uv = SineWave( v_UV ); 
-//     // vec4 tcolor = texture(s_texture, (uv+v_UV) * 0.5); 
-//     // (1-2b)a²+2ba
-//     o_Color = texture(s_texture, v_UV) * color; 
-// }
-// "#);
-
-//     let last = gl.register_shader(Textured::from_vs_fs(opengl.to_glsl(), &vertex_shaders, &fragment_shaders).unwrap());
-
+    
     // Create a new game and run it.
     let mut app = App {
         gl,

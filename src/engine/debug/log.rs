@@ -31,3 +31,11 @@ macro_rules! history_trace {
         // $crate::engine::debug::log::log().log("HISTORY", &format!($($arg)*));
     }};
 }
+
+
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => {{
+        $crate::engine::debug::log::log().log("WARN", &format!($($arg)*));
+    }};
+}

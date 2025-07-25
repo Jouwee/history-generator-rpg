@@ -102,11 +102,6 @@ impl AiSolver {
         let elapsed = now.elapsed();
         println!("AI checked {} paths, elapsed {:.2?}", paths, elapsed);
 
-        // println!("all paths:");
-        // for path in results.iter() {
-        //     println!("{:?}", path)
-        // }
-
         return runner
     }
 
@@ -126,7 +121,6 @@ impl AiSolver {
             }
             let points_to_check = match &action.target {
                 ActionTarget::Caster => vec!(ctx.xy),
-                // TODO(REUw3poo): implement
                 ActionTarget::Actor { range, filter_mask } => {
                     let range= *range as i32;
                     let range_s = (range * range) as f32;
