@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ImpactPosition, ActionArea, ActionEffect, ActionProjectile, SpellProjectileType, ActionTarget, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -62,7 +62,7 @@ impl Resources {
         self.materials.add("mat:copper", copper);
 
         let mut bone = Material::new_bone("varningr's bone");
-        bone.extra_damage = DamageComponent::arcane(5.);
+        bone.extra_damage = DamageRoll::arcane("1d6");
         self.materials.add("mat:varningr_bone", bone);
     }
 
@@ -112,7 +112,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 1., piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. })
+                ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
             ),
             cast_sprite: None,
             projectile: None,
@@ -131,7 +131,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0.8, piercing: 0., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
                 ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
             ),
             cast_sprite: None,
@@ -151,7 +151,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
             ),
             cast_sprite: None,
             projectile: None,
@@ -170,7 +170,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
                 ActionEffect::Inflicts { affliction: Affliction::Stunned { duration: 1 } }
             ),
             cast_sprite: None,
@@ -190,7 +190,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 1., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::bludgeoning("d4") },
             ),
             cast_sprite: None,
             projectile: None,
@@ -209,7 +209,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d6+6") },
                 ActionEffect::Inflicts { affliction: Affliction::Poisoned { duration: 10 } }
             ),
             cast_sprite: None,
@@ -229,7 +229,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 10., bludgeoning: 0., fire: 0., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d6+6") },
             ),
             cast_sprite: None,
             projectile: None,
@@ -269,7 +269,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire("2d6+4") },
                 ActionEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
@@ -290,8 +290,7 @@ impl Resources {
             target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
             area: ActionArea::Circle { radius: 2.5 },
             effects: vec!(
-                ActionEffect::Damage(DamageComponent { slashing: 0., piercing: 0., bludgeoning: 0., fire: 20., arcane: 0. }),
-                // SpellEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire("3d6+12") },
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
@@ -669,7 +668,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(10., 0., 0.) }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing("1d6") }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
@@ -701,7 +700,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageComponent::new(0., 0., 10.) }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning("1d6") }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })
@@ -721,7 +720,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 8., 0.), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 8, 0), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -739,7 +738,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 0., 0.), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 0, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -757,7 +756,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageComponent::new(1., 1., 0.), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -775,7 +774,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageComponent::new(3., 3., 1.), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             name_blueprint: None
         };

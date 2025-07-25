@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageComponent, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::DamageRoll, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemBlueprintId(usize);
@@ -120,7 +120,7 @@ impl QualityBlueprintComponent {
 
 #[derive(Clone, Debug)]
 pub(crate) struct MelleeDamageBlueprintComponent {
-    pub(crate) base_damage: DamageComponent,
+    pub(crate) base_damage: DamageRoll,
 }
 
 impl MelleeDamageBlueprintComponent {
@@ -131,10 +131,10 @@ impl MelleeDamageBlueprintComponent {
             match argument {
                 ItemMakeArguments::PrimaryMaterial(material) => {
                     let material = resources.materials.get(material);
-                    damage = damage.multiply(material.sharpness);
+                    damage.add_modifier(material.sharpness);
                 },
                 ItemMakeArguments::Quality(quality) => {
-                    damage = damage.multiply(quality.main_stat_multiplier());
+                    damage.add_modifier(quality.main_stat_modifier());
                 },
                 _ => ()
             }

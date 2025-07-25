@@ -69,17 +69,16 @@ impl World {
                 }
             }
 
-            // More arcane damage = More interesting
+            // More special damage = More interesting
             let extra = i_item.extra_damage(&resources.materials);
-            score += extra.arcane;
+            score += extra.average();
             
             // More events = More interesting
             score += *events_per_item.get(&id).unwrap_or(&0) as f32 * 2.;
 
             if let Some(quality) = &i_item.quality {
-                score = score * quality.quality.main_stat_multiplier();
+                score = score + quality.quality.main_stat_modifier() as f32;
             }
-            score = score * i_item.damage_mult();
 
             match artifact {
                 None => artifact = Some((id, item, score)),

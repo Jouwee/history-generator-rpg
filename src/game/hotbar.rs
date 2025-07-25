@@ -1,8 +1,6 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::actor::actor::Actor, resources::action::{Action, ActionId, Actions}, GameContext};
-
-use super::{inventory::inventory::Inventory};
+use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
@@ -27,38 +25,54 @@ impl Hotbar {
         }
     }
 
-    pub(crate) fn init(&mut self, inventory: &Inventory, ctx: &GameContext) {
+    pub(crate) fn init(&mut self, actor: &Actor, ctx: &GameContext) {
         self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:firebolt"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:fireball"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:rockpillar"));
         self.available_actions.insert(ctx.resources.actions.id_of("act:teleport"));
-        self.equip(inventory, ctx);
+        self.equip(actor, ctx);
     }
 
-    pub(crate) fn equip(&mut self, inventory: &Inventory, ctx: &GameContext) {
+    pub(crate) fn equip(&mut self, actor: &Actor, ctx: &GameContext) {
         self.equipped_actions = Vec::new();
-        for (_slot, equipped) in inventory.all_equipped() {
+        for (_slot, equipped) in actor.inventory.all_equipped() {
             if let Some(action_provider) = &equipped.action_provider {
                 self.equipped_actions = action_provider.actions.clone();
             }
         }
-        self.update_buttons(&ctx.resources.actions);
+        self.update_buttons(actor, &ctx);
     }
 
-    fn update_buttons(&mut self, actions: &Actions) {
+    fn update_buttons(&mut self, actor: &Actor, ctx: &GameContext) {
         self.buttons.clear();
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
-            let action = actions.get(action_id);
-            self.buttons.push((*action_id, Button::image(&action.icon).tooltip(Self::build_tooltip(action))))
+            let action = ctx.resources.actions.get(action_id);
+            self.buttons.push((*action_id, Button::image(&action.icon).tooltip(Self::build_tooltip(action, actor, ctx))))
         }
     }
 
-    fn build_tooltip(action: &Action) -> Tooltip {
+    fn build_tooltip(action: &Action, actor: &Actor, ctx: &GameContext) -> Tooltip {
         let mut tooltip = Tooltip::new(action.name.clone());
         tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
         tooltip.add_line(TooltipLine::StaminaCost(action.stamina_cost));
         tooltip.add_line(TooltipLine::Body(action.description.clone()));
+        for effect in action.effects.iter() {
+            match &effect {
+                ActionEffect::Damage { add_weapon, damage } => {
+                    let mut damage = damage.clone();
+                    if let Some(item) = actor.inventory.equipped(&EquipmentType::Hand) {
+                        if *add_weapon {
+                            damage = damage + item.total_damage(&ctx.resources.materials)
+                        } else {
+                            damage = damage + item.extra_damage(&ctx.resources.materials)
+                        }
+                    }
+                    tooltip.add_line(TooltipLine::Body(damage.to_string()));
+                },
+                _ => {}
+            }
+        }
         return tooltip;
     }
 }

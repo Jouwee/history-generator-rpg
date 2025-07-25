@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageComponent, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -144,7 +144,7 @@ impl ActionArea {
 #[derive(Clone)]
 pub(crate) enum ActionEffect {
     /// Damages the target
-    Damage(DamageComponent),
+    Damage { add_weapon: bool, damage: DamageRoll },
     /// Inflicts an effect on the target
     Inflicts { affliction: Affliction },
     /// Replaces tiles in the object layer
@@ -401,9 +401,19 @@ impl ActionRunner {
                         RunningActionStep::Effect(effects) => {
                             for effect in effects.iter() {
                                 match effect {
-                                    ActionEffect::Damage(model) => {
+                                    ActionEffect::Damage { damage, add_weapon } => {
                                         let actor = chunk.actor(action.actor).unwrap();
                                         let actor_xy = actor.xy.clone();
+                                        let mut damage = damage.clone();
+
+                                        if let Some(item) = actor.inventory.equipped(&EquipmentType::Hand) {
+                                            if *add_weapon {
+                                                damage = damage + item.total_damage(&ctx.resources.materials)
+                                            } else {
+                                                damage = damage + item.extra_damage(&ctx.resources.materials)
+                                            }
+                                        }
+
                                         // TODO: Dupped code
                                         let target_actors: Vec<usize> = action.spell_area
                                             .filter(action.center, action.actor, chunk.actors_iter_mut())
@@ -413,7 +423,8 @@ impl ActionRunner {
                                             let target = chunk.actor_mut(*i).unwrap();
                                             
                                             let target_body_part = BodyPart::random(&mut Rng::rand());
-                                            let damage = resolve_damage(&model, &target.stats(), &target_body_part, &target.stats());
+
+                                            let damage = resolve_damage(&damage, &target.stats(), &target_body_part, &target.stats());
                 
                                             match damage {
                                                 DamageOutput::Dodged => {

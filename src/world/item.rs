@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 
-use crate::{commons::damage_model::DamageComponent, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
+use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
 
 use super::{creature::CreatureId, world::World};
 
@@ -106,25 +106,26 @@ impl Item {
         return self.placed_sprite.remap(map)
     }
 
-    pub(crate) fn damage_mult(&self) -> f32 {
-        if let Some(damage) = &self.mellee_damage {
-            return damage.damage.slashing + damage.damage.bludgeoning + damage.damage.piercing;
+    pub(crate) fn total_damage(&self, materials: &Materials) -> DamageRoll {
+        let damage = self.extra_damage(materials);
+        if let Some(weapon_damage) = &self.mellee_damage {
+            return damage + weapon_damage.damage.clone();
         }
-        return 1.
+        return damage
     }
 
-    pub(crate) fn extra_damage(&self, materials: &Materials) -> DamageComponent {
-        let mut damage = DamageComponent::arcane(0.);
+    pub(crate) fn extra_damage(&self, materials: &Materials) -> DamageRoll {
+        let mut damage = DamageRoll::empty();
         if let Some(material) = &self.material {
             let primary = materials.get(&material.primary);
-            damage = damage + primary.extra_damage;
+            damage = damage + primary.extra_damage.clone();
             if let Some(secondary) = &material.secondary {
                 let secondary = materials.get(secondary);
-                damage = damage + secondary.extra_damage;
+                damage = damage + secondary.extra_damage.clone();
             }
             if let Some(details) = &material.details {
                 let details = materials.get(details);
-                damage = damage + details.extra_damage;
+                damage = damage + details.extra_damage.clone();
             }
         }
         return damage;
@@ -184,12 +185,12 @@ impl MaterialComponent {
 
 #[derive(Clone, Debug)]
 pub(crate) struct MelleeDamageComponent {
-    pub(crate) damage: DamageComponent,
+    pub(crate) damage: DamageRoll,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct ArmorComponent {
-    pub(crate) protection: DamageComponent,
+    pub(crate) protection: DamageModel,
     pub(crate) coverage: Vec<BodyPart>
 }
 
@@ -223,13 +224,13 @@ pub(crate) enum ItemQuality {
 }
 
 impl ItemQuality {
-    pub(crate) fn main_stat_multiplier(&self) -> f32 {
+    pub(crate) fn main_stat_modifier(&self) -> i16 {
         match self {
-            Self::Poor => 0.7,
-            Self::Normal => 1.0,
-            Self::Good => 1.2,
-            Self::Excelent => 1.4,
-            Self::Legendary => 2.0,
+            Self::Poor => -1,
+            Self::Normal => 0,
+            Self::Good => 1,
+            Self::Excelent => 2,
+            Self::Legendary => 4,
         }
     }
 }

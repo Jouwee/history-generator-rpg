@@ -1491,6 +1491,7 @@ dependencies = [
  "piston2d-graphics",
  "piston2d-opengl_graphics",
  "pistoncore-sdl2_window",
+ "regex",
  "rodio",
  "toml",
 ]

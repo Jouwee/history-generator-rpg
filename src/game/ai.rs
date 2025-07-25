@@ -180,10 +180,9 @@ impl AiSolver {
             
                 for effect in action.effects.iter() {
                     match effect {
-                        ActionEffect::Damage(damage_model) => {
+                        ActionEffect::Damage{ damage, add_weapon: _ } => {
                             for (_i, _actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
-                                // SMELL: Easy to forget
-                                ctx.damage_score += (damage_model.bludgeoning + damage_model.slashing + damage_model.piercing + damage_model.arcane + damage_model.fire) as f64;
+                                ctx.damage_score += damage.average() as f64;
                             }
                         }
                         ActionEffect::Inflicts { affliction } => {

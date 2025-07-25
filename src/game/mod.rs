@@ -300,7 +300,7 @@ impl Scene for GameSceneState {
     fn init(&mut self, ctx: &mut GameContext) {
         self.save_creature_appearances();
         self.chunk.turn_controller.roll_initiative(self.chunk.actors.len());
-        self.hotbar.init(&self.chunk.player().inventory, ctx);
+        self.hotbar.init(&self.chunk.player(), ctx);
         self.game_context_menu.init(&(), ctx);
         if self.chunk.actors.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
@@ -522,7 +522,7 @@ impl Scene for GameSceneState {
         self.hud.input(self.chunk.player(), &evt.evt, ctx);
 
         if self.character_dialog.input(self.chunk.player_mut(), &evt.evt, ctx).is_break() {
-            self.hotbar.equip(&self.chunk.player().inventory, ctx);
+            self.hotbar.equip(&self.chunk.player(), ctx);
             return ControlFlow::Break(());
         }
         self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
