@@ -1483,7 +1483,7 @@ dependencies = [
 
 [[package]]
 name = "tales_of_kathay"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "image",
  "noise",
