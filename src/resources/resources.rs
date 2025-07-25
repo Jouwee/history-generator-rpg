@@ -107,7 +107,7 @@ impl Resources {
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
-            stamina_cost: 5.,
+            stamina_cost: 3.,
             cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
@@ -146,7 +146,7 @@ impl Resources {
             icon: ImageAsset::new("gui/icons/actions/mace_smash.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
-            stamina_cost: 5.,
+            stamina_cost: 3.,
             cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
@@ -204,7 +204,7 @@ impl Resources {
             icon: ImageAsset::new("missing.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
-            stamina_cost: 5.,
+            stamina_cost: 3.,
             cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
@@ -224,16 +224,16 @@ impl Resources {
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
-            stamina_cost: 5.,
+            stamina_cost: 3.,
             cooldown: 0,
             target: ActionTarget::Actor { range: 1., filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d6+6") },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d4") },
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: None,
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), 0.5, ImpactPosition::EachTarget, false)),
             impact_sfx: None
         });
 
@@ -466,6 +466,13 @@ impl Resources {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
+        );
+
+        self.species.add("species:wolf", Species::new("wolf", SpeciesApearance::single_sprite("species/wolf/wolf.png"))
+            .intelligence(SpeciesIntelligence::Instinctive)
+            .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
+            .drops(vec!())
+            .innate_actions(vec!(self.actions.id_of("act:bite")))
         );
 
         self.species.add("species:varningr", Species::new("varningr", SpeciesApearance::single_sprite("species/varningr/varningr.png"))
