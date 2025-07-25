@@ -55,6 +55,8 @@ pub(crate) struct DisplayContext {
     pub(crate) gui_rect: [f64; 4],
 }
 
+pub(crate) const SPRITE_FPS: f64 = 1. / 16.;
+
 impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
@@ -102,10 +104,9 @@ impl App {
         update.mouse_pos_cam = [p[0] / self.display_context.scale + self.display_context.camera_rect[0], p[1] / self.display_context.scale + self.display_context.camera_rect[1]];
 
         self.sprite_c += args.dt;
-        const FPS_24: f64 = 1. / 16.;
-        if self.sprite_c > FPS_24 {
+        if self.sprite_c > SPRITE_FPS {
             self.sprite_i += 1;
-            self.sprite_c -= FPS_24;
+            self.sprite_c -= SPRITE_FPS;
         }
 
         self.context.audio.update(&update);

@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}, bitmask::bitmask_get}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, Actions, Affliction, ActionEffect, ActionTarget, FILTER_CAN_OCCUPY, FILTER_CAN_VIEW}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, Actions, Affliction, ActionEffect, ActionTarget}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -49,7 +49,7 @@ impl AiSolver {
 
         let now = Instant::now();
 
-        let mut results = Vec::new();
+        let mut result = None;
         
         
         let mut all_actions = vec!(
@@ -91,11 +91,11 @@ impl AiSolver {
             }
         });
 
-        let paths = Self::sim_step(ctx, &mut results, &all_actions, &mut astar, actions, chunk);
+        let paths = Self::sim_step(ctx, &mut result, &all_actions, &mut astar, actions, chunk);
 
 
         let mut runner = AiRunner::new();
-        if let Some(path) = results.first() {
+        if let Some(path) = result {
             runner.actions = VecDeque::from(path.actions.clone());
             println!("Winner: {:?}", path)
         }
@@ -105,8 +105,8 @@ impl AiSolver {
         return runner
     }
 
-    fn sim_step(ctx: SimContext, results: &mut Vec<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk) -> u32 {
-        Self::add_to_results(ctx.clone(), results);
+    fn sim_step(ctx: SimContext, result: &mut Option<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk) -> u32 {
+        Self::add_to_results(ctx.clone(), result);
         if ctx.depth > 10 {
             return 1
         }
@@ -121,44 +121,15 @@ impl AiSolver {
             }
             let points_to_check = match &action.target {
                 ActionTarget::Caster => vec!(ctx.xy),
-                ActionTarget::Actor { range, filter_mask } => {
+                ActionTarget::Actor { range, filter_mask: _ } | ActionTarget::Tile { range, filter_mask: _ } => {
                     let range= *range as i32;
-                    let range_s = (range * range) as f32;
                     let mut points = Vec::new();
                     for x in ctx.xy.x-range..(ctx.xy.x+range+1) {
                         for y in ctx.xy.y-range..(ctx.xy.y+range+1) {
                             let p = Coord2::xy(x, y);
-                            // TODO: Dupped
-                            if p == ctx.xy || ctx.xy.dist_squared(&p) > range_s {
-                                continue
+                            if action.target.can_use(&ctx.xy, chunk, &p).is_ok() {
+                                points.push(p);
                             }
-                            if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                                if !chunk.map.check_line_of_sight(&ctx.xy, &p) {
-                                    continue
-                                }
-                            }
-                            points.push(p);
-                        }
-                    }
-                    points
-                },
-                ActionTarget::Tile { range, filter_mask } => {
-                    let range= *range as i32;
-                    let range_s = (range * range) as f32;
-                    let mut points = Vec::new();
-                    for x in ctx.xy.x-range..(ctx.xy.x+range+1) {
-                        for y in ctx.xy.y-range..(ctx.xy.y+range+1) {
-                            let p = Coord2::xy(x, y);
-                            // TODO: Dupped
-                            if p == ctx.xy || ctx.xy.dist_squared(&p) > range_s {
-                                continue
-                            }
-                            if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
-                                if chunk.map.blocks_movement(p) {
-                                    continue
-                                }
-                            }
-                            points.push(p);
                         }
                     }
                     points
@@ -190,30 +161,20 @@ impl AiSolver {
                                 ctx.damage_score += score;
                             }
                         },
-                        ActionEffect::ReplaceObject { tile: _ } => {
-                            // TODO:
-                        },
+                        ActionEffect::ReplaceObject { tile: _ } => (),
                         ActionEffect::TeleportActor | ActionEffect::Walk => {
                             ctx.xy = point;
                             ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                         },
-                        ActionEffect::Inspect => {
-                            // TODO:
-                        },
-                        ActionEffect::Dig => {
-                            // TODO:
-                        },
-                        ActionEffect::Sleep => {
-                            // TODO:
-                        },
-                        ActionEffect::PickUp => {
-                            // TODO:
-                        },
+                        ActionEffect::Inspect => (),
+                        ActionEffect::Dig => (),
+                        ActionEffect::Sleep => (),
+                        ActionEffect::PickUp => (),
                     }
                 }
 
                 ctx.compute_final_score();
-                paths += Self::sim_step(ctx, results, available_actions, astar, actions, chunk);
+                paths += Self::sim_step(ctx, result, available_actions, astar, actions, chunk);
             }
         }
         return paths
@@ -231,18 +192,13 @@ impl AiSolver {
         return 1. / path.len() as f64;
     }
 
-    fn add_to_results(ctx: SimContext, results: &mut Vec<SimContext>) {
-        // TODO: Binary search
-        let i = results.iter().enumerate().find(|(_i, c)| c.score < ctx.score);
-        match i {
-            None => {
-                if results.len() < 10 {
-                    results.push(ctx);
-                }
-            }
-            Some((i, _c)) => {
-                results.insert(i, ctx);
-            }
+    fn add_to_results(ctx: SimContext, result: &mut Option<SimContext>) {
+        let swap = match result {
+            None => true,
+            Some(r) => ctx.score > r.score
+        };
+        if swap {
+            result.replace(ctx);
         }
     }
 

@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::{image_sheet::ImageSheetAsset}, geometry::Coord2, render::RenderContext, scene::Update, Color, Palette}, GameContext};
+use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::image_sheet::ImageSheetAsset, geometry::Coord2, render::RenderContext, scene::Update, Color, Palette}, GameContext, SPRITE_FPS};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -54,28 +54,23 @@ impl EffectLayer {
         for projectile in self.projectiles.iter_mut() {
             let sheet = game_ctx.assets.image_sheet(&projectile.sprite);
 
-            // let pct = Interpolate::EaseOutSine.interpolate(projectile.lifetime / projectile.duration);
             let pct = projectile.lifetime / projectile.duration;
             let x = lerp(projectile.from.x as f64, projectile.to.x as f64, pct);
             let y = lerp(projectile.from.y as f64, projectile.to.y as f64, pct);
 
-            // TODO(w0ScmN4f):
             let copy: [[f64; 3]; 2] = ctx.context.transform;
             let angle_degrees = f64::atan2((projectile.to.y - projectile.from.y) as f64, (projectile.to.x - projectile.from.x) as f64) * 180. / PI;
             let pos = [x * 24. + 12., y * 24. + 12.];
             let transform = ctx.context.transform.trans(pos[0], pos[1]).rot_deg(angle_degrees);
-            // TODO: FPS
-            let sprite_index = ((projectile.lifetime * 16.) as usize) % sheet.len();
+            let sprite_index = ((projectile.lifetime / SPRITE_FPS) as usize) % sheet.len();
             image(sheet.get(sprite_index).unwrap(), transform, ctx.gl);
             ctx.context.transform = copy;
         }
 
         for sprite in self.sprites.iter_mut() {
             let sheet = game_ctx.assets.image_sheet(&sprite.sprite);
-            // TODO: FPS
-            let sprite_index = (sprite.lifetime * 16.) as usize;
+            let sprite_index = (sprite.lifetime / SPRITE_FPS) as usize;
             if sprite_index >= sheet.len() {
-                // TODO(w0ScmN4f): Ugly
                 sprite.done = true;
             } else {
                 ctx.texture_ref(sheet.get(sprite_index).unwrap(), [sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)]);

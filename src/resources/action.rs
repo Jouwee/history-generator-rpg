@@ -58,6 +58,65 @@ pub(crate) enum ActionTarget {
     Tile { range: f32, filter_mask: u8 },
 }
 
+impl ActionTarget {
+    
+    pub(crate) fn can_use(&self, actor_pos: &Coord2, chunk: &Chunk, cursor: &Coord2) -> Result<(), ActionFailReason> {
+        match &self {
+            ActionTarget::Caster => return Ok(()),
+            ActionTarget::Actor { range, filter_mask } => {
+                if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
+                    return Err(ActionFailReason::CantReach);
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                    if !chunk.map.check_line_of_sight(&actor_pos, &cursor) {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                let target = chunk.actors_iter().find(|npc| npc.xy == *cursor);
+                if target.is_none() {
+                    return Err(ActionFailReason::NoValidTarget);
+                }
+            },
+            ActionTarget::Tile { range, filter_mask } => {
+                if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
+                    return Err(ActionFailReason::CantReach);
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
+                    if chunk.map.blocks_movement(*cursor) {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
+                    let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                    if tile_metadata.is_none() {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
+                    // TODO: Bed
+                    let object_tile = chunk.map.get_object_idx(*cursor);
+                    if object_tile != 3 {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_ITEM) {
+                    let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| xy == cursor);
+                    if item_on_ground.is_none() {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
+                    if !chunk.map.check_line_of_sight(actor_pos, &cursor) {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
+                }
+            }
+        }
+        return Ok(())
+    }
+
+}
+
 #[derive(Clone, PartialEq)]
 pub(crate) enum ActionArea {
     /// Affects only the targeted tile
@@ -117,7 +176,14 @@ impl ActionArea {
         }
     }
 
-    pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Box<dyn Iterator<Item = (usize, A)> + 'a> where A: std::borrow::Borrow<Actor> + 'a, {
+    pub(crate) fn actors_indices<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Vec<usize> where A: std::borrow::Borrow<Actor> + 'a {
+        return self
+            .filter(center, actor_index, iter)
+            .map(|(i, _actor)| i)
+            .collect();
+    }
+
+    pub(crate) fn filter<'a, A>(&self, center: Coord2, actor_index: usize, iter: impl Iterator<Item = A> + 'a) -> Box<dyn Iterator<Item = (usize, A)> + 'a> where A: std::borrow::Borrow<Actor> + 'a {
         match self {
             ActionArea::Target => {
                 return Box::new(iter.enumerate().filter(move |(idx, actor): &(usize, A)| {
@@ -205,58 +271,7 @@ impl ActionRunner {
         if actor.cooldowns.iter().any(|cooldown| cooldown.0 == *action_id) {
             return Err(ActionFailReason::OnCooldown);
         }
-        match &action.target {
-            ActionTarget::Caster => return Ok(()),
-            ActionTarget::Actor { range, filter_mask } => {
-                if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
-                    return Err(ActionFailReason::CantReach);
-                }
-                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                    if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-                let target = chunk.actors_iter().find(|npc| npc.xy == cursor);
-                if target.is_none() {
-                    return Err(ActionFailReason::NoValidTarget);
-                }
-            },
-            ActionTarget::Tile { range, filter_mask } => {
-                if actor.xy.dist_squared(&cursor) > (range*range) as f32 {
-                    return Err(ActionFailReason::CantReach);
-                }
-                if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
-                    if chunk.map.blocks_movement(cursor) {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-                if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
-                    let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
-                    if tile_metadata.is_none() {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-                if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
-                    // TODO: Bed
-                    let object_tile = chunk.map.get_object_idx(cursor);
-                    if object_tile != 3 {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-                if bitmask_get(*filter_mask, FILTER_ITEM) {
-                    let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == cursor);
-                    if item_on_ground.is_none() {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-                if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                    if !chunk.map.check_line_of_sight(&actor.xy, &cursor) {
-                        return Err(ActionFailReason::NoValidTarget);
-                    }
-                }
-            }
-        }
-        return Ok(());
+        return action.target.can_use(&actor.xy, chunk, &cursor);
     }
 
     pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
@@ -295,9 +310,23 @@ impl ActionRunner {
 
         if let Some(cast) = &action.cast_sprite {
             steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
-            // TODO: Compute wait
+            // TODO(BkWAJozA): Compute wait. Can't do because of borrow issues
             steps.push_back(RunningActionStep::Wait(0.2))
         }
+
+        let impact_points = |position| {
+            match &position {
+                ImpactPosition::Cursor => vec!(pos),
+                ImpactPosition::EachTarget => {
+                    action.area.actors_indices(pos, actor_index, chunk.actors_iter()).iter().map(|i| {
+                        let actor = chunk.actor(*i).unwrap();
+                        actor.xy.clone()
+                    }).collect()
+                }
+                ImpactPosition::EachTile => action.area.points(pos)
+            }
+        };
+
 
         if let Some(projectile) = &action.projectile {
 
@@ -306,30 +335,9 @@ impl ActionRunner {
 
             let mut longest_distance: f32 = 0.;
 
-            // TODO: Dupped code
-            match projectile.position {
-                ImpactPosition::Cursor => {
-                    steps.push_back(RunningActionStep::Projectile(projectile.clone(), pos));
-                    longest_distance = longest_distance.max(from.dist(&pos));
-                },
-                ImpactPosition::EachTarget => {
-                    // TODO: Dupped code
-                    let target_actors: Vec<usize> = action.area
-                        .filter(pos, actor_index, chunk.actors_iter_mut())
-                        .map(|(i, _actor)| i)
-                        .collect();
-                    for i in target_actors.iter() {
-                        let actor = chunk.actor(*i).unwrap();
-                        steps.push_back(RunningActionStep::Projectile(projectile.clone(), actor.xy.clone()));
-                        longest_distance = longest_distance.max(from.dist(&actor.xy));
-                    }
-                }
-                ImpactPosition::EachTile => {
-                    for p in action.area.points(pos) {
-                        steps.push_back(RunningActionStep::Projectile(projectile.clone(), p));
-                        longest_distance = longest_distance.max(from.dist(&p));
-                    }
-                }
+            for point in impact_points(projectile.position.clone()) {
+                steps.push_back(RunningActionStep::Projectile(projectile.clone(), point));
+                longest_distance = longest_distance.max(from.dist(&point));
             }
 
             if projectile.wait {
@@ -347,28 +355,13 @@ impl ActionRunner {
             steps.push_back(RunningActionStep::Sound(impact_sound.clone()));
         }
         if let Some(impact) = &action.impact_sprite {
-            // TODO: Dupped code
-            match impact.2 {
-                ImpactPosition::Cursor => steps.push_back(RunningActionStep::Sprite(impact.0.clone(), pos)),
-                ImpactPosition::EachTarget => {
-                    // TODO: Dupped code
-                    let target_actors: Vec<usize> = action.area
-                        .filter(pos, actor_index, chunk.actors_iter_mut())
-                        .map(|(i, _actor)| i)
-                        .collect();
-                    for i in target_actors.iter() {
-                        let actor = chunk.actor(*i).unwrap();
-                        steps.push_back(RunningActionStep::Sprite(impact.0.clone(), actor.xy.clone()))
-                    }
-                }
-                ImpactPosition::EachTile => {
-                    for p in action.area.points(pos) {
-                        steps.push_back(RunningActionStep::Sprite(impact.0.clone(), p))
-                    }
-                }
+
+            for point in impact_points(impact.2.clone()) {
+                steps.push_back(RunningActionStep::Sprite(impact.0.clone(), point))
             }
+
             if impact.3 {
-                // TODO: Compute duration
+                // TODO(BkWAJozA): Compute wait. Can't do because of borrow issues
                 steps.push_back(RunningActionStep::Wait(impact.1 as f64));
             }
         }
@@ -414,13 +407,8 @@ impl ActionRunner {
                                             }
                                         }
 
-                                        // TODO: Dupped code
-                                        let target_actors: Vec<usize> = action.spell_area
-                                            .filter(action.center, action.actor, chunk.actors_iter_mut())
-                                            .map(|(i, _actor)| i)
-                                            .collect();
-                                        for i in target_actors.iter() {
-                                            let target = chunk.actor_mut(*i).unwrap();
+                                        for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
+                                            let target = chunk.actor_mut(i).unwrap();
                                             
                                             let target_body_part = BodyPart::random(&mut Rng::rand());
 
@@ -453,7 +441,7 @@ impl ActionRunner {
 
                                             if dead == 0. {
                                                 actor.add_xp(100);
-                                                chunk.remove_npc(*i, ctx);
+                                                chunk.remove_npc(i, ctx);
                                             }
                                             if actor_type != ActorType::Player {
                                                 for p in chunk.actors_iter_mut() {
@@ -466,13 +454,8 @@ impl ActionRunner {
 
                                     },
                                     ActionEffect::Inflicts { affliction } => {
-                                        // TODO: Dupped code
-                                        let target_actors: Vec<usize> = action.spell_area
-                                            .filter(action.center, action.actor, chunk.actors_iter_mut())
-                                            .map(|(i, _actor)| i)
-                                            .collect();
-                                        for i in target_actors.iter() {
-                                            let target = chunk.actor_mut(*i).unwrap();
+                                        for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
+                                            let target = chunk.actor_mut(i).unwrap();
 
 
                                             let (name, color) = affliction.name_color();
@@ -507,13 +490,8 @@ impl ActionRunner {
 
                                         println!("Inspect at {:?}", action.center);
 
-                                        // TODO: Dupped code
-                                        let target_actors: Vec<usize> = action.spell_area
-                                            .filter(action.center, action.actor, chunk.actors_iter_mut())
-                                            .map(|(i, _actor)| i)
-                                            .collect();
-                                        for i in target_actors.iter() {
-                                            let target = chunk.actor_mut(*i).unwrap();
+                                        for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
+                                            let target = chunk.actor_mut(i).unwrap();
 
                                             let creature_id = target.creature_id;
                                             if let Some(creature_id) = creature_id {
@@ -591,11 +569,12 @@ impl ActionRunner {
                                         // self.chunk.player.hp.refill();
                                     },
                                     ActionEffect::PickUp => {
-                                        let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center);
-                                        if let Some((i, (_, item, _))) = item_on_ground {
-                                            // TODO(QZ94ei4M): Borrow issues
-                                            // let mut actor = chunk.actor_mut(actor_index).unwrap();
-                                            let actor = &mut chunk.player;
+                                        let item_on_ground = match chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center) {
+                                            None => None,
+                                            Some((i, (_, item, _))) => Some((i, item.clone()))
+                                        };
+                                        if let Some((i, item)) = item_on_ground {
+                                            let actor = chunk.actor_mut(action.actor).unwrap();
                                             if let Ok(_) = actor.inventory.add(item.clone()) {
                                                 chunk.map.items_on_ground.remove(i);
                                             }
