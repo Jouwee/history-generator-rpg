@@ -15,7 +15,7 @@ use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
-use crate::engine::asset::image::ImageAsset;
+use crate::engine::assets::assets;
 use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::UINode;
@@ -338,7 +338,7 @@ impl Scene for GameSceneState {
                     ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
                 }
             }
-            let image = game_ctx.assets.image(&ImageAsset::new("gui/cursor.png"));
+            let image = assets().image("gui/cursor.png");
             let pos = [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.];
             let transform = ctx.context.transform.trans(pos[0], pos[1]);
             Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
@@ -346,7 +346,7 @@ impl Scene for GameSceneState {
                 ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &Color::from_hex("ffffffff"));
             }
         } else {
-            ctx.image(&ImageAsset::new("gui/cursor.png"), [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
+            ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
         }
 
         if self.hotbar.selected_action.is_none() {

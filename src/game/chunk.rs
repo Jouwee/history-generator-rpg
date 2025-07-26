@@ -1,8 +1,9 @@
 use std::{collections::HashMap, iter};
 
+use graphics::{image, Transformed};
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{asset::image::{ImageAsset, ImageRotate}, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -278,29 +279,31 @@ impl Renderable for Chunk {
         // Renders the nav borders
         {
             for y in 1..self.size.y()-1 {
-                ctx.image(&ImageAsset::new("gui/nav_arrow_left.png"), [12, y as i32 * 24 + 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12], &mut game_ctx.assets);
             }
         }
         {
             for y in 1..self.size.y()-1 {
-                ctx.image(&ImageAsset::new("gui/nav_arrow_right.png"), [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12], &mut game_ctx.assets);
             }
         }
         {
             for x in 1..self.size.x()-1 {
-                ctx.image(&ImageAsset::new("gui/nav_arrow_up.png"), [x as i32 * 24 - 12, 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 - 12, 12], &mut game_ctx.assets);
             }
         }
         {
             for x in 1..self.size.x()-1 {
-                ctx.image(&ImageAsset::new("gui/nav_arrow_down.png"), [x as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
             }
         }
         {
-            ctx.image(&ImageAsset::new("gui/nav_corner.png"), [12, 12], &mut game_ctx.assets);
-            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R90), [self.size.x() as i32 * 24 - 12, 12], &mut game_ctx.assets);
-            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R180), [self.size.x() as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
-            ctx.image(&ImageAsset::new("gui/nav_corner.png").rotate(ImageRotate::R270), [12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
+            let img = assets().image("gui/nav_corner.png");
+            let transform = ctx.context.transform;
+            image(&img.texture, transform.trans(12., 12.), ctx.gl);
+            image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., 12.).rot_deg(90.), ctx.gl);
+            image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.).rot_deg(180.), ctx.gl);
+            image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. - 12.).rot_deg(270.), ctx.gl);
         }
         // Renders some black bars outside the map to cover large tiles
         {

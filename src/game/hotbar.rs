@@ -1,10 +1,10 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{asset::image::ImageAsset, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
+use crate::{engine::{gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
-    background: ImageAsset,
+    background: String,
     available_actions: HashSet<ActionId>,
     equipped_actions: Vec<ActionId>,
     pub(crate) selected_action: Option<ActionId>,
@@ -17,7 +17,7 @@ impl Hotbar {
         layout.size([388., 26.]).anchor_bottom_center(0., 0.);
         Hotbar {
             layout,
-            background: ImageAsset::new("gui/hotbar/background.png"),
+            background: String::from("gui/hotbar/background.png"),
             available_actions: HashSet::new(),
             equipped_actions: Vec::new(),
             selected_action: None,
@@ -48,7 +48,7 @@ impl Hotbar {
         self.buttons.clear();
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = ctx.resources.actions.get(action_id);
-            self.buttons.push((*action_id, Button::image(&action.icon).tooltip(Self::build_tooltip(action, actor, ctx))))
+            self.buttons.push((*action_id, Button::image(action.icon.clone()).tooltip(Self::build_tooltip(action, actor, ctx))))
         }
     }
 

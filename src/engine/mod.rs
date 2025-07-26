@@ -2,6 +2,7 @@ use image::Rgba;
 
 pub(crate) mod animation;
 pub(crate) mod asset;
+pub(crate) mod assets;
 pub(crate) mod audio;
 pub(crate) mod debug;
 pub(crate) mod geometry;

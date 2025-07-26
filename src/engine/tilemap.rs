@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use graphics::{Image, Transformed};
+use opengl_graphics::Texture;
 
-use crate::{commons::rng::Rng, globals::perf::perf, GameContext};
+use crate::{commons::rng::Rng, engine::assets::assets, globals::perf::perf, GameContext};
 
-use super::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, render::RenderContext};
+use super::{asset::{image_sheet::ImageSheetAsset}, render::RenderContext};
 
 pub(crate) struct TileMap {
     /// Tile / Shadow?
@@ -79,6 +82,11 @@ impl TileMap {
     }
 
     fn pass(&self, idx: usize, x: usize, y: usize, tile_i: usize, ctx: &mut RenderContext, game_ctx: &mut GameContext, shadow_pass: bool) {
+        enum TextureType<'a> {
+            Image(Arc<super::assets::Image>),
+            TextureRef(&'a Texture)
+        }
+
         let texture;
         let size;
         match &self.tileset.tiles[tile_i] {
@@ -86,16 +94,16 @@ impl TileMap {
                 return;
             },
             Tile::SingleTile(tile) => {
-                let image = game_ctx.assets.image(&tile.image);
+                let image = assets().image(&tile.image);
                 size = [image.size.x() as f64, image.size.y() as f64];
-                texture = &image.texture;
+                texture = TextureType::Image(image);
             },
             Tile::TileRandom(tile) => {
                 let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
                 size = [sheet.tile_size.x() as f64, sheet.tile_size.y() as f64];
                 let mut rng = Rng::new(idx as u32);
                 let i = rng.randu_range(0, sheet.len());
-                texture = &sheet.get(i).unwrap()
+                texture = TextureType::TextureRef(sheet.get(i).unwrap())
             },
             Tile::T16Subset(tile) => {
                 let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
@@ -135,13 +143,17 @@ impl TileMap {
                     (true, true, true, false) => 7,
                     (true, true, true, true) => 6,
                 };
-                texture = sheet.get(subtile_i).unwrap();
+                texture = TextureType::TextureRef(sheet.get(subtile_i).unwrap());
             }
         }
         let pos = [
             x as f64 * self.cell_width as f64 - (size[0] - self.cell_width as f64) / 2.,
             y as f64 * self.cell_height as f64 - (size[1] - self.cell_height as f64),
         ];
+        let texture = match &texture {
+            TextureType::Image(img) => &img.texture,
+            TextureType::TextureRef(r) => r
+        };
         if shadow_pass {
             let transform = ctx.context.transform.trans(pos[0], pos[1]).shear(-0.4, 0.).scale(1., 1.5).trans(size[0] * 0.4, -size[1] * 0.5);
             Image::new().color([0., 0.1, 0.5, 0.3]).draw(texture, &Default::default(), transform, ctx.gl);
@@ -179,11 +191,11 @@ pub(crate) enum Tile {
 
 #[derive(Clone)]
 pub(crate) struct TileSingle {
-    image: ImageAsset
+    image: String
 }
 
 impl TileSingle {
-    pub(crate) fn new(image: ImageAsset) -> Self {
+    pub(crate) fn new(image: String) -> Self {
         Self {
             image
         }

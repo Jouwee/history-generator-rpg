@@ -1,4 +1,4 @@
-use crate::{engine::asset::image::ImageAsset, globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
+use crate::{globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) struct HeadsUpDisplay {
     health: NumberedBar,
@@ -27,7 +27,7 @@ impl HeadsUpDisplay {
 
     pub(crate) fn render(&mut self, player: &Actor, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         perf().start("hud");
-        ctx.image(&ImageAsset::new("gui/hud/background.png"), [16, 16], &mut game_ctx.assets);
+        ctx.image(&"gui/hud/background.png", [16, 16], &mut game_ctx.assets);
 
         Self::draw_bar(ctx, &self.health, Color::from_hex("882309"), Color::from_hex("6c1307"), [42 + 16, 12 + 16, 182-42, 8]);
         Self::draw_bar(ctx, &self.action_points, Color::from_hex("77a8c8"), Color::from_hex("486a75"), [45 + 16, 23 + 16, 165-45, 4]);
@@ -39,7 +39,7 @@ impl HeadsUpDisplay {
         ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7+1], &Color::from_hex("000000"));
         ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7], &Color::from_hex("ffffff"));
 
-        ctx.image(&ImageAsset::new("gui/hud/foreground.png"), [16, 16], &mut game_ctx.assets);
+        ctx.image(&"gui/hud/foreground.png", [16, 16], &mut game_ctx.assets);
         perf().end("hud");
     }
 

@@ -289,6 +289,11 @@ fn main() {
                     }
                 }
 
+                if let Button::Keyboard(Key::F5) = k.button {
+                    crate::engine::assets::assets().reload_all();
+                }
+                
+
             }
             app.debug_overlay.input_time(now.elapsed());
 

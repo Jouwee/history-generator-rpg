@@ -4,13 +4,13 @@ use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{asset::image::ImageAsset, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet}, Color, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet}, Color, GameContext, InputEvent, RenderContext};
 
 
 pub(crate) struct Button {
     layout: LayoutComponent,
     text: String,
-    background: ImageAsset,
+    background: String,
     frame: Spritesheet,
     tooltip: Option<(u64, Tooltip)>,
     state_bitmask: u8,
@@ -27,14 +27,14 @@ impl Button {
         Self {
             layout,
             text: String::from(text),
-            background: ImageAsset::new("gui/button/background.png"),
+            background: String::from("gui/button/background.png"),
             tooltip: None,
             frame,
             state_bitmask: 0,
         }
     }
 
-    pub(crate) fn image(image: &ImageAsset) -> Self {
+    pub(crate) fn image(image: String) -> Self {
         let mut layout = LayoutComponent::new();
         layout.size([24., 24.]);
 
@@ -44,7 +44,7 @@ impl Button {
         Self {
             layout,
             text: String::from(""),
-            background: image.clone(),
+            background: image,
             tooltip: None,
             frame,
             state_bitmask: 0,
@@ -100,7 +100,7 @@ impl UINode for Button {
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
-        let background = game_ctx.assets.image(&self.background);
+        let background = assets().image(&self.background);
 
         let position = [layout[0], layout[1]];
         let size = [layout[2], layout[3]];

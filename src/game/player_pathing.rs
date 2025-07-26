@@ -1,4 +1,4 @@
-use crate::{engine::asset::image::ImageAsset, game::{chunk::{Chunk, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
+use crate::{game::{chunk::{Chunk, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
 
 use super::TurnMode;
 
@@ -23,7 +23,7 @@ impl PlayerPathing {
         if let Some(path) = &self.running {
             for tile in path.iter() {
                 // TODO:
-                ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
+                ctx.image("gui/path.png", [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
                 // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffff8070"));
                 running = true;
             }
@@ -33,9 +33,9 @@ impl PlayerPathing {
             if let Some(path) = &self.preview {
                 for tile in path.iter().rev() {
                     if *turn_mode == TurnMode::RealTime || remaining_ap >= 0 {
-                        ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
+                        ctx.image("gui/path.png", [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
                     } else {
-                        ctx.image(&ImageAsset::new("gui/path.png"), [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
+                        ctx.image("gui/path.png", [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
                         // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffffff30"));
                     }
                     // TODO (OLaU4Dth): 

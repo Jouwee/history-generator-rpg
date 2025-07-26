@@ -1,9 +1,9 @@
 use graphics::{image, rectangle, Context, Text, Transformed};
 use opengl_graphics::{GlGraphics, Texture};
 
-use crate::engine::asset::assets::Assets;
+use crate::engine::{asset::assets::Assets, assets::assets};
 
-use super::{asset::{font::Font, image::ImageAsset, image_sheet::ImageSheetAsset}, Color};
+use super::{asset::{font::Font, image_sheet::ImageSheetAsset}, Color};
 
 pub(crate) struct RenderContext<'a> {
     pub(crate) context: Context,
@@ -68,8 +68,8 @@ impl<'a> RenderContext<'a> {
         self.text(text, font, position, color);
     }
 
-    pub(crate) fn image(&mut self, image_asset: &ImageAsset, position: [i32; 2], assets: &mut Assets) {
-        let img = assets.image(image_asset);
+    pub(crate) fn image(&mut self, img: &str, position: [i32; 2], _assets: &mut Assets) {
+        let img = assets().image(img);
         let transform = self.context.transform.trans(position[0] as f64, position[1] as f64);
         image(&img.texture, transform, self.gl);
     }

@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{asset::{image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
@@ -103,7 +103,7 @@ impl Resources {
         self.actions.add("act:sword:slash", Action {
             name: String::from("Slash"),
             description: String::from("A slashing strike"),
-            icon: ImageAsset::new("gui/icons/actions/slashing_cut.png"),
+            icon: String::from("gui/icons/actions/slashing_cut.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
@@ -123,7 +123,7 @@ impl Resources {
             name: String::from("Bleeding Cut"),
             description: String::from("A deep cut that causes bleeding"),
             log_use: true,
-            icon: ImageAsset::new("gui/icons/actions/bleeding_cut.png"),
+            icon: String::from("gui/icons/actions/bleeding_cut.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
@@ -143,7 +143,7 @@ impl Resources {
             name: String::from("Smash"),
             description: String::from("A heavy smash"),
             log_use: true,
-            icon: ImageAsset::new("gui/icons/actions/mace_smash.png"),
+            icon: String::from("gui/icons/actions/mace_smash.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 3.,
@@ -162,7 +162,7 @@ impl Resources {
             name: String::from("Concussive Strike"),
             description: String::from("An aimed hit at the head"),
             log_use: true,
-            icon: ImageAsset::new("gui/icons/actions/concussive_strike.png"),
+            icon: String::from("gui/icons/actions/concussive_strike.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 60,
             stamina_cost: 20.,
@@ -182,7 +182,7 @@ impl Resources {
             name: String::from("Punch"),
             description: String::from("A good ol' punch"),
             log_use: true,
-            icon: ImageAsset::new("gui/icons/actions/unarmed_attack.png"),
+            icon: String::from("gui/icons/actions/unarmed_attack.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
@@ -201,7 +201,7 @@ impl Resources {
             name: String::from("Bite"),
             description: String::from("A spider bite"),
             log_use: true,
-            icon: ImageAsset::new("missing.png"),
+            icon: String::from("missing.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
             stamina_cost: 3.,
@@ -220,7 +220,7 @@ impl Resources {
         self.actions.add("act:bite", Action {
             name: String::from("Bite"),
             description: String::from("A bite"),
-            icon: ImageAsset::new("missing.png"),
+            icon: String::from("missing.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
@@ -240,7 +240,7 @@ impl Resources {
         self.actions.add("act:deafening_howl", Action {
             name: String::from("Deafening howl"),
             description: String::from("A deafening howl"),
-            icon: ImageAsset::new("missing.png"),
+            icon: String::from("missing.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
             ap_cost: 40,
@@ -260,7 +260,7 @@ impl Resources {
         self.actions.add("act:firebolt", Action {
             name: String::from("Firebolt"),
             description: String::from("Throws a fiery bolt"),
-            icon: ImageAsset::new("gui/icons/actions/firebolt.png"),
+            icon: String::from("gui/icons/actions/firebolt.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 50,
@@ -282,7 +282,7 @@ impl Resources {
             name: String::from("Fireball"),
             description: String::from("Casts an explosive ball of fire"),
             log_use: true,
-            icon: ImageAsset::new("gui/icons/actions/fireball.png"),
+            icon: String::from("gui/icons/actions/fireball.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
             ap_cost: 60,
             stamina_cost: 5.,
@@ -301,7 +301,7 @@ impl Resources {
         self.actions.add("act:rockpillar", Action {
             name: String::from("Rock Pillar"),
             description: String::from("Summons a pillar of rock"),
-            icon: ImageAsset::new("gui/icons/actions/rock_pillar.png"),
+            icon: String::from("gui/icons/actions/rock_pillar.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
             ap_cost: 20,
@@ -321,7 +321,7 @@ impl Resources {
         self.actions.add("act:teleport", Action {
             name: String::from("Teleport"),
             description: String::from("Instantly teleports away"),
-            icon: ImageAsset::new("gui/icons/actions/teleport.png"),
+            icon: String::from("gui/icons/actions/teleport.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
             ap_cost: 20,
@@ -341,7 +341,7 @@ impl Resources {
         // self.actions.add("act:talk", Action {
         //     name: String::from("Talk"),
         //     description: String::from("Talk with a friendly NPC"),
-        //     icon: ImageAsset::new("gui/icons/actions/talk.png"),
+        //     icon: String::from("gui/icons/actions/talk.png"),
         //     sound_effect: None,
         //     ap_cost: 0,
         //     stamina_cost: 0.,
@@ -350,7 +350,7 @@ impl Resources {
         self.actions.add("act:inspect", Action {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),
-            icon: ImageAsset::new("gui/icons/actions/inspect.png"),
+            icon: String::from("gui/icons/actions/inspect.png"),
             log_use: false,
             cast_sfx: None,
             ap_cost: 0,
@@ -369,7 +369,7 @@ impl Resources {
         self.actions.add("act:dig", Action {
             name: String::from("Dig"),
             description: String::from("Dig the ground"),
-            icon: ImageAsset::new("gui/icons/actions/dig.png"),
+            icon: String::from("gui/icons/actions/dig.png"),
             log_use: false,
             cast_sfx: None,
             ap_cost: 0,
@@ -388,7 +388,7 @@ impl Resources {
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
             description: String::from("Pick up something from the ground"),
-            icon: ImageAsset::new("gui/icons/actions/pickup.png"),
+            icon: String::from("gui/icons/actions/pickup.png"),
             log_use: false,
             cast_sfx: None,
             ap_cost: 20,
@@ -407,7 +407,7 @@ impl Resources {
         self.actions.add("act:sleep", Action {
             name: String::from("Sleep"),
             description: String::from("Sleep in a bed"),
-            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
+            icon: String::from("gui/icons/actions/sleep.png"),
             log_use: false,
             cast_sfx: None,
             ap_cost: 0,
@@ -427,7 +427,7 @@ impl Resources {
         self.actions.add("act:move", Action {
             name: String::from("Move"),
             description: String::from("Move"),
-            icon: ImageAsset::new("gui/icons/actions/sleep.png"),
+            icon: String::from("gui/icons/actions/sleep.png"),
             log_use: false,
             cast_sfx: None,
             ap_cost: 20,
@@ -599,7 +599,7 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/tree.png", Size2D(64, 64));
         self.object_tiles.add("obj:tree", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true).with_shadow());
 
-        let image = ImageAsset::new("bed.png");
+        let image = String::from("bed.png");
         self.object_tiles.add("obj:bed", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
 
         let image = ImageSheetAsset::new("chunk_tiles/wood_small_table.png", Size2D(24, 24));
@@ -611,16 +611,16 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/tombstone.png", Size2D(24, 24));
         self.object_tiles.add("obj:tombstone", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), true).with_shadow());
         
-        let image = ImageAsset::new("chunk_tiles/anvil.png");
+        let image = String::from("chunk_tiles/anvil.png");
         self.object_tiles.add("obj:anvil", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
         
-        let image = ImageAsset::new("chunk_tiles/barrel.png");
+        let image = String::from("chunk_tiles/barrel.png");
         self.object_tiles.add("obj:barrel", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
         
         let image = ImageSheetAsset::new("chunk_tiles/grass_decal.png", Size2D(24, 24));
         self.object_tiles.add("obj:grass_decal", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
-        let image = ImageAsset::new("chunk_tiles/tent.png");
+        let image = String::from("chunk_tiles/tent.png");
         self.object_tiles.add("obj:tent", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
 
         let image = ImageSheetAsset::new("chunk_tiles/pebbles.png", Size2D(24, 24));
@@ -632,7 +632,7 @@ impl Resources {
         let image = ImageSheetAsset::new("chunk_tiles/small_game_carcass.png", Size2D(24, 24));
         self.object_tiles.add("obj:small_game_carcass", ObjectTile::new(crate::engine::tilemap::Tile::TileRandom(TileRandom::new(image)), false));
 
-        let image = ImageAsset::new("chunk_tiles/rock_pillar.png");
+        let image = String::from("chunk_tiles/rock_pillar.png");
         self.object_tiles.add("obj:rock_pillar", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
 
     }

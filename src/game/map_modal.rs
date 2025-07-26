@@ -1,4 +1,4 @@
-use crate::{engine::{asset::{image::ImageAsset, image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{unit::UnitType, world::World}, GameContext};
+use crate::{engine::{asset::{image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, Color}, world::{unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -28,11 +28,11 @@ impl MapModal {
         dual_tileset.add(3, image);
 
         let mut tileset = TileSet::new();
-        let image = ImageAsset::new("map_tiles/settlement.png");
+        let image = String::from("map_tiles/settlement.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = ImageSheetAsset::new("map_tiles/road.png", Size2D(16, 16));
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)));
-        let image = ImageAsset::new("map_tiles/marker.png");
+        let image = String::from("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut close_button = Button::text("Close");
@@ -101,13 +101,13 @@ impl MapModal {
             cursor[1].clamp(ctx.camera_rect[1] as i32, ctx.camera_rect[1] as i32 + ctx.camera_rect[3] as i32 - 16),
         ];
         if cursor != cursor_clamp {
-            ctx.image(&ImageAsset::new("map_tiles/player_offscreen.png"), cursor_clamp, &mut game_ctx.assets);
+            ctx.image(&"map_tiles/player_offscreen.png", cursor_clamp, &mut game_ctx.assets);
         } else {
-            ctx.image(&ImageAsset::new("map_tiles/player.png"), cursor_clamp, &mut game_ctx.assets);
+            ctx.image(&"map_tiles/player.png", cursor_clamp, &mut game_ctx.assets);
         }
         let _ = ctx.try_pop();
         // Control
-        ctx.image(&ImageAsset::new("controls/right_click.png"), [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24], &mut game_ctx.assets);
+        ctx.image(&"controls/right_click.png", [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24], &mut game_ctx.assets);
         ctx.text("Drag to move", game_ctx.assets.font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &Color::from_hex("ffffff"));
         self.close_button.render(&(), ctx, game_ctx);
     }
