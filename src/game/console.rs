@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{NoopFilter, StructureFilter}}, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, Color}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -99,29 +99,14 @@ impl Console {
             Some("/generate") => {
                 let structure = parts.next().ok_or("Param 1 should be the structure name")?;
 
-                // TODO(8QXbvyNV): Dupped code
-                let mut solver = JigsawSolver::new(chunk.size.clone(), Rng::rand());
-                let parser = JigsawParser::new();
-                if let Ok(pools) = parser.parse_file("assets/structures/village.toml") {
-                    for (name, pool) in pools {
-                        solver.add_pool(&name, pool);
-                    }
-                }
-                if let Ok(pools) = parser.parse_file("assets/structures/bandit_camp.toml") {
-                    for (name, pool) in pools {
-                        solver.add_pool(&name, pool);
-                    }
-                }
-                if let Ok(pools) = parser.parse_file("assets/structures/wilderness.toml") {
-                    for (name, pool) in pools {
-                        solver.add_pool(&name, pool);
-                    }
-                }
+                let pos = chunk.player().xy.clone();
+                let mut generator = ChunkGenerator::new(chunk, Rng::rand());
 
-                let structure = solver.solve_structure(structure, chunk.player().xy.clone(), &mut Rng::rand());
+                let mut solver = generator.get_jigsaw_solver();
+                let structure = solver.solve_structure(structure, pos, &mut Rng::rand());
                 if let Some(structure) = structure {
                     for (pos, piece) in structure.vec.iter() {
-                        self.place_template(chunk, *pos, &piece);
+                        generator.place_template(*pos, &piece, &ctx.resources);
                     }
                     return Result::Ok(format!("Generated"));
                 } else {
@@ -146,41 +131,6 @@ impl Console {
                 return Result::Ok(format!("Spawned"));
             },
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))
-        }
-    }
-
-    // TODO(8QXbvyNV): Dupped cope
-    fn place_template(&mut self, chunk: &mut Chunk, origin: Coord2, template: &JigsawPiece) {
-        self.place_template_filtered(chunk, origin, template, NoopFilter {});
-    }
-
-    // TODO(8QXbvyNV): Dupped cope
-    fn place_template_filtered<F>(&mut self, chunk: &mut Chunk, origin: Coord2, template: &JigsawPiece, mut filter: F) where F: StructureFilter {
-        for i in 0..template.size.area() {
-            let x = origin.x as usize + i % template.size.x();
-            let y = origin.y as usize + i / template.size.x();
-            let mut tile = template.tiles.get(i).unwrap().clone();
-
-            let filtered = filter.filter(Coord2::xy(x as i32, y as i32), &tile);
-            if let Some(filtered) = filtered {
-                tile = filtered;
-            }
-
-            match tile {
-                JigsawPieceTile::Air => (),
-                JigsawPieceTile::Empty => (),
-                JigsawPieceTile::PathEndpoint => (),
-                JigsawPieceTile::Connection(_) => chunk.map.ground_layer.set_tile(x, y, 4),
-                JigsawPieceTile::Fixed { ground, object, statue_spot } => {
-                    chunk.map.ground_layer.set_tile(x, y, ground);
-                    if let Some(object) = object {
-                        chunk.map.object_layer.set_tile(x, y, object)
-                    }
-                    if statue_spot {
-                        // statue_spots.push(Coord2::xy(x as i32, y as i32))
-                    }
-                },
-            }
         }
     }
 

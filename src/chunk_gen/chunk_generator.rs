@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::{geometry::Size2D, tilemap::Tile}, game::chunk::TileMetadata, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::TileMetadata, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -14,20 +14,19 @@ struct ChunkFeaturePools {
     artifacts_pool: Option<String>,
 }
 
-
-pub(crate) struct ChunkGenerator {
+pub(crate) struct ChunkGenerator<'a> {
     rng: Rng,
-    chunk: Chunk,
+    chunk: &'a mut Chunk,
     path_endpoints: Vec<Coord2>,
     statue_spots: Vec<Coord2>
 }
 
-impl ChunkGenerator {
+impl<'a> ChunkGenerator<'a> {
 
-    pub(crate) fn new(resources: &Resources, player: Actor, size: Size2D, rng: Rng) -> ChunkGenerator {
+    pub(crate) fn new(chunk: &'a mut Chunk, rng: Rng) -> ChunkGenerator<'a> {
         ChunkGenerator {
             rng,
-            chunk: Chunk::new(size, player, resources),
+            chunk,
             path_endpoints: Vec::new(),
             statue_spots: Vec::new(),
         }
@@ -84,10 +83,6 @@ impl ChunkGenerator {
         let now = Instant::now();
         self.collapse_decor(resources);
         println!("[Chunk gen] Decor: {:.2?}", now.elapsed());
-    }
-
-    pub(crate) fn into_chunk(self) -> Chunk {
-        return self.chunk;
     }
 
     fn get_pools(&self, unit: &Unit) -> ChunkFeaturePools {
@@ -182,9 +177,6 @@ impl ChunkGenerator {
 
                 }
             }
-
-           
-
         }
 
         if unit.cemetery.len() > 0 {
@@ -445,7 +437,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn get_jigsaw_solver(&self) -> JigsawSolver {
+    pub(crate) fn get_jigsaw_solver(&self) -> JigsawSolver {
         let mut solver = JigsawSolver::new(self.chunk.size.clone(), self.rng.clone());
         
         let parser = JigsawParser::new();
@@ -502,7 +494,7 @@ impl ChunkGenerator {
         }
     }
 
-    fn place_template(&mut self, origin: Coord2, template: &JigsawPiece, resources: &Resources) {
+    pub(crate) fn place_template(&mut self, origin: Coord2, template: &JigsawPiece, resources: &Resources) {
         self.place_template_filtered(origin, template, resources, NoopFilter {});
     }
 

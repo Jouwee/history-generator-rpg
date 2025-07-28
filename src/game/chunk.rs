@@ -225,9 +225,10 @@ impl Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
-        let mut generator = ChunkGenerator::new(resources, player, Size2D(64, 64), rng);
+        let mut chunk = Chunk::new(Size2D(64, 64), player, resources);
+        let mut generator = ChunkGenerator::new(&mut chunk, rng);
         generator.generate(world, xy, resources);
-        return generator.into_chunk();
+        return chunk;
     }
 
 
