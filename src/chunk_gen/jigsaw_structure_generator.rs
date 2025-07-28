@@ -220,7 +220,11 @@ pub(crate) struct JigsawPiece {
 pub(crate) enum JigsawPieceTile {
     Air,
     Empty,
-    Fixed { ground: usize, object: Option<usize>, statue_spot: bool },
+    Fixed {
+        ground: usize,
+        object: Option<usize>,
+        statue_spot: bool
+    },
     PathEndpoint,
     Connection(String)
 }

@@ -195,9 +195,9 @@ fn main() {
         seed: 1234567,
         world_size: Size2D(64, 48),
         history_length: 500,
-        number_of_seed_cities: 200,
+        number_of_seed_cities: 20,
         seed_cities_population: 20,
-        num_plate_tectonics: 25
+        num_plate_tectonics: 5
     }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {

@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::TileMetadata, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{self, TileMetadata}, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -12,6 +12,15 @@ struct ChunkFeaturePools {
     detached_housing_pool: Option<String>,
     cemetery_pool: Option<String>,
     artifacts_pool: Option<String>,
+}
+
+pub(crate) struct ChunkGenParams {
+    layer: ChunkLayer
+}
+
+pub(crate) enum ChunkLayer {
+    Surface,
+    Underground
 }
 
 pub(crate) struct ChunkGenerator<'a> {
@@ -40,45 +49,55 @@ impl<'a> ChunkGenerator<'a> {
         let mut solver = self.get_jigsaw_solver();
 
         let now = Instant::now();
-        let mut found_sett = None;
+        let mut found_unit = None;
         for unit in world.units.iter() {
             let unit = unit.borrow();
             if unit.xy == xy {
-                found_sett = Some(unit)
+                found_unit = Some(unit)
             }
         }
-        println!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", xy, found_sett.is_some(), now.elapsed());
+        println!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", xy, found_unit.is_some(), now.elapsed());
 
-        if let Some(unit) = found_sett {
+        if let Some(unit) = found_unit {
 
-            let pools = self.get_pools(&unit);
+            match &unit.unit_type {
+                // SMELL: What can be abstracted here, if anything?
+                UnitType::BanditCamp | UnitType::Village => {
+                    let pools = self.get_pools(&unit);
 
-            let now = Instant::now();
-            self.generate_large_structures(&unit, &mut solver, &pools, resources);
-            println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
+                    let now = Instant::now();
+                    self.generate_large_structures(&unit, &mut solver, &pools, resources);
+                    println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
 
-            println!("Chunk has {} creatures, {} artifacts, {} graves. Peak was {} in {}", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len(), unit.population_peak.1, unit.population_peak.0);
-            let now = Instant::now();
-            self.generate_buildings(&unit, &mut solver, &pools, world, resources);
-            println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
+                    println!("Chunk has {} creatures, {} artifacts, {} graves. Peak was {} in {}", unit.creatures.len(), unit.artifacts.len(), unit.cemetery.len(), unit.population_peak.1, unit.population_peak.0);
+                    let now = Instant::now();
+                    self.generate_buildings(&unit, &mut solver, &pools, world, resources);
+                    println!("[Chunk gen] Building gen: {:.2?}", now.elapsed());
 
-            let now = Instant::now();
-            self.generate_ruins(&unit, &mut solver, &pools, world, resources);
-            println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
+                    let now = Instant::now();
+                    self.generate_ruins(&unit, &mut solver, &pools, world, resources);
+                    println!("[Chunk gen] Ruins gen: {:.2?}", now.elapsed());
 
-            if self.statue_spots.len() > 0 {
-                let now = Instant::now();
-                self.place_statues(&unit, &world, &resources);
-                println!("[Chunk gen] Statues: {:.2?}", now.elapsed());
+                    if self.statue_spots.len() > 0 {
+                        let now = Instant::now();
+                        self.place_statues(&unit, &world, &resources);
+                        println!("[Chunk gen] Statues: {:.2?}", now.elapsed());
+                    }
+
+                    if self.path_endpoints.len() > 0 {
+                        let now = Instant::now();
+                        self.generate_paths(&mut solver);
+                        println!("[Chunk gen] Streets: {:.2?}", now.elapsed());
+                    }
+                },
+                UnitType::VarningrLair => {
+                    let now = Instant::now();
+                    self.generate_lair(&unit, &mut solver, &world, resources);
+                    println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
+                }
             }
 
-        }
-
-        if self.path_endpoints.len() > 0 {
-            let now = Instant::now();
-            self.generate_paths(&mut solver);
-            println!("[Chunk gen] Streets: {:.2?}", now.elapsed());
-        }
+        }       
 
         let now = Instant::now();
         self.collapse_decor(resources);
@@ -417,6 +436,48 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
+    fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+        let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng);
+        if let Some(structure) = structure {
+            let wolf_id = resources.species.id_of("species:wolf");
+            let wolf = resources.species.get(&wolf_id);
+            let mut iter = structure.vec.iter();
+
+            // First piece
+            if let Some((pos, piece)) = iter.next() {
+                self.place_template(*pos, &piece, resources);
+
+                // Spawn varningr(s)
+                for creature_id in unit.creatures.iter() {
+                    let creature = world.creatures.get(creature_id);
+                    let species = resources.species.get(&creature.species);
+                    let boss = Actor::from_creature(Coord2::xy(0, 0), *creature_id, &creature, &creature.species, &species, world, resources);
+                    self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
+                }
+                // Minion wolves
+                for _ in 0..3 {
+                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf);
+                    self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
+                }
+            }
+            for (pos, piece) in iter {
+                self.place_template(*pos, &piece, resources);
+            }
+        }
+    }
+
+    fn spawn(&mut self, mut actor: Actor, close_to: Coord2) {
+        let mut rng = Rng::rand();
+        for _ in 0..100 {
+            let xy = close_to + Coord2::xy(rng.randi_range(-5, 5), rng.randi_range(-5, 5));
+            if !self.chunk.map.blocks_movement(xy) {
+                actor.xy = xy;
+                self.chunk.actors.push(actor);
+                return;
+            }
+        }
+    }
+
     fn place_statues(&mut self, unit: &Unit, world: &World, resources: &Resources) {
         let spots = self.statue_spots.clone();
         let mut spots = self.rng.shuffle(spots);
@@ -453,7 +514,7 @@ impl<'a> ChunkGenerator<'a> {
             }
         }
 
-        if let Ok(pools) = parser.parse_file("assets/structures/wilderness.toml") {
+        if let Ok(pools) = parser.parse_file("assets/structures/varningr_lair.toml") {
             for (name, pool) in pools {
                 solver.add_pool(&name, pool);
             }

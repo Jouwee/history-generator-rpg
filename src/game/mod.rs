@@ -11,7 +11,7 @@ use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
 use map_modal::{MapModal, MapModalEvent};
-use piston::{Button as Btn, ButtonArgs, ButtonState, Key, MouseButton};
+use piston::{ButtonArgs, Key, MouseButton};
 use player_pathing::PlayerPathing;
 use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
@@ -608,31 +608,23 @@ impl Scene for GameSceneState {
             self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
         }
 
-        if evt.button_args.state == ButtonState::Press {
-            match evt.button_args.button {
-                Btn::Keyboard(Key::Escape) => {
-                    self.hotbar.selected_action = None;
-                },
-                Btn::Keyboard(Key::Space) => {
-                    if let TurnMode::TurnBased = self.turn_mode {
-                        self.next_turn(ctx);
-                    }
-                },
-                Btn::Keyboard(Key::M) => {
-                    let mut map = MapModal::new();
-                    map.init(&self.world, &self.world_pos);
-                    self.map_modal = Some(map);
-                },
-                _ => ()
-            }
-        }
-
         match evt.evt {
+            NewInputEvent::Key { key: Key::Escape } => {
+                self.hotbar.selected_action = None;
+            },
+            NewInputEvent::Key { key: Key::Space } => {
+                if let TurnMode::TurnBased = self.turn_mode {
+                    self.next_turn(ctx);
+                }
+            },
+            NewInputEvent::Key { key: Key::M } => {
+                let mut map = MapModal::new();
+                map.init(&self.world, &self.world_pos);
+                self.map_modal = Some(map);
+            },
             NewInputEvent::Click { button: MouseButton::Right, pos } => {
                 self.game_context_menu.show(PLAYER_IDX, self.cursor_pos, &mut self.chunk, ctx, pos);
             }
-
-
             NewInputEvent::Click { button: MouseButton::Left, pos: _ } => {
                 if let Some(action_id) = &self.hotbar.selected_action {
 

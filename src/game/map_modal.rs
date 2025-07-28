@@ -68,7 +68,8 @@ impl MapModal {
             let unit = unit.borrow();
             let tile = match unit.unit_type {
                 UnitType::Village => 1,
-                UnitType::BanditCamp | UnitType::VarningrLair => {
+                UnitType::BanditCamp => 0,
+                UnitType::VarningrLair => {
                     if unit.creatures.len() > 0 {
                         3
                     } else {

@@ -1,0 +1,62 @@
+[symbols]
+'-' = { ground= 6 }
+'b' = { ground= 6, object= 13 }
+'#' = { ground= 6, object= 1 }
+'M' = { connect = "varningr_lair" }
+'R' = { connect = "varningr_room" }
+'E' = { connect = "varningr_entrance" }
+
+[varningr_lair]
+
+[varningr_lair.a]
+size = [15, 15]
+allow_flip_hor = true
+allow_flip_ver = true
+template = """
+.....#######...
+....#########..
+..####b----###.
+.###--------##.
+###---------##.
+##----------##.
+##-----b----##.
+##----------##.
+##----------#..
+##----------##.
+##-b--------##.
+.###-------##..
+...##---####...
+...##---##.....
+....#-R-#......
+"""
+
+[varningr_room]
+
+[varningr_room.a]
+size = [9, 9]
+allow_flip_hor = true
+allow_flip_ver = true
+template = """
+..#.M.#..
+..#....#.
+.#......#
+.#b.....#
+#.......#
+#......b#
+#......#.
+.#.....#.
+..#.E.#..
+"""
+[varningr_entrance]
+
+[varningr_entrance.a]
+size = [5, 5]
+allow_flip_hor = true
+allow_flip_ver = true
+template = """
+#.R.#
+#...#
+#...#
+#...#
+b....
+"""

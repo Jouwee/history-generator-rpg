@@ -68,7 +68,18 @@ impl Console {
                 Key::X => self.command = self.command.clone() + "x",
                 Key::Y => self.command = self.command.clone() + "y",
                 Key::Z => self.command = self.command.clone() + "z",
+                Key::NumPad0 | Key::D0 => self.command = self.command.clone() + "0",
+                Key::NumPad1 | Key::D1 => self.command = self.command.clone() + "1",
+                Key::NumPad2 | Key::D2 => self.command = self.command.clone() + "2",
+                Key::NumPad3 | Key::D3 => self.command = self.command.clone() + "3",
+                Key::NumPad4 | Key::D4 => self.command = self.command.clone() + "4",
+                Key::NumPad5 | Key::D5 => self.command = self.command.clone() + "5",
+                Key::NumPad6 | Key::D6 => self.command = self.command.clone() + "6",
+                Key::NumPad7 | Key::D7 => self.command = self.command.clone() + "7",
+                Key::NumPad8 | Key::D8 => self.command = self.command.clone() + "8",
+                Key::NumPad9 | Key::D9 => self.command = self.command.clone() + "9",
                 Key::Space => self.command = self.command.clone() + " ",
+                Key::Comma | Key::NumPadComma => self.command = self.command.clone() + ",",
                 Key::Semicolon => self.command = self.command.clone() + ":",
                 // TODO:
                 Key::Minus => self.command = self.command.clone() + "_",
@@ -130,6 +141,14 @@ impl Console {
 
                 return Result::Ok(format!("Spawned"));
             },
+            Some("/tp") => {
+                let coords = parts.next().ok_or("Param 1 should be the coords")?;
+                let coords = parse_coords(coords)?;
+
+                chunk.player_mut().xy = coords;
+
+                return Result::Ok(format!("Spawned"));
+            },
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))
         }
     }
@@ -142,4 +161,13 @@ fn parse_species(string: &str, species: &SpeciesMap) -> Result<SpeciesId, String
         string = String::from("species:") + &string;
     }
     Ok(species.id_of(&string))
+}
+
+fn parse_coords(string: &str) -> Result<Coord2, String> {
+    let mut parts = string.split(",");
+    let x = parts.next().ok_or("missing x")?;
+    let x = x.parse::<i32>().ok().ok_or("x must be a number")?;
+    let y = parts.next().ok_or("missing y")?;
+    let y = y.parse::<i32>().ok().ok_or("y must be a number")?;
+    return Ok(Coord2::xy(x, y))
 }

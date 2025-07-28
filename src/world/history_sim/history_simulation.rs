@@ -72,7 +72,7 @@ impl HistorySimulation {
 
 
         // TODO(tfWpiQPF): Find a cooler way to spawn
-        if self.rng.rand_chance(0.3) {
+        if self.rng.rand_chance(1.0) {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
@@ -469,10 +469,10 @@ impl HistorySimulation {
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();
-                if unit.creatures.len() > 0 {
+                if unit.creatures.len() == 0 {
                     return false;
                 }
-                return unit.xy.dist_squared(&candidate) < 5. * 5.
+                return unit.xy.dist_squared(&candidate) < 3. * 3.
             });
             if too_close {
                 continue;
