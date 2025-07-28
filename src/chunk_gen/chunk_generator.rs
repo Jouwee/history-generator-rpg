@@ -470,7 +470,7 @@ impl<'a> ChunkGenerator<'a> {
         let mut rng = Rng::rand();
         for _ in 0..100 {
             let xy = close_to + Coord2::xy(rng.randi_range(-5, 5), rng.randi_range(-5, 5));
-            if !self.chunk.map.blocks_movement(xy) {
+            if !self.chunk.can_occupy(&xy) {
                 actor.xy = xy;
                 self.chunk.actors.push(actor);
                 return;

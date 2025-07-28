@@ -84,7 +84,7 @@ impl AiSolver {
         let mut astar = AStar::new(chunk.size, chunk.player().xy);
         
         astar.find_path(ctx.xy, |xy| {
-            if !chunk.size.in_bounds(xy) || chunk.map.blocks_movement(xy) {
+            if !chunk.size.in_bounds(xy) || chunk.can_occupy(&xy) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);

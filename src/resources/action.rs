@@ -82,7 +82,7 @@ impl ActionTarget {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
-                    if chunk.map.blocks_movement(*cursor) {
+                    if chunk.can_occupy(cursor) {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }

@@ -233,11 +233,18 @@ impl Chunk {
 
 
     pub(crate) fn astar_movement_cost(&self, xy: Coord2) -> MovementCost {
-        if !self.size.in_bounds(xy) || self.map.blocks_movement(xy) {
+        if !self.size.in_bounds(xy) || !self.can_occupy(&xy) {
             return MovementCost::Impossible;
         } else {
             return MovementCost::Cost(1.);
         }
+    }
+
+    pub(crate) fn can_occupy(&self, coord: &Coord2) -> bool {
+        if self.map.blocks_movement(*coord) {
+            return false;
+        }
+        return self.actors_iter().any(|actor| actor.xy == *coord)
     }
 
 }
