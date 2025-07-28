@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::actor::actor::ActorType, resources::action::{Action, ActionId, Actions, Affliction, ActionEffect, ActionTarget}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::chunk::AiGroups, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -63,8 +63,15 @@ impl AiSolver {
             }
         }
 
+        // Removes actions on cooldown
+        let all_actions = all_actions.iter()
+            .map(|a| *a)
+            .filter(|action_id| !actor.cooldowns.iter().any(|cooldown| cooldown.0 == *action_id))
+            .collect();
+
         let ctx = SimContext {
             actor_idx,
+            ai_group: actor.ai_group,
             actions: Vec::new(),
             xy: actor.xy,
             ap: actor.ap.action_points,
@@ -72,10 +79,11 @@ impl AiSolver {
             depth: 1,
             score: 0.,
             position_score: 0.,
-            damage_score: 0.,
+            hostile_damage: 0.,
+            team_damage: 0.,
         };
 
-        if actor.actor_type == ActorType::Passive {
+        if !chunk.ai_groups.is_hostile(AiGroups::player(), actor.ai_group) {
             let mut runner = AiRunner::new();
             runner.actions = VecDeque::from(ctx.actions.clone());
             return runner
@@ -84,7 +92,7 @@ impl AiSolver {
         let mut astar = AStar::new(chunk.size, chunk.player().xy);
         
         astar.find_path(ctx.xy, |xy| {
-            if !chunk.size.in_bounds(xy) || chunk.can_occupy(&xy) {
+            if !chunk.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);
@@ -146,19 +154,27 @@ impl AiSolver {
                 for effect in action.effects.iter() {
                     match effect {
                         ActionEffect::Damage{ damage, add_weapon: _ } => {
-                            for (_i, _actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
-                                ctx.damage_score += damage.average() as f64;
+                            for (_i, actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
+                                if chunk.ai_groups.is_hostile(ctx.ai_group, actor.ai_group) {
+                                    ctx.hostile_damage += damage.average() as f64;
+                                } else {
+                                    ctx.team_damage += damage.average() as f64;
+                                }
                             }
                         }
                         ActionEffect::Inflicts { affliction } => {
-                            for (_i, _actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
+                            for (_i, actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                 let score = match affliction {
                                     Affliction::Bleeding { duration } => 1. * *duration as f64,
                                     Affliction::OnFire { duration } => 1. * *duration as f64,
                                     Affliction::Stunned { duration } => 0.8 * *duration as f64,
                                     Affliction::Poisoned { duration } => 0.8 * *duration as f64,
                                 };
-                                ctx.damage_score += score;
+                                if chunk.ai_groups.is_hostile(ctx.ai_group, actor.ai_group) {
+                                    ctx.hostile_damage += score;
+                                } else {
+                                    ctx.team_damage += score;
+                                }
                             }
                         },
                         ActionEffect::ReplaceObject { tile: _ } => (),
@@ -207,6 +223,7 @@ impl AiSolver {
 #[derive(Debug, Clone)]
 struct SimContext {
     actor_idx: usize,
+    ai_group: u8,
     actions: Vec<(ActionId, Coord2)>,
     xy: Coord2,
     ap: i32,
@@ -214,7 +231,8 @@ struct SimContext {
     depth: u8,
     score: f64,
     position_score: f64,
-    damage_score: f64
+    hostile_damage: f64,
+    team_damage: f64,
 }
 
 impl SimContext {
@@ -222,7 +240,7 @@ impl SimContext {
     fn compute_final_score(&mut self) {
         // Tiny boost for simplicity (less actions), mostly to choose between ties
         let simplicity_boost = 0.01 / self.actions.len() as f64;
-        self.score = self.position_score + self.damage_score + simplicity_boost
+        self.score = self.position_score + (self.hostile_damage - self.team_damage) + simplicity_boost
     }
 
 }

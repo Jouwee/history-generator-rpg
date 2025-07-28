@@ -1,6 +1,6 @@
 use crate::{world::world::World, Actor, Color, GameContext, RenderContext, Resources};
 
-use super::actor::{actor::ActorType, damage_resolver::DamageOutput};
+use super::actor::damage_resolver::DamageOutput;
 
 pub(crate) struct GameLog {
     entries: Vec<GameLogEntry>
@@ -47,20 +47,20 @@ impl GameLogEntry {
         }
     }
 
-    pub(crate) fn damage(target: &Actor, damage: &DamageOutput, world: &World, resources: &Resources) -> Self {
+    pub(crate) fn damage(target: &Actor, is_player: bool, damage: &DamageOutput, world: &World, resources: &Resources) -> Self {
         match damage {
             DamageOutput::Dodged => GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), is_player),
                 GameLogPart::Text(String::from(" dodged the attack")),
             )),
             DamageOutput::Hit(damage) => GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), is_player),
                 GameLogPart::Text(String::from(" takes ")),
                 GameLogPart::Damage(format!("{:.2}", damage)),
                 GameLogPart::Text(String::from(" damage")),
             )),
             DamageOutput::CriticalHit(damage) => GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(Self::actor_name(target, world, resources), target.actor_type),
+                GameLogPart::Actor(Self::actor_name(target, world, resources), is_player),
                 GameLogPart::Text(String::from(" takes ")),
                 GameLogPart::Damage(format!("{:.2}", damage)),
                 GameLogPart::Text(String::from(" damage (crit)")),
@@ -82,7 +82,7 @@ impl GameLogEntry {
 pub(crate) enum GameLogPart {
     Text(String),
     Damage(String),
-    Actor(String, ActorType)
+    Actor(String, bool)
 }
 
 impl GameLogPart {
@@ -91,10 +91,10 @@ impl GameLogPart {
         match self {
             Self::Text(str) => &str,
             Self::Damage(str) => &str,
-            Self::Actor(str, actor_type) => {
-                match actor_type {
-                    ActorType::Player => "player",
-                    _ => &str,
+            Self::Actor(str, is_player) => {
+                match is_player {
+                    true => "player",
+                    false => &str,
                 }
             },
         }   
@@ -104,10 +104,10 @@ impl GameLogPart {
         match self {
             Self::Text(_) => Color::from_hex("ffffff"),
             Self::Damage(_) => Color::from_hex("ff0000"),
-            Self::Actor(_, actor_type) => {
-                match actor_type {
-                    ActorType::Player => Color::from_hex("00ccff"),
-                    _ => Color::from_hex("ff8800"),
+            Self::Actor(_, is_player) => {
+                match is_player {
+                    true => Color::from_hex("00ccff"),
+                    false => Color::from_hex("ff8800"),
                 }
             },
         }   

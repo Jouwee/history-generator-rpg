@@ -1,6 +1,5 @@
 use std::ops::ControlFlow;
 
-use actor::actor::ActorType;
 use ai::AiSolver;
 use chunk::Chunk;
 use effect_layer::EffectLayer;
@@ -22,7 +21,7 @@ use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
 use crate::engine::Color;
-use crate::game::chunk::PLAYER_IDX;
+use crate::game::chunk::{AiGroups, PLAYER_IDX};
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
@@ -250,7 +249,7 @@ impl GameSceneState {
             return true
         }
         for npc in self.chunk.actors.iter() {
-            if npc.actor_type == ActorType::Hostile {
+            if self.chunk.ai_groups.is_hostile(AiGroups::player(), npc.ai_group) {
                 return false
             }
         }
@@ -302,7 +301,7 @@ impl Scene for GameSceneState {
         self.chunk.turn_controller.roll_initiative(self.chunk.actors.len());
         self.hotbar.init(&self.chunk.player(), ctx);
         self.game_context_menu.init(&(), ctx);
-        if self.chunk.actors.iter().find(|actor| actor.actor_type == ActorType::Hostile).is_some() {
+        if self.chunk.actors.iter().find(|actor| self.chunk.ai_groups.is_hostile(AiGroups::player(), actor.ai_group)).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
             ctx.audio.switch_music(TrackMood::Regular);
@@ -407,7 +406,7 @@ impl Scene for GameSceneState {
         let mut hostile = false;
         for npc in self.chunk.actors.iter_mut() {
             npc.update(update.delta_time);
-            hostile = hostile || npc.actor_type == ActorType::Hostile;
+            hostile = hostile || self.chunk.ai_groups.is_hostile(AiGroups::player(), npc.ai_group);
         }
         self.chunk.player_mut().update(update.delta_time);
         if hostile {

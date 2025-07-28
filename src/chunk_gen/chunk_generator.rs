@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{self, TileMetadata}, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{self, AiGroups, TileMetadata}, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -251,6 +251,7 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_buildings(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World, resources: &Resources) {
+        let ai_group = self.chunk.ai_groups.next_group();
         let mut homeless = unit.creatures.clone();
 
         let mut building_seed_cloud = HashSet::new();
@@ -331,7 +332,7 @@ impl<'a> ChunkGenerator<'a> {
                     let creature = world.creatures.get(creature_id);
                     let point = Coord2::xy(collapsed_pos.x + lx + 1, collapsed_pos.y + ly + 1);
                     let species = resources.species.get(&creature.species);
-                    self.chunk.actors.push(Actor::from_creature(point, *creature_id, &creature, &creature.species, &species, world, resources));
+                    self.chunk.actors.push(Actor::from_creature(point, ai_group, *creature_id, &creature, &creature.species, &species, world, resources));
                     lx += 1;
                     if lx >= 3 {
                         lx = 0;
@@ -438,6 +439,8 @@ impl<'a> ChunkGenerator<'a> {
 
     fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
         let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng);
+        let ai_group = self.chunk.ai_groups.next_group();
+        self.chunk.ai_groups.make_hostile(ai_group, AiGroups::player());
         if let Some(structure) = structure {
             let wolf_id = resources.species.id_of("species:wolf");
             let wolf = resources.species.get(&wolf_id);
@@ -451,12 +454,12 @@ impl<'a> ChunkGenerator<'a> {
                 for creature_id in unit.creatures.iter() {
                     let creature = world.creatures.get(creature_id);
                     let species = resources.species.get(&creature.species);
-                    let boss = Actor::from_creature(Coord2::xy(0, 0), *creature_id, &creature, &creature.species, &species, world, resources);
+                    let boss = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
                     self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
                 }
                 // Minion wolves
                 for _ in 0..3 {
-                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf);
+                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
                     self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
                 }
             }
@@ -470,7 +473,7 @@ impl<'a> ChunkGenerator<'a> {
         let mut rng = Rng::rand();
         for _ in 0..100 {
             let xy = close_to + Coord2::xy(rng.randi_range(-5, 5), rng.randi_range(-5, 5));
-            if !self.chunk.can_occupy(&xy) {
+            if self.chunk.can_occupy(&xy) {
                 actor.xy = xy;
                 self.chunk.actors.push(actor);
                 return;

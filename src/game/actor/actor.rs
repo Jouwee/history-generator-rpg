@@ -1,15 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::{image_sheet::ImageSheetAsset}, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId, SpeciesIntelligence}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::image_sheet::ImageSheetAsset, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ActorType {
-    Player,
-    Passive,
-    Hostile
-}
 
 #[derive(Clone)]
 pub(crate) struct Actor {
@@ -19,7 +12,7 @@ pub(crate) struct Actor {
     pub(crate) stamina: StaminaComponent,
     pub(crate) hp: HealthComponent,
     pub(crate) attributes: Attributes,
-    pub(crate) actor_type: ActorType,
+    pub(crate) ai_group: u8,
     pub(crate) ai: AiRunner,
     pub(crate) sprite: CreatureAppearance,
     pub(crate) creature_id: Option<CreatureId>,
@@ -43,22 +36,18 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_group: AiGroups::player(),
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
-            actor_type: ActorType::Player,
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
         }
     }
 
-    pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
-        let mut actor_type = ActorType::Passive;
-        if species.intelligence == SpeciesIntelligence::Instinctive {
-            actor_type = ActorType::Hostile;
-        }
+    pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species, ai_group: u8) -> Actor {
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -68,22 +57,18 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_group,
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
-            actor_type,
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
         }
     }
 
-    pub(crate) fn from_creature(xy: Coord2, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World, resources: &Resources) -> Actor {
-        let mut actor_type = ActorType::Passive;
-        if species.intelligence == SpeciesIntelligence::Instinctive {
-            actor_type = ActorType::Hostile;
-        }
+    pub(crate) fn from_creature(xy: Coord2, ai_group: u8, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World, resources: &Resources) -> Actor {
         // TODO: Determinate
         let mut rng = Rng::seeded(creature_id);
         let inventory = match creature.sim_flag_is_inteligent() {
@@ -107,13 +92,13 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_group,
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: Some(creature_id),
             // TODO:
             //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),
             sprite: species.appearance.collapse(&Rng::rand(), &hints),
-            actor_type,
             inventory,
             afflictions: Vec::new(),
             cooldowns: Vec::new()
@@ -260,12 +245,10 @@ impl Actor {
             }
         }
 
-        if let ActorType::Player = self.actor_type {
-            vec.push(game_ctx.resources.actions.id_of("act:inspect"));
-            vec.push(game_ctx.resources.actions.id_of("act:pickup"));
-            vec.push(game_ctx.resources.actions.id_of("act:dig"));
-            vec.push(game_ctx.resources.actions.id_of("act:sleep"));
-        }
+        vec.push(game_ctx.resources.actions.id_of("act:inspect"));
+        vec.push(game_ctx.resources.actions.id_of("act:pickup"));
+        vec.push(game_ctx.resources.actions.id_of("act:dig"));
+        vec.push(game_ctx.resources.actions.id_of("act:sleep"));
         
         return vec;
     }

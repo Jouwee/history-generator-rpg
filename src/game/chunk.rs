@@ -15,6 +15,7 @@ pub(crate) struct Chunk {
     pub(crate) player: Actor,
     pub(crate) actors: Vec<Actor>,
     pub(crate) turn_controller: TurnController,
+    pub(crate) ai_groups: AiGroups,
 }
 
 #[derive(Clone)]
@@ -123,6 +124,7 @@ impl Chunk {
                 items_on_ground: Vec::new(),
                 tiles_metadata: HashMap::new(),
             },
+            ai_groups: AiGroups::new(),
             player,
             actors: Vec::new(),
             turn_controller: TurnController::new()
@@ -244,7 +246,7 @@ impl Chunk {
         if self.map.blocks_movement(*coord) {
             return false;
         }
-        return self.actors_iter().any(|actor| actor.xy == *coord)
+        return !self.actors_iter().any(|actor| actor.xy == *coord)
     }
 
 }
@@ -322,3 +324,65 @@ impl Renderable for Chunk {
         }
     }
 }
+
+pub(crate) struct AiGroups {
+    next_group: u8,
+    ai_group_mask: [u8; 8]   
+}
+
+impl AiGroups {
+
+    pub(crate) fn new() -> Self {
+        AiGroups { next_group: 1, ai_group_mask: [0;8] }
+    }
+
+    pub(crate) fn player() -> u8 {
+        return 0;
+    }
+
+    pub(crate) fn next_group(&mut self) -> u8 {
+        let r = self.next_group;
+        self.next_group = self.next_group + 1;
+        return r;
+    }
+
+    pub(crate) fn make_hostile(&mut self, group_a: u8, group_b: u8) {
+        let ia = 0b0000_0001 << group_a;
+        let ib = 0b0000_0001 << group_b;
+        self.ai_group_mask[ia as usize] = self.ai_group_mask[ia as usize] | ib;
+        self.ai_group_mask[ib as usize] = self.ai_group_mask[ib as usize] | ia;
+    }
+
+    pub(crate) fn is_hostile(&self, group_a: u8, group_b: u8) -> bool {
+        let ia = 0b0000_0001 << group_a;
+        let ib = 0b0000_0001 << group_b;
+        return self.ai_group_mask[ia as usize] & ib > 0;
+    }
+
+}
+
+#[cfg(test)]
+mod tests_ai_groups {
+    use super::*;
+
+    #[test]
+    fn test() {
+
+        let mut ai = AiGroups::new();
+
+        let group = ai.next_group();
+        assert_eq!(ai.is_hostile(AiGroups::player(), group), false);
+        ai.make_hostile(AiGroups::player(), group);
+        assert_eq!(ai.is_hostile(AiGroups::player(), group), true);
+
+        let group_2 = ai.next_group();
+        assert_eq!(ai.is_hostile(AiGroups::player(), group_2), false);
+        assert_eq!(ai.is_hostile(group, group_2), false);
+        ai.make_hostile(AiGroups::player(), group_2);
+        assert_eq!(ai.is_hostile(AiGroups::player(), group_2), true);
+        assert_eq!(ai.is_hostile(group, group_2), false);
+
+    }
+
+}
+

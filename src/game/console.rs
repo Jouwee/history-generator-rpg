@@ -135,7 +135,7 @@ impl Console {
 
                 let xy = chunk.player().xy.clone() + Coord2::xy(8, 0);
 
-                let actor = Actor::from_species(xy, &species_id, species);
+                let actor = Actor::from_species(xy, &species_id, species, chunk.ai_groups.next_group());
 
                 chunk.spawn(actor);
 

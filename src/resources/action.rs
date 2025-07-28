@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::{image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{actor::ActorType, damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, asset::image_sheet::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -82,7 +82,7 @@ impl ActionTarget {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
-                    if chunk.can_occupy(cursor) {
+                    if !chunk.can_occupy(cursor) {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
@@ -291,7 +291,7 @@ impl ActionRunner {
 
         if action.log_use {
             game_log.log(GameLogEntry::from_parts(vec!(
-                GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor.actor_type),
+                GameLogPart::Actor(GameLogEntry::actor_name(actor, world, &ctx.resources), actor_index == PLAYER_IDX),
                 GameLogPart::Text(format!(" used {}", action.name))
             )));
         }
@@ -427,10 +427,10 @@ impl ActionRunner {
                                                     effect_layer.add_damage_number(target.xy, damage);
                                                 },
                                             }
-                                            game_log.log(GameLogEntry::damage(target, &damage, &world, &ctx.resources));
+                                            game_log.log(GameLogEntry::damage(target, action.actor == PLAYER_IDX, &damage, &world, &ctx.resources));
                 
                                             let dead = target.hp.health_points();
-                                            let actor_type = target.actor_type;
+                                            let target_ai = target.ai_group;
                                             let xy = target.xy.clone();
 
                                             // Animations
@@ -438,17 +438,15 @@ impl ActionRunner {
                                             target.animation.play(&Self::build_hurt_anim(dir));
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             actor.animation.play(&Self::build_attack_anim(dir));
+                                            let actor_ai = actor.ai_group;
 
                                             if dead == 0. {
                                                 actor.add_xp(100);
                                                 chunk.remove_npc(i, ctx);
                                             }
-                                            if actor_type != ActorType::Player {
-                                                for p in chunk.actors_iter_mut() {
-                                                    if p.actor_type != ActorType::Player {
-                                                        p.actor_type = ActorType::Hostile;
-                                                    }
-                                                }
+
+                                            if actor_ai != target_ai {
+                                                chunk.ai_groups.make_hostile(actor_ai, target_ai);
                                             }
                                         }
 
@@ -460,7 +458,7 @@ impl ActionRunner {
 
                                             let (name, color) = affliction.name_color();
                                             game_log.log(GameLogEntry::from_parts(vec!(
-                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), target.actor_type),
+                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), action.actor == PLAYER_IDX),
                                                 GameLogPart::Text(format!(" is {}", name))
                                             )));
                                             effect_layer.add_text_indicator(target.xy, name, color);
