@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use super::{font::{Font, FontAsset}, image_sheet::{ImageSheet, ImageSheetAsset}};
+use super::{font::{Font, FontAsset}};
 
 pub(crate) struct Assets {
-    image_sheets: HashMap<ImageSheetAsset, Asset<ImageSheet>>,
     fonts: HashMap<FontAsset, Asset<Font>>,
 }
 
@@ -11,17 +10,8 @@ impl Assets {
 
     pub(crate) fn new() -> Assets {
         Assets {
-            image_sheets: HashMap::new(),
             fonts: HashMap::new(),
         }
-    }
-
-    pub(crate) fn image_sheet(&mut self, params: &ImageSheetAsset) -> &ImageSheet {
-        if !self.image_sheets.contains_key(&params) {
-            let image = ImageSheet::new(&params);
-            self.image_sheets.insert(params.clone(), Asset { value: image });
-        }
-        &self.image_sheets.get(&params).expect(format!("Image {} does not exist", params.path).as_str()).value
     }
 
     pub(crate) fn font(&mut self, params: &FontAsset) -> &mut Font {
