@@ -266,6 +266,10 @@ impl Actor {
             };
             textures.push((z_order, texture));
         }
+        for (_z, image) in textures {
+            ctx.texture_ref(&image.texture, pos);
+        }
+        let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
             if let Some(equippable) = &item.equippable {
                 let z_order = match slot {
@@ -279,8 +283,8 @@ impl Actor {
             }
         }
         textures.sort_by(|a, b| a.0.cmp(&b.0));
-        for (_z, texture) in textures {
-            ctx.texture(texture, pos);
+        for (_z, image) in textures {
+            ctx.texture(image, pos);
         }
     }
 }
