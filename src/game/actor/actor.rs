@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, asset::image_sheet::ImageSheetAsset, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -266,6 +266,10 @@ impl Actor {
             };
             textures.push((z_order, texture));
         }
+        for (_z, image) in textures {
+            ctx.texture_ref(&image.texture, pos);
+        }
+        let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
             if let Some(equippable) = &item.equippable {
                 let z_order = match slot {
@@ -279,8 +283,8 @@ impl Actor {
             }
         }
         textures.sort_by(|a, b| a.0.cmp(&b.0));
-        for (_z, texture) in textures {
-            ctx.texture(texture, pos);
+        for (_z, image) in textures {
+            ctx.texture(image, pos);
         }
     }
 }
@@ -297,7 +301,7 @@ impl Renderable for Actor {
         for affliction in self.afflictions.iter() {
             match affliction.affliction {
                 Affliction::OnFire { duration: _ } => {
-                    let sheet = game_ctx.assets.image_sheet(&ImageSheetAsset::new("status/onfire.png", Size2D(24, 24)));
+                    let sheet = assets().image_sheet("status/onfire.png", Size2D(24, 24));
                     ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [pos[0] as f64 + 11., pos[1] as f64+24.]);
                 },
                 _ => ()

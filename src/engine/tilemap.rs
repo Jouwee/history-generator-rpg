@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use graphics::{Image, Transformed};
-use opengl_graphics::Texture;
 
 use crate::{commons::rng::Rng, engine::assets::assets, globals::perf::perf, GameContext};
 
@@ -66,7 +65,7 @@ impl TileMap {
                 let idx = (y * self.width) + x;
                 let tile_i = self.tiles[idx];
                 if tile_i.1 {
-                    self.pass(idx, x, y, tile_i.0, ctx, game_ctx, true);
+                    self.pass(idx, x, y, tile_i.0, ctx, true);
                 }
             }
         }
@@ -74,17 +73,17 @@ impl TileMap {
             for x in x_range.clone() {
                 let idx = (y * self.width) + x;
                 let tile_i = self.tiles[idx];
-                self.pass(idx, x, y, tile_i.0, ctx, game_ctx, false);
+                self.pass(idx, x, y, tile_i.0, ctx, false);
                 z_order_render(ctx, game_ctx, x, y);
             }
         }
         perf().end("tilemap");
     }
 
-    fn pass(&self, idx: usize, x: usize, y: usize, tile_i: usize, ctx: &mut RenderContext, game_ctx: &mut GameContext, shadow_pass: bool) {
-        enum TextureType<'a> {
+    fn pass(&self, idx: usize, x: usize, y: usize, tile_i: usize, ctx: &mut RenderContext, shadow_pass: bool) {
+        enum TextureType {
             Image(Arc<super::assets::Image>),
-            TextureRef(&'a Texture)
+            ImageSheet(Arc<super::assets::ImageSheet>, usize)
         }
 
         let texture;
@@ -99,14 +98,14 @@ impl TileMap {
                 texture = TextureType::Image(image);
             },
             Tile::TileRandom(tile) => {
-                let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
+                let sheet = assets().image_sheet(&tile.image_sheet.path, tile.image_sheet.tile_size.clone());
                 size = [sheet.tile_size.x() as f64, sheet.tile_size.y() as f64];
                 let mut rng = Rng::new(idx as u32);
                 let i = rng.randu_range(0, sheet.len());
-                texture = TextureType::TextureRef(sheet.get(i).unwrap())
+                texture = TextureType::ImageSheet(sheet, i)
             },
             Tile::T16Subset(tile) => {
-                let sheet = game_ctx.assets.image_sheet(&tile.image_sheet);
+                let sheet = assets().image_sheet(&tile.image_sheet.path, tile.image_sheet.tile_size.clone());
                 size = [sheet.tile_size.x() as f64, sheet.tile_size.y() as f64];
                 let mut u = false;
                 if y > 0 {
@@ -143,7 +142,7 @@ impl TileMap {
                     (true, true, true, false) => 7,
                     (true, true, true, true) => 6,
                 };
-                texture = TextureType::TextureRef(sheet.get(subtile_i).unwrap());
+                texture = TextureType::ImageSheet(sheet, subtile_i);
             }
         }
         let pos = [
@@ -152,7 +151,7 @@ impl TileMap {
         ];
         let texture = match &texture {
             TextureType::Image(img) => &img.texture,
-            TextureType::TextureRef(r) => r
+            TextureType::ImageSheet(img, i) => &img.get(*i).unwrap()
         };
         if shadow_pass {
             let transform = ctx.context.transform.trans(pos[0], pos[1]).shear(-0.4, 0.).scale(1., 1.5).trans(size[0] * 0.4, -size[1] * 0.5);

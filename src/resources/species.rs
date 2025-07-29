@@ -1,9 +1,6 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 
-use image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
-
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, resources::material::MaterialId, world::attributes::Attributes};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::assets::{assets, Image}, resources::material::MaterialId, world::attributes::Attributes};
 
 use super::action::ActionId;
 
@@ -126,13 +123,11 @@ pub(crate) struct CreatureAppearance {
 }
 
 impl CreatureAppearance {
-    pub(crate) fn texture(&self) -> Vec<(String, Texture)> {
+    pub(crate) fn texture(&self) -> Vec<(String, Arc<Image>)> {
         let mut vec = Vec::new();
         for (k, v) in self.map.iter() {
-            // TODO: Don't load everytime
-            let image = ImageReader::open(format!("./assets/sprites/{}", v.1)).unwrap().decode().unwrap();
-            let settings = TextureSettings::new().filter(Filter::Nearest);
-            vec.push((k.clone(), Texture::from_image(&image.to_rgba8(), &settings)));
+            let image = assets().image(&v.1);
+            vec.push((k.clone(), image));
         }
         return vec;
     }

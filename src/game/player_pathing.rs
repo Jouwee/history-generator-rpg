@@ -22,9 +22,7 @@ impl PlayerPathing {
         let mut running = false;
         if let Some(path) = &self.running {
             for tile in path.iter() {
-                // TODO:
                 ctx.image("gui/path.png", [tile.x * 24, tile.y * 24], &mut game_ctx.assets);
-                // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], Color::from_hex("ffff8070"));
                 running = true;
             }
         }
