@@ -302,6 +302,14 @@ impl ActionRunner {
             ActionTarget::Tile { range: _, filter_mask: _ } => cursor,
         };
 
+        // Change facing accordingly
+        let angle_degrees = actor.xy.angle_between_deg(&pos);
+        if angle_degrees >= 135. && angle_degrees <= 225. { // Facing mostly left
+            actor.sprite_flipped = true;
+        } else if angle_degrees >= 315. || angle_degrees <= 45. { // Facing mostly right
+            actor.sprite_flipped = false;
+        } // Else, leave as is
+
         let mut steps = VecDeque::new();
 
         if let Some(fx) = &action.cast_sfx {

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use graphics::Transformed;
+
 use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
@@ -14,6 +16,7 @@ pub(crate) struct Actor {
     pub(crate) attributes: Attributes,
     pub(crate) ai_group: u8,
     pub(crate) ai: AiRunner,
+    pub(crate) sprite_flipped: bool,
     pub(crate) sprite: CreatureAppearance,
     pub(crate) creature_id: Option<CreatureId>,
     pub(crate) species: SpeciesId,
@@ -40,6 +43,7 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
+            sprite_flipped: Rng::rand().rand_chance(0.5),
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
@@ -61,6 +65,7 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
+            sprite_flipped: Rng::rand().rand_chance(0.5),
             sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
@@ -96,6 +101,7 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: Some(creature_id),
+            sprite_flipped: Rng::rand().rand_chance(0.5),
             // TODO:
             //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),
             sprite: species.appearance.collapse(&Rng::rand(), &hints),
@@ -291,22 +297,29 @@ impl Actor {
 
 impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let mut pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
-        ctx.image("species/shadow.png", [pos[0] as i32 + 11, pos[1] as i32 + 42], &mut game_ctx.assets);
+        let pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+
+        ctx.push();
+        ctx.context.transform = ctx.context.transform.trans(pos[0], pos[1]);
+        if self.sprite_flipped {
+            ctx.context.transform = ctx.context.transform.trans(48., 0.).scale(-1., 1.)
+        }
+
+        ctx.image("species/shadow.png", [11, 42], &mut game_ctx.assets);
         // Applies the animation to the rendering
-        pos[0] += self.animation.translate[0];
-        pos[1] += self.animation.translate[1];
-        self.render_layers(pos, ctx, game_ctx);
+        self.render_layers(self.animation.translate, ctx, game_ctx);
 
         for affliction in self.afflictions.iter() {
             match affliction.affliction {
                 Affliction::OnFire { duration: _ } => {
                     let sheet = assets().image_sheet("status/onfire.png", Size2D(24, 24));
-                    ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [pos[0] as f64 + 11., pos[1] as f64+24.]);
+                    ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [11., 24.]);
                 },
                 _ => ()
             }
         }
+
+        let _ = ctx.try_pop();
     }
 }
 

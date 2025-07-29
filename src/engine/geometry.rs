@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub};
+use std::{f64::consts::PI, ops::{Add, Sub}};
 
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
@@ -97,6 +97,11 @@ impl Coord2 {
         let x = another.x as f32 - self.x as f32;
         let y = another.y as f32 - self.y as f32;
         return x*x + y*y
+    }
+
+    /// Returns the angle, in degrees, between this coord and the other. 0 is right
+    pub(crate) fn angle_between_deg(&self, another: &Coord2) -> f64 {
+        return ((f64::atan2((another.y - self.y) as f64, (another.x - self.x) as f64) * 180. / PI) + 360.) % 360.;
     }
 
     pub(crate) fn to_vec2(&self) -> Vec2 {
