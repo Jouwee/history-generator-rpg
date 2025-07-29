@@ -5,7 +5,8 @@ use chunk::Chunk;
 use effect_layer::EffectLayer;
 use game_context_menu::GameContextMenu;
 use game_log::GameLog;
-use graphics::{image, Image, Transformed};
+use graphics::draw_state::Blend;
+use graphics::{image, DrawState, Image, Rectangle, Transformed};
 use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
@@ -377,6 +378,12 @@ impl Scene for GameSceneState {
 
         // Effects
         self.effect_layer.render(ctx, game_ctx);
+
+        if let ChunkLayer::Underground = self.world_layer {
+            let draw_state = DrawState::new_alpha();
+            let draw_state = draw_state.blend(Blend::Multiply);
+            Rectangle::new(Color::from_hex("90a8b9ff").f32_arr()).draw(ctx.camera_rect, &draw_state, ctx.context.transform, ctx.gl);
+        }
 
         // Back to screen space
         let _ = ctx.try_pop();
