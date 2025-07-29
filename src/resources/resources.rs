@@ -589,6 +589,10 @@ impl Resources {
         let mut tile = Tile::new(4, "chunk_tiles/grass_patchy.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_grass_1.mp3", "sfx/step_grass_2.mp3", "sfx/step_grass_3.mp3")));
         self.tiles.add("tile:grass_patchy", tile);
+
+        let mut tile = Tile::new(4, "chunk_tiles/cave_floor.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
+        self.tiles.add("tile:cave_floor", tile);
     }
 
     pub(crate) fn load_object_tiles(&mut self) {
@@ -635,6 +639,14 @@ impl Resources {
         let image = String::from("chunk_tiles/rock_pillar.png");
         self.object_tiles.add("obj:rock_pillar", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true).with_shadow());
 
+        let image = ImageSheetAsset::new("chunk_tiles/cave_walls.png", Size2D(24, 48));
+        self.object_tiles.add("obj:cave_wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true).with_shadow());
+
+        let image = String::from("chunk_tiles/ladder_down.png");
+        self.object_tiles.add("obj:ladder_down", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
+        let image = String::from("chunk_tiles/ladder_up.png");
+        self.object_tiles.add("obj:ladder_up", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
     }
 
     fn load_item_blueprints(&mut self) {

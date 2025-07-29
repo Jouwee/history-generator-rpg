@@ -15,9 +15,10 @@ struct ChunkFeaturePools {
 }
 
 pub(crate) struct ChunkGenParams {
-    layer: ChunkLayer
+    pub(crate) layer: ChunkLayer
 }
 
+#[derive(Clone, Copy)]
 pub(crate) enum ChunkLayer {
     Surface,
     Underground
@@ -41,9 +42,9 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    pub(crate) fn generate(&mut self, world: &World, xy: Coord2, resources: &Resources) {
+    pub(crate) fn generate(&mut self, params: &ChunkGenParams, world: &World, xy: Coord2, resources: &Resources) {
         let now = Instant::now();
-        self.generate_fixed_terrain_features();
+        self.generate_fixed_terrain_features(params);
         println!("[Chunk gen] Terrain: {:.2?}", now.elapsed());
 
         let mut solver = self.get_jigsaw_solver();
@@ -92,7 +93,11 @@ impl<'a> ChunkGenerator<'a> {
                 },
                 UnitType::VarningrLair => {
                     let now = Instant::now();
-                    self.generate_lair(&unit, &mut solver, &world, resources);
+                    match params.layer {
+                        ChunkLayer::Surface => self.generate_lair_entrance(&mut solver, resources),
+                        ChunkLayer::Underground => self.generate_lair(&unit, &mut solver, &world, resources),
+                    };
+                    // self.generate_lair(&unit, &mut solver, &world, resources);
                     println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
                 }
             }
@@ -127,21 +132,33 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    fn generate_fixed_terrain_features(&mut self) {
-        // TODO: Based on region
-        let noise = Perlin::new(Rng::rand().derive("grass").seed());
-        
-        for x in 0..self.chunk.size.x() {
-            for y in 0..self.chunk.size.y() {
-                let n = noise.get([x as f64 / 15.0, y as f64 / 15.0]);
-                if n > 0. {
-                    if n > 0.9 {
-                        self.chunk.map.ground_layer.set_tile(x, y, 7);
-                    } else {
-                        self.chunk.map.ground_layer.set_tile(x, y, 1);
+    fn generate_fixed_terrain_features(&mut self, params: &ChunkGenParams) {
+        match params.layer {
+            ChunkLayer::Surface => {
+                // TODO: Based on region
+                let noise = Perlin::new(Rng::rand().derive("grass").seed());
+                
+                for x in 0..self.chunk.size.x() {
+                    for y in 0..self.chunk.size.y() {
+                        let n = noise.get([x as f64 / 15.0, y as f64 / 15.0]);
+                        if n > 0. {
+                            if n > 0.9 {
+                                self.chunk.map.ground_layer.set_tile(x, y, 7);
+                            } else {
+                                self.chunk.map.ground_layer.set_tile(x, y, 1);
+                            }
+                        } else {
+                            self.chunk.map.ground_layer.set_tile(x, y, 6);
+                        }
                     }
-                } else {
-                    self.chunk.map.ground_layer.set_tile(x, y, 6);
+                }
+            },
+            ChunkLayer::Underground => {
+                for x in 0..self.chunk.size.x() {
+                    for y in 0..self.chunk.size.y() {
+                        self.chunk.map.ground_layer.set_tile(x, y, 6);
+                        self.chunk.map.object_layer.set_tile(x, y, 15);
+                    }
                 }
             }
         }
@@ -434,6 +451,15 @@ impl<'a> ChunkGenerator<'a> {
             }
 
 
+        }
+    }
+
+    fn generate_lair_entrance(&mut self, solver: &mut JigsawSolver, resources: &Resources) {
+        let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng);
+        if let Some(structure) = structure {
+            for (pos, piece) in structure.vec.iter() {
+                self.place_template(*pos, &piece, resources);
+            }
         }
     }
 

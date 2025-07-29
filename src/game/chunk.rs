@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 use graphics::{image, Transformed};
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator, ChunkLayer}, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -39,7 +39,7 @@ impl ChunkMap {
         }
         // TODO: Resources
         let i = self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize);
-        if i == 9 || i == 11 || i == 12 {
+        if i == 9 || i == 11 || i == 12 || i == 16 || i == 17 {
             return false
         }
         return true
@@ -77,7 +77,13 @@ impl ChunkMap {
     }
 
     pub(crate) fn set_object_idx(&mut self, pos: Coord2, id: usize, resources: &Resources) {
-        let shadow = resources.object_tiles.try_get(id - 1).unwrap().casts_shadow;
+        // SMELL
+        let shadow;
+        if id > 0 {
+            shadow = resources.object_tiles.try_get(id - 1).unwrap().casts_shadow;
+        } else {
+            shadow = false;
+        }
         self.object_layer.set_tile(pos.x as usize, pos.y as usize, id);
         self.object_layer.set_shadow(pos.x as usize, pos.y as usize, shadow);
     }
@@ -223,13 +229,16 @@ impl Chunk {
         self.turn_controller.remove(i);
     }
 
-    pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, player: Actor) -> Chunk {
+    pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, layer: ChunkLayer, player: Actor) -> Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
         let mut chunk = Chunk::new(Size2D(64, 64), player, resources);
         let mut generator = ChunkGenerator::new(&mut chunk, rng);
-        generator.generate(world, xy, resources);
+        let params = ChunkGenParams {
+            layer
+        };
+        generator.generate(&params, world, xy, resources);
         return chunk;
     }
 

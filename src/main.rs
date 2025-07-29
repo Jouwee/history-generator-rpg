@@ -14,7 +14,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::WindowSettings;
 
-use crate::engine::geometry::Size2D;
+use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::geometry::Size2D};
 
 pub(crate) mod engine;
 pub(crate) mod commons;
@@ -270,7 +270,7 @@ fn main() {
                         player.inventory.auto_equip();
 
                         let cursor = Coord2::xy(world.map.size.0 as i32 / 2, world.map.size.1 as i32 / 2);
-                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, player);
+                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, ChunkLayer::Surface, player);
                         let mut scene = GameSceneState::new(world, cursor, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);

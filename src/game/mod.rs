@@ -12,6 +12,7 @@ use hotbar::Hotbar;
 use map_modal::{MapModal, MapModalEvent};
 use piston::{ButtonArgs, Key, MouseButton};
 use player_pathing::PlayerPathing;
+use crate::chunk_gen::chunk_generator::ChunkLayer;
 use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
 use crate::engine::assets::assets;
@@ -66,6 +67,7 @@ pub(crate) enum TurnMode {
 pub(crate) struct GameSceneState {
     pub(crate) world: World,
     pub(crate) world_pos: Coord2,
+    world_layer: ChunkLayer,
     pub(crate) chunk: Chunk,
     turn_mode: TurnMode,
     player_turn_timer: f64,
@@ -145,6 +147,7 @@ impl GameSceneState {
             world,
             chunk,
             world_pos,
+            world_layer: ChunkLayer::Surface,
             turn_mode: TurnMode::RealTime,
             player_turn_timer: 0.,
             hotbar: Hotbar::new(),
@@ -274,9 +277,29 @@ impl GameSceneState {
         }
         // Creates the new chunk
         // TODO: When out of bounds, make a special chunk gen
-        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, world_pos, player);
+        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, world_pos, self.world_layer, player);
         // Switcheroo
         self.world_pos = world_pos;
+        self.chunk = chunk;
+        // Re-init
+        self.init(ctx);
+    }
+
+    fn move_to_layer(&mut self, layer: ChunkLayer, ctx: &mut GameContext) {
+        // Creates the new chunk
+        let mut chunk = Chunk::from_world_tile(&self.world, &ctx.resources, self.world_pos, layer, self.chunk.player().clone());
+        // Finds the exit
+        'outer: for x in 0..chunk.size.x() {
+            for y in 0..chunk.size.y() {
+                let pos = Coord2::xy(x as i32, y as i32);
+                if chunk.map.get_object_idx(pos) == 17 {
+                    chunk.player_mut().xy = pos + Coord2::xy(0, -1);
+                    break 'outer;
+                }
+            }
+        }
+        // Switcheroo
+        self.world_layer = layer;
         self.chunk = chunk;
         // Re-init
         self.init(ctx);
@@ -438,6 +461,13 @@ impl Scene for GameSceneState {
         if self.chunk.player().xy.y >= self.chunk.size.y() as i32 - 1 {
             self.move_to_chunk(self.world_pos + Coord2::xy(0, 1), ctx);
             return
+        }
+        // TODO: Resources
+        if self.chunk.map.get_object_idx(self.chunk.player().xy) == 16 {
+            self.move_to_layer(ChunkLayer::Underground, ctx);
+        }
+        if self.chunk.map.get_object_idx(self.chunk.player().xy) == 17 {
+            self.move_to_layer(ChunkLayer::Surface, ctx);
         }
 
         self.action_runner.update(update, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);

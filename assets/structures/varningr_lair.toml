@@ -1,10 +1,23 @@
 [symbols]
-'-' = { ground= 6 }
-'b' = { ground= 6, object= 13 }
-'#' = { ground= 6, object= 1 }
+'-' = { ground= 8, object= 0 }
+'b' = { ground= 8, object= 13 }
+'#' = { ground= 8, object= 15 }
+'u' = { ground= 8, object= 17 }
+'d' = { ground= 8, object= 16 }
 'M' = { connect = "varningr_lair" }
 'R' = { connect = "varningr_room" }
 'E' = { connect = "varningr_entrance" }
+
+[varningr_surface]
+[varningr_surface.a]
+size = [3, 3]
+allow_flip_hor = true
+allow_flip_ver = true
+template = """
+...
+.d.
+...
+"""
 
 [varningr_lair]
 
@@ -21,13 +34,13 @@ template = """
 ##----------##.
 ##-----b----##.
 ##----------##.
-##----------#..
+##----------##.
 ##----------##.
 ##-b--------##.
 .###-------##..
-...##---####...
+..###---#####..
 ...##---##.....
-....#-R-#......
+...##-R-##.....
 """
 
 [varningr_room]
@@ -37,15 +50,15 @@ size = [9, 9]
 allow_flip_hor = true
 allow_flip_ver = true
 template = """
-..#.M.#..
-..#....#.
-.#......#
-.#b.....#
-#.......#
-#......b#
-#......#.
-.#.....#.
-..#.E.#..
+..#-M-##.
+.##----##
+##------#
+##b-----#
+#-------#
+#------b#
+#------##
+##-----##
+.##-E-##.
 """
 [varningr_entrance]
 
@@ -54,9 +67,9 @@ size = [5, 5]
 allow_flip_hor = true
 allow_flip_ver = true
 template = """
-#.R.#
-#...#
-#...#
-#...#
-b....
+#-R-#
+#---#
+#-u-#
+#b-##
+#####
 """
