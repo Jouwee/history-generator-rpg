@@ -5,7 +5,7 @@ use chunk::Chunk;
 use effect_layer::EffectLayer;
 use game_context_menu::GameContextMenu;
 use game_log::GameLog;
-use graphics::{Image, Transformed};
+use graphics::{image, Image, Transformed};
 use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
@@ -355,8 +355,14 @@ impl Scene for GameSceneState {
         // Effects
         self.effect_layer.render(ctx, game_ctx);
 
-        // UI
+        // Back to screen space
         let _ = ctx.try_pop();
+
+        // Vignette over game, under UI
+        let vignette = assets().image("vignette.png");
+        image(&vignette.texture, ctx.context.transform.scale(ctx.camera_rect[2] / vignette.size.0 as f64, ctx.camera_rect[3] / vignette.size.1 as f64), ctx.gl);
+
+        // UI
         self.hotbar.render(&self.chunk.player, ctx, game_ctx);
         self.hud.render(self.chunk.player(), ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
