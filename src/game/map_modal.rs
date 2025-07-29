@@ -92,7 +92,7 @@ impl MapModal {
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
-        self.tilemap.render(ctx, game_ctx);
+        self.tilemap.render(ctx);
         self.objects.render(ctx, game_ctx, |_, _, _, _| {});
 
         let cursor = [self.player_pos.x * 16, self.player_pos.y * 16];
@@ -102,13 +102,13 @@ impl MapModal {
             cursor[1].clamp(ctx.camera_rect[1] as i32, ctx.camera_rect[1] as i32 + ctx.camera_rect[3] as i32 - 16),
         ];
         if cursor != cursor_clamp {
-            ctx.image(&"map_tiles/player_offscreen.png", cursor_clamp, &mut game_ctx.assets);
+            ctx.image(&"map_tiles/player_offscreen.png", cursor_clamp);
         } else {
-            ctx.image(&"map_tiles/player.png", cursor_clamp, &mut game_ctx.assets);
+            ctx.image(&"map_tiles/player.png", cursor_clamp);
         }
         let _ = ctx.try_pop();
         // Control
-        ctx.image(&"controls/right_click.png", [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24], &mut game_ctx.assets);
+        ctx.image(&"controls/right_click.png", [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24]);
         ctx.text("Drag to move", game_ctx.assets.font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &Color::from_hex("ffffff"));
         self.close_button.render(&(), ctx, game_ctx);
     }

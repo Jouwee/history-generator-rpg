@@ -87,7 +87,7 @@ impl UINode for Hotbar {
 
     fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let rect = self.layout.compute_layout_rect(ctx.layout_rect);
-        ctx.image(&self.background, [rect[0] as i32, rect[1] as i32], &mut game_ctx.assets);
+        ctx.image(&self.background, [rect[0] as i32, rect[1] as i32]);
 
         let copy = ctx.layout_rect;
         ctx.layout_rect = rect;

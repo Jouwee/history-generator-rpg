@@ -121,7 +121,7 @@ impl Scene for WorldGenScene {
         let white = Color::rgb([1., 1., 1.]);
         let world = &self.generator.world;
         let ts = 4.;
-        self.tilemap.render(ctx, game_ctx);
+        self.tilemap.render(ctx);
         for unit in world.units.iter() {
             let unit = unit.borrow();
 

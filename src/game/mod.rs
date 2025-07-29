@@ -368,11 +368,11 @@ impl Scene for GameSceneState {
                 ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &Color::from_hex("ffffffff"));
             }
         } else {
-            ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24], &mut game_ctx.assets);
+            ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24]);
         }
 
         if self.hotbar.selected_action.is_none() {
-            self.player_pathing.render(&self.turn_mode, self.chunk.player(), ctx, game_ctx);
+            self.player_pathing.render(&self.turn_mode, self.chunk.player(), ctx);
         }
 
         // Effects

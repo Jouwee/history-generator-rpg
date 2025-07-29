@@ -262,7 +262,7 @@ impl Chunk {
 
 impl Renderable for Chunk {
     fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
-        self.map.ground_layer.render(ctx, game_ctx);
+        self.map.ground_layer.render(ctx);
 
         let mut actors_by_position = HashMap::new();
         actors_by_position.insert(&self.player().xy, vec!(self.player()));
@@ -298,22 +298,22 @@ impl Renderable for Chunk {
         // Renders the nav borders
         {
             for y in 1..self.size.y()-1 {
-                ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12]);
             }
         }
         {
             for y in 1..self.size.y()-1 {
-                ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12]);
             }
         }
         {
             for x in 1..self.size.x()-1 {
-                ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 - 12, 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 - 12, 12]);
             }
         }
         {
             for x in 1..self.size.x()-1 {
-                ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 - 12, self.size.y() as i32 * 24 - 12], &mut game_ctx.assets);
+                ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 - 12, self.size.y() as i32 * 24 - 12]);
             }
         }
         {

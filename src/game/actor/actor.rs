@@ -305,7 +305,7 @@ impl Renderable for Actor {
             ctx.context.transform = ctx.context.transform.trans(48., 0.).scale(-1., 1.)
         }
 
-        ctx.image("species/shadow.png", [11, 42], &mut game_ctx.assets);
+        ctx.image("species/shadow.png", [11, 42]);
         // Applies the animation to the rendering
         self.render_layers(self.animation.translate, ctx, game_ctx);
 
