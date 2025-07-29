@@ -122,10 +122,10 @@ mod tests_jigsaw_solver {
         let mut tiles = Vec::new();
         for char in string.chars() {
             match char {
-                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false }),
-                'A' => tiles.push(JigsawPieceTile::Connection(String::from("A"))),
-                'B' => tiles.push(JigsawPieceTile::Connection(String::from("B"))),
-                'C' => tiles.push(JigsawPieceTile::Connection(String::from("C"))),
+                '#' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false, connection: None }),
+                'A' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false, connection: Some(String::from("A")) }),
+                'B' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false, connection: Some(String::from("B")) }),
+                'C' => tiles.push(JigsawPieceTile::Fixed { ground: 1, object: None, statue_spot: false, connection: Some(String::from("C")) }),
                 '_' => tiles.push(JigsawPieceTile::Air),
                 '.' => tiles.push(JigsawPieceTile::Empty),
                 _ => ()
@@ -223,10 +223,10 @@ pub(crate) enum JigsawPieceTile {
     Fixed {
         ground: usize,
         object: Option<usize>,
-        statue_spot: bool
+        statue_spot: bool,
+        connection: Option<String>
     },
     PathEndpoint,
-    Connection(String)
 }
 
 impl JigsawPieceTile {
@@ -237,8 +237,8 @@ impl JigsawPieceTile {
         if *self == JigsawPieceTile::Empty || *another == JigsawPieceTile::Empty {
             return true
         }
-        if let JigsawPieceTile::Connection(_) = *self {
-            if let JigsawPieceTile::Connection(_) = *another {
+        if let JigsawPieceTile::Fixed { ground: _, object: _, statue_spot: _, connection: Some(_) } = *self {
+            if let JigsawPieceTile::Fixed { ground: _, object: _, statue_spot: _, connection: Some(_) } = *another {
                 return true
             }
         }
@@ -264,7 +264,7 @@ impl Structure {
         let mut first_c = self.vec.len() > 0;
         self.vec.push((origin, template.clone()));
         for (i, tile) in template.tiles.iter().enumerate() {
-            if let JigsawPieceTile::Connection(pool) = tile {
+            if let JigsawPieceTile::Fixed { ground: _, object: _, statue_spot: _, connection: Some(pool) } = tile {
                 // TODO: Actually check if open
                 if first_c {
                     first_c = false;
@@ -287,7 +287,7 @@ impl Structure {
     pub(crate) fn template_fits(&self, template: &JigsawPiece, connection: &Coord2) -> Vec<Coord2> {
         let mut vec = Vec::new();
         'candidate: for (i, tile) in template.tiles.iter().enumerate() {
-            if let JigsawPieceTile::Connection(_) = tile {
+            if let JigsawPieceTile::Fixed { ground: _, object: _, statue_spot: _, connection: Some(_) } = tile {
                 let cx = i % template.size.x();
                 let cy = i / template.size.x();
                 for (j, tile) in template.tiles.iter().enumerate() {

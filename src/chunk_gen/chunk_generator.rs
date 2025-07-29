@@ -603,8 +603,7 @@ impl<'a> ChunkGenerator<'a> {
                 JigsawPieceTile::Air => (),
                 JigsawPieceTile::Empty => (),
                 JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
-                JigsawPieceTile::Connection(_) => self.chunk.map.ground_layer.set_tile(x, y, 4),
-                JigsawPieceTile::Fixed { ground, object, statue_spot } => {
+                JigsawPieceTile::Fixed { ground, object, statue_spot, connection: _ } => {
                     self.chunk.map.ground_layer.set_tile(x, y, ground);
                     if let Some(object) = object {
                         self.chunk.map.set_object_idx(Coord2::xy(x as i32, y as i32), object, resources);

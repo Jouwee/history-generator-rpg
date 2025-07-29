@@ -8,8 +8,8 @@
 't' = { ground= 4, object= 4 }
 'r' = { ground= 1, object= 8 }
 '&' = { path_endpoint = true }
-'A' = { connect = "village_house_start" }
-'B' = { connect = "village_house_room" }
+'A' = { ground= 4, connect = "village_house_start" }
+'B' = { ground= 4, connect = "village_house_room" }
 
 
 [village_house_start]

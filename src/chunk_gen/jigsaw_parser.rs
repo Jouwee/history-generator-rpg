@@ -129,10 +129,6 @@ impl JigsawParser {
             let symbol = symbol.chars().next().unwrap();
             match tile {
                 Value::Table(tile_table) => {
-                    if let Some(Value::String(connection)) = tile_table.get("connect") {
-                        map.insert(symbol, JigsawPieceTile::Connection(connection.clone()));
-                        continue;
-                    }
                     if let Some(Value::Integer(ground)) = tile_table.get("ground") {
                         let object = match tile_table.get("object") {
                             Some(Value::Integer(object)) => Some(*object as usize),
@@ -142,7 +138,11 @@ impl JigsawParser {
                             Some(Value::Boolean(true)) => true,
                             _ => false
                         };
-                        map.insert(symbol, JigsawPieceTile::Fixed { ground: *ground as usize, object, statue_spot });
+                        let connection = match tile_table.get("connect") {
+                            Some(Value::String(connection)) => Some(connection.clone()),
+                            _ => None
+                        };
+                        map.insert(symbol, JigsawPieceTile::Fixed { ground: *ground as usize, object, statue_spot, connection });
                         continue;
                     }
                     if let Some(Value::Boolean(true)) = tile_table.get("path_endpoint") {
@@ -218,7 +218,7 @@ a
         assert_eq!(piece.size, Size2D(1, 1));
         assert_eq!(piece.tiles.len(), 1);
         let tile = piece.tiles.get(0).unwrap();
-        assert_eq!(tile.clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(tile.clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
 
 
     }
@@ -252,20 +252,20 @@ b.a
         assert_eq!(pool.pieces.contains_key("var_a_flip_hor"), true);
 
         let piece = pool.pieces.get("var_a").unwrap();
-        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(1).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
-        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
+        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(4).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
 
         let piece = pool.pieces.get("var_a_flip_hor").unwrap();
-        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(1).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
-        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
+        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(4).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
 
         // Vertical flip
         let result = parser.parse_string("
@@ -291,20 +291,20 @@ b.a
         assert_eq!(pool.pieces.contains_key("var_a_flip_ver"), true);
 
         let piece = pool.pieces.get("var_a").unwrap();
-        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(1).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
-        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
+        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(4).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
 
         let piece = pool.pieces.get("var_a_flip_ver").unwrap();
-        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(0).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(1).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
-        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false });
+        assert_eq!(piece.tiles.get(2).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
+        assert_eq!(piece.tiles.get(3).unwrap().clone(), JigsawPieceTile::Fixed { ground: 1, object: Some(1), statue_spot: false, connection: None });
         assert_eq!(piece.tiles.get(4).unwrap().clone(), JigsawPieceTile::Empty);
-        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false });
+        assert_eq!(piece.tiles.get(5).unwrap().clone(), JigsawPieceTile::Fixed { ground: 2, object: None, statue_spot: false, connection: None });
 
     }
 

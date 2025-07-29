@@ -4,9 +4,9 @@
 '#' = { ground= 8, object= 15 }
 'u' = { ground= 8, object= 17 }
 'd' = { ground= 8, object= 16 }
-'M' = { connect = "varningr_lair" }
-'R' = { connect = "varningr_room" }
-'E' = { connect = "varningr_entrance" }
+'M' = { ground= 8, object= 0, connect = "varningr_lair" }
+'R' = { ground= 8, object= 0, connect = "varningr_room" }
+'E' = { ground= 8, object= 0, connect = "varningr_entrance" }
 
 [varningr_surface]
 [varningr_surface.a]
