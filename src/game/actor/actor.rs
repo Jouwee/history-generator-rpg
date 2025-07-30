@@ -273,7 +273,7 @@ impl Actor {
             textures.push((z_order, texture));
         }
         for (_z, image) in textures {
-            ctx.texture_ref(&image.texture, pos);
+            ctx.texture(&image.texture, ctx.at(pos[0], pos[1]));
         }
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
@@ -313,7 +313,7 @@ impl Renderable for Actor {
             match affliction.affliction {
                 Affliction::OnFire { duration: _ } => {
                     let sheet = assets().image_sheet("status/onfire.png", Size2D(24, 24));
-                    ctx.texture_ref(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), [11., 24.]);
+                    ctx.texture(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), ctx.at(11., 24.));
                 },
                 _ => ()
             }

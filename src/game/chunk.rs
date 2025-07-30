@@ -293,7 +293,7 @@ impl Renderable for Chunk {
         });
 
         for (pos, _item, texture) in self.map.items_on_ground.iter() {
-            ctx.texture_ref(texture, [pos.x as f64 * 24., pos.y as f64 * 24.]);
+            ctx.texture(texture, ctx.at(pos.x as f64 * 24., pos.y as f64 * 24.));
         }
         // Renders the nav borders
         {

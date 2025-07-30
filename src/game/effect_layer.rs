@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::image_sheet::ImageSheetAsset, assets::assets, geometry::Coord2, render::RenderContext, scene::Update, Color, Palette}, GameContext, SPRITE_FPS};
+use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::image_sheet::ImageSheetAsset, assets::assets, geometry::Coord2, render::RenderContext, scene::Update, Palette, COLOR_BLACK}, GameContext, SPRITE_FPS};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -36,16 +36,16 @@ impl EffectLayer {
             {
                 let mut lpos = pos;
                 lpos[0] -= 1;
-                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &COLOR_BLACK);
                 let mut lpos = pos;
                 lpos[0] += 1;
-                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &COLOR_BLACK);
                 let mut lpos = pos;
                 lpos[1] -= 1;
-                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &COLOR_BLACK);
                 let mut lpos = pos;
                 lpos[1] += 1;
-                ctx.text(&dn.text, font, lpos, &Color::from_hex("000000"));
+                ctx.text(&dn.text, font, lpos, &COLOR_BLACK);
             }
             // actual text
             ctx.text(&dn.text, font, pos, &dn.color.color());
@@ -73,7 +73,7 @@ impl EffectLayer {
             if sprite_index >= sheet.len() {
                 sprite.done = true;
             } else {
-                ctx.texture_ref(sheet.get(sprite_index).unwrap(), [sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)]);
+                ctx.texture(sheet.get(sprite_index).unwrap(), ctx.at(sprite.pos.x as f64 * 24. + 12. - (sheet.tile_size.0 as f64 / 2.), sprite.pos.y as f64 * 24. + 12. - (sheet.tile_size.1 as f64 / 2.)));
             }
         }
         self.sprites.retain(|n| !n.done);

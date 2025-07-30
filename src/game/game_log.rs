@@ -1,4 +1,4 @@
-use crate::{world::world::World, Actor, Color, GameContext, RenderContext, Resources};
+use crate::{engine::{COLOR_BLACK, COLOR_WHITE}, world::world::World, Actor, Color, GameContext, RenderContext, Resources};
 
 use super::actor::damage_resolver::DamageOutput;
 
@@ -25,7 +25,7 @@ impl GameLog {
             let mut x = 16;
             for part in entry.parts.iter() {
                 // Shadow effect
-                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y + 1], &Color::from_hex("000000"));
+                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y + 1], &COLOR_BLACK);
                 // Actual text
                 ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y], &part.color());
                 x += game_ctx.assets.font_standard().width(&part.text()) as i32;
@@ -102,7 +102,7 @@ impl GameLogPart {
 
     fn color(&self) -> Color {
         match self {
-            Self::Text(_) => Color::from_hex("ffffff"),
+            Self::Text(_) => COLOR_WHITE,
             Self::Damage(_) => Color::from_hex("ff0000"),
             Self::Actor(_, is_player) => {
                 match is_player {

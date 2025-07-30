@@ -141,7 +141,7 @@ impl Scene for WorldGenScene {
         // Year banner
         let center = ctx.layout_rect[2] / 2.;
         let font= game_ctx.assets.font_standard();
-        ctx.texture_ref(&self.banner_texture, [center - 64., 0.]);
+        ctx.texture(&self.banner_texture, ctx.at(center - 64., 0.));
         let text = format!("Year {}", &self.generator.year.to_string());
         let text_width = font.width(&text);
         ctx.text(&text, font, [(center - text_width / 2.).round() as i32, 16], &white);

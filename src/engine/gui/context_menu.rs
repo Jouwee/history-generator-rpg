@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, Color, GameContext, InputEvent, RenderContext};
+use crate::{engine::{gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, Color, GameContext, InputEvent, RenderContext};
 
 const ROW_HEIGHT: f64 = 11.;
 
@@ -57,7 +57,7 @@ impl UINode for ContextMenu {
             if hover_i == i {
                 ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1] + y as f64, ctx.layout_rect[2], ROW_HEIGHT], Color::from_hex("35394a"));
             }
-            ctx.text_shadow(item, game_ctx.assets.font_standard(), [ctx.layout_rect[0] as i32 + 4, ctx.layout_rect[1] as i32 + y + 9], &Color::from_hex("ffffff"));
+            ctx.text_shadow(item, game_ctx.assets.font_standard(), [ctx.layout_rect[0] as i32 + 4, ctx.layout_rect[1] as i32 + y + 9], &COLOR_WHITE);
             y += ROW_HEIGHT as i32;
         }
         ctx.layout_rect = copy;

@@ -1,4 +1,4 @@
-use crate::{globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
+use crate::{engine::{COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) struct HeadsUpDisplay {
     health: NumberedBar,
@@ -36,8 +36,8 @@ impl HeadsUpDisplay {
         player.render_layers([14., 11.], ctx, game_ctx);
 
         let health_text = format!("{:.0} / {:.0}", player.hp.health_points(), player.hp.max_health_points());
-        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7+1], &Color::from_hex("000000"));
-        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7], &Color::from_hex("ffffff"));
+        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7+1], &COLOR_BLACK);
+        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7], &COLOR_WHITE);
 
         ctx.image(&"gui/hud/foreground.png", [16, 16]);
         perf().end("hud");
@@ -50,14 +50,14 @@ impl HeadsUpDisplay {
         let w2 = rect[2] as f64 * bar.0;
         let h = rect[3] as f64;
         let hh = h / 2.;
-        ctx.rectangle_fill([x, y, w1, h], Color::from_hex("ffffff"));
+        ctx.rectangle_fill([x, y, w1, h], COLOR_WHITE);
         ctx.rectangle_fill([x, y, w2, hh], color_1);
         ctx.rectangle_fill([x, y + hh, w2, hh], color_2);
         if let Some(preview) = bar.2 {
             let w3 = rect[2] as f64 * preview;
             let x = x + w3;
             let w3 = w2 - w3;
-            ctx.rectangle_fill([x, y, w3, h], Color::from_hex("ffffff30"));
+            ctx.rectangle_fill([x, y, w3, h], COLOR_WHITE.alpha(0.2));
         }
     }
 

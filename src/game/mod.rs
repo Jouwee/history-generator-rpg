@@ -22,7 +22,7 @@ use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
-use crate::engine::Color;
+use crate::engine::{Color, COLOR_WHITE};
 use crate::game::chunk::{AiGroups, PLAYER_IDX};
 use crate::game::console::Console;
 use crate::game::gui::codex_dialog::CodexDialog;
@@ -353,7 +353,7 @@ impl Scene for GameSceneState {
             let action = game_ctx.resources.actions.get(action_id);
             let can_use = ActionRunner::can_use(action_id, action, PLAYER_IDX, self.cursor_pos, &self.chunk);
             let color = match can_use {
-                Ok(_) => (Color::from_hex("ffffff30"), Color::from_hex("ffffffff")),
+                Ok(_) => (COLOR_WHITE.alpha(0.2), COLOR_WHITE),
                 Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
             };
             if action.area != ActionArea::Target {
@@ -366,7 +366,7 @@ impl Scene for GameSceneState {
             let transform = ctx.context.transform.trans(pos[0], pos[1]);
             Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
             if let Err(msg) = can_use {
-                ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &Color::from_hex("ffffffff"));
+                ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
             }
         } else {
             ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24]);

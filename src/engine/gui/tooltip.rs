@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color}, GameContext};
+use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent
@@ -177,7 +177,7 @@ impl TooltipLine {
 
     fn render(&self, pos: [i32; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         match &self {
-            Self::Title(title) => ctx.text(&title, game_ctx.assets.font_standard(), pos, &Color::from_hex("ffffff")),
+            Self::Title(title) => ctx.text(&title, game_ctx.assets.font_standard(), pos, &COLOR_WHITE),
             Self::Body(body) => ctx.text(&body, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069")),
             Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), game_ctx.assets.font_standard(), pos, &Color::from_hex("446d99")),
             Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), game_ctx.assets.font_standard(), pos, &Color::from_hex("88ae59")),

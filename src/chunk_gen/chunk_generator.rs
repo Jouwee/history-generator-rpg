@@ -459,6 +459,16 @@ impl<'a> ChunkGenerator<'a> {
         if let Some(structure) = structure {
             for (pos, piece) in structure.vec.iter() {
                 self.place_template(*pos, &piece, resources);
+                if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
+                    let ai_group = self.chunk.ai_groups.next_group();
+                    let wolf_id = resources.species.id_of("species:wolf");
+                    let wolf = resources.species.get(&wolf_id);
+                    // Minion wolves
+                    for _ in 0..self.rng.randi_range(1, 4) {
+                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                        self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
+                    }
+                }
             }
         }
     }
@@ -491,6 +501,13 @@ impl<'a> ChunkGenerator<'a> {
             }
             for (pos, piece) in iter {
                 self.place_template(*pos, &piece, resources);
+                if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
+                    // Minion wolves
+                    for _ in 0..self.rng.randi_range(1, 4) {
+                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                        self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2));
+                    }
+                }
             }
         }
     }

@@ -4,7 +4,7 @@ use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet}, Color, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet, COLOR_WHITE}, GameContext, InputEvent, RenderContext};
 
 
 pub(crate) struct Button {
@@ -133,7 +133,7 @@ impl UINode for Button {
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
         image(self.frame.sprite(state_offset + 2, 1), transform, ctx.gl);
 
-        ctx.text(&self.text, game_ctx.assets.font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &Color::from_hex("ffffff"));
+        ctx.text(&self.text, game_ctx.assets.font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
     }
 
     fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {

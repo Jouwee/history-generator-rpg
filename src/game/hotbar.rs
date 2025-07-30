@@ -1,6 +1,6 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, Color}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
+use crate::{engine::{gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, COLOR_WHITE}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
@@ -99,7 +99,7 @@ impl UINode for Hotbar {
             button.render(&(), ctx, game_ctx);
             let cooldown = state.cooldowns.iter().find(|cooldown| cooldown.0 == *id);
             if let Some(cooldown) = cooldown {
-                ctx.text_shadow(&format!("{}", cooldown.1), game_ctx.assets.font_standard(), [ctx.layout_rect[0] as i32 + 8, ctx.layout_rect[1] as i32 + 16], &Color::from_hex("ffffffff"));
+                ctx.text_shadow(&format!("{}", cooldown.1), game_ctx.assets.font_standard(), [ctx.layout_rect[0] as i32 + 8, ctx.layout_rect[1] as i32 + 16], &COLOR_WHITE);
             }
         }
         

@@ -83,7 +83,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub(crate) fn texture(&mut self, texture: &Texture, transform: [[f64; 3]; 2]) {
-        // image(texture, transform, self.gl);
+        image(texture, transform, self.gl);
     }
 
     pub(crate) fn at(&self, x: f64, y: f64) -> [[f64; 3]; 2] {
@@ -98,12 +98,6 @@ impl<'a> RenderContext<'a> {
         // So I save the texture in this array, which is dropped after the frame is rendered.
         self.textures.push(texture);
         image(self.textures.last().unwrap(), transform, self.gl);
-    }
-
-    #[deprecated]
-    pub(crate) fn texture_ref(&mut self, texture: &Texture, position: [f64; 2]) {
-        let transform = self.context.transform.trans(position[0], position[1]);
-        image(texture, transform, self.gl);
     }
 
 }
