@@ -47,7 +47,7 @@ impl UINode for EquipmentSlot {
         ctx.rectangle_fill(layout, Color::from_hex("24232a"));
         if let Some(item) = &state.equipped(&self.slot) {
             let texture = item.make_texture(&game_ctx.resources.materials);
-            ctx.texture(texture, [layout[0], layout[1]]);
+            ctx.texture_old(texture, [layout[0], layout[1]]);
         }
     }
 

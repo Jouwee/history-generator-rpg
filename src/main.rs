@@ -7,7 +7,7 @@ use sdl2_window::Sdl2Window;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use opengl_graphics::{GlGraphics, OpenGL};
-use piston::{event_loop::{EventSettings, Events}, ButtonArgs, UpdateArgs};
+use piston::{event_loop::{EventSettings, Events}, ButtonArgs, EventLoop, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
@@ -207,7 +207,7 @@ fn main() {
     let mut last_mouse_pos = [0.0, 0.0];
 
     let mut event_settings = EventSettings::new();
-    event_settings.max_fps = 30;
+    event_settings.set_max_fps(1000);
     event_settings.ups = 30;
 
     let mut input_state = InputState::new();

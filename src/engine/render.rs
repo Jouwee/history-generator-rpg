@@ -82,8 +82,16 @@ impl<'a> RenderContext<'a> {
         }
     }
 
+    pub(crate) fn texture(&mut self, texture: &Texture, transform: [[f64; 3]; 2]) {
+        // image(texture, transform, self.gl);
+    }
+
+    pub(crate) fn at(&self, x: f64, y: f64) -> [[f64; 3]; 2] {
+        return self.context.transform.trans(x, y);
+    }
+
     #[deprecated]
-    pub(crate) fn texture(&mut self, texture: Texture, position: [f64; 2]) {
+    pub(crate) fn texture_old(&mut self, texture: Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         // Workaround for a behaviour of piston where it passes a reference of the texture to the backend for async rendering,
         // but that texture might be dropped before the frame is rendered, resulting in a black square.

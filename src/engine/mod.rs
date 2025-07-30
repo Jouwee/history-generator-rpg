@@ -28,6 +28,9 @@ impl Point2D {
 
 }
 
+pub(crate) const COLOR_BLACK: Color = Color { r: 0., g: 0., b: 0., a: 1. };
+pub(crate) const COLOR_WHITE: Color = Color { r: 1., g: 1., b: 1., a: 1. };
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub(crate) struct Color {
     pub(crate) r: f32,
@@ -62,6 +65,10 @@ impl Color {
             b: b as f32 / 255.0,
             a: a as f32 / 255.0
         };
+    }
+
+    pub(crate) fn alpha(&self, alpha: f32) -> Color {
+        return Color { r: self.r, g: self.g, b: self.b, a: alpha }
     }
 
     pub(crate) fn f32_arr(&self) -> [f32; 4] {

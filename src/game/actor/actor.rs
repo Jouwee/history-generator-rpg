@@ -290,7 +290,7 @@ impl Actor {
         }
         textures.sort_by(|a, b| a.0.cmp(&b.0));
         for (_z, image) in textures {
-            ctx.texture(image, pos);
+            ctx.texture_old(image, pos);
         }
     }
 }

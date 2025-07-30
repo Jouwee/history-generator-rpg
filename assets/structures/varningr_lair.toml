@@ -25,6 +25,7 @@ template = """
 size = [15, 15]
 allow_flip_hor = true
 allow_flip_ver = true
+allow_rotate = true
 template = """
 .....#######...
 ....#########..
@@ -49,6 +50,7 @@ template = """
 size = [9, 9]
 allow_flip_hor = true
 allow_flip_ver = true
+allow_rotate = true
 template = """
 ..#-M-##.
 .##----##
@@ -60,12 +62,29 @@ template = """
 ##-----##
 .##-E-##.
 """
+
+[varningr_room.b]
+size = [7, 7]
+allow_flip_hor = true
+allow_flip_ver = true
+allow_rotate = true
+template = """
+##-R-##
+##----#
+##-----
+###---R
+####---
+#######
+#######
+"""
+
 [varningr_entrance]
 
 [varningr_entrance.a]
 size = [5, 5]
 allow_flip_hor = true
 allow_flip_ver = true
+allow_rotate = true
 template = """
 #-R-#
 #---#
