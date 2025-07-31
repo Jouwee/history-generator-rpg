@@ -78,6 +78,41 @@ template = """
 #######
 """
 
+[varningr_room.c]
+size = [9, 9]
+allow_flip_hor = true
+allow_flip_ver = true
+allow_rotate = true
+template = """
+..#-R-##.
+.##----##
+##------#
+##--#---#
+#---#---#
+#---#---#
+#---#--##
+##-----##
+.##-R-##.
+"""
+
+
+[varningr_room.d]
+size = [9, 9]
+allow_flip_hor = true
+allow_flip_ver = true
+allow_rotate = true
+template = """
+######-R#
+######--#
+#####---#
+#####--##
+####---##
+##----###
+#---#####
+#--######
+#R-######
+"""
+
 [varningr_entrance]
 
 [varningr_entrance.a]

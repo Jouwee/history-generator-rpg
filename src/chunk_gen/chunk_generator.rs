@@ -102,7 +102,19 @@ impl<'a> ChunkGenerator<'a> {
                 }
             }
 
-        }       
+        } else {
+            if self.rng.rand_chance(0.1) {
+                let ai_group = self.chunk.ai_groups.next_group();
+                let wolf_id = resources.species.id_of("species:wolf");
+                let wolf = resources.species.get(&wolf_id);
+                self.chunk.ai_groups.make_hostile(ai_group, AiGroups::player());
+                // Wildlife
+                for _ in 0..self.rng.randi_range(1, 4) {
+                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                    self.spawn(boss, Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2));
+                }
+            }
+        }      
 
         let now = Instant::now();
         self.collapse_decor(resources);
