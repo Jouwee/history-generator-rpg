@@ -1,4 +1,4 @@
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{assets, GetSprite, ImageSheetSprite}, geometry::Size2D}, resources::material::MaterialId, world::attributes::Attributes};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{assets, GetSprite, ImageSheetSprite}, audio::SoundEffect, geometry::Size2D}, resources::material::MaterialId, world::attributes::Attributes};
 
 use super::action::ActionId;
 
@@ -23,6 +23,7 @@ pub(crate) struct Species {
     pub(crate) attributes: Attributes,
     pub(crate) innate_actions: Vec<ActionId>,
     pub(crate) drops: Vec<MaterialId>,
+    pub(crate) hurt_sound: Option<SoundEffect>
 }
 
 impl Species {
@@ -34,7 +35,8 @@ impl Species {
             intelligence: SpeciesIntelligence::Civilized,
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },
             innate_actions: Vec::new(),
-            drops: Vec::new()
+            drops: Vec::new(),
+            hurt_sound: None,
         }
     }
 
@@ -50,6 +52,11 @@ impl Species {
 
     pub(crate) fn attributes(mut self, attributes: Attributes) -> Self {
         self.attributes = attributes;
+        self
+    }
+
+    pub(crate) fn hurt_sound(mut self, hurt_sound: SoundEffect) -> Self {
+        self.hurt_sound = Some(hurt_sound);
         self
     }
 

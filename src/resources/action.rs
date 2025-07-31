@@ -33,6 +33,7 @@ pub(crate) struct Action {
     pub(crate) projectile: Option<ActionProjectile>,
     pub(crate) impact_sprite: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
     pub(crate) impact_sfx: Option<SoundEffect>,
+    pub(crate) damage_sfx: Option<SoundEffect>,
 }
 
 #[derive(Clone)]
@@ -378,6 +379,7 @@ impl ActionRunner {
 
 
         self.running_action = Some(RunningAction {
+            action: action.clone(),
             actor: actor_index,
             spell_area: action.area.clone(),
             center: pos,
@@ -444,6 +446,16 @@ impl ActionRunner {
                                             // Animations
                                             let dir = xy - actor_xy;
                                             target.animation.play(&Self::build_hurt_anim(dir));
+
+                                            // Hit sound effect
+                                            if let Some(damage_sfx) = &action.action.damage_sfx {
+                                                ctx.audio.play_once(damage_sfx.clone());
+                                            }
+                                            let species = ctx.resources.species.get(&target.species);
+                                            if let Some(hurt_sfx) = &species.hurt_sound {
+                                                ctx.audio.play_once(hurt_sfx.clone());
+                                            }
+
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             actor.animation.play(&Self::build_attack_anim(dir));
                                             let actor_ai = actor.ai_group;
@@ -656,6 +668,7 @@ impl ActionRunner {
 }
 
 struct RunningAction {
+    action: Action,
     actor: usize,
     center: Coord2,
     spell_area: ActionArea,

@@ -120,7 +120,7 @@ pub(crate) trait Sound {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct SoundFile {
     path: String
 }
@@ -143,7 +143,7 @@ impl Sound for SoundFile {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct SoundEffect {
     files: Vec<SoundFile>,
     pitch_rand: [f32; 2]

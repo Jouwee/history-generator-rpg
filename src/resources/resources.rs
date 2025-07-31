@@ -116,7 +116,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:sword:bleeding_cut", Action {
             name: String::from("Bleeding Cut"),
@@ -136,7 +137,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:mace:smash", Action {
             name: String::from("Smash"),
@@ -155,7 +157,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:mace:concussive_strike", Action {
             name: String::from("Concussive Strike"),
@@ -175,7 +178,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
@@ -194,14 +198,15 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:spider_bite", Action {
             name: String::from("Bite"),
             description: String::from("A spider bite"),
             log_use: true,
             icon: String::from("missing.png"),
-            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
             ap_cost: 40,
             stamina_cost: 3.,
             cooldown: 0,
@@ -214,14 +219,15 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:bite", Action {
             name: String::from("Bite"),
             description: String::from("A bite"),
             icon: String::from("missing.png"),
             log_use: true,
-            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
             ap_cost: 40,
             stamina_cost: 3.,
             cooldown: 0,
@@ -233,7 +239,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), 0.5, ImpactPosition::EachTarget, false)),
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: Some(SoundEffect::new(vec!("sfx/damage_flesh_1.mp3", "sfx/damage_flesh_2.mp3", "sfx/damage_flesh_3.mp3"))),
         });
 
         self.actions.add("act:deafening_howl", Action {
@@ -254,6 +261,7 @@ impl Resources {
             projectile: None,
             impact_sprite: None,
             impact_sfx: None,
+            damage_sfx: None
         });
 
         self.actions.add("act:firebolt", Action {
@@ -274,7 +282,8 @@ impl Resources {
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
             impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
-            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav"))),
+            damage_sfx: None
         });
 
         self.actions.add("act:fireball", Action {
@@ -294,7 +303,8 @@ impl Resources {
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
             impact_sprite: Some((ImageSheetAsset::new("visual_effects/explosion_big.png", Size2D(128, 128)), 0.5, ImpactPosition::Cursor, false)),
-            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav")))
+            impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav"))),
+            damage_sfx: None
         });
 
         self.actions.add("act:rockpillar", Action {
@@ -314,7 +324,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: Some((ImageSheetAsset::new("visual_effects/rock_pillar_spawn.png", Size2D(24, 32)), 0.5, ImpactPosition::EachTile, true)),
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
 
         self.actions.add("act:teleport", Action {
@@ -334,7 +345,8 @@ impl Resources {
             cast_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_source.png", Size2D(24, 48)), 0.1)),
             projectile: None,
             impact_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), 0.5, ImpactPosition::Cursor, false)),
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
 
         // self.actions.add("act:talk", Action {
@@ -363,7 +375,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:dig", Action {
             name: String::from("Dig"),
@@ -382,7 +395,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:pickup", Action {
             name: String::from("Pick Up"),
@@ -401,7 +415,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
         self.actions.add("act:sleep", Action {
             name: String::from("Sleep"),
@@ -420,7 +435,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
         });
 
         self.actions.add("act:move", Action {
@@ -440,7 +456,8 @@ impl Resources {
             cast_sprite: None,
             projectile: None,
             impact_sprite: None,
-            impact_sfx: None
+            impact_sfx: None,
+            damage_sfx: None
 
         });
     }
@@ -467,6 +484,7 @@ impl Resources {
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!())
             .innate_actions(vec!(self.actions.id_of("act:bite")))
+            .hurt_sound(SoundEffect::new(vec!("sfx/wolf_hurt-01.mp3", "sfx/wolf_hurt-02.mp3")))
         );
 
         self.species.add("species:varningr", Species::new("varningr", SpeciesAppearance::Single("species/varningr/varningr.png".to_string()))
