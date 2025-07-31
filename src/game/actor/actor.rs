@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use graphics::Transformed;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -14,6 +14,7 @@ pub(crate) struct Actor {
     pub(crate) stamina: StaminaComponent,
     pub(crate) hp: HealthComponent,
     pub(crate) attributes: Attributes,
+    pub(crate) ai_state: AiState,
     pub(crate) ai_group: u8,
     pub(crate) ai: AiRunner,
     pub(crate) sprite_flipped: bool,
@@ -24,7 +25,7 @@ pub(crate) struct Actor {
     pub(crate) level: u32,
     pub(crate) inventory: Inventory,
     pub(crate) cooldowns: Vec<(ActionId, u16)>,
-    afflictions: Vec<RunningAffliction>
+    afflictions: Vec<RunningAffliction>,
 }
 
 impl Actor {
@@ -39,6 +40,7 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_state: AiState::Disabled,
             ai_group: AiGroups::player(),
             ai: AiRunner::new(),
             species: *species_id,
@@ -61,6 +63,7 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_state: AiState::Disabled,
             ai_group,
             ai: AiRunner::new(),
             species: *species_id,
@@ -97,6 +100,7 @@ impl Actor {
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
+            ai_state: AiState::Disabled,
             ai_group,
             ai: AiRunner::new(),
             species: *species_id,

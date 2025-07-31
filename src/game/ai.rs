@@ -39,13 +39,47 @@ impl AiRunner {
 
 }
 
+#[derive(Clone)]
+pub(crate) enum AiState {
+    Disabled,
+    Fight,
+}
+
 pub(crate) struct AiSolver {
 
 }
 
+const DETECTION_RANGE_SQRD: f32 = 12. * 12.;
+
 impl AiSolver {
 
+    pub(crate) fn check_state(actor: &Actor, chunk: &Chunk) -> AiState {
+        match actor.ai_state {
+            AiState::Disabled => {
+                for hostile in chunk.actors_iter() {
+                    if chunk.ai_groups.is_hostile(actor.ai_group, hostile.ai_group) && actor.xy.dist_squared(&hostile.xy) <= DETECTION_RANGE_SQRD {
+                        return AiState::Fight;
+                    }
+                }
+                return AiState::Disabled
+            },
+            AiState::Fight => AiState::Fight
+        }
+    }
+
     pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
+
+        if let AiState::Disabled = actor.ai_state {
+            let mut runner = AiRunner::new();
+            runner.actions = VecDeque::from(Vec::new());
+            return runner
+        }
+
+        if !chunk.ai_groups.is_hostile(AiGroups::player(), actor.ai_group) {
+            let mut runner = AiRunner::new();
+            runner.actions = VecDeque::from(Vec::new());
+            return runner
+        }
 
         let now = Instant::now();
 
@@ -82,12 +116,6 @@ impl AiSolver {
             hostile_damage: 0.,
             team_damage: 0.,
         };
-
-        if !chunk.ai_groups.is_hostile(AiGroups::player(), actor.ai_group) {
-            let mut runner = AiRunner::new();
-            runner.actions = VecDeque::from(ctx.actions.clone());
-            return runner
-        }
 
         let mut astar = AStar::new(chunk.size, chunk.player().xy);
         

@@ -213,10 +213,15 @@ impl GameSceneState {
                 }
             }
             {
-                let npc = self.chunk.actors.get(self.chunk.turn_controller.npc_idx()).unwrap();
-                let ai = AiSolver::choose_actions(&ctx.resources.actions, &npc, self.chunk.turn_controller.npc_idx(), &self.chunk, ctx);
-                let npc = self.chunk.actors.get_mut(self.chunk.turn_controller.npc_idx()).unwrap();
-                npc.ai = ai;
+                let actor_idx = self.chunk.turn_controller.npc_idx();
+                let actor = self.chunk.actors.get(actor_idx).unwrap();
+                let state = AiSolver::check_state(&actor, &self.chunk);
+                let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
+                actor.ai_state = state;
+                let actor = self.chunk.actors.get(actor_idx).unwrap();
+                let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, actor_idx, &self.chunk, ctx);
+                let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
+                actor.ai = ai;
             }
         }
     }
@@ -227,6 +232,10 @@ impl GameSceneState {
         actor.stamina.recover_turn();
         actor.hp.recover_turn();
         actor.start_of_round(&mut self.effect_layer);
+        let actor = self.chunk.actors.get(actor_idx).unwrap();
+        let state = AiSolver::check_state(&actor, &self.chunk);
+        let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
+        actor.ai_state = state;
         let actor = self.chunk.actors.get(actor_idx).unwrap();
         let ai = AiSolver::choose_actions(&ctx.resources.actions, &actor, self.chunk.turn_controller.npc_idx(), &self.chunk, ctx);
         let actor = self.chunk.actors.get_mut(actor_idx).unwrap();
