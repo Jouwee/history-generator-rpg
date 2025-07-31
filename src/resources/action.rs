@@ -68,6 +68,9 @@ impl ActionTarget {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
                     return Err(ActionFailReason::CantReach);
                 }
+                if !chunk.size.in_bounds(*cursor) {
+                    return Err(ActionFailReason::CantReach);
+                }
                 if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
                     if !chunk.map.check_line_of_sight(&actor_pos, &cursor) {
                         return Err(ActionFailReason::NoValidTarget);
@@ -80,6 +83,9 @@ impl ActionTarget {
             },
             ActionTarget::Tile { range, filter_mask } => {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
+                    return Err(ActionFailReason::CantReach);
+                }
+                if !chunk.size.in_bounds(*cursor) {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {

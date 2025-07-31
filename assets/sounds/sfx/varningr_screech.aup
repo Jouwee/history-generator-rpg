@@ -1,0 +1,139 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
+<project xmlns="http://audacity.sourceforge.net/xml/" projname="varningr_screech_data" version="1.3.0" audacityversion="2.4.2" sel0="2.9264137360" sel1="2.9264137360" vpos="0" h="0.0000000000" zoom="99.0974025411" rate="48000.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+	<tags/>
+	<wavetrack name="monster-screech-368677" isSelected="0" height="153" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="48000" gain="0.630957" pan="0.0" colorindex="0">
+		<waveclip offset="0.47428142" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="39791">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fc0d.au" len="39791" min="-0.259638" max="0.255679" rms="0.060692"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.253521144390"/>
+				<controlpoint t="0.181643273933" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="monster-screech-368677" isSelected="0" height="153" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="48000" gain="0.630957" pan="0.0" colorindex="0">
+		<waveclip offset="0.47428142" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="39791">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f15e.au" len="39791" min="-0.259736" max="0.256422" rms="0.060769"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.253521144390"/>
+				<controlpoint t="0.181643273933" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="a-lone-wolf-cries-359871" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="44100" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="78323">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f218.au" len="78323" min="-0.249133" max="0.272063" rms="0.079788"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="1.382478213222" val="1.000000000000"/>
+				<controlpoint t="1.685210668672" val="0.014084517956"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="a-lone-wolf-cries-359871" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="44100" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="78323">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fb2f.au" len="78323" min="-0.249079" max="0.272012" rms="0.079707"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="1.382478213222" val="1.000000000000"/>
+				<controlpoint t="1.685210668672" val="0.014084517956"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="1" solo="0" rate="48000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="1.30326059" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="118188">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f966.au" len="118188" min="-0.097763" max="0.098888" rms="0.021872"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.225352108479"/>
+				<controlpoint t="0.464181293683" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="1" solo="0" rate="48000" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="1.30326059" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="118188">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f1c9.au" len="118188" min="-0.097356" max="0.098542" rms="0.02187"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.225352108479"/>
+				<controlpoint t="0.464181293683" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="monster-growl-382706" isSelected="1" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="44100" gain="0.501187" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="96568">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f77f.au" len="96568" min="-0.870263" max="0.90398" rms="0.221306"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="4">
+				<controlpoint t="0.343096782843" val="0.281690120697"/>
+				<controlpoint t="1.079738937563" val="1.000000000000"/>
+				<controlpoint t="1.382478213222" val="0.845070421696"/>
+				<controlpoint t="1.836576896397" val="0.056338012218"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="monster-growl-382706" isSelected="1" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="44100" gain="0.501187" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="96568">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fb82.au" len="96568" min="-0.860339" max="0.786541" rms="0.204155"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="4">
+				<controlpoint t="0.343096782843" val="0.281690120697"/>
+				<controlpoint t="1.079738937563" val="1.000000000000"/>
+				<controlpoint t="1.382478213222" val="0.845070421696"/>
+				<controlpoint t="1.836576896397" val="0.056338012218"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" isSelected="0" height="150" minimized="0" channel="0" linked="1" mute="0" solo="0" rate="48000" gain="0.501187" pan="0.0" colorindex="0">
+		<waveclip offset="1.17207309" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="42274">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f23b.au" len="42274" min="-0.700411" max="0.633489" rms="0.14551"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.056338012218"/>
+				<controlpoint t="0.232111323150" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" isSelected="0" height="150" minimized="0" channel="1" linked="0" mute="0" solo="0" rate="48000" gain="0.501187" pan="0.0" colorindex="0">
+		<waveclip offset="1.17207309" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="42274">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1fce0.au" len="42274" min="-0.65655" max="0.594819" rms="0.136794"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="2">
+				<controlpoint t="0.000000000000" val="0.056338012218"/>
+				<controlpoint t="0.232111323150" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+</project>

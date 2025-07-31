@@ -248,7 +248,7 @@ impl Resources {
             description: String::from("A deafening howl"),
             icon: String::from("missing.png"),
             log_use: true,
-            cast_sfx: Some(SoundEffect::new(vec!("sfx/monster_bite.mp3"))),
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/varningr_screech.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
             cooldown: 30,
@@ -259,7 +259,7 @@ impl Resources {
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: None,
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/shockwave.png", Size2D(72, 72)), 0.5, ImpactPosition::Cursor, false)),
             impact_sfx: None,
             damage_sfx: None
         });
@@ -469,7 +469,6 @@ impl Resources {
                 "species/human/hair_bun.png".to_string(),
                 "species/human/hair_short.png".to_string(),
                 "species/human/hair_shaved.png".to_string(),
-                "system/transparent.png".to_string(),
             )
         }).innate_actions(vec!(self.actions.id_of("act:punch"))));
 

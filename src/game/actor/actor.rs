@@ -307,6 +307,10 @@ impl Renderable for Actor {
                     let sheet = assets().image_sheet("status/onfire.png", Size2D(24, 24));
                     ctx.texture(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), ctx.at(11., 24.));
                 },
+                Affliction::Stunned { duration: _ } => {
+                    let sheet = assets().image_sheet("status/stunned.png", Size2D(24, 32));
+                    ctx.texture(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), ctx.at(11., 16.));
+                },
                 _ => ()
             }
         }
