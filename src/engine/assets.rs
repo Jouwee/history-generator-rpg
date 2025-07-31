@@ -103,3 +103,32 @@ impl ImageSheet {
         return self.textures.get(i)
     }
 }
+
+pub(crate) trait GetSprite {
+    fn sprite(&self, i: usize) -> Option<ImageSheetSprite>;
+}
+
+impl GetSprite for Arc<ImageSheet> {
+    fn sprite(&self, i: usize) -> Option<ImageSheetSprite> {
+        if i >= self.len() {
+            return None;
+        }
+        return Some(ImageSheetSprite {
+            image: self.clone(),
+            index: i
+        })
+    }
+}
+
+pub(crate) struct ImageSheetSprite {
+    image: Arc<ImageSheet>,
+    index: usize
+}
+
+impl ImageSheetSprite {
+
+    pub(crate) fn texture(&self) -> &Texture {
+        return self.image.get(self.index).unwrap()
+    }
+
+}

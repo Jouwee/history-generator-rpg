@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use graphics::Transformed;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, warn, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::AiRunner, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -44,7 +44,7 @@ impl Actor {
             species: *species_id,
             creature_id: None,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
+            sprite: species.appearance.collapse(),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -66,7 +66,7 @@ impl Actor {
             species: *species_id,
             creature_id: None,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            sprite: species.appearance.collapse(&Rng::rand(), &HashMap::new()),
+            sprite: species.appearance.collapse(),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -80,7 +80,7 @@ impl Actor {
             true => EquipmentGenerator::generate(&creature_id, &mut rng, world, resources),
             false => Inventory::new()
         };
-       
+        // TODO: Gender specific hints
         let mut hints = HashMap::new();
         if creature.gender.is_male() {
             hints.insert(String::from("base"), String::from("male_light")); 
@@ -104,7 +104,7 @@ impl Actor {
             sprite_flipped: Rng::rand().rand_chance(0.5),
             // TODO:
             //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),
-            sprite: species.appearance.collapse(&Rng::rand(), &hints),
+            sprite: species.appearance.collapse(),
             inventory,
             afflictions: Vec::new(),
             cooldowns: Vec::new()
@@ -260,20 +260,8 @@ impl Actor {
     }
 
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let mut textures = Vec::new();
-        for (key, texture) in self.sprite.texture() {
-            let z_order = match key.as_str() {
-                "base" => 0,
-                "hair" => 100,
-                _ => {
-                    warn!("No order found for {}", key);
-                    9999
-                }
-            };
-            textures.push((z_order, texture));
-        }
-        for (_z, image) in textures {
-            ctx.texture(&image.texture, ctx.at(pos[0], pos[1]));
+        for sprite in self.sprite.textures().iter() {
+            ctx.texture(&sprite.texture(), ctx.at(pos[0], pos[1]));
         }
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {

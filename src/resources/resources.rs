@@ -2,9 +2,8 @@ use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{asset::{image_sheet::ImageSheetAsset}, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
-
-use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesApearance, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{asset::image_sheet::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
 pub(crate) struct Resources {
@@ -447,35 +446,30 @@ impl Resources {
     }
 
     fn load_species(&mut self) {
-        self.species.add("species:human", Species::new("human", SpeciesApearance::composite(
-            vec!(
-                ("base", vec!(
-                    ("male_light", "species/human/base_male_light.png"),
-                    ("female_light", "species/human/base_female_light.png")
-                )),
-                ("hair", vec!(
-                    ("bun", "species/human/hair_bun.png"),
-                    ("short", "species/human/hair_short.png"),
-                    ("shaved", "species/human/hair_shaved.png"),
-                    ("bald", "system/transparent.png"),
-                ))
+        self.species.add("species:human", Species::new("human", SpeciesAppearance::Composite {
+            base: vec!("species/human/base_male_light.png".to_string(), "species/human/base_female_light.png".to_string()),
+            top: vec!(
+                "species/human/hair_bun.png".to_string(),
+                "species/human/hair_short.png".to_string(),
+                "species/human/hair_shaved.png".to_string(),
+                "system/transparent.png".to_string(),
             )
-        )).innate_actions(vec!(self.actions.id_of("act:punch"))));
+        }).innate_actions(vec!(self.actions.id_of("act:punch"))));
 
-        self.species.add("species:spider", Species::new("spider", SpeciesApearance::single_sprite("species/spider.png"))
+        self.species.add("species:spider", Species::new("spider", SpeciesAppearance::Single("species/spider.png".to_string()))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .innate_actions(vec!(self.actions.id_of("act:spider_bite")))
         );
 
-        self.species.add("species:wolf", Species::new("wolf", SpeciesApearance::single_sprite("species/wolf/wolf.png"))
+        self.species.add("species:wolf", Species::new("wolf", SpeciesAppearance::Single("species/wolf/wolf.png".to_string()))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!())
             .innate_actions(vec!(self.actions.id_of("act:bite")))
         );
 
-        self.species.add("species:varningr", Species::new("varningr", SpeciesApearance::single_sprite("species/varningr/varningr.png"))
+        self.species.add("species:varningr", Species::new("varningr", SpeciesAppearance::Single("species/varningr/varningr.png".to_string()))
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!(self.materials.id_of("mat:varningr_bone")))

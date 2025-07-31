@@ -1,6 +1,4 @@
-use std::{collections::{BTreeMap, HashMap}, sync::Arc};
-
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::assets::{assets, Image}, resources::material::MaterialId, world::attributes::Attributes};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{assets, GetSprite, ImageSheetSprite}, geometry::Size2D}, resources::material::MaterialId, world::attributes::Attributes};
 
 use super::action::ActionId;
 
@@ -20,7 +18,7 @@ pub(crate) type SpeciesMap = ResourceMap<SpeciesId, Species>;
 #[derive(Debug, Clone)]
 pub(crate) struct Species {
     pub(crate) name: String,
-    pub(crate) appearance: SpeciesApearance,
+    pub(crate) appearance: SpeciesAppearance,
     pub(crate) intelligence: SpeciesIntelligence,
     pub(crate) attributes: Attributes,
     pub(crate) innate_actions: Vec<ActionId>,
@@ -29,7 +27,7 @@ pub(crate) struct Species {
 
 impl Species {
 
-    pub(crate) fn new(name: &str, appearance: SpeciesApearance) -> Species {
+    pub(crate) fn new(name: &str, appearance: SpeciesAppearance) -> Species {
         Species {
             name: String::from(name),
             appearance,
@@ -68,67 +66,59 @@ pub(crate) enum SpeciesIntelligence {
     Civilized
 }
 
+const SPECIES_SPRITE_SIZE: Size2D = Size2D(48, 48);
+
 #[derive(Debug, Clone)]
-pub(crate) struct SpeciesApearance {
-    map: BTreeMap<String, HashMap<String, String>>
+pub(crate) enum SpeciesAppearance {
+    Single(String),
+    Composite {
+        base: Vec<String>,
+        top: Vec<String>,
+    }
 }
 
-impl SpeciesApearance {
+impl SpeciesAppearance {
 
-    pub(crate) fn single_sprite(path: &str) -> SpeciesApearance {
-        let mut map = BTreeMap::new();
-        let mut var = HashMap::new();
-        var.insert(String::from("default"), String::from(path));
-        map.insert(String::from("base"), var);
-        Self { map }
-    }
-
-    pub(crate) fn composite(parts: Vec<(&str, Vec<(&str, &str)>)>) -> SpeciesApearance {
-        let mut map = BTreeMap::new();
-        for part in parts {
-            let mut var = HashMap::new();
-            for variation in part.1 {
-                var.insert(String::from(variation.0), String::from(variation.1));
-            }
-            map.insert(String::from(part.0), var);
-        }
-        Self { map }
-    }
-
-    pub(crate) fn collapse(&self, rng: &Rng, hints: &HashMap<String, String>) -> CreatureAppearance {
-        let mut collapsed = CreatureAppearance {
-            map: BTreeMap::new()
-        };
-        for (k, v) in self.map.iter() {
-            let hint = hints.get(k);
-            if let Some(hint) = hint {
-                if let Some(hint) = v.get(hint) {
-                    collapsed.map.insert(k.clone(), (hint.to_string(), hint.clone()));  
-                    continue;  
+    pub(crate) fn collapse(&self) -> CreatureAppearance {
+        let mut rng = Rng::rand();
+        match self {
+            Self::Single(path) => {
+                let len = assets().image_sheet(path, SPECIES_SPRITE_SIZE).len();
+                return CreatureAppearance::Single(path.clone(), rng.randu_range(0, len))
+            },
+            Self::Composite { base, top } => {
+                return CreatureAppearance::Composite {
+                    base: (rng.item(base).unwrap().clone(), 0),
+                    top: (rng.item(top).unwrap().clone(), 0)
                 }
             }
-            let mut rng = rng.derive(k);
-            let variations: Vec<(&String, &String)> = v.iter().collect();
-            let variation = variations[rng.randu_range(0, variations.len())];
-            collapsed.map.insert(k.clone(), (variation.0.clone(), variation.1.clone()));
         }
-        collapsed
     }
 
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct CreatureAppearance {
-    pub(crate) map: BTreeMap<String, (String, String)>
+pub(crate) enum CreatureAppearance {
+    Single(String, usize),
+    Composite {
+        base: (String, usize),
+        top: (String, usize),
+    }
 }
 
 impl CreatureAppearance {
-    pub(crate) fn texture(&self) -> Vec<(String, Arc<Image>)> {
-        let mut vec = Vec::new();
-        for (k, v) in self.map.iter() {
-            let image = assets().image(&v.1);
-            vec.push((k.clone(), image));
+
+    pub(crate) fn textures(&self) -> Vec<ImageSheetSprite> {
+        let mut assets = assets();
+        match self {
+            Self::Single(path, i) => vec!(assets.image_sheet(path, SPECIES_SPRITE_SIZE).sprite(*i).unwrap()),
+            Self::Composite { base, top } => {
+                vec!(
+                    assets.image_sheet(&base.0, SPECIES_SPRITE_SIZE).sprite(base.1).unwrap(),
+                    assets.image_sheet(&top.0, SPECIES_SPRITE_SIZE).sprite(top.1).unwrap(),
+                )
+            }
         }
-        return vec;
     }
+
 }
