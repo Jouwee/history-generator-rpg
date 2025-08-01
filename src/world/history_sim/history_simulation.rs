@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction, storyteller::Storyteller}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, storyteller::Storyteller}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -158,21 +158,6 @@ impl HistorySimulation {
             resources = production + resources;
             resources.food -= 1.0;
             
-            // TODO(IhlgIYVA): Maybe run only if no action was selected?
-            // Interactions
-            if creature.sim_flag_is_inteligent() {
-                // TODO(IhlgIYVA): Magic number
-                let num_interactions = step.days() / 30;
-                for _ in 0..num_interactions {
-                    let interaction_with = rng.item(&unit.creatures);
-                    if let Some(interaction_with) = interaction_with {
-                        if interaction_with != creature_id {
-                            let mut other_creature = world.creatures.get_mut(interaction_with);
-                            simplified_interaction(creature_id, &mut creature, interaction_with, &mut other_creature, &mut rng);
-                        }
-                    }
-                }
-            }
         }
 
         unit.resources = resources;
@@ -181,8 +166,6 @@ impl HistorySimulation {
 
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
-        let mut artisan_pool = Vec::new();
-        let mut comissions_pool = Vec::new();
         // TODO: Move all of these to a impl
         for (creature_id, side_effect) in side_effects.into_iter() {
 
@@ -229,12 +212,6 @@ impl HistorySimulation {
                     change_job_pool.push(creature_id);
                 },
                 CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng, &mut self.resources),
-                CreatureSideEffect::ArtisanLookingForComission => {
-                    artisan_pool.push(creature_id);
-                }
-                CreatureSideEffect::ComissionArtifact => {
-                    comissions_pool.push(creature_id);
-                }
                 CreatureSideEffect::BecomeBandit => {
                     // Removes creature from unit
                     let unit = world.units.get(unit_id);
@@ -363,14 +340,6 @@ impl HistorySimulation {
             }
         }
 
-        for comission_creature_id in comissions_pool {
-            if artisan_pool.len() == 0 {
-                break;
-            }
-            let artisan_id = artisan_pool.remove(rng.randu_range(0, artisan_pool.len()));
-            Self::make_artifact(&artisan_id, Some(&comission_creature_id), unit_id, world, &mut rng, &mut self.resources);
-        }
-
         for creature_id in change_job_pool {
             let mut creature = world.creatures.get_mut(&creature_id);
             let unit = world.units.get(unit_id);
@@ -444,7 +413,7 @@ impl HistorySimulation {
             if let Some(comissioneer_id) = comissioneer_id {
                 world.events.push(Event::ArtifactComission { date: world.date.clone(), creature_id: *comissioneer_id, creator_id: *artisan_id, item_id: id });
             } else {
-                world.events.push(Event::ArtifactCreated { date: world.date.clone(), artifact: id, creator: *artisan_id });
+                world.events.push(Event::ArtifactCreated { date: world.date.clone(), artifact: id, creator: *artisan_id, unit_id: *unit_id });
             }
         }
     }

@@ -7,7 +7,7 @@ pub(crate) enum Event {
     CreatureBirth { date: WorldDate, creature_id: CreatureId },
     CreatureMarriage { date: WorldDate, creature_id: CreatureId, spouse_id: CreatureId },
     CreatureProfessionChange { date: WorldDate, creature_id: CreatureId, new_profession: Profession },
-    ArtifactCreated { date: WorldDate, artifact: ItemId, creator: CreatureId },
+    ArtifactCreated { date: WorldDate, artifact: ItemId, creator: CreatureId, unit_id: UnitId },
     InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ItemId },
     BurriedWithPosessions { date: WorldDate, creature_id: CreatureId, items_ids: Vec<ItemId> },
     ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ItemId },
@@ -24,7 +24,7 @@ impl Event {
             Self::CreatureBirth { date: _, creature_id } => vec!(*creature_id),
             Self::CreatureMarriage { date: _, creature_id, spouse_id } => vec!(*creature_id, *spouse_id),
             Self::CreatureProfessionChange { date: _, creature_id, new_profession: _ } => vec!(*creature_id),
-            Self::ArtifactCreated { date: _, artifact: _, creator } => vec!(*creator),
+            Self::ArtifactCreated { date: _, artifact: _, creator, unit_id: _ } => vec!(*creator),
             Self::InheritedArtifact { date: _, creature_id, from, item: _ } => vec!(*creature_id, *from),
             Self::BurriedWithPosessions { date: _, creature_id, items_ids: _ } => vec!(*creature_id),
             Self::ArtifactComission { date: _, creature_id, creator_id, item_id: _ } => vec!(*creature_id, *creator_id),
@@ -44,7 +44,7 @@ impl Event {
             Self::CreatureBirth { date: _, creature_id: _ } => vec!(),
             Self::CreatureMarriage { date: _, creature_id: _, spouse_id: _ } => vec!(),
             Self::CreatureProfessionChange { date: _, creature_id: _, new_profession: _ } => vec!(),
-            Self::ArtifactCreated { date: _, artifact, creator: _ } => vec!(*artifact),
+            Self::ArtifactCreated { date: _, artifact, creator: _, unit_id: _ } => vec!(*artifact),
             Self::InheritedArtifact { date: _, creature_id: _, from: _, item } => vec!(*item),
             Self::BurriedWithPosessions { date: _, creature_id: _, items_ids } => items_ids.clone(),
             Self::ArtifactComission { date: _, creature_id: _, creator_id: _, item_id } => vec!(*item_id),
@@ -80,10 +80,10 @@ impl Event {
                 let name = world.creature_desc(creature_id, resources);
                 return format!("> {}, {} became a {:?}", world.date_desc(date), name, new_profession);
             },
-            Event::ArtifactCreated { date, artifact, creator } => {
+            Event::ArtifactCreated { date, artifact, creator, unit_id } => {
                 let name = world.creature_desc(creator, resources);
                 let artifact = world.artifacts.get(artifact);
-                return format!("> {}, {} created {:?}", world.date_desc(date), name, artifact.name(&resources.materials));
+                return format!("> {}, {} created {:?} in {:?}", world.date_desc(date), name, artifact.name(&resources.materials), unit_id);
             },
             Event::BurriedWithPosessions { date, creature_id, items_ids: _ } => {
                 let name = world.creature_desc(creature_id, resources);

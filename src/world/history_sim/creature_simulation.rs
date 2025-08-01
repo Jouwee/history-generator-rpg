@@ -12,8 +12,6 @@ pub(crate) enum CreatureSideEffect {
     LookForMarriage,
     LookForNewJob,
     MakeArtifact,
-    ComissionArtifact,
-    ArtisanLookingForComission,
     BecomeBandit,
     AttackNearbyUnits,
     StartPlot(PlotGoal),
@@ -25,7 +23,6 @@ const YEARLY_CHANCE_MARRY: f32 = 0.4;
 const CHANCE_TO_STARVE: f32 = 0.2;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
-const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 0.5;
 
 impl CreatureSimulation {
 
@@ -99,12 +96,6 @@ impl CreatureSimulation {
                     }
                 }
                 
-                if creature.profession == Profession::Ruler && age % 10 == 0 {
-                    if rng.rand_chance(CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY) {
-                        return CreatureSideEffect::ComissionArtifact;
-                    }
-                }
-
             }
         }
 
@@ -116,14 +107,10 @@ impl CreatureSimulation {
         }
 
         match creature.profession {
-            Profession::Blacksmith => {
+            Profession::Blacksmith | Profession::Sculptor => {
                 if rng.rand_chance(CHANCE_MAKE_INSPIRED_ARTIFACT) {
                     return CreatureSideEffect::MakeArtifact;
                 }
-                return CreatureSideEffect::ArtisanLookingForComission;
-            },
-            Profession::Sculptor => {
-                return CreatureSideEffect::ArtisanLookingForComission;
             },
             _ => ()
         }

@@ -34,6 +34,8 @@ impl MapModal {
         tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)));
         let image = String::from("map_tiles/marker.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = String::from("map_tiles/settlement_ruins.png");
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut close_button = Button::text("Close");
         close_button.layout_component().anchor_top_right(0., 0.);
@@ -67,7 +69,13 @@ impl MapModal {
         for unit in world.units.iter() {
             let unit = unit.borrow();
             let tile = match unit.unit_type {
-                UnitType::Village => 1,
+                UnitType::Village => {
+                    if unit.creatures.len() > 0 {
+                        1
+                    } else {
+                        4
+                    }
+                },
                 UnitType::BanditCamp => 0,
                 UnitType::VarningrLair => {
                     if unit.creatures.len() > 0 {
@@ -78,8 +86,6 @@ impl MapModal {
                 },
             };
             self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, tile);
-            // Set grass as BG
-            self.tilemap.set_tile(unit.xy.x as usize, unit.xy.y as usize, 2);
         }
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);

@@ -344,9 +344,7 @@ impl Scene for GameSceneState {
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.pixel_art(2);
         ctx.push();
-        if let Some(map) = &mut self.map_modal {
-            return map.render(ctx, game_ctx);
-        }
+
         // Game
         let center = self.chunk.player().xy;
         self.camera_offset = [
@@ -417,6 +415,10 @@ impl Scene for GameSceneState {
 
         self.character_dialog.render(self.chunk.player_mut(), ctx, game_ctx);
         self.codex_dialog.render(&mut self.world, ctx, game_ctx);
+
+        if let Some(map) = &mut self.map_modal {
+            map.render(ctx, game_ctx);
+        }
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);

@@ -35,7 +35,7 @@ impl AbandonedStructureFilter {
 impl StructureFilter for AbandonedStructureFilter {
 
     fn filter(&mut self, _position: Coord2, _tile: &JigsawPieceTile) -> Option<JigsawPieceTile> {
-        if self.rng.rand_chance((self.age as f32 / 500.).clamp(0., 1.)) {
+        if self.rng.rand_chance((self.age as f32 / 500.).clamp(0.0, 0.9)) {
             return Some(JigsawPieceTile::Air);
         }
         return None;
