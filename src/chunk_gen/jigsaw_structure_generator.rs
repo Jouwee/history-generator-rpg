@@ -25,7 +25,7 @@ impl JigsawSolver {
         self.available_pools.insert(String::from(name), pool);
     }
 
-    pub(crate) fn solve_structure(&mut self, starter_pool: &str, position: Coord2, rng: &mut Rng) -> Option<&Structure> {
+    pub(crate) fn solve_structure(&mut self, starter_pool: &str, position: Coord2, rng: &mut Rng, requirements: Vec<JigsawPieceRequirement>) -> Option<&Structure> {
         let pool = self.available_pools.get(starter_pool).expect("Invalid pool");
         let options = pool.pieces.values().collect();
         let options = rng.shuffle(options);
@@ -40,7 +40,7 @@ impl JigsawSolver {
             structure.add(&selected, position);
 
             // TODO: Param
-            let result = self.recursive_jigsaw(structure, 1, 5, self.rng.clone());
+            let result = self.recursive_jigsaw(structure, 1, 7, self.rng.clone(), &requirements);
 
             if result.is_none() {
                 continue;
@@ -54,8 +54,11 @@ impl JigsawSolver {
         return None;
     }
 
-    fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize, mut rng: Rng) -> Option<Structure> {
+    fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize, mut rng: Rng, requirements: &Vec<JigsawPieceRequirement>) -> Option<Structure> {
         if vec.open_connections.len() == 0 {
+            if !self.check_requirements_final(&vec, &requirements) {
+                return None;
+            }
             return Some(vec)
         }
 
@@ -81,7 +84,10 @@ impl JigsawSolver {
                 let mut state_clone = vec.clone();
                 state_clone.add(possibility.1, origin);
                 state_clone.remove_connection(&possibility.0.0);
-                let result = self.recursive_jigsaw(state_clone, depth + 1, max_depth, rng.clone());
+                if !self.check_requirements_early(&state_clone, &requirements) {
+                    continue;
+                }
+                let result = self.recursive_jigsaw(state_clone, depth + 1, max_depth, rng.clone(), requirements);
                 if result.is_some() {
                     return result;
                 }
@@ -110,6 +116,34 @@ impl JigsawSolver {
         return true;
     }
 
+    fn check_requirements_early(&self, structure: &Structure, requirements: &Vec<JigsawPieceRequirement>) -> bool {
+        for requirement in requirements.iter() {
+            match requirement {
+                JigsawPieceRequirement::Exactly(piece_name, count) => {
+                    let current_count = structure.vec.iter().filter(|piece| piece.1.name.starts_with(piece_name)).count();
+                    if current_count > *count {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    fn check_requirements_final(&self, structure: &Structure, requirements: &Vec<JigsawPieceRequirement>) -> bool {
+        for requirement in requirements.iter() {
+            match requirement {
+                JigsawPieceRequirement::Exactly(piece_name, count) => {
+                    let current_count = structure.vec.iter().filter(|piece| piece.1.name.starts_with(piece_name)).count();
+                    if current_count != *count {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
 }
 
 
@@ -118,7 +152,7 @@ mod tests_jigsaw_solver {
     use crate::engine::geometry::Size2D;
     use super::*;
 
-    fn parse(size: Size2D, string: &str) -> JigsawPiece {
+    fn parse(name: &str, size: Size2D, string: &str) -> JigsawPiece {
         let mut tiles = Vec::new();
         for char in string.chars() {
             match char {
@@ -132,6 +166,7 @@ mod tests_jigsaw_solver {
             }
         }
         JigsawPiece {
+            name: name.to_string(),
             size,
             tiles
         }
@@ -141,25 +176,25 @@ mod tests_jigsaw_solver {
     fn test_single_buildings() {
         let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_#|###"));
+        pool.add_piece("a.1", parse("a.1", Size2D(3, 3), "###|#_#|###"));
         solver.add_pool("A", pool);
 
         let mut rng = Rng::seeded(0);
 
         // Can add the first building
-        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
         assert_eq!(result.is_some(), true);
 
         // Can't add another one if overlaps
-        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
         assert_eq!(result.is_some(), false);
 
         // Still overlaps
-        let result = solver.solve_structure("A", Coord2::xy(12, 12), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(12, 12), &mut rng, Vec::new());
         assert_eq!(result.is_some(), false);
 
         // This is ok
-        let result = solver.solve_structure("A", Coord2::xy(14, 14), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(14, 14), &mut rng, Vec::new());
         assert_eq!(result.is_some(), true);
 
     }
@@ -169,27 +204,59 @@ mod tests_jigsaw_solver {
         let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
 
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("a.1", parse(Size2D(3, 3), "###|#_B|###"));
+        pool.add_piece("a.1", parse("a.1", Size2D(3, 3), "###|#_B|###"));
         solver.add_pool("A", pool);
 
         let mut pool = JigsawPiecePool::new();
-        pool.add_piece("b.1", parse(Size2D(3, 3), "###|A_#|###"));
+        pool.add_piece("b.1", parse("b.1", Size2D(3, 3), "###|A_#|###"));
         solver.add_pool("B", pool);
 
         let mut rng = Rng::seeded(0);
 
         // Can add the 2 piece building
-        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
         assert_eq!(result.is_some(), true);
         let structure = result.unwrap();
         assert_eq!(structure.vec.len(), 2);
 
         // The subpiece can't overlap existing structures
-        let result = solver.solve_structure("A", Coord2::xy(5, 10), &mut rng);
+        let result = solver.solve_structure("A", Coord2::xy(5, 10), &mut rng, Vec::new());
         assert_eq!(result.is_some(), false);
 
     }
 
+    #[test]
+    fn test_requirements() {
+        let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
+
+        let mut pool = JigsawPiecePool::new();
+        pool.add_piece("a.1", parse("a.1", Size2D(1, 2), ".A"));
+        pool.add_piece("a.2", parse("a.2", Size2D(1, 2), "A."));
+        pool.add_piece("c.1", parse("c.1", Size2D(1, 2), "AA"));
+        solver.add_pool("A", pool);
+
+        // 1 center room
+        let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut Rng::seeded(0), vec!(
+            JigsawPieceRequirement::Exactly("c".to_string(), 1)
+        ));
+        assert_eq!(result.is_some(), true);
+        let structure = result.unwrap();
+        assert_eq!(structure.vec.len(), 3);
+
+        // Same seed, 3 center rooms
+        let result = solver.solve_structure("A", Coord2::xy(5, 10), &mut Rng::seeded(0), vec!(
+            JigsawPieceRequirement::Exactly("c".to_string(), 3)
+        ));
+        assert_eq!(result.is_some(), true);
+        let structure = result.unwrap();
+        assert_eq!(structure.vec.len(), 5);
+    }
+
+}
+
+pub(crate) enum JigsawPieceRequirement {
+    /// Exactly N rooms
+    Exactly(String, usize)
 }
 
 pub(crate) struct JigsawPiecePool {
@@ -212,6 +279,7 @@ impl JigsawPiecePool {
 
 #[derive(Clone)]
 pub(crate) struct JigsawPiece {
+    pub(crate) name: String,
     pub(crate) size: Size2D,
     pub(crate) tiles: Vec<JigsawPieceTile>
 }

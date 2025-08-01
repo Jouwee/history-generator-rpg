@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{AiGroups, TileMetadata}, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{AiGroups, TileMetadata}, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Chunk, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -198,7 +198,7 @@ impl<'a> ChunkGenerator<'a> {
 
         if let Some(start_pool) = &pools.start_pool {
             let pos = building_seed_cloud.pop().unwrap();
-            let structure = solver.solve_structure(start_pool, pos, &mut self.rng);
+            let structure = solver.solve_structure(start_pool, pos, &mut self.rng, Vec::new());
             if let Some(structure) = structure {
                 for (pos, piece) in structure.vec.iter() {
                     self.place_template(*pos, &piece, resources);
@@ -214,7 +214,7 @@ impl<'a> ChunkGenerator<'a> {
 
                     let pos = building_seed_cloud.pop().unwrap();
 
-                    let structure = solver.solve_structure(artifacts_pool, pos, &mut self.rng);
+                    let structure = solver.solve_structure(artifacts_pool, pos, &mut self.rng, Vec::new());
                     if let Some(structure) = structure {
                         for (pos, piece) in structure.vec.iter() {
                             self.place_template(*pos, &piece, resources);
@@ -235,7 +235,7 @@ impl<'a> ChunkGenerator<'a> {
 
                     let pos = building_seed_cloud.pop().unwrap();
 
-                    let structure = solver.solve_structure(cemetery_pool, pos, &mut self.rng);
+                    let structure = solver.solve_structure(cemetery_pool, pos, &mut self.rng, Vec::new());
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
@@ -332,7 +332,7 @@ impl<'a> ChunkGenerator<'a> {
 
                     let pos = building_seed_cloud.pop().unwrap();
 
-                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng);
+                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng, Vec::new());
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
@@ -412,7 +412,7 @@ impl<'a> ChunkGenerator<'a> {
 
                     let pos = building_seed_cloud.pop().unwrap();
 
-                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng);
+                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng, Vec::new());
                     if let Some(structure) = structure {
                         collapsed_pos = Some(pos);
                         for (pos, piece) in structure.vec.iter() {
@@ -467,7 +467,7 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_lair_entrance(&mut self, solver: &mut JigsawSolver, resources: &Resources) {
-        let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng);
+        let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng, Vec::new());
         if let Some(structure) = structure {
             for (pos, piece) in structure.vec.iter() {
                 self.place_template(*pos, &piece, resources);
@@ -486,7 +486,11 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
-        let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng);
+        let requirements = vec!(
+            JigsawPieceRequirement::Exactly("varningr_lair".to_string(), 1),
+            JigsawPieceRequirement::Exactly("varningr_entrance".to_string(), 1)
+        );
+        let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng, requirements);
         let ai_group = self.chunk.ai_groups.next_group();
         self.chunk.ai_groups.make_hostile(ai_group, AiGroups::player());
         if let Some(structure) = structure {

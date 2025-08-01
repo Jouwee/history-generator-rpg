@@ -91,6 +91,7 @@ impl JigsawParser {
                                                     }
 
                                                     let piece = JigsawPiece {
+                                                        name: pool_name.clone() + piece_name,
                                                         size,
                                                         tiles
                                                     };
@@ -177,6 +178,7 @@ fn flip_piece_horizontally(piece: &JigsawPiece) -> JigsawPiece {
         tiles.push(piece.tiles.get(j).unwrap().clone());
     }
     return JigsawPiece {
+        name: piece.name.clone(),
         size: piece.size.clone(),
         tiles
     };
@@ -191,6 +193,7 @@ fn flip_piece_vertically(piece: &JigsawPiece) -> JigsawPiece {
         tiles.push(piece.tiles.get(j).unwrap().clone());
     }
     return JigsawPiece {
+        name: piece.name.clone(),
         size: piece.size.clone(),
         tiles
     };
@@ -205,6 +208,7 @@ fn transpose_piece(piece: &JigsawPiece) -> JigsawPiece {
         tiles.push(piece.tiles.get(j).unwrap().clone());
     }
     return JigsawPiece {
+        name: piece.name.clone(),
         size: Size2D(piece.size.1, piece.size.0),
         tiles
     };

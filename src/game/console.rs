@@ -114,7 +114,7 @@ impl Console {
                 let mut generator = ChunkGenerator::new(chunk, Rng::rand());
 
                 let mut solver = generator.get_jigsaw_solver();
-                let structure = solver.solve_structure(structure, pos, &mut Rng::rand());
+                let structure = solver.solve_structure(structure, pos, &mut Rng::rand(), Vec::new());
                 if let Some(structure) = structure {
                     for (pos, piece) in structure.vec.iter() {
                         generator.place_template(*pos, &piece, &ctx.resources);
