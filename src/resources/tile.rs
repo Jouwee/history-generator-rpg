@@ -1,4 +1,4 @@
-use crate::engine::{asset::image_sheet::ImageSheetAsset, audio::SoundEffect, geometry::Size2D};
+use crate::engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct TileId(usize);

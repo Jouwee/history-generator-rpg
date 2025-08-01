@@ -1,4 +1,4 @@
-use crate::{engine::{COLOR_BLACK, COLOR_WHITE}, world::world::World, Actor, Color, GameContext, RenderContext, Resources};
+use crate::{engine::{assets::assets, COLOR_BLACK, COLOR_WHITE}, world::world::World, Actor, Color, RenderContext, Resources};
 
 use super::actor::damage_resolver::DamageOutput;
 
@@ -18,17 +18,17 @@ impl GameLog {
         // println!("{}", message.text);0
     }
 
-    pub fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    pub fn render(&mut self, ctx: &mut RenderContext) {
         let last_entries = &self.entries[..10.min(self.entries.len())];
         let mut y = ctx.layout_rect[3] as i32 - 64;
         for entry in last_entries.iter() {
             let mut x = 16;
             for part in entry.parts.iter() {
                 // Shadow effect
-                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y + 1], &COLOR_BLACK);
+                ctx.text(part.text(), assets().font_standard(), [x, y + 1], &COLOR_BLACK);
                 // Actual text
-                ctx.text(part.text(), game_ctx.assets.font_standard(), [x, y], &part.color());
-                x += game_ctx.assets.font_standard().width(&part.text()) as i32;
+                ctx.text(part.text(), assets().font_standard(), [x, y], &part.color());
+                x += assets().font_standard().width(&part.text()) as i32;
             }
             y -= 10;
         }

@@ -1,9 +1,9 @@
 use graphics::{image, rectangle, Context, Text, Transformed};
 use opengl_graphics::{GlGraphics, Texture};
 
-use crate::engine::assets::assets;
+use crate::engine::assets::{assets, Font, ImageSheetAsset};
 
-use super::{asset::{font::Font, image_sheet::ImageSheetAsset}, Color};
+use super::{Color};
 
 pub(crate) struct RenderContext<'a> {
     pub(crate) context: Context,

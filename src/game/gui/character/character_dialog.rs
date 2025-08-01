@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 
@@ -106,13 +106,13 @@ impl UINode for CharacterDialog {
             match line {
                 StatLine::Title(title) => {
                     layout[1] += 11;
-                    ctx.text_shadow(title, game_ctx.assets.font_heading(), [layout[0], layout[1]], &COLOR_WHITE
+                    ctx.text_shadow(title, assets().font_heading(), [layout[0], layout[1]], &COLOR_WHITE
                     );        
                     layout[1] += 16;
                 },
                 StatLine::Line(name, value) => {
-                    ctx.text_shadow(name, game_ctx.assets.font_standard(), [layout[0], layout[1]], &Color::from_hex("7f839c"));
-                    ctx.text_shadow(value, game_ctx.assets.font_standard(), [layout[0] + 103, layout[1]], &COLOR_WHITE);
+                    ctx.text_shadow(name, assets().font_standard(), [layout[0], layout[1]], &Color::from_hex("7f839c"));
+                    ctx.text_shadow(value, assets().font_standard(), [layout[0] + 103, layout[1]], &COLOR_WHITE);
                     layout[1] += 11;
                 }
             }
@@ -129,7 +129,7 @@ impl UINode for CharacterDialog {
             24.
         ];
 
-        ctx.text_shadow("Equipment", game_ctx.assets.font_heading(), [layout[0] as i32, layout[1] as i32 + 16], &COLOR_WHITE);
+        ctx.text_shadow("Equipment", assets().font_heading(), [layout[0] as i32, layout[1] as i32 + 16], &COLOR_WHITE);
         layout[1] += 18.;
 
         let mut base = layout.clone();
@@ -137,7 +137,7 @@ impl UINode for CharacterDialog {
         
         actor.render_layers([base[0] + 48., base[1] + 12.], ctx, game_ctx);
 
-        ctx.text_shadow("Main hand", game_ctx.assets.font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
+        ctx.text_shadow("Main hand", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
         base[1] += 12.;
         ctx.layout_rect = base;
         self.equipment_slot_hand.render(&actor.inventory, ctx, game_ctx);
@@ -145,7 +145,7 @@ impl UINode for CharacterDialog {
         let mut base = layout.clone();
         base[0] += 112.;
 
-        ctx.text_shadow("Torso", game_ctx.assets.font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
+        ctx.text_shadow("Torso", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
         base[1] += 12.;
         ctx.layout_rect = base;
         self.equipment_slot_inner_armor.render(&actor.inventory, ctx, game_ctx);
@@ -154,7 +154,7 @@ impl UINode for CharacterDialog {
 
         base[1] += 26.;
 
-        ctx.text_shadow("Legs", game_ctx.assets.font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
+        ctx.text_shadow("Legs", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
         base[1] += 12.;
         ctx.layout_rect = base;
         self.equipment_slot_legs.render(&actor.inventory, ctx, game_ctx);
@@ -164,7 +164,7 @@ impl UINode for CharacterDialog {
         base[0] = layout[0];
         base[1] += 32.;
 
-        ctx.text_shadow("Inventory", game_ctx.assets.font_heading(), [base[0] as i32, base[1] as i32 + 16], &COLOR_WHITE);
+        ctx.text_shadow("Inventory", assets().font_heading(), [base[0] as i32, base[1] as i32 + 16], &COLOR_WHITE);
         base[1] += 18.;
 
         for (i, slot) in self.slots.iter_mut().enumerate() {

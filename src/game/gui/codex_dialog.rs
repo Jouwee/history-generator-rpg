@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{asset::assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, COLOR_WHITE}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, COLOR_WHITE}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -166,16 +166,16 @@ impl UINode for CodexDialog {
             let mut layout = [ctx.layout_rect[0] as i32 + 130, ctx.layout_rect[1] as i32 + 16];
 
             if codex.know_name() {
-                ctx.text_shadow(&artifact.name(&game_ctx.resources.materials), game_ctx.assets.font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
+                ctx.text_shadow(&artifact.name(&game_ctx.resources.materials), assets().font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
             } else {
-                ctx.text_shadow("?????", game_ctx.assets.font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
+                ctx.text_shadow("?????", assets().font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
             }
             layout[1] += 16;
 
             for event_i in codex.events() {
                 let event = state.events.get(*event_i).expect("Should not return invalid");
 
-                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), game_ctx.assets.font_standard(), [layout[0], layout[1]], &COLOR_WHITE);
+                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), assets().font_standard(), [layout[0], layout[1]], &COLOR_WHITE);
                 layout[1] += 11;
 
             }

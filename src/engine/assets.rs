@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::{Arc, LazyLock, Mutex, MutexGuard}};
 
+use graphics::CharacterCache;
 use image::ImageReader;
-use opengl_graphics::{Filter, Texture, TextureSettings};
+use opengl_graphics::{Filter, GlyphCache, Texture, TextureSettings};
 
 use crate::engine::geometry::Size2D;
 
@@ -14,6 +15,7 @@ pub(crate) fn assets() -> MutexGuard<'static, Assets> {
 pub(crate) struct Assets {
     images: HashMap<String, Arc<Image>>,
     image_sheets: HashMap<String, Arc<ImageSheet>>,
+    fonts: HashMap<FontAsset, Font>,
 }
 
 impl Assets {
@@ -21,7 +23,8 @@ impl Assets {
     fn new() -> Self {
         Self {
             images: HashMap::new(),
-            image_sheets: HashMap::new()
+            image_sheets: HashMap::new(),
+            fonts: HashMap::new()
         }
     }
 
@@ -82,11 +85,52 @@ impl Assets {
         }
     }
 
+    pub(crate) fn font(&mut self, params: &FontAsset) -> &mut Font {
+        if !self.fonts.contains_key(&params) {
+            let font = Font::new(&params);
+            self.fonts.insert(params.clone(), font);
+        }
+        self.fonts.get_mut(&params).expect(format!("Font {} does not exist", params.path).as_str())
+    }
+
+    pub(crate) fn font_standard_asset() -> FontAsset {
+        return FontAsset::new("Everyday_Standard.ttf", 6)
+    }
+
+    pub(crate) fn font_standard(&mut self) -> &mut Font {
+        return self.font(&Self::font_standard_asset())
+    }
+
+    pub(crate) fn font_heading_asset() -> FontAsset {
+        return FontAsset::new("Fabled.ttf", 11)
+    }
+
+    pub(crate) fn font_heading(&mut self) -> &mut Font {
+        return self.font(&Self::font_heading_asset())
+    }
+
 }
 
 pub(crate) struct Image {
     pub(crate) size: Size2D,
     pub(crate) texture: Texture
+}
+
+
+
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
+pub(crate) struct ImageSheetAsset {
+    pub(crate) path: String,
+    pub(crate) tile_size: Size2D
+}
+
+impl ImageSheetAsset {
+    pub(crate) fn new(path: &str, tile_size: Size2D) -> Self {
+        Self {
+            path: String::from(path),
+            tile_size
+        }
+    }
 }
 
 pub(crate) struct ImageSheet {
@@ -129,6 +173,59 @@ impl ImageSheetSprite {
 
     pub(crate) fn texture(&self) -> &Texture {
         return self.image.get(self.index).unwrap()
+    }
+
+}
+
+
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
+pub(crate) struct FontAsset {
+    pub(crate) path: String,
+    pub(crate) size: u32,
+}
+
+impl FontAsset {
+
+    pub(crate) fn new(path: &str, size: u32) -> Self {
+        Self {
+            path: String::from(path),
+            size
+        }
+    }
+
+}
+
+pub(crate) struct Font {
+    pub(crate) glyphs: GlyphCache<'static>,
+    pub(crate) size: u32,
+}
+
+impl Font {
+
+    pub(crate) fn new(params: &FontAsset) -> Self {
+        let texture_settings = TextureSettings::new().filter(Filter::Nearest);
+        let path = format!("./assets/fonts/{}", params.path);
+        let glyphs = GlyphCache::new(path, (), texture_settings).expect("Could not load font");
+        
+        Self {
+            glyphs,
+            size: params.size
+        }
+    }
+
+    pub(crate) fn width(&mut self, text: &str) -> f64 {
+        return self.glyphs.width(self.size, text).unwrap_or(0.);
+    }
+
+    pub(crate) fn line_height(&mut self) -> f64 {
+        let mut height: f64 = 0.0;
+        for ch in ['W', 'q'] {
+            let character = self.glyphs.character(self.size, ch);
+            if let Ok(character) = character {
+                height = height.max(character.atlas_size[1]);
+            }
+        }
+        return height
     }
 
 }

@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use piston::{Button, ButtonState, Key};
 
-use crate::{engine::{render::RenderContext, scene::Update, COLOR_BLACK, COLOR_WHITE}, game::InputEvent, globals::perf::perf, GameContext};
+use crate::{engine::{assets::assets, render::RenderContext, scene::Update, COLOR_BLACK, COLOR_WHITE}, game::InputEvent, globals::perf::perf};
 
 pub(crate) struct DebugOverlay {
     active: bool,
@@ -26,19 +26,19 @@ impl DebugOverlay {
         }
     }
 
-    pub(crate) fn render(&mut self, context: &mut RenderContext, game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, context: &mut RenderContext) {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], COLOR_BLACK.alpha(0.5));
-            context.text(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 12], &COLOR_WHITE);
-            context.text(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 20], &COLOR_WHITE);
-            context.text(format!("Inp: {:.0}", self.input_time.average()).as_str(), game_ctx.assets.font_standard(), [0, 28], &COLOR_WHITE);
+            context.text(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), assets().font_standard(), [0, 12], &COLOR_WHITE);
+            context.text(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), assets().font_standard(), [0, 20], &COLOR_WHITE);
+            context.text(format!("Inp: {:.0}", self.input_time.average()).as_str(), assets().font_standard(), [0, 28], &COLOR_WHITE);
 
             let perf_lines = perf().debug_lines();
             let mut y = 36.;
             for line in perf_lines {
                 context.rectangle_fill([0., y, 128., 8.], COLOR_BLACK.alpha(0.5));
-                context.text(&line, game_ctx.assets.font_standard(), [0, y as i32+6], &COLOR_WHITE);
+                context.text(&line, assets().font_standard(), [0, y as i32+6], &COLOR_WHITE);
                 y += 8.
             }
 

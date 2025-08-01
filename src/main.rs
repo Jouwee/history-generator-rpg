@@ -1,6 +1,6 @@
 use std::{time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
-use engine::{asset::assets::Assets, audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
 use sdl2_window::Sdl2Window;
@@ -42,7 +42,6 @@ pub(crate) struct App {
 
 pub(crate) struct GameContext {
     audio: Audio,
-    assets: Assets,
     resources: Resources,
     tooltips: TooltipRegistry,
     display_context: DisplayContext,
@@ -83,7 +82,7 @@ impl App {
                 game_state.render(&mut context, &mut self.context);
             },
         }
-        self.debug_overlay.render(&mut context, &mut self.context);
+        self.debug_overlay.render(&mut context);
         // TODO: This is really disconnected
         self.display_context.camera_rect = context.camera_rect;
         self.display_context.gui_rect = context.layout_rect;
@@ -163,7 +162,6 @@ fn main() {
         gl,
         context: GameContext {
             audio: Audio::new(options.audio.clone()),
-            assets: Assets::new(),
             resources,
             tooltips,
             display_context: DisplayContext {

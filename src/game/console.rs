@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -20,14 +20,14 @@ impl Console {
         }
     }
 
-    pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    pub(crate) fn render(&mut self, ctx: &mut RenderContext) {
         if !self.visible {
             return
         }
 
         ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1], ctx.layout_rect[2], 32.], COLOR_BLACK.alpha(0.5));
-        ctx.text(&format!("> {}", self.command), game_ctx.assets.font_standard(), [8, 8], &COLOR_WHITE);
-        ctx.text(&format!("  {}", self.output), game_ctx.assets.font_standard(), [8, 24], &COLOR_WHITE);
+        ctx.text(&format!("> {}", self.command), assets().font_standard(), [8, 8], &COLOR_WHITE);
+        ctx.text(&format!("  {}", self.output), assets().font_standard(), [8, 24], &COLOR_WHITE);
     }
 
     pub(crate) fn input(&mut self, chunk: &mut Chunk, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {

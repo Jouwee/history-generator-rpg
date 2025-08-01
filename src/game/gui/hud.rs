@@ -1,4 +1,4 @@
-use crate::{engine::{COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
+use crate::{engine::{assets::assets, COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) struct HeadsUpDisplay {
     health: NumberedBar,
@@ -36,8 +36,8 @@ impl HeadsUpDisplay {
         player.render_layers([14., 11.], ctx, game_ctx);
 
         let health_text = format!("{:.0} / {:.0}", player.hp.health_points(), player.hp.max_health_points());
-        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7+1], &COLOR_BLACK);
-        ctx.text(&health_text, game_ctx.assets.font_standard(), [42+16+8, 12+16+7], &COLOR_WHITE);
+        ctx.text(&health_text, assets().font_standard(), [42+16+8, 12+16+7+1], &COLOR_BLACK);
+        ctx.text(&health_text, assets().font_standard(), [42+16+8, 12+16+7], &COLOR_WHITE);
 
         ctx.image(&"gui/hud/foreground.png", [16, 16]);
         perf().end("hud");

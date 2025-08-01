@@ -28,10 +28,6 @@ impl WorldDate {
         return self.timestamp % DAYS_IN_MONTH;
     }
 
-    pub(crate) fn days(&self) -> u32 {
-        return self.timestamp as u32;
-    }
-
 }
 
 impl Add for WorldDate {

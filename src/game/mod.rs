@@ -373,7 +373,7 @@ impl Scene for GameSceneState {
             let transform = ctx.context.transform.trans(pos[0], pos[1]);
             Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
             if let Err(msg) = can_use {
-                ctx.text_shadow(&format!("{:?}", msg), game_ctx.assets.font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
+                ctx.text_shadow(&format!("{:?}", msg), assets().font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
             }
         } else {
             ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24]);
@@ -384,7 +384,7 @@ impl Scene for GameSceneState {
         }
 
         // Effects
-        self.effect_layer.render(ctx, game_ctx);
+        self.effect_layer.render(ctx);
 
         if let ChunkLayer::Underground = self.world_layer {
             let draw_state = DrawState::new_alpha();
@@ -411,7 +411,7 @@ impl Scene for GameSceneState {
         if self.can_change_turn_mode() {
             self.button_toggle_turn_based.render(&(), ctx, game_ctx);
         }
-        self.game_log.render(ctx, game_ctx);
+        self.game_log.render(ctx);
 
         self.character_dialog.render(self.chunk.player_mut(), ctx, game_ctx);
         self.codex_dialog.render(&mut self.world, ctx, game_ctx);
@@ -423,7 +423,7 @@ impl Scene for GameSceneState {
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
 
-        self.console.render(ctx, game_ctx);
+        self.console.render(ctx);
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {

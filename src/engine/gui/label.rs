@@ -1,4 +1,4 @@
-use crate::{engine::{asset::{assets::Assets, font::FontAsset}, gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets, FontAsset}, gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, GameContext, RenderContext};
 
 
 /// Stateful label
@@ -36,16 +36,17 @@ impl UINode for Label {
         return &mut self.layout
     }
 
-    fn recompute_layout(&mut self, game_ctx: &mut GameContext) {
-        let font = game_ctx.assets.font(&self.font);
+    fn recompute_layout(&mut self, _game_ctx: &mut GameContext) {
+        let mut assets = assets();
+        let font = assets.font(&self.font);
         let with = font.width(&self.text);
         // TODO: Line-break
         self.layout.size([with, font.line_height()]);
     }
 
-    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
-        ctx.text_shadow(&self.text, game_ctx.assets.font(&self.font), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
+        ctx.text_shadow(&self.text, assets().font(&self.font), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
     }
 
 }

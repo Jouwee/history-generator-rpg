@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{asset::font::Font, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
+use crate::{engine::{assets::{assets, Font}, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent
@@ -48,7 +48,7 @@ impl UINode for TooltipOverlay {
             // Compute size
             let mut size = [10., 10.];
             for line in tooltip.lines.iter() {
-                let dims = line.dims(game_ctx.assets.font_standard());
+                let dims = line.dims(assets().font_standard());
                 size[0] = f64::max(size[0], dims[0] + 10.);
                 size[1] += dims[1];
             }
@@ -86,8 +86,8 @@ impl UINode for TooltipOverlay {
 
             let mut pos = [position[0] as i32 + 6, position[1] as i32 + 12];
             for line in tooltip.lines.iter() {
-                line.render(pos, ctx, game_ctx);
-                let dims = line.dims(game_ctx.assets.font_standard());
+                line.render(pos, ctx);
+                let dims = line.dims(assets().font_standard());
                 pos[1] += dims[1] as i32;
             }
 
@@ -175,12 +175,12 @@ impl TooltipLine {
         }
     }
 
-    fn render(&self, pos: [i32; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&self, pos: [i32; 2], ctx: &mut RenderContext) {
         match &self {
-            Self::Title(title) => ctx.text(&title, game_ctx.assets.font_standard(), pos, &COLOR_WHITE),
-            Self::Body(body) => ctx.text(&body, game_ctx.assets.font_standard(), pos, &Color::from_hex("5a6069")),
-            Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), game_ctx.assets.font_standard(), pos, &Color::from_hex("446d99")),
-            Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), game_ctx.assets.font_standard(), pos, &Color::from_hex("88ae59")),
+            Self::Title(title) => ctx.text(&title, assets().font_standard(), pos, &COLOR_WHITE),
+            Self::Body(body) => ctx.text(&body, assets().font_standard(), pos, &Color::from_hex("5a6069")),
+            Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), assets().font_standard(), pos, &Color::from_hex("446d99")),
+            Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), assets().font_standard(), pos, &Color::from_hex("88ae59")),
         }
     }
 

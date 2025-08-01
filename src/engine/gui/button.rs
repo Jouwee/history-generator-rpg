@@ -97,7 +97,7 @@ impl UINode for Button {
         return &mut self.layout
     }
 
-    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         let background = assets().image(&self.background);
@@ -133,7 +133,7 @@ impl UINode for Button {
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
         image(self.frame.sprite(state_offset + 2, 1), transform, ctx.gl);
 
-        ctx.text(&self.text, game_ctx.assets.font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
+        ctx.text(&self.text, assets().font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
     }
 
     fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {

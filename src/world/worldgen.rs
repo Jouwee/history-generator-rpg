@@ -4,7 +4,7 @@ use graphics::rectangle::{square, Border};
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{asset::image_sheet::ImageSheetAsset, audio::TrackMood, geometry::Size2D, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
+use crate::{engine::{assets::{assets, ImageSheetAsset}, audio::TrackMood, geometry::Size2D, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::{Scene, Update}, Color}, game::InputEvent, resources::resources::Resources, GameContext};
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 
@@ -115,7 +115,7 @@ impl Scene for WorldGenScene {
         ctx.audio.switch_music(TrackMood::Regular);
     }
 
-    fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         ctx.scale(2.);
         use graphics::*;
         let white = Color::rgb([1., 1., 1.]);
@@ -140,7 +140,8 @@ impl Scene for WorldGenScene {
         }
         // Year banner
         let center = ctx.layout_rect[2] / 2.;
-        let font= game_ctx.assets.font_standard();
+        let mut assets = assets();
+        let font= assets.font_standard();
         ctx.texture(&self.banner_texture, ctx.at(center - 64., 0.));
         let text = format!("Year {}", &self.generator.year.to_string());
         let text_width = font.width(&text);

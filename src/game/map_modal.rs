@@ -1,4 +1,4 @@
-use crate::{engine::{asset::image_sheet::ImageSheetAsset, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{unit::UnitType, world::World}, GameContext};
+use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{unit::UnitType, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -115,7 +115,7 @@ impl MapModal {
         let _ = ctx.try_pop();
         // Control
         ctx.image(&"controls/right_click.png", [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24]);
-        ctx.text("Drag to move", game_ctx.assets.font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &COLOR_WHITE);
+        ctx.text("Drag to move", assets().font_standard(), [ctx.layout_rect[2] as i32 - 72, ctx.layout_rect[3] as i32 - 14], &COLOR_WHITE);
         self.close_button.render(&(), ctx, game_ctx);
     }
 

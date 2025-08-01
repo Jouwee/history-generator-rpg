@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use graphics::{Image, Transformed};
 
-use crate::{commons::rng::Rng, engine::assets::assets, globals::perf::perf, GameContext};
+use crate::{commons::rng::Rng, engine::assets::{assets, ImageSheetAsset}, globals::perf::perf, GameContext};
 
-use super::{asset::{image_sheet::ImageSheetAsset}, render::RenderContext};
+use super::{render::RenderContext};
 
 pub(crate) struct TileMap {
     /// Tile / Shadow?

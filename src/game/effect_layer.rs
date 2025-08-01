@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use graphics::{image, Transformed};
 
-use crate::{commons::interpolate::{lerp, Interpolate}, engine::{asset::image_sheet::ImageSheetAsset, assets::assets, geometry::Coord2, render::RenderContext, scene::Update, Palette, COLOR_BLACK}, GameContext, SPRITE_FPS};
+use crate::{commons::interpolate::{lerp, Interpolate}, engine::{assets::{assets, ImageSheetAsset}, geometry::Coord2, render::RenderContext, scene::Update, Palette, COLOR_BLACK}, GameContext, SPRITE_FPS};
 
 pub(crate) struct EffectLayer {
     damage_numbers: Vec<DamageNumber>,
@@ -20,8 +20,9 @@ impl EffectLayer {
         }
     }
 
-    pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let font = game_ctx.assets.font_standard();
+    pub(crate) fn render(&mut self, ctx: &mut RenderContext) {
+        let mut assets = assets();
+        let font = assets.font_standard();
         for dn in self.damage_numbers.iter_mut() {
             let mut pos = [dn.pos.x as f64 * 24., dn.pos.y as f64 * 24.];
             // Center text
@@ -52,7 +53,7 @@ impl EffectLayer {
         }
 
         for projectile in self.projectiles.iter_mut() {
-            let sheet = assets().image_sheet(&projectile.sprite.path, projectile.sprite.tile_size.clone());
+            let sheet = assets.image_sheet(&projectile.sprite.path, projectile.sprite.tile_size.clone());
 
             let pct = projectile.lifetime / projectile.duration;
             let x = lerp(projectile.from.x as f64, projectile.to.x as f64, pct);
@@ -68,7 +69,7 @@ impl EffectLayer {
         }
 
         for sprite in self.sprites.iter_mut() {
-            let sheet = assets().image_sheet(&sprite.sprite.path, sprite.sprite.tile_size.clone());
+            let sheet = assets.image_sheet(&sprite.sprite.path, sprite.sprite.tile_size.clone());
             let sprite_index = (sprite.lifetime / SPRITE_FPS) as usize;
             if sprite_index >= sheet.len() {
                 sprite.done = true;

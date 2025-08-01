@@ -1,6 +1,6 @@
-use crate::globals::perf::perf;
+use crate::{engine::assets::ImageSheetAsset, globals::perf::perf};
 
-use super::{asset::image_sheet::ImageSheetAsset, render::RenderContext};
+use super::{render::RenderContext};
 
 const IDX_BL: usize = 0;
 const IDX_TR_BR: usize = 1;
