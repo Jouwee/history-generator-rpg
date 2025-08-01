@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::battle_simulator::BattleSimulator, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
+use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -22,25 +22,22 @@ pub(crate) enum CreatureSideEffect {
 }
 
 const YEARLY_CHANCE_MARRY: f32 = 0.4;
-const YEARLY_CHANCE_CHILD_MULT: f32 = 1.0;
 const CHANCE_TO_STARVE: f32 = 0.2;
-const BASE_DISEASE_CHANCE: f32 = 0.0015;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
 const CHANCE_TO_COMISSION_ARTIFACT_ON_BDAY: f32 = 0.5;
-const CHANCE_TO_BECOME_BANDIT: f32 = 0.005;
 
 impl CreatureSimulation {
 
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
         if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
             return CreatureSideEffect::Death(CauseOfDeath::Starvation);
         }
         // Death by disease
-        if rng.rand_chance(Self::chance_of_disease(now, &creature)) {
+        if rng.rand_chance(chances.disease_death) {
             return CreatureSideEffect::Death(CauseOfDeath::Disease);
         }
 
@@ -81,7 +78,7 @@ impl CreatureSimulation {
             if age >= 18 {
                 // Have child
                 if creature.gender.is_female() && creature.spouse.is_some()  {
-                    if rng.rand_chance(Self::chance_of_child(now, creature, unit.resources.food, unit.creatures.len())) {
+                    if rng.rand_chance(Self::chance_of_child(now, creature, unit.resources.food, unit.creatures.len(), chances)) {
                         return CreatureSideEffect::HaveChild;
                     }
                 }
@@ -97,7 +94,7 @@ impl CreatureSimulation {
                     if rng.rand_chance(CHANCE_NEW_JOB) {
                         return CreatureSideEffect::LookForNewJob;
                     }
-                    if rng.rand_chance(CHANCE_TO_BECOME_BANDIT) {
+                    if rng.rand_chance(chances.disease_death) {
                         return CreatureSideEffect::BecomeBandit;
                     }
                 }
@@ -133,7 +130,7 @@ impl CreatureSimulation {
         return CreatureSideEffect::None
     }
 
-    fn chance_of_child(now: &WorldDate, creature: &Creature, unit_food_stock: f32, unit_population: usize) -> f32 {
+    fn chance_of_child(now: &WorldDate, creature: &Creature, unit_food_stock: f32, unit_population: usize, chances: &UnitChances) -> f32 {
         let food_excess_pct = unit_food_stock / unit_population as f32;
         let food_mult = (food_excess_pct - 1.).clamp(0.02, 1.);
         
@@ -142,22 +139,7 @@ impl CreatureSimulation {
         
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
-        return YEARLY_CHANCE_CHILD_MULT * fertility_mult * food_mult * children_mult;
-    }
-
-    fn chance_of_disease(now: &WorldDate, creature: &Creature) -> f32 {
-        let age = (*now - creature.birth).year() as f32;
-        // Children are more suceptible to disease
-        if age < 18. {
-            let boost = (age / 18.).powf(2.) + 1.;
-            return BASE_DISEASE_CHANCE + (boost * BASE_DISEASE_CHANCE);
-        }
-        // Same as older people
-        if age >= 40. {
-            let boost = ((age - 40.) / 40.).powf(2.);
-            return BASE_DISEASE_CHANCE + (boost * BASE_DISEASE_CHANCE);
-        }
-        return BASE_DISEASE_CHANCE;
+        return (chances.have_child * fertility_mult * food_mult * children_mult).clamp(0., 1.);
     }
 
     fn chance_of_death_by_old_age(age: f32) -> f32 {
@@ -498,10 +480,10 @@ fn transfer_inventory(current_id: CreatureId, new_owner_id: CreatureId, world: &
     history_trace!("transfer_inventory {:?}", current_id, new_owner_id);
 
     let mut new_owner = world.creatures.get_mut(&new_owner_id);
-    new_owner.details().inventory.append(&mut inventory);
     for item in inventory.iter() {
         world.events.push(Event::InheritedArtifact { date: world.date.clone(), creature_id: new_owner_id, from: current_id, item: *item });
     }
+    new_owner.details().inventory.append(&mut inventory);
 }
 
 fn drop_inventory(creature_id: CreatureId, world: &mut World) {

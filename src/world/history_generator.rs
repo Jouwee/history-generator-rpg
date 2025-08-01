@@ -16,6 +16,11 @@ pub(crate) struct WorldGenerationParameters {
     pub(crate) history_length: u16,
     pub(crate) number_of_seed_cities: u16,
     pub(crate) seed_cities_population: u32,
+    // Storyteller settings
+    /// Storyteller strength, from 0. to 1.
+    pub(crate) st_strength: f32,
+    /// Target city population
+    pub(crate) st_city_population: u16,
 }
 
 pub(crate) struct WorldHistoryGenerator {

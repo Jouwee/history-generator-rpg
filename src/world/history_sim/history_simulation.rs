@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, interactions::simplified_interaction, storyteller::Storyteller}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -70,9 +70,8 @@ impl HistorySimulation {
         world.date = self.date.clone();
         let now = Instant::now();
 
-
         // TODO(tfWpiQPF): Find a cooler way to spawn
-        if self.rng.rand_chance(1.0) {
+        if self.rng.rand_chance(0.) {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
@@ -106,7 +105,14 @@ impl HistorySimulation {
             plot.borrow_mut().verify_success(world);
         }
 
+        let mut creatures = 0;
+
         for id in world.units.iter_ids::<UnitId>() {
+
+            let unit = world.units.get(&id);
+            creatures += unit.creatures.len();
+            drop(unit);
+
             self.simulate_step_unit(world, &step, &self.date.clone(), self.rng.clone(), &id);
             self.rng.next();
         }
@@ -117,10 +123,11 @@ impl HistorySimulation {
         println!("Year: {}", self.date.year());
         println!("Total units: {}", world.units.len());
         println!("Total creatures: {}", world.creatures.len());
+        println!("Simulated creatures: {}", creatures);
         println!("Total artifacts: {}", world.artifacts.len());
         println!("Total events: {}", world.events.len());
 
-        return true;
+        return creatures > 0;
     }
 
     fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) {
@@ -131,6 +138,8 @@ impl HistorySimulation {
 
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
+        let chances = Storyteller::new().story_teller_unit_chances(&self.generation_params, &unit);
+
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);
 
@@ -140,7 +149,7 @@ impl HistorySimulation {
                 !goal.check_completed(world)
             });
 
-            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &creature, plot);
+            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &creature, plot, &chances);
             side_effects.push((*creature_id, side_effect));
 
             // Production and consumption
@@ -192,14 +201,6 @@ impl HistorySimulation {
                 CreatureSideEffect::None => (),
                 CreatureSideEffect::Death(cause_of_death) => kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.resources),
                 CreatureSideEffect::HaveChild => {
-
-                    let unit = world.units.get(unit_id);
-                    // TODO: Hard limit
-                    if unit.creatures.len() > 30 {
-                        continue;
-                    }
-                    drop(unit);
-
                     let mut creature = world.creatures.get_mut(&creature_id);
                     let child = CreatureSimulation::have_child_with_spouse(now, &world, &mut rng, &creature_id, &mut creature);
                     drop(creature);

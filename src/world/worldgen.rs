@@ -157,7 +157,7 @@ impl Scene for WorldGenScene {
         let start = Instant::now();
         loop {
             if self.generator.year < self.generator.parameters.history_length as u32 {
-                println!("Year {}, {} people to process", self.generator.year, self.generator.world.creatures.len());
+                println!("Year {}", self.generator.year);
                 let now = Instant::now();
                 self.generator.simulate_year();
                 self.total_time = self.total_time + now.elapsed();

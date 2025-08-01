@@ -194,10 +194,12 @@ fn main() {
     app.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
         seed: 1234567,
         world_size: Size2D(64, 48),
-        history_length: 500,
+        history_length: 5000,
         number_of_seed_cities: 20,
         seed_cities_population: 20,
-        num_plate_tectonics: 5
+        num_plate_tectonics: 5,
+        st_strength: 1.0,
+        st_city_population: 50,
     }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
