@@ -109,6 +109,10 @@ impl Assets {
         return self.font(&Self::font_heading_asset())
     }
 
+    pub(crate) fn asset_count(&self) -> usize {
+        return self.images.len() + self.image_sheets.len() + self.fonts.len();
+    }
+
 }
 
 pub(crate) struct Image {

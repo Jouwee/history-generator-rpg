@@ -33,9 +33,10 @@ impl DebugOverlay {
             context.text(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), assets().font_standard(), [0, 12], &COLOR_WHITE);
             context.text(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), assets().font_standard(), [0, 20], &COLOR_WHITE);
             context.text(format!("Inp: {:.0}", self.input_time.average()).as_str(), assets().font_standard(), [0, 28], &COLOR_WHITE);
+            context.text(format!("Assets: {}", assets().asset_count()).as_str(), assets().font_standard(), [0, 36], &COLOR_WHITE);
 
             let perf_lines = perf().debug_lines();
-            let mut y = 36.;
+            let mut y = 44.;
             for line in perf_lines {
                 context.rectangle_fill([0., y, 128., 8.], COLOR_BLACK.alpha(0.5));
                 context.text(&line, assets().font_standard(), [0, y as i32+6], &COLOR_WHITE);
