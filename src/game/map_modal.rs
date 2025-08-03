@@ -76,8 +76,7 @@ impl MapModal {
                         4
                     }
                 },
-                UnitType::BanditCamp => 0,
-                UnitType::VarningrLair => {
+                UnitType::VarningrLair | UnitType::BanditCamp => {
                     if unit.creatures.len() > 0 {
                         3
                     } else {

@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, time::Instant};
 
 use image::ImageReader;
 
@@ -464,11 +464,11 @@ impl Resources {
 
     fn load_species(&mut self) {
         self.species.add("species:human", Species::new("human", SpeciesAppearance::Composite {
-            base: vec!("species/human/base_male_light.png".to_string(), "species/human/base_female_light.png".to_string()),
+            base: vec!("species/human/base.png".to_string()),
             top: vec!(
-                "species/human/hair_bun.png".to_string(),
-                "species/human/hair_short.png".to_string(),
-                "species/human/hair_shaved.png".to_string(),
+                "species/human/hair_a.png".to_string(),
+                "species/human/hair_b.png".to_string(),
+                "species/human/hair_c.png".to_string(),
             )
         }).innate_actions(vec!(self.actions.id_of("act:punch"))));
 
@@ -691,7 +691,7 @@ impl Resources {
             name: String::from("sword"),
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
@@ -723,7 +723,7 @@ impl Resources {
             name: String::from("mace"),
             placed_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
@@ -738,7 +738,7 @@ impl Resources {
         self.item_blueprints.add("itb:mace", mace_blueprint);
 
 
-        let image = ImageReader::open("./assets/sprites/species/human/peasant_shirt_equipped.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("./assets/sprites/species/human/shirt_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/species/human/peasant_shirt.png").unwrap().decode().unwrap();
         let placed_sprite = PalleteSprite::new(image);
@@ -746,7 +746,7 @@ impl Resources {
             name: String::from("peasant shirt"),
             placed_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoGarment }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoGarment, cached_texture: RefCell::new(None) }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -756,7 +756,7 @@ impl Resources {
         };
         self.item_blueprints.add("itb:shirt", shirt_blueprint);
 
-        let image = ImageReader::open("./assets/sprites/species/human/pants_simple_equipped.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("./assets/sprites/species/human/pants_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/species/human/pants_simple.png").unwrap().decode().unwrap();
         let placed_sprite = PalleteSprite::new(image);
@@ -764,7 +764,7 @@ impl Resources {
             name: String::from("pants"),
             placed_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Legs }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Legs, cached_texture: RefCell::new(None) }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -782,7 +782,7 @@ impl Resources {
             name: String::from("boots"),
             placed_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Feet }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Feet, cached_texture: RefCell::new(None) }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -792,7 +792,7 @@ impl Resources {
         };
         self.item_blueprints.add("itb:boots", shirt_blueprint);
 
-        let image = ImageReader::open("./assets/sprites/species/human/armor_equipped.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("./assets/sprites/species/human/brigandine_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/species/human/armor.png").unwrap().decode().unwrap();
         let placed_sprite = PalleteSprite::new(image);
@@ -800,7 +800,7 @@ impl Resources {
             name: String::from("armor"),
             placed_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner, cached_texture: RefCell::new(None) }),
             material: None,
             quality: None,
             mellee_damage: None,

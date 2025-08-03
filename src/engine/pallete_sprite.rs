@@ -1,7 +1,6 @@
 use std::{collections::HashMap, hash::Hash};
 
 use image::{DynamicImage, Rgba, RgbaImage};
-use opengl_graphics::{Filter, Texture, TextureSettings};
 
 use super::Color;
 
@@ -15,7 +14,7 @@ impl PalleteSprite {
         PalleteSprite { image }
     }
 
-    pub(crate) fn remap(&self, color_map: HashMap<ColorMap, [Color; 4]>) -> Texture {
+    pub(crate) fn remap(&self, color_map: HashMap<ColorMap, [Color; 4]>) -> RgbaImage {
         let original = self.image.as_rgba8().unwrap();
         let color_map = Self::expand_map(color_map);
         let mut remapped = RgbaImage::new(self.image.width(), self.image.height());
@@ -29,8 +28,7 @@ impl PalleteSprite {
                 }
             }
         }
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        return Texture::from_image(&remapped, &settings)
+        return remapped;
     }
 
     fn expand_map(color_map: HashMap<ColorMap, [Color; 4]>) -> HashMap<Rgba<u8>, Rgba<u8>> {

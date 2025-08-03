@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use graphics::Transformed;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -46,7 +44,8 @@ impl Actor {
             species: *species_id,
             creature_id: None,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            sprite: species.appearance.collapse(),
+            // TODO:
+            sprite: species.appearance.collapse(&CreatureGender::Male),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -69,7 +68,8 @@ impl Actor {
             species: *species_id,
             creature_id: None,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            sprite: species.appearance.collapse(),
+            // TODO:
+            sprite: species.appearance.collapse(&CreatureGender::Male),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -83,14 +83,6 @@ impl Actor {
             true => EquipmentGenerator::generate(&creature_id, &mut rng, world, resources),
             false => Inventory::new()
         };
-        // TODO: Gender specific hints
-        let mut hints = HashMap::new();
-        if creature.gender.is_male() {
-            hints.insert(String::from("base"), String::from("male_light")); 
-        } else {
-            hints.insert(String::from("base"), String::from("female_light")); 
-        }
-
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -106,9 +98,7 @@ impl Actor {
             species: *species_id,
             creature_id: Some(creature_id),
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            // TODO:
-            //sprite: species.appearance.collapse(&Rng::rand(), &creature.appearance_hints),
-            sprite: species.appearance.collapse(),
+            sprite: species.appearance.collapse(&creature.gender),
             inventory,
             afflictions: Vec::new(),
             cooldowns: Vec::new()
@@ -277,7 +267,11 @@ impl Actor {
                     EquipmentType::TorsoInner => 4,
                     EquipmentType::Hand => 200,
                 };
-                textures.push((z_order, equippable.make_texture(&item.material, &game_ctx.resources.materials)));
+                let index = match self.sprite {
+                    CreatureAppearance::Single(_, _) => 0,
+                    CreatureAppearance::Composite { index, base: _, top: _ } => index
+                };
+                textures.push((z_order, equippable.make_texture(index, &item.material, &game_ctx.resources.materials)));
             }
         }
         textures.sort_by(|a, b| a.0.cmp(&b.0));

@@ -71,7 +71,7 @@ impl HistorySimulation {
         let now = Instant::now();
 
         // TODO(tfWpiQPF): Find a cooler way to spawn
-        if self.rng.rand_chance(0.) {
+        if self.rng.rand_chance(0.2) {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {

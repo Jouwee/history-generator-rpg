@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
-use opengl_graphics::Texture;
+use image::{DynamicImage, RgbaImage};
+use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}}, Color, Resources};
+use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color, Resources};
 
 use super::{creature::CreatureId, world::World};
 
@@ -103,7 +104,9 @@ impl Item {
         if let Some(material) = &self.material {
             map = material.pallete_sprite(materials);
         }
-        return self.placed_sprite.remap(map)
+        let image = self.placed_sprite.remap(map);
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        return Texture::from_image(&image, &settings)
     }
 
     pub(crate) fn total_damage(&self, materials: &Materials) -> DamageRoll {
@@ -143,16 +146,27 @@ pub(crate) struct ActionProviderComponent {
 pub(crate) struct EquippableComponent {
     pub(crate) sprite: PalleteSprite,
     pub(crate) slot: EquipmentType,
+    pub(crate) cached_texture: RefCell<Option<RgbaImage>>
 }
 
 impl EquippableComponent {
 
-    pub(crate) fn make_texture(&self, material: &Option<MaterialComponent>, materials: &Materials) -> Texture {
-        let mut map = HashMap::new();
-        if let Some(material) = &material {
-            map = material.pallete_sprite(materials);
+    pub(crate) fn make_texture(&self, index: usize, material: &Option<MaterialComponent>, materials: &Materials) -> Texture {
+        if self.cached_texture.borrow().is_none() {
+            let mut map = HashMap::new();
+            if let Some(material) = &material {
+                map = material.pallete_sprite(materials);
+            }
+            let image = self.sprite.remap(map);
+            let image = DynamicImage::ImageRgba8(image);
+            let image = image.crop_imm((index * SPECIES_SPRITE_SIZE.x()) as u32, 0, SPECIES_SPRITE_SIZE.x() as u32, SPECIES_SPRITE_SIZE.y() as u32).to_rgba8();
+            self.cached_texture.borrow_mut().replace(image);
         }
-        return self.sprite.remap(map);
+
+        let image = self.cached_texture.borrow();
+        let image = image.as_ref().expect("Just populated");
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        return Texture::from_image(&image, &settings)
     }
 }
 

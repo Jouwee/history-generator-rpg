@@ -1,4 +1,4 @@
-use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{assets, GetSprite, ImageSheetSprite}, audio::SoundEffect, geometry::Size2D}, resources::material::MaterialId, world::attributes::Attributes};
+use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{assets, GetSprite, ImageSheetSprite}, audio::SoundEffect, geometry::Size2D}, resources::material::MaterialId, world::{attributes::Attributes, creature::CreatureGender}};
 
 use super::action::ActionId;
 
@@ -73,7 +73,7 @@ pub(crate) enum SpeciesIntelligence {
     Civilized
 }
 
-const SPECIES_SPRITE_SIZE: Size2D = Size2D(48, 48);
+pub(crate) const SPECIES_SPRITE_SIZE: Size2D = Size2D(48, 48);
 
 #[derive(Debug, Clone)]
 pub(crate) enum SpeciesAppearance {
@@ -86,7 +86,7 @@ pub(crate) enum SpeciesAppearance {
 
 impl SpeciesAppearance {
 
-    pub(crate) fn collapse(&self) -> CreatureAppearance {
+    pub(crate) fn collapse(&self, gender: &CreatureGender) -> CreatureAppearance {
         let mut rng = Rng::rand();
         match self {
             Self::Single(path) => {
@@ -95,8 +95,12 @@ impl SpeciesAppearance {
             },
             Self::Composite { base, top } => {
                 return CreatureAppearance::Composite {
-                    base: (rng.item(base).unwrap().clone(), 0),
-                    top: (rng.item(top).unwrap().clone(), 0)
+                    index: match gender {
+                        CreatureGender::Male => 0,
+                        CreatureGender::Female => 1,
+                    },
+                    base: rng.item(base).unwrap().clone(),
+                    top: rng.item(top).unwrap().clone(),
                 }
             }
         }
@@ -108,8 +112,9 @@ impl SpeciesAppearance {
 pub(crate) enum CreatureAppearance {
     Single(String, usize),
     Composite {
-        base: (String, usize),
-        top: (String, usize),
+        index: usize,
+        base: String,
+        top: String,
     }
 }
 
@@ -119,10 +124,10 @@ impl CreatureAppearance {
         let mut assets = assets();
         match self {
             Self::Single(path, i) => vec!(assets.image_sheet(path, SPECIES_SPRITE_SIZE).sprite(*i).unwrap()),
-            Self::Composite { base, top } => {
+            Self::Composite { index, base, top } => {
                 vec!(
-                    assets.image_sheet(&base.0, SPECIES_SPRITE_SIZE).sprite(base.1).unwrap(),
-                    assets.image_sheet(&top.0, SPECIES_SPRITE_SIZE).sprite(top.1).unwrap(),
+                    assets.image_sheet(&base, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(),
+                    assets.image_sheet(&top, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(),
                 )
             }
         }
