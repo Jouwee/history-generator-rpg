@@ -84,7 +84,7 @@ impl HistorySimulation {
                     creatures: vec!(creature),
                     settlement: None,
                     population_peak: (0, 0),
-                    resources: UnitResources { food: 0. },
+                    resources: UnitResources { food: 2. },
                     unit_type: UnitType::VarningrLair,
                     xy: pos
                 };

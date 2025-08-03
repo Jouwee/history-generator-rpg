@@ -346,11 +346,6 @@ impl Scene for GameSceneState {
         ctx.push();
 
         // Game
-        let center = self.chunk.player().xy;
-        self.camera_offset = [
-            lerp(self.camera_offset[0], center.x as f64 * 24., 0.2),
-            lerp(self.camera_offset[1], center.y as f64 * 24., 0.2),
-        ];
         ctx.center_camera_on(self.camera_offset);
 
         self.chunk.render(ctx, game_ctx);
@@ -431,6 +426,13 @@ impl Scene for GameSceneState {
             return map.update(update, ctx);
         }
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
+
+        // Camera lerp
+        let center = self.chunk.player().xy;
+        self.camera_offset = [
+            lerp(self.camera_offset[0], center.x as f64 * 24., 0.2),
+            lerp(self.camera_offset[1], center.y as f64 * 24., 0.2),
+        ];
 
         // TODO (OLaU4Dth): Ideally not every update
         if self.chunk.player().xy != *self.player_pathfinding.to() {

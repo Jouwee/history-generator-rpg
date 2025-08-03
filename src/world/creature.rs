@@ -121,13 +121,6 @@ pub(crate) enum CreatureGender {
 
 impl CreatureGender {
 
-    pub(crate) fn is_male(&self) -> bool {
-        if let CreatureGender::Male = self {
-            return true
-        }
-        return false
-    }
-
     pub(crate) fn is_female(&self) -> bool {
         if let CreatureGender::Female = self {
             return true

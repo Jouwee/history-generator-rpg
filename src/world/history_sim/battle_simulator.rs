@@ -39,15 +39,15 @@ impl BattleSimulator {
             creatures.push(BattleCreature { id: *id, unit_id: defender_id, creature, hp: 100., team: 1, tactic })
         }
 
-        let mut turn_index = 0;
-        loop {
+        let max_turns = rng.randu_range(5, 15);
+        for i in 0..max_turns {
+            let turn_index = i % creatures.len();
             if creatures.len() == 0 {
                 battle.log.push(String::from("No one's left to fight"));
             }
             let creature = creatures.get(turn_index).expect("Is from range");
 
             if let Tactic::Hide = creature.tactic {
-                turn_index = (turn_index + 1) % creatures.len();
                 continue;
             }
 
@@ -79,12 +79,7 @@ impl BattleSimulator {
                 battle.xp_add.push((creature.id, 50 * xp_to_level(adversary_creature.creature.experience) as u32));
 
                 creatures.remove(adversary);
-                if turn_index > adversary {
-                    turn_index = turn_index - 1
-                }
             }
-
-            turn_index = (turn_index + 1) % creatures.len();
         }
 
         return battle

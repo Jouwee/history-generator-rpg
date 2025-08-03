@@ -170,7 +170,7 @@ impl CreatureSimulation {
 // Legendary beasts
 
 const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.8;
-const HUNT_RADIUS_SQRD: f32 = 20.*20.;
+const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
 pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId, resources: &mut Resources) {
     let mut candidates = Vec::new();
