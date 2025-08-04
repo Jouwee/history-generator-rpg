@@ -1,7 +1,7 @@
 use graphics::{image, rectangle, Context, Text, Transformed};
 use opengl_graphics::{GlGraphics, Texture};
 
-use crate::engine::assets::{assets, Font, ImageSheetAsset};
+use crate::engine::assets::{assets, Font};
 
 use super::{Color};
 
@@ -72,14 +72,6 @@ impl<'a> RenderContext<'a> {
         let img = assets().image(img);
         let transform = self.context.transform.trans(position[0] as f64, position[1] as f64);
         image(&img.texture, transform, self.gl);
-    }
-
-    pub(crate) fn tile(&mut self, image_sheet_asset: &ImageSheetAsset, tile: usize, position: [i32; 2]) {
-        let img = assets().image_sheet(&image_sheet_asset.path, image_sheet_asset.tile_size);
-        if let Some(texture) = img.get(tile) {
-            let transform = self.context.transform.trans(position[0] as f64, position[1] as f64);
-            image(texture, transform, self.gl);
-        }
     }
 
     pub(crate) fn texture(&mut self, texture: &Texture, transform: [[f64; 3]; 2]) {

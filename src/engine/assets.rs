@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::{Arc, LazyLock, Mutex, MutexGuard}};
 
-use graphics::CharacterCache;
+use graphics::{CharacterCache, DrawState, Image as GlImage};
 use image::ImageReader;
-use opengl_graphics::{Filter, GlyphCache, Texture, TextureSettings};
+use opengl_graphics::{Filter, GlGraphics, GlyphCache, Texture, TextureSettings};
 
 use crate::engine::geometry::Size2D;
 
@@ -63,6 +63,7 @@ impl Assets {
                 let image = ImageReader::open(&path).unwrap().decode().unwrap();
                 let settings = TextureSettings::new().filter(Filter::Nearest);
                 let mut textures = Vec::new();
+                let mut map = Vec::new();
                 let tiles_x = image.width() / size.0 as u32;
                 let tiles_y = image.height() / size.1 as u32;
                 for y in 0..tiles_y {
@@ -71,9 +72,12 @@ impl Assets {
                         // TODO: Subimage works with references. Maybe it's better?
                         //let tile = image.sub_image(x, y, params.tile_size.0 as u32, params.tile_size.1 as u32);
                         textures.push(Texture::from_image(&tile, &settings));
+                        map.push([x as f64 * size.0 as f64, y as f64 * size.1 as f64, size.0 as f64, size.1 as f64]);
                     }
                 }
                 let arc = Arc::new(ImageSheet {
+                    texture: Texture::from_image(&image.to_rgba8(), &settings),
+                    map,
                     tile_size: size,
                     textures,
                 });
@@ -139,6 +143,8 @@ impl ImageSheetAsset {
 
 pub(crate) struct ImageSheet {
     pub(crate) tile_size: Size2D,
+    pub(crate) texture: Texture,
+    pub(crate) map: Vec<[f64;4]>,
     pub(crate) textures: Vec<Texture>
 }
 
@@ -150,6 +156,7 @@ impl ImageSheet {
     pub(crate) fn get(&self, i: usize) -> Option<&Texture> {
         return self.textures.get(i)
     }
+
 }
 
 pub(crate) trait GetSprite {
@@ -163,20 +170,20 @@ impl GetSprite for Arc<ImageSheet> {
         }
         return Some(ImageSheetSprite {
             image: self.clone(),
-            index: i
+            rect: *self.map.get(i).unwrap()
         })
     }
 }
 
 pub(crate) struct ImageSheetSprite {
     image: Arc<ImageSheet>,
-    index: usize
+    rect: [f64; 4]
 }
 
 impl ImageSheetSprite {
 
-    pub(crate) fn texture(&self) -> &Texture {
-        return self.image.get(self.index).unwrap()
+    pub(crate) fn draw(&self, transform: [[f64; 3]; 2], gl: &mut GlGraphics) {
+        GlImage::new().src_rect(self.rect).draw(&self.image.texture, &DrawState::default(), transform, gl);
     }
 
 }

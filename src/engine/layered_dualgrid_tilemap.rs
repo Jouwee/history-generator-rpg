@@ -1,4 +1,4 @@
-use crate::{engine::assets::ImageSheetAsset, globals::perf::perf};
+use crate::{engine::assets::{assets, GetSprite, ImageSheetAsset, ImageSheetSprite}, globals::perf::perf};
 
 use super::{render::RenderContext};
 
@@ -21,7 +21,7 @@ const IDX_TL: usize = 15;
 
 pub(crate) struct LayeredDualgridTilemap {
     tiles: Vec<Option<usize>>,
-    collapsed_tiles: Vec<Option<Vec<(usize, usize)>>>,
+    collapsed_tiles: Vec<Vec<ImageSheetSprite>>,
     tileset: LayeredDualgridTileset,
     width: usize,
     height: usize,
@@ -32,9 +32,13 @@ pub(crate) struct LayeredDualgridTilemap {
 impl LayeredDualgridTilemap {
 
     pub(crate) fn new(tileset: LayeredDualgridTileset, width: usize, height: usize, cell_width: usize, cell_height: usize) -> LayeredDualgridTilemap {
+        let mut collapsed_tiles = Vec::new();
+        for _ in 0..(width * height) {
+            collapsed_tiles.push(Vec::new());
+        }
         LayeredDualgridTilemap {
             tiles: vec![None; width * height],
-            collapsed_tiles: vec![None; width * height],
+            collapsed_tiles,
             tileset,
             width,
             height,
@@ -76,12 +80,12 @@ impl LayeredDualgridTilemap {
         let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
         let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
         for y in y_range {
+            let py = (y * self.cell_height + hh) as f64;
             for x in x_range.clone() {
-                if let Some(tile) = &self.collapsed_tiles[x + y * self.width] {
-                    let pos = [(x * self.cell_width + hw) as i32, (y * self.cell_height + hh) as i32];
-                    for (tileset, tileset_idx) in tile {
-                        ctx.tile(&self.tileset.tiles[*tileset].textures, *tileset_idx, pos);
-                    }
+                let px = (x * self.cell_width + hw) as f64;
+                let transform = ctx.at(px, py);
+                for sprite in &self.collapsed_tiles[x + y * self.width] {
+                    sprite.draw(transform, ctx.gl);
                 }
             }
         }
@@ -108,7 +112,11 @@ impl LayeredDualgridTilemap {
                 }
             }
             if grid[0] == grid[1] && grid[0] == grid[2] && grid[0] == grid[3] {
-                self.collapsed_tiles[i] = Some(vec!((grid[0], IDX_FULL)));
+                let asset = &self.tileset.tiles[grid[0]].textures;
+                let sprite = assets().image_sheet(&asset.path, asset.tile_size).sprite(IDX_FULL);
+                if let Some(sprite) = sprite {
+                    self.collapsed_tiles[i] = vec!(sprite);
+                }
                 return
             }
             let mut layers = grid.clone().map(|i| (i, &self.tileset.tiles[i]));
@@ -118,36 +126,42 @@ impl LayeredDualgridTilemap {
 
             let mut tile = Vec::new();
 
+            let asset = &self.tileset.tiles[layers[0].0].textures;
+            let sheet = assets().image_sheet(&asset.path, asset.tile_size);
             // Base
-            tile.push((layers[0].0, IDX_FULL));
+            tile.push(sheet.sprite(IDX_FULL).unwrap());
 
             for i in 1..4 {
                 let layer = layers[i];
                 if layer.0 == last_layer.0 {
                     continue;
                 }
+                let asset = &self.tileset.tiles[layer.0].textures;
+                let sheet = assets().image_sheet(&asset.path, asset.tile_size);
+
                 let b_grid = grid.map(|i| i == layer.0);
                 match b_grid {
-                    [false, false, false, false] => tile.push((layer.0, IDX_EMPTY)),
-                    [false, false, false, true] => tile.push((layer.0, IDX_BR)),
-                    [false, false, true, false] => tile.push((layer.0, IDX_BL)),
-                    [false, false, true, true] => tile.push((layer.0, IDX_BR_BL)),
-                    [false, true, false, false] => tile.push((layer.0, IDX_TR)),
-                    [false, true, false, true] => tile.push((layer.0, IDX_TR_BR)),
-                    [false, true, true, false] => tile.push((layer.0, IDX_TR_BL)),
-                    [false, true, true, true] => tile.push((layer.0, IDX_TR_BL_BR)),
-                    [true, false, false, false] => tile.push((layer.0, IDX_TL)),
-                    [true, false, false, true] => tile.push((layer.0, IDX_TL_BR)),
-                    [true, false, true, false] => tile.push((layer.0, IDX_TL_BL)),
-                    [true, false, true, true] => tile.push((layer.0, IDX_TL_BL_BR)),
-                    [true, true, false, false] => tile.push((layer.0, IDX_TL_TR)),
-                    [true, true, false, true] => tile.push((layer.0, IDX_TL_TR_BR)),
-                    [true, true, true, false] => tile.push((layer.0, IDX_TL_TR_BL)),
-                    [true, true, true, true] => tile.push((layer.0, IDX_FULL)),
+                    [false, false, false, false] => tile.push(sheet.sprite(IDX_EMPTY).unwrap()),
+                    [false, false, false, true] => tile.push(sheet.sprite(IDX_BR).unwrap()),
+                    [false, false, true, false] => tile.push(sheet.sprite(IDX_BL).unwrap()),
+                    [false, false, true, true] => tile.push(sheet.sprite(IDX_BR_BL).unwrap()),
+                    [false, true, false, false] => tile.push(sheet.sprite(IDX_TR).unwrap()),
+                    [false, true, false, true] => tile.push(sheet.sprite(IDX_TR_BR).unwrap()),
+                    [false, true, true, false] => tile.push(sheet.sprite(IDX_TR_BL).unwrap()),
+                    [false, true, true, true] => tile.push(sheet.sprite(IDX_TR_BL_BR).unwrap()),
+                    [true, false, false, false] => tile.push(sheet.sprite(IDX_TL).unwrap()),
+                    [true, false, false, true] => tile.push(sheet.sprite(IDX_TL_BR).unwrap()),
+                    [true, false, true, false] => tile.push(sheet.sprite(IDX_TL_BL).unwrap()),
+                    [true, false, true, true] => tile.push(sheet.sprite(IDX_TL_BL_BR).unwrap()),
+                    [true, true, false, false] => tile.push(sheet.sprite(IDX_TL_TR).unwrap()),
+                    [true, true, false, true] => tile.push(sheet.sprite(IDX_TL_TR_BR).unwrap()),
+                    [true, true, true, false] => tile.push(sheet.sprite(IDX_TL_TR_BL).unwrap()),
+                    [true, true, true, true] => tile.push(sheet.sprite(IDX_FULL).unwrap()),
                 };
                 
             }
-            self.collapsed_tiles[i] = Some(tile);
+            
+            self.collapsed_tiles[i] = tile;
         }
     }
 

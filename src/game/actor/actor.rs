@@ -255,7 +255,7 @@ impl Actor {
 
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         for sprite in self.sprite.textures().iter() {
-            ctx.texture(&sprite.texture(), ctx.at(pos[0], pos[1]));
+            sprite.draw(ctx.at(pos[0], pos[1]), ctx.gl);
         }
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {

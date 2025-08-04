@@ -193,6 +193,14 @@ impl Chunk {
             }
         }
 
+        let mut i = 0;
+        for x in 40..80 {
+            for y in 40..80 {
+                i = i + 1;
+                chunk.map.ground_layer.set_tile(x, y, i % 9);
+            }
+        }
+
         chunk.player_mut().xy = Coord2::xy(64, 64);
 
         let mut rng = Rng::seeded("items");
