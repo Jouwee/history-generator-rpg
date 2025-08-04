@@ -11,3 +11,4 @@ pub(crate) mod unit;
 pub(crate) mod world;
 pub(crate) mod worldgen;
 pub(crate) mod history_sim;
+pub(crate) mod writer;

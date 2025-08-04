@@ -1,3 +1,5 @@
+use crate::engine::render::RenderContext;
+
 #[derive(Debug)]
 pub(crate) struct LayoutComponent {
     padding: [f64; 4],
@@ -43,6 +45,13 @@ impl LayoutComponent {
             base_rect[2] - self.padding[2] - self.padding[0],
             base_rect[3] - self.padding[3] - self.padding[1],
         ];
+    }
+
+    pub(crate) fn on_layout<F>(&mut self, mut callback: F, ctx: &mut RenderContext) where F: FnMut(&mut RenderContext) -> () {
+        let copy = ctx.layout_rect;
+        ctx.layout_rect = self.compute_inner_layout_rect(ctx.layout_rect);
+        callback(ctx);
+        ctx.layout_rect = copy;
     }
 
     pub(crate) fn padding(&mut self, padding: [f64; 4]) -> &mut Self {

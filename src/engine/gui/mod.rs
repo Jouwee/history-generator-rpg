@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::gui::layout_component::LayoutComponent, GameContext, InputEvent, RenderContext, Update};
+use crate::{engine::{gui::layout_component::LayoutComponent, scene::BusEvent}, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) mod button;
 pub(crate) mod containers;
@@ -26,6 +26,10 @@ pub(crate) trait UINode {
     fn render(&mut self, _state: &Self::State, _ctx: &mut RenderContext, _game_ctx: &mut GameContext) {}
 
     fn update(&mut self, _state: &mut Self::State, _update: &Update, _ctx: &mut GameContext) {
+    }
+
+    fn event(&mut self, _state: &mut Self::State, _evt: &BusEvent, _ctx: &mut GameContext) -> ControlFlow<()> {
+        return ControlFlow::Continue(());
     }
 
     fn input(&mut self, _state: &mut Self::State, _evt: &InputEvent, _ctx: &mut GameContext) -> ControlFlow<Self::Input> {

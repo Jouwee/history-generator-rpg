@@ -30,9 +30,9 @@ impl DebugOverlay {
         self.fps.count();
         if self.active {
             context.rectangle_fill([0., 0., 128., 36.], COLOR_BLACK.alpha(0.5));
-            context.text(format!("FPS: {:.0} - {:.3} (Teoretical: {:.0})", self.fps.average(), self.render_time.average(), 1./self.render_time.average()).as_str(), assets().font_standard(), [0, 12], &COLOR_WHITE);
-            context.text(format!("TPS: {:.0} - {:.3} (Teoretical: {:.0})", self.tps.average(), self.update_time.average(), 1./self.update_time.average()).as_str(), assets().font_standard(), [0, 20], &COLOR_WHITE);
-            context.text(format!("Inp: {:.0}", self.input_time.average()).as_str(), assets().font_standard(), [0, 28], &COLOR_WHITE);
+            context.text(format!("FPS: {:.0} - {:.3}", self.fps.average(), self.render_time.average()).as_str(), assets().font_standard(), [0, 12], &COLOR_WHITE);
+            context.text(format!("TPS: {:.0} - {:.3}", self.tps.average(), self.update_time.average()).as_str(), assets().font_standard(), [0, 20], &COLOR_WHITE);
+            context.text(format!("Inp: {:.3}", self.input_time.average()).as_str(), assets().font_standard(), [0, 28], &COLOR_WHITE);
             context.text(format!("Assets: {}", assets().asset_count()).as_str(), assets().font_standard(), [0, 36], &COLOR_WHITE);
 
             let perf_lines = perf().debug_lines();

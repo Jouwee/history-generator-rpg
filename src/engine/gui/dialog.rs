@@ -22,7 +22,8 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
         }
     }
 
-    pub(crate) fn show(&mut self, value: T) {
+    pub(crate) fn show(&mut self, mut value: T, state: &S, game_ctx: &mut GameContext) {
+        value.init(state, game_ctx);
         self.value = Some(value)
     }
 

@@ -39,9 +39,9 @@ impl UINode for Label {
     fn recompute_layout(&mut self, _game_ctx: &mut GameContext) {
         let mut assets = assets();
         let font = assets.font(&self.font);
-        let with = font.width(&self.text);
+        let width = font.width(&self.text);
         // TODO: Line-break
-        self.layout.size([with, font.line_height()]);
+        self.layout.size([width, font.line_height()]);
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {

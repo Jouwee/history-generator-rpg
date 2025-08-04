@@ -14,7 +14,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::WindowSettings;
 
-use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::geometry::Size2D};
+use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}};
 
 pub(crate) mod engine;
 pub(crate) mod commons;
@@ -45,7 +45,8 @@ pub(crate) struct GameContext {
     resources: Resources,
     tooltips: TooltipRegistry,
     display_context: DisplayContext,
-    drag_item: Option<Item>
+    drag_item: Option<Item>,
+    event_bus: Vec<BusEvent>
 }
 
 pub(crate) struct DisplayContext {
@@ -133,6 +134,18 @@ impl App {
             },
         }
     }
+
+    fn event(&mut self, event: &BusEvent) {
+        match &mut self.scene {
+            SceneEnum::None => {},
+            SceneEnum::WorldGen(game_state) => {
+                game_state.event(event, &mut self.context);
+            },
+            SceneEnum::Game(game_state) => {
+                game_state.event(event, &mut self.context);
+            },
+        }
+    }
 }
 
 fn main() {
@@ -142,7 +155,6 @@ fn main() {
 
     let mut window: Sdl2Window =
         WindowSettings::new("Tales of Kathay", [1024, 768])
-            // .exit_on_esc(true)
             .graphics_api(opengl)
             .build()
             .unwrap();
@@ -170,6 +182,7 @@ fn main() {
                 gui_rect: [0.; 4]
             },
             drag_item: None,
+            event_bus: Vec::new(),
         },
         sprite_i: 0,
         sprite_c: 0.,
@@ -208,7 +221,7 @@ fn main() {
 
     let mut event_settings = EventSettings::new();
     event_settings.set_max_fps(1000);
-    event_settings.ups = 30;
+    event_settings.set_ups(30);
 
     let mut input_state = InputState::new();
 
@@ -227,6 +240,7 @@ fn main() {
         }
 
         if let Some(k) = e.mouse_cursor_args() {
+            let now: Instant = Instant::now();
             last_mouse_pos = k;
             // TODO: Fake event
             let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
@@ -235,6 +249,7 @@ fn main() {
                 evt: InputEvent::from_mouse_move(k, &app.display_context, &mut input_state)
             };
             app.input(&input_event);
+            app.debug_overlay.input_time(now.elapsed());
         }
 
         if let Some(k) = e.button_args() {
@@ -297,6 +312,11 @@ fn main() {
             }
             app.debug_overlay.input_time(now.elapsed());
 
+        }
+
+        let events: Vec<BusEvent> = app.context.event_bus.drain(..).collect();
+        for event in events {
+            app.event(&event);
         }
 
     }

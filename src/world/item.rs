@@ -50,55 +50,6 @@ impl Item {
         return name
     }
 
-    pub(crate) fn description(&self, resources: &Resources, world: &World) -> String {
-        let mut description = self.name.clone();
-
-        if let Some(quality) = &self.quality {
-            description = format!("{:?} {description}", quality.quality)
-        }
-
-        if let Some(material) = &self.material {
-            let mut composition = Vec::new();
-            
-            let primary = resources.materials.get(&material.primary);
-            composition.push(primary.name.clone());
-
-            if let Some(secondary) = material.secondary {
-                let primary = resources.materials.get(&secondary);
-                composition.push(primary.name.clone());
-            }
-
-            if let Some(details) = material.details {
-                let primary = resources.materials.get(&details);
-                composition.push(primary.name.clone());
-            }
-
-            let composition = composition.join(", ");
-            description = format!("{description} made of {composition}");
-        }
-
-        if let Some(scene) = &self.artwork_scene {
-            match scene.scene {
-                ArtworkScene::Bust { creature_id } => {
-                    let creature = world.creatures.get(&creature_id);
-                    description = format!("{description}. It depicts a bust of {}", creature.name(&creature_id, world, resources));
-                },
-                ArtworkScene::FullBody { creature_id, artifact_id } => {
-                    let creature = world.creatures.get(&creature_id);
-                    description = match artifact_id {
-                        Some(artifact) => {
-                            let artifact = world.artifacts.get(&artifact);
-                            format!("{description}. It depicts a full-body image of {} holding {}", creature.name(&creature_id, world, resources), artifact.name(&resources.materials))
-                        }
-                        None => format!("{description}. It depicts a full-body image of {}", creature.name(&creature_id, world, resources))
-                    };                    
-                }
-            }
-        }
-        
-        return description
-    }
-
     pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {
         let mut map = HashMap::new();
         if let Some(material) = &self.material {

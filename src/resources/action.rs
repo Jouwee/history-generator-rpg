@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::Update, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -396,7 +396,7 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn update(&mut self, update: &Update, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &GameContext) {
+    pub(crate) fn update(&mut self, update: &Update, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &mut GameContext) {
         let mut clear_running_action = false;
         if let Some(action) = &mut self.running_action {
 
@@ -509,61 +509,21 @@ impl ActionRunner {
                                         }
                                     },
                                     ActionEffect::Inspect => {
+                                        let actor = action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut())
+                                            .first()
+                                            .and_then(|i| chunk.actor(*i).cloned());
 
-                                        // TODO(hu2htwck): Add info to codex
+                                        let item = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center)
+                                            .and_then(|(_, (_, item, _))| Some(item.clone()))
+                                        ;
 
-                                        println!("Inspect at {:?}", action.center);
+                                        let tile_metadata = chunk.map.tiles_metadata.get(&action.center).cloned();
 
-                                        for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
-                                            let target = chunk.actor_mut(i).unwrap();
-
-                                            let creature_id = target.creature_id;
-                                            if let Some(creature_id) = creature_id {
-                                                let codex = world.codex.creature_mut(&creature_id);
-                                                // TODO(hu2htwck): Not this
-                                                codex.add_appearance();
-                                                codex.add_name();
-                                                let creature = world.creatures.get(&creature_id);
-                                                println!("Target: {}, {:?}, {:?} birth {}", creature.name(&creature_id, &world, &ctx.resources), creature.profession, creature.gender, creature.birth.year());
-                                                // TODO(IhlgIYVA): Debug print
-                                                println!("Relationships: {:?}", creature.relationships)
-
-                                            }
-                                        }
-
-                                        let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center);
-                                        if let Some((_, (_, item, _))) = &item_on_ground {
-                                            println!("{}", item.description(&ctx.resources, &world));
-                                        }
-                                        let tile = chunk.map.get_object_idx(action.center);
-
-                                        let tile_metadata = chunk.map.tiles_metadata.get(&action.center).and_then(|m| Some(m));
-                                        let tile_meta = &tile_metadata;
-                                        match tile {
-                                            1 => println!("A wall."),
-                                            2 => println!("A tree."),
-                                            3 => println!("A bed."),
-                                            4 => println!("A table."),
-                                            5 => println!("A stool."),
-                                            6 => println!("A tombstone."),            
-                                            _ => ()                                
-                                        };
-
-                                        if let Some(meta) = tile_meta {
-                                            match meta {
-                                                TileMetadata::BurialPlace(creature_id) => {
-                                                    let creature = world.creatures.get(creature_id);
-                                                    if let Some(death) = creature.death {
-                                                        let codex = world.codex.creature_mut(&creature_id);
-                                                        codex.add_name();
-                                                        codex.add_death();
-                                                        // TODO(hu2htwck): Event
-                                                        println!("The headstone says: \"Resting place of {:?}\". {} - {}. Died from {:?}", creature_id, creature.birth.year(), death.0.year(), death.1);
-                                                    }
-                                                    
-                                                }
-                                            }
-                                        }
+                                        ctx.event_bus.push(BusEvent::ShowInspectDialog(ShowInspectDialogData {
+                                            actor,
+                                            item,
+                                            tile_metadata,
+                                        }))
                                     },
                                     ActionEffect::Dig => {
                                         for point in action.spell_area.points(action.center) {

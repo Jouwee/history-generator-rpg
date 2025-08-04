@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{game::InputEvent, GameContext};
+use crate::{game::{actor::actor::Actor, chunk::TileMetadata, InputEvent}, world::item::Item, GameContext};
 use super::render::RenderContext;
 
 pub(crate) struct Update {
@@ -14,4 +14,16 @@ pub(crate) trait Scene {
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
     fn update(&mut self, update: &Update, ctx: &mut GameContext);
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()>;
+    fn event(&mut self, evt: &BusEvent, ctx: &mut GameContext) -> ControlFlow<()>;
+}
+
+pub(crate) enum BusEvent {
+    ShowInspectDialog(ShowInspectDialogData)
+}
+
+#[derive(Clone)]
+pub(crate) struct ShowInspectDialogData {
+    pub(crate) actor: Option<Actor>,
+    pub(crate) item: Option<Item>,
+    pub(crate) tile_metadata: Option<TileMetadata>
 }

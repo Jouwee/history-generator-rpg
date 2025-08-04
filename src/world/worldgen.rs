@@ -179,4 +179,8 @@ impl Scene for WorldGenScene {
     fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
+
+    fn event(&mut self, _evt: &crate::engine::scene::BusEvent, _ctx: &mut GameContext) -> ControlFlow<()> {
+        ControlFlow::Continue(())
+    }
 }
