@@ -19,6 +19,7 @@ impl Rng {
         // This pseudo algorithm has a downside where close digits generate close results. So 0 and 1 are similar.
         // This next jumps to the next random number to avoid this downside.
         rng.next();
+        rng.next();
         return rng;
     }
 

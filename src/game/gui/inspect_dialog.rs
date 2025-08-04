@@ -52,8 +52,12 @@ impl UINode for InspectDialog {
             None => (),
         };
 
-        let text = Label::text(&writer.take_text());
-        self.info_container.add(text);
+        let text = &writer.take_text();
+        for line in text.split("\n") {
+            let line = Label::text(&line);
+            self.info_container.add(line);
+        }
+        
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {

@@ -1,4 +1,4 @@
-use crate::{game::actor::actor::Actor, resources::resources::Resources, world::{creature::{self, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use crate::{game::actor::actor::Actor, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -74,9 +74,33 @@ impl<'a> Writer<'a> {
     }
 
     pub(crate) fn describe_burial_place(&mut self, creature_id: &CreatureId) {
+        self.add_text(&format!("A grave. The headstone reads:\n"));
         let creature = self.world.creatures.get(creature_id);
         let (death_date, death_reason) = creature.death.unwrap();
-        self.add_text(&format!("A grave.\nThe headstone reads: {}, {:?}.\nBirthed {}, dead {}", creature.name(creature_id, self.world, self.resources), death_reason, format_date(&creature.birth), format_date(&death_date)));
+        self.add_text(&(creature.name(creature_id, self.world, self.resources) + "\n"));
+        if creature.father != CreatureId::ancients() {
+            let child_gendered = match &creature.gender {
+                CreatureGender::Male => "Son",
+                CreatureGender::Female => "Daugther",
+            };
+            self.add_text(&format!("{} of {} and {}\n", child_gendered, self.creature_name(&creature.father), self.creature_name(&creature.mother)));
+        }
+        self.add_text(&format!("Born in {}\n", format_date(&creature.birth)));
+        self.add_text(&format!("Died in {} {}\n", format_date(&death_date), self.cause_of_death_description(&death_reason)));
+    }
+
+    fn creature_name(&self, creature_id: &CreatureId) -> String {
+        let creature = self.world.creatures.get(creature_id);
+        return creature.name(creature_id, self.world, self.resources);
+    }
+
+    fn cause_of_death_description(&self, cause_of_death: &CauseOfDeath) -> String {
+        match cause_of_death {
+            CauseOfDeath::Disease => String::from("of a sudden illness"),
+            CauseOfDeath::OldAge => String::from("peacefully in their sleep"),
+            CauseOfDeath::Starvation => String::from("of malnutrition"),
+            CauseOfDeath::KilledInBattle(killer_id) => format!("by the hand of {}", self.creature_name(killer_id))
+        }
     }
 
     fn add_text(&mut self, text: &str) {
