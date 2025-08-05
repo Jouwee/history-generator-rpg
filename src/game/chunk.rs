@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 use graphics::{image, Transformed};
 use opengl_graphics::Texture;
 
-use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator, ChunkLayer}, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator, ChunkLayer}, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, scene::BusEvent, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
@@ -228,11 +228,15 @@ impl Chunk {
         self.turn_controller.initiative.push(self.actors.len());
     }
 
-    pub(crate) fn remove_npc(&mut self, i: usize, ctx: &GameContext) {
+    pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
         let npc = self.actors.get_mut(i).unwrap();
         for item in npc.inventory.take_all() {
             let texture = item.make_texture(&ctx.resources.materials);
             self.map.items_on_ground.push((npc.xy, item, texture));
+        }
+
+        if let Some(creature_id) = npc.creature_id {
+            ctx.event_bus.push(BusEvent::CreatureKilled(creature_id));
         }
 
         self.actors.remove(i);

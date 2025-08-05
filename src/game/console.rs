@@ -149,6 +149,15 @@ impl Console {
 
                 return Result::Ok(format!("Spawned"));
             },
+            Some("/fill") => {
+
+                chunk.player_mut().ap.action_points = chunk.player_mut().ap.max_action_points as i32;
+                chunk.player_mut().stamina.stamina = chunk.player_mut().stamina.max_stamina;
+                chunk.player_mut().cooldowns.clear();
+                chunk.player_mut().hp.recover_turn();
+
+                return Result::Ok(format!("Cheater"));
+            },
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))
         }
     }

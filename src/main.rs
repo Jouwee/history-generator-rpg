@@ -210,7 +210,7 @@ fn main() {
         seed_cities_population: 15,
         num_plate_tectonics: 5,
         st_strength: 1.0,
-        st_city_population: 50,
+        st_city_population: 40,
     }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
@@ -220,7 +220,7 @@ fn main() {
     let mut last_mouse_pos = [0.0, 0.0];
 
     let mut event_settings = EventSettings::new();
-    event_settings.set_max_fps(1000);
+    event_settings.set_max_fps(40);
     event_settings.set_ups(30);
 
     let mut input_state = InputState::new();

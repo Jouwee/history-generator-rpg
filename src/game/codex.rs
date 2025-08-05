@@ -64,6 +64,10 @@ impl Codex {
         self.quests.iter()
     }
 
+    pub(crate) fn quests_mut(&mut self) -> impl Iterator<Item = &mut Quest> {
+        self.quests.iter_mut()
+    }
+
 }
 
 const CREATURE_FACT_NAME: u8 = 0b0000_0001;
@@ -168,14 +172,18 @@ impl ArtifactCodex {
 
 #[derive(Clone, Debug)]
 pub(crate) struct Quest {
+    pub(crate) status: QuestStatus,
+    pub(crate) quest_giver: CreatureId,
     pub(crate) objective: QuestObjective
 }
 
 impl Quest {
 
-    pub(crate) fn new(objective: QuestObjective) -> Self {
+    pub(crate) fn new(quest_giver: CreatureId, objective: QuestObjective) -> Self {
         return Self {
-            objective
+            quest_giver,
+            objective,
+            status: QuestStatus::InProgress
         }
     }
 
@@ -185,4 +193,12 @@ impl Quest {
 pub(crate) enum QuestObjective {
     /// Kill a specific creature
     KillCreature(CreatureId)
+}
+
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum QuestStatus {
+    InProgress,
+    RewardPending,
+    Complete
 }

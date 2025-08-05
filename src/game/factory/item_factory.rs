@@ -24,6 +24,14 @@ impl ItemFactory {
         }
     }
 
+    pub(crate) fn quest_reward(resources: &Resources) -> Item {
+        let mut rng = Rng::rand();
+        match rng.randu_range(0, 4) {
+            1 | 2 => Self::inner_armor(&mut rng, resources),
+            _ => Self::weapon(&mut rng, resources).make(),
+        }
+    }
+
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
         return WeaponFactory { rng: rng, resources: resources, quality: None, material_pool: None, named: false }
     }

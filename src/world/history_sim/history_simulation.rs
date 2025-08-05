@@ -77,7 +77,7 @@ impl HistorySimulation {
             if let Some(pos) = pos {
                 let species = self.resources.species.id_of("species:varningr");
                 let mut factory = CreatureFactory::new(self.rng.derive("creature"));
-                let creature = factory.make_single(species, 10, SIM_FLAG_GREAT_BEAST, world);
+                let creature = factory.make_single(species, 3, SIM_FLAG_GREAT_BEAST, world);
                 let unit = Unit {
                     artifacts: Vec::new(),
                     cemetery: Vec::new(),

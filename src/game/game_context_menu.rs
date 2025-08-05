@@ -62,7 +62,6 @@ impl UINode for GameContextMenu {
                 if let Some(id) = id {
                     let cursor = menu.cursor_pos.clone();
                     self.close();
-                    println!("Clicked option");
                     return ControlFlow::Break((cursor, id))
                 } else {
                     warn!("No action found for ID {}", idu);

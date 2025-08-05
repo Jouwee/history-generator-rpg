@@ -1,4 +1,4 @@
-use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{self, CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -21,6 +21,15 @@ impl<'a> Writer<'a> {
     pub(crate) fn describe_actor(&mut self, actor: &Actor) {
         let species = self.resources.species.get(&actor.species);
         self.add_text(&format!("A {}.", species.name));
+    }
+
+    pub(crate) fn describe_quest(&mut self, quest: &Quest) {
+        match quest.objective {
+            QuestObjective::KillCreature(creature_id) => {
+                let creature = self.world.creatures.get(&creature_id);
+                self.add_text(&format!("Kill {}", creature.name(&creature_id, self.world, self.resources)));
+            }
+        }
     }
 
     pub(crate) fn describe_item(&mut self, item: &Item) {

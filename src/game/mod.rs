@@ -25,6 +25,7 @@ use crate::engine::input::InputEvent as NewInputEvent;
 use crate::engine::scene::BusEvent;
 use crate::engine::{Color, COLOR_WHITE};
 use crate::game::chunk::{AiGroups, PLAYER_IDX};
+use crate::game::codex::{QuestObjective, QuestStatus};
 use crate::game::console::Console;
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
@@ -684,6 +685,24 @@ impl Scene for GameSceneState {
             },
             BusEvent::ShowChatDialog(data) => {
                 self.chat_dialog.show(ChatDialog::new(data.clone()), &self.world, ctx);
+                return ControlFlow::Break(());
+            },
+            BusEvent::CreatureKilled(creature_id) => {
+                for quest in self.world.codex.quests_mut() {
+                    if let QuestStatus::Complete = quest.status {
+                        continue;
+                    }
+                    let completed = match &quest.objective {
+                        QuestObjective::KillCreature(kill_id) => kill_id == creature_id
+                    };
+                    if completed {
+                        quest.status = QuestStatus::RewardPending;
+                    }
+                }
+                return ControlFlow::Continue(());
+            },
+            BusEvent::AddItemToPlayer(item) => {
+                self.chunk.player_mut().inventory.add(item.clone());
                 return ControlFlow::Break(());
             }
         }

@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}}, game::codex::Quest, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -158,6 +158,26 @@ impl CodexDialog {
             }
 
             // TODO(hu2htwck): Other info
+
+        }
+
+        if let Selection::Quest(quest) = &self.selected {
+
+            
+            let mut writer = Writer::new(world, &ctx.resources);
+            writer.describe_quest(&quest);
+
+            let description = Label::text(&writer.take_text());
+            self.info_container.add(description);
+
+            let status = match quest.status {
+                QuestStatus::Complete => "Complete",
+                QuestStatus::InProgress => "In progress",
+                QuestStatus::RewardPending => "Retrieve reward",
+            };
+
+            let description = Label::text(status);
+            self.info_container.add(description);
 
         }
 

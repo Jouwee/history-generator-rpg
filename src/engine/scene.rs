@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::geometry::Coord2, game::{actor::actor::Actor, chunk::TileMetadata, InputEvent}, world::item::Item, GameContext};
+use crate::{engine::geometry::Coord2, game::{actor::actor::Actor, chunk::TileMetadata, InputEvent}, world::{creature::CreatureId, item::Item}, GameContext};
 use super::render::RenderContext;
 
 pub(crate) struct Update {
@@ -19,7 +19,9 @@ pub(crate) trait Scene {
 
 pub(crate) enum BusEvent {
     ShowInspectDialog(ShowInspectDialogData),
-    ShowChatDialog(ShowChatDialogData)
+    ShowChatDialog(ShowChatDialogData),
+    CreatureKilled(CreatureId),
+    AddItemToPlayer(Item)
 }
 
 #[derive(Clone)]

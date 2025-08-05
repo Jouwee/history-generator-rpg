@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::ShowChatDialogData}, game::codex::{Quest, QuestObjective}, globals::perf::perf, world::{creature::Profession, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::{BusEvent, ShowChatDialogData}}, game::{codex::{Quest, QuestObjective, QuestStatus}, factory::item_factory::ItemFactory}, globals::perf::perf, world::{creature::Profession, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct ChatDialog {
     layout: LayoutComponent,
@@ -88,11 +88,11 @@ impl ChatDialog {
                 continue;
             }
             
-            if unit.xy.dist_squared(&self.data.world_coord) > 5.*5. {
+            if unit.xy.dist_squared(&self.data.world_coord) > 7.*7. {
                 continue;
             }
 
-            let quest = Quest::new(QuestObjective::KillCreature(unit.creatures.first().unwrap().clone()));
+            let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), QuestObjective::KillCreature(unit.creatures.first().unwrap().clone()));
             writer.chat_explain_quest(&quest, &self.data.actor);
             
             let text = &writer.take_text();
@@ -130,7 +130,25 @@ impl UINode for ChatDialog {
 
         writer.describe_actor(&self.data.actor);
 
-        writer.quote_actor("Yes?", &self.data.actor);
+        let pending_quest = world.codex.quests()
+            .filter(|quest| quest.quest_giver == self.data.actor.creature_id.unwrap() && quest.status == QuestStatus::RewardPending)
+            .next();
+
+        if let Some(pending_quest) = pending_quest {
+            writer.quote_actor("I see you have completed my quest! Here, a reward.", &self.data.actor);
+
+            let reward = ItemFactory::quest_reward(&game_ctx.resources);
+            writer.add_text("\nHe gifts you a ");
+            writer.describe_item(&reward);
+
+            game_ctx.event_bus.push(BusEvent::AddItemToPlayer(reward));
+
+            // TODO: Mark as complete
+
+            writer.quote_actor("Can I help you with something else?", &self.data.actor);
+        } else {
+            writer.quote_actor("Yes?", &self.data.actor);    
+        }
 
         let text = &writer.take_text();
         for line in text.split("\n") {
