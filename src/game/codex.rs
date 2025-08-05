@@ -5,6 +5,7 @@ use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::Crea
 pub(crate) struct Codex {
     creatures: HashMap<CreatureId, CreatureCodex>,
     artifacts: HashMap<ItemId, ArtifactCodex>,
+    quests: Vec<Quest>,
 }
 
 impl Codex {
@@ -13,6 +14,7 @@ impl Codex {
         Codex {
             creatures: HashMap::new(),
             artifacts: HashMap::new(),
+            quests: Vec::new()
         }
     }
 
@@ -44,6 +46,22 @@ impl Codex {
             self.artifacts.insert(*artifact_id, ArtifactCodex { facts_bitmask: 0, events: Vec::new() });    
         }
         return self.artifacts.get_mut(artifact_id).expect("Just inserted");
+    }
+
+    pub(crate) fn add_quest(&mut self, quest: Quest) {
+        // Makes sure the basic info about the quest is known
+        match &quest.objective {
+            QuestObjective::KillCreature(creature_id) => {
+                let creature = self.creature_mut(creature_id);
+                creature.add_name();
+            }
+        }
+
+        self.quests.push(quest);
+    }
+
+    pub(crate) fn quests(&self) -> impl Iterator<Item = &Quest> {
+        self.quests.iter()
     }
 
 }
@@ -145,4 +163,26 @@ impl ArtifactCodex {
         return self.events.iter()
     }
 
+}
+
+
+#[derive(Clone, Debug)]
+pub(crate) struct Quest {
+    pub(crate) objective: QuestObjective
+}
+
+impl Quest {
+
+    pub(crate) fn new(objective: QuestObjective) -> Self {
+        return Self {
+            objective
+        }
+    }
+
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum QuestObjective {
+    /// Kill a specific creature
+    KillCreature(CreatureId)
 }

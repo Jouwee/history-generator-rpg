@@ -10,6 +10,7 @@ use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable}
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
 pub(crate) struct Chunk {
+    pub(crate) world_coord: Coord2,
     pub(crate) size: Size2D,
     pub(crate) map: ChunkMap,
     pub(crate) player: Actor,
@@ -109,7 +110,7 @@ impl ChunkMap {
 }
 
 impl Chunk {
-    pub(crate) fn new(size: Size2D, player: Actor, resources: &Resources) -> Chunk {
+    pub(crate) fn new(world_coord: Coord2, size: Size2D, player: Actor, resources: &Resources) -> Chunk {
 
         let mut tileset = TileSet::new();
         for tile in resources.object_tiles.iter() {
@@ -122,6 +123,7 @@ impl Chunk {
         }
 
         Chunk {
+            world_coord,
             size,
             map: ChunkMap {
                 tiles_clone: resources.tiles.clone(),
@@ -186,7 +188,7 @@ impl Chunk {
     }
 
     pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> Chunk {
-        let mut chunk = Self::new(Size2D(128, 128), player, resources);
+        let mut chunk = Self::new(Coord2::xy(0,0), Size2D(128, 128), player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
                 chunk.map.ground_layer.set_tile(x, y, 1);
@@ -241,7 +243,7 @@ impl Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
-        let mut chunk = Chunk::new(Size2D(128, 128), player, resources);
+        let mut chunk = Chunk::new(xy, Size2D(128, 128), player, resources);
         let mut generator = ChunkGenerator::new(&mut chunk, rng);
         let params = ChunkGenParams {
             layer

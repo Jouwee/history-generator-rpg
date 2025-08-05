@@ -756,6 +756,24 @@ impl Resources {
         };
         self.item_blueprints.add("itb:armor", shirt_blueprint);
 
+        let image = ImageReader::open("./assets/sprites/species/human/crown_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/crown.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("crown"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Head, cached_texture: RefCell::new(None) }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Head) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:crown", shirt_blueprint);
+
     }
 
 }

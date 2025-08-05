@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{game::{actor::actor::Actor, chunk::TileMetadata, InputEvent}, world::item::Item, GameContext};
+use crate::{engine::geometry::Coord2, game::{actor::actor::Actor, chunk::TileMetadata, InputEvent}, world::item::Item, GameContext};
 use super::render::RenderContext;
 
 pub(crate) struct Update {
@@ -31,5 +31,6 @@ pub(crate) struct ShowInspectDialogData {
 
 #[derive(Clone)]
 pub(crate) struct ShowChatDialogData {
-    pub(crate) actor: Actor
+    pub(crate) world_coord: Coord2,
+    pub(crate) actor: Actor,
 }

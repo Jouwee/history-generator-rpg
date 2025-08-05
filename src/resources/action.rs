@@ -532,6 +532,7 @@ impl ActionRunner {
                                             .and_then(|i| chunk.actor(*i).cloned());
                                         if let Some(actor) = actor {
                                             ctx.event_bus.push(BusEvent::ShowChatDialog(ShowChatDialogData {
+                                                world_coord: chunk.world_coord,
                                                 actor,
                                             }))
                                         }

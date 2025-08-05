@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UIEvent, UINode}, GameContext, RenderContext};
+use crate::{engine::{gui::{layout_component::LayoutComponent, UIEvent, UINode}, Color}, GameContext, RenderContext};
 
 
 /// A simple, layout-less container
@@ -44,6 +44,8 @@ impl UINode for SimpleContainer {
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let copy = ctx.layout_rect;
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
+
+        ctx.rectangle_fill(layout, Color::from_hex("ff808030"));
 
         self.auto_layout.reset_layout(layout);
         for child in self.children.iter_mut() {

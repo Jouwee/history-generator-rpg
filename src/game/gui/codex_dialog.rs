@@ -1,11 +1,12 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, COLOR_WHITE}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}}, game::codex::Quest, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
     creatures_button: Button,
     artifacts_button: Button,
+    quests_button: Button,
     buttons: Vec<(Selection, Button)>,
     selected: Selection,
     info_container: SimpleContainer
@@ -24,6 +25,9 @@ impl CodexDialog {
         let mut artifacts_button = Button::text("Artifacts");
         artifacts_button.layout_component().anchor_top_left(80., 16.);
 
+        let mut quests_button = Button::text("Quests");
+        quests_button.layout_component().anchor_top_left(120., 16.);
+
         let mut info_container = SimpleContainer::new();
         info_container.layout_component().anchor_top_left(130., 16.);
 
@@ -31,6 +35,7 @@ impl CodexDialog {
             layout,
             creatures_button,
             artifacts_button,
+            quests_button,
             buttons: Vec::new(),
             selected: Selection::None,
             info_container
@@ -57,6 +62,18 @@ impl CodexDialog {
             let mut button = Button::text(&artifact.name(&game_ctx.resources.materials));
             button.layout_component().anchor_top_left(24., y);
             self.buttons.push((Selection::Artifact(*id), button));
+            y += 24.;
+        }
+    }
+
+    fn build_quests(&mut self, state: &World, game_ctx: &mut GameContext) {
+        let mut y = 46.;
+        self.buttons.clear();
+        for quest in state.codex.quests() {
+            // let mut button = Button::text(&quest.name(&game_ctx.resources.materials));
+            let mut button = Button::text("Quest");
+            button.layout_component().anchor_top_left(24., y);
+            self.buttons.push((Selection::Quest(quest.clone()), button));
             y += 24.;
         }
     }
@@ -179,6 +196,7 @@ impl UINode for CodexDialog {
 
         self.creatures_button.render(&(), ctx, game_ctx);
         self.artifacts_button.render(&(), ctx, game_ctx);
+        self.quests_button.render(&(), ctx, game_ctx);
 
         for (_id, button) in self.buttons.iter_mut() {
             button.render(&(), ctx, game_ctx);
@@ -196,19 +214,29 @@ impl UINode for CodexDialog {
             self.build_creatures(state, ctx);
             self.artifacts_button.set_selected(false);
             self.creatures_button.set_selected(true);
+            self.quests_button.set_selected(false);
             return ControlFlow::Break(())
         }
         if self.artifacts_button.input(&mut (), evt, ctx).is_break() {
             self.build_artifacts(state, ctx);
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(true);
+            self.quests_button.set_selected(false);
+            return ControlFlow::Break(())
+
+        }
+        if self.quests_button.input(&mut (), evt, ctx).is_break() {
+            self.build_quests(state, ctx);
+            self.creatures_button.set_selected(false);
+            self.artifacts_button.set_selected(false);
+            self.quests_button.set_selected(true);
             return ControlFlow::Break(())
 
         }
 
         for (selection, button) in self.buttons.iter_mut() {
             if button.input(&mut (), evt, ctx).is_break() {
-                self.selected = *selection;
+                self.selected = selection.clone();
                 self.update_info(&state, ctx);
                 return ControlFlow::Break(())
             }
@@ -218,9 +246,10 @@ impl UINode for CodexDialog {
 
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum Selection {
     None,
     Creature(CreatureId),
-    Artifact(ItemId)
+    Artifact(ItemId),
+    Quest(Quest)
 }

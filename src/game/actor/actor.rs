@@ -266,6 +266,7 @@ impl Actor {
                     EquipmentType::Legs => 2,
                     EquipmentType::TorsoGarment => 3,
                     EquipmentType::TorsoInner => 4,
+                    EquipmentType::Head => 10,
                     EquipmentType::Hand => 200,
                 };
                 let index = match self.sprite {

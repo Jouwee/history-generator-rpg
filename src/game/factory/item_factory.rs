@@ -35,6 +35,13 @@ impl ItemFactory {
         return item;
     }
 
+    pub(crate) fn crown<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:crown");
+         let item = blueprint.make(vec!(
+        ), &resources);
+        return item;
+    }
+
     pub(crate) fn inner_armor<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:armor");
          let item = blueprint.make(vec!(

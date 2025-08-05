@@ -9,6 +9,7 @@ pub(crate) struct CharacterDialog {
     equipment_slot_hand: EquipmentSlot,
     equipment_slot_garment: EquipmentSlot,
     equipment_slot_inner_armor: EquipmentSlot,
+    equipment_slot_head: EquipmentSlot,
     equipment_slot_legs: EquipmentSlot,
     equipment_slot_feet: EquipmentSlot,
     slots: Vec<InventorySlot>,
@@ -25,6 +26,7 @@ impl CharacterDialog {
             equipment_slot_hand: EquipmentSlot::new(EquipmentType::Hand),
             equipment_slot_garment: EquipmentSlot::new(EquipmentType::TorsoGarment),
             equipment_slot_inner_armor: EquipmentSlot::new(EquipmentType::TorsoInner),
+            equipment_slot_head: EquipmentSlot::new(EquipmentType::Head),
             equipment_slot_legs: EquipmentSlot::new(EquipmentType::Legs),
             equipment_slot_feet: EquipmentSlot::new(EquipmentType::Feet),
             slots: Vec::new(),
@@ -144,6 +146,15 @@ impl UINode for CharacterDialog {
 
         let mut base = layout.clone();
         base[0] += 112.;
+
+
+
+        ctx.text_shadow("Head", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
+        base[1] += 12.;
+        ctx.layout_rect = base;
+        self.equipment_slot_head.render(&actor.inventory, ctx, game_ctx);
+
+        base[1] += 26.;
 
         ctx.text_shadow("Torso", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
         base[1] += 12.;

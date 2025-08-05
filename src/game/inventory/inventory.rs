@@ -93,6 +93,7 @@ impl Inventory {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum EquipmentType {
+    Head,
     Hand,
     TorsoGarment,
     TorsoInner,

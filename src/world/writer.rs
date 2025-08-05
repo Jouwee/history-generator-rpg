@@ -1,4 +1,4 @@
-use crate::{game::actor::actor::Actor, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{self, CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -96,6 +96,16 @@ impl<'a> Writer<'a> {
             self.quote_actor(&format!("I'm {name}"), actor);
         } else {
             self.quote_actor("I'm nobody", actor);
+        }
+    }
+
+    pub(crate) fn chat_explain_quest(&mut self, quest: &Quest, actor: &Actor) {
+        match &quest.objective {
+            QuestObjective::KillCreature(creature_id) => {
+                let creature = self.world.creatures.get(creature_id);
+                let species = self.resources.species.get(&creature.species);
+                self.quote_actor(&format!("A {} has been terrorising us. I want you to go to it's lair and kill it. Here, I marked it on your map.", species.name), actor);
+            }
         }
     }
 

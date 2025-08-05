@@ -24,6 +24,11 @@ impl EquipmentGenerator {
             let _ = inventory.add(ItemFactory::inner_armor(rng, &resources));
         }
 
+        if creature.profession == Profession::Ruler {
+            let item = ItemFactory::crown(rng, &resources);
+            let _ = inventory.add(item);
+        }
+
         Self::add_artifacts(&mut inventory, &creature, world);
 
         inventory.auto_equip();
