@@ -245,6 +245,7 @@ impl Actor {
             }
         }
 
+        vec.push(game_ctx.resources.actions.id_of("act:talk"));
         vec.push(game_ctx.resources.actions.id_of("act:inspect"));
         vec.push(game_ctx.resources.actions.id_of("act:pickup"));
         vec.push(game_ctx.resources.actions.id_of("act:dig"));

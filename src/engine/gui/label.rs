@@ -1,4 +1,4 @@
-use crate::{engine::{assets::{assets, Assets, FontAsset}, gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets, FontAsset}, gui::{layout_component::LayoutComponent, UIEvent, UINode}, COLOR_WHITE}, GameContext, RenderContext};
 
 
 /// Stateful label
@@ -30,7 +30,7 @@ impl Label {
 
 impl UINode for Label {
     type State = ();
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout

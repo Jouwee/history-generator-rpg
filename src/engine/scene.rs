@@ -18,7 +18,8 @@ pub(crate) trait Scene {
 }
 
 pub(crate) enum BusEvent {
-    ShowInspectDialog(ShowInspectDialogData)
+    ShowInspectDialog(ShowInspectDialogData),
+    ShowChatDialog(ShowChatDialogData)
 }
 
 #[derive(Clone)]
@@ -26,4 +27,9 @@ pub(crate) struct ShowInspectDialogData {
     pub(crate) actor: Option<Actor>,
     pub(crate) item: Option<Item>,
     pub(crate) tile_metadata: Option<TileMetadata>
+}
+
+#[derive(Clone)]
+pub(crate) struct ShowChatDialogData {
+    pub(crate) actor: Actor
 }

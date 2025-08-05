@@ -135,7 +135,7 @@ pub(crate) enum CauseOfDeath {
     OldAge,
     Starvation,
     Disease,
-    KilledInBattle(CreatureId)
+    KilledInBattle(CreatureId, Option<ItemId>)
 }
 
 

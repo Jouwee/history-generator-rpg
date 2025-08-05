@@ -40,10 +40,14 @@ impl World {
 
         let mut events_per_item = HashMap::new();
         for event in self.events.iter() {
+            let event_score = match event {
+                Event::CreatureDeath { date: _, creature_id: _, cause_of_death: _ } => 0.5,
+                _ => 0.01
+            };
             for item_id in event.related_artifacts() {
                 match events_per_item.get(&item_id) {
-                    Some(v) => events_per_item.insert(item_id, *v + 1),
-                    None => events_per_item.insert(item_id, 1),
+                    Some(v) => events_per_item.insert(item_id, *v + event_score),
+                    None => events_per_item.insert(item_id, event_score),
                 };
             }
         }
@@ -74,7 +78,7 @@ impl World {
             score += extra.average();
             
             // More events = More interesting
-            score += *events_per_item.get(&id).unwrap_or(&0) as f32 * 2.;
+            score += *events_per_item.get(&id).unwrap_or(&0.) as f32;
 
             if let Some(quality) = &i_item.quality {
                 score = score + quality.quality.main_stat_modifier() as f32;

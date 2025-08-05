@@ -40,7 +40,12 @@ impl Event {
 
     pub(crate) fn related_artifacts(&self) -> Vec<ItemId> {
         match self {
-            Self::CreatureDeath { date: _, creature_id: _, cause_of_death: _ } => vec!(),
+            Self::CreatureDeath { date: _, creature_id: _, cause_of_death } => {
+                match cause_of_death {
+                    CauseOfDeath::KilledInBattle(_, Some(item_id)) => vec!(*item_id),
+                    _ => vec!()
+                }
+            },
             Self::CreatureBirth { date: _, creature_id: _ } => vec!(),
             Self::CreatureMarriage { date: _, creature_id: _, spouse_id: _ } => vec!(),
             Self::CreatureProfessionChange { date: _, creature_id: _, new_profession: _ } => vec!(),

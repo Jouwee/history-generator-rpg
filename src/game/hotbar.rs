@@ -110,7 +110,7 @@ impl UINode for Hotbar {
     fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
         let mut selected = None;
         for (action_id, button) in self.buttons.iter_mut() {
-            if let ControlFlow::Break(()) = button.input(&mut (), evt, ctx) {
+            if let ControlFlow::Break(_) = button.input(&mut (), evt, ctx) {
                 if self.selected_action.is_some_and(|id| &id == action_id) {
                     button.set_selected(false);
                     self.selected_action = None;

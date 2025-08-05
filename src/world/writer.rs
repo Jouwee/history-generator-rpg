@@ -89,6 +89,21 @@ impl<'a> Writer<'a> {
         self.add_text(&format!("Died in {} {}\n", format_date(&death_date), self.cause_of_death_description(&death_reason)));
     }
 
+    pub(crate) fn chat_present_self(&mut self, actor: &Actor) {
+        if let Some(creature_id) = actor.creature_id {
+            let creature = self.world.creatures.get(&creature_id);
+            let name = creature.name(&creature_id, self.world, self.resources);
+            self.quote_actor(&format!("I'm {name}"), actor);
+        } else {
+            self.quote_actor("I'm nobody", actor);
+        }
+    }
+
+    pub(crate) fn quote_actor(&mut self, sentence: &str, actor: &Actor) {
+        // let species = self.resources.species.get(&actor.species);
+        self.add_text(&format!("\n\"{sentence}\", he says"));
+    }
+
     fn creature_name(&self, creature_id: &CreatureId) -> String {
         let creature = self.world.creatures.get(creature_id);
         return creature.name(creature_id, self.world, self.resources);
@@ -99,11 +114,11 @@ impl<'a> Writer<'a> {
             CauseOfDeath::Disease => String::from("of a sudden illness"),
             CauseOfDeath::OldAge => String::from("peacefully in their sleep"),
             CauseOfDeath::Starvation => String::from("of malnutrition"),
-            CauseOfDeath::KilledInBattle(killer_id) => format!("by the hand of {}", self.creature_name(killer_id))
+            CauseOfDeath::KilledInBattle(killer_id, _) => format!("by the hand of {}", self.creature_name(killer_id))
         }
     }
 
-    fn add_text(&mut self, text: &str) {
+    pub(crate) fn add_text(&mut self, text: &str) {
         if self.final_text.len() > 0 {
             self.final_text = self.final_text.clone() + " " + text;
         } else {
@@ -114,5 +129,5 @@ impl<'a> Writer<'a> {
 } 
 
 fn format_date(date: &WorldDate) -> String {
-    return format!("{}-{}-{}", date.year(), date.month(), date.day())
+    return format!("{}", date.year())
 }

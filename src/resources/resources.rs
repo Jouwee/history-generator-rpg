@@ -349,15 +349,27 @@ impl Resources {
             damage_sfx: None
         });
 
-        // self.actions.add("act:talk", Action {
-        //     name: String::from("Talk"),
-        //     description: String::from("Talk with a friendly NPC"),
-        //     icon: String::from("gui/icons/actions/talk.png"),
-        //     sound_effect: None,
-        //     ap_cost: 0,
-        //     stamina_cost: 0.,
-        //     action_type: ActionType::Talk
-        // });
+        self.actions.add("act:talk", Action {
+            name: String::from("Talk"),
+            description: String::from("Talk with"),
+            icon: String::from("gui/icons/actions/talk.png"),
+            log_use: false,
+            cast_sfx: None,
+            ap_cost: 0,
+            stamina_cost: 0.,
+            cooldown: 0,
+            target: ActionTarget::Tile { range: 3., filter_mask: 0 },
+            area: ActionArea::Target,
+            effects: vec!(
+                ActionEffect::Talk
+            ),
+            cast_sprite: None,
+            projectile: None,
+            impact_sprite: None,
+            impact_sfx: None,
+            damage_sfx: None
+        });
+
         self.actions.add("act:inspect", Action {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),

@@ -39,7 +39,7 @@ impl BattleSimulator {
             creatures.push(BattleCreature { id: *id, unit_id: defender_id, creature, hp: 100., team: 1, tactic })
         }
 
-        let max_turns = rng.randu_range(5, 15);
+        let max_turns = rng.randu_range(5, 15) * creatures.len();
         for i in 0..max_turns {
             let turn_index = i % creatures.len();
             if creatures.len() == 0 {

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ActionId(usize);
@@ -228,6 +228,8 @@ pub(crate) enum ActionEffect {
     Walk,
     /// Inspects the target
     Inspect,
+    /// Talks with the target
+    Talk,
     /// Digs graves
     Dig,
     /// Sleeps
@@ -514,8 +516,7 @@ impl ActionRunner {
                                             .and_then(|i| chunk.actor(*i).cloned());
 
                                         let item = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center)
-                                            .and_then(|(_, (_, item, _))| Some(item.clone()))
-                                        ;
+                                            .and_then(|(_, (_, item, _))| Some(item.clone()));
 
                                         let tile_metadata = chunk.map.tiles_metadata.get(&action.center).cloned();
 
@@ -524,6 +525,16 @@ impl ActionRunner {
                                             item,
                                             tile_metadata,
                                         }))
+                                    },
+                                    ActionEffect::Talk => {
+                                        let actor = action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut())
+                                            .first()
+                                            .and_then(|i| chunk.actor(*i).cloned());
+                                        if let Some(actor) = actor {
+                                            ctx.event_bus.push(BusEvent::ShowChatDialog(ShowChatDialogData {
+                                                actor,
+                                            }))
+                                        }
                                     },
                                     ActionEffect::Dig => {
                                         for point in action.spell_area.points(action.center) {

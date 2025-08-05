@@ -4,12 +4,13 @@ use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UINode}, spritesheet::Spritesheet, COLOR_WHITE}, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UIEvent, UINode}, spritesheet::Spritesheet, COLOR_WHITE}, GameContext, InputEvent, RenderContext};
 
 
 pub(crate) struct Button {
     layout: LayoutComponent,
     text: String,
+    key: Option<String>,
     background: String,
     frame: Spritesheet,
     tooltip: Option<(u64, Tooltip)>,
@@ -27,6 +28,7 @@ impl Button {
         Self {
             layout,
             text: String::from(text),
+            key: None,
             background: String::from("gui/button/background.png"),
             tooltip: None,
             frame,
@@ -44,11 +46,17 @@ impl Button {
         Self {
             layout,
             text: String::from(""),
+            key: None,
             background: image,
             tooltip: None,
             frame,
             state_bitmask: 0,
         }
+    }
+
+    pub(crate) fn key(mut self, key: &str) -> Self {
+        self.key = Some(String::from(key));
+        return self;
     }
 
     pub(crate) fn tooltip(mut self, tooltip: Tooltip) -> Self {
@@ -91,7 +99,7 @@ impl Button {
 
 impl UINode for Button {
     type State = ();
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout
@@ -136,11 +144,11 @@ impl UINode for Button {
         ctx.text(&self.text, assets().font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
     }
 
-    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
+    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<UIEvent> {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
-                    return ControlFlow::Break(());
+                    return ControlFlow::Break(UIEvent::ButtonClicked(self.key.as_ref().unwrap_or(&self.text).clone()));
                 }
             },
             InputEvent::MouseMove { pos } => {

@@ -195,8 +195,14 @@ pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: Unit
             battle = BattleSimulator::simulate_attack(unit_id, &unit, *target, &target_unit, rng, world);
         }
 
-        for (id, unit_id, killer) in battle.deaths {
-            let cause_of_death = CauseOfDeath::KilledInBattle(killer);
+        for (id, unit_id, killer_id) in battle.deaths {
+            let killer = world.creatures.get(&killer_id);
+            let item_used = match &killer.details {
+                Some(details) => details.inventory.first().and_then(|id| Some(*id)),
+                None => None
+            };
+            let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
+            drop(killer);
             kill_creature(world, id, unit_id, *target, cause_of_death, resources);
         }
 
@@ -306,8 +312,14 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
                     battle = BattleSimulator::simulate_attack(unit_id, &unit, target_id, &target_unit, rng, world);
                 }
         
-                for (id, unit_id, killer) in battle.deaths {
-                    let cause_of_death = CauseOfDeath::KilledInBattle(killer);
+                for (id, unit_id, killer_id) in battle.deaths {
+                    let killer = world.creatures.get(&killer_id);
+                    let item_used = match &killer.details {
+                        Some(details) => details.inventory.first().and_then(|id| Some(*id)),
+                        None => None
+                    };
+                    let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
+                    drop(killer);
                     kill_creature(world, id, unit_id, target_id, cause_of_death, resources);
                 }
         
@@ -389,7 +401,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
         }
 
         // TODO(IhlgIYVA): Extract
-        if let CauseOfDeath::KilledInBattle(killer_id) = &cause_of_death {
+        if let CauseOfDeath::KilledInBattle(killer_id, _) = &cause_of_death {
             for relationship in creature.relationships.iter() {
                 let relationship_creature_id = relationship.creature_id;
                 let mut relationship_creature = world.creatures.get_mut(&relationship_creature_id);

@@ -211,6 +211,7 @@ impl AiSolver {
                             ctx.position_score = Self::compute_position_score(&ctx, astar, chunk);
                         },
                         ActionEffect::Inspect => (),
+                        ActionEffect::Talk => (),
                         ActionEffect::Dig => (),
                         ActionEffect::Sleep => (),
                         ActionEffect::PickUp => (),

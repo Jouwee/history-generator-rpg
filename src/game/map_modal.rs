@@ -1,4 +1,4 @@
-use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{unit::UnitType, world::World}, GameContext};
+use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{unit::{UnitId, UnitType}, world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
@@ -8,7 +8,9 @@ pub(crate) struct MapModal {
     tilemap: LayeredDualgridTilemap,
     objects: TileMap,
     offset: Vec2,
+    names: Vec<(Coord2, String)>,
     player_pos: Coord2,
+    mouse_over: Coord2,
     close_button: Button
 }
 
@@ -45,7 +47,9 @@ impl MapModal {
             objects: TileMap::new(tileset, 256, 256, 16, 16),
             offset: Vec2::xy(128.*16., 128.*16.),
             player_pos: Coord2::xy(0, 0),
+            mouse_over: Coord2::xy(0, 0),
             world_size: Size2D(0, 0),
+            names: Vec::new(),
             close_button
         }
     }
@@ -66,8 +70,8 @@ impl MapModal {
             }
         }
 
-        for unit in world.units.iter() {
-            let unit = unit.borrow();
+        for unit_id in world.units.iter_ids::<UnitId>() {
+            let unit = world.units.get(&unit_id);
             let tile = match unit.unit_type {
                 UnitType::Village => {
                     if unit.creatures.len() > 0 {
@@ -85,6 +89,7 @@ impl MapModal {
                 },
             };
             self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, tile);
+            self.names.push((unit.xy, format!("{unit_id:?}")));
         }
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);
@@ -111,6 +116,13 @@ impl MapModal {
         } else {
             ctx.image(&"map_tiles/player.png", cursor_clamp);
         }
+
+        for (coord, name) in self.names.iter() {
+            if self.mouse_over == *coord {
+                ctx.text(name, assets().font_standard(), [coord.x * 16, coord.y * 16], &COLOR_WHITE);
+            }
+        }
+
         let _ = ctx.try_pop();
         // Control
         ctx.image(&"controls/right_click.png", [ctx.layout_rect[2] as i32 - 88, ctx.layout_rect[3] as i32 - 24]);
@@ -138,6 +150,12 @@ impl MapModal {
             [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
         ];
         match evt.evt {
+            InputEvent::MouseMove { pos } => {
+                self.mouse_over = Coord2::xy(
+                    ((pos[0] + camera[0] as f64) / 16.) as i32, 
+                    ((pos[1] + camera[1] as f64) / 16.) as i32
+                );
+            },
             InputEvent::Drag { button: MouseButton::Left, offset } => {
                 self.offset.x = (self.offset.x - offset[0] as f32).clamp(clamp[0][0] as f32, clamp[0][1] as f32);
                 self.offset.y = (self.offset.y - offset[1] as f32).clamp(clamp[1][0] as f32, clamp[1][1] as f32);

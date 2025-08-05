@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, COLOR_WHITE}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, COLOR_WHITE}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -118,6 +118,33 @@ impl CodexDialog {
 
             }
         }
+
+        if let Selection::Artifact(artifact_id) = &self.selected {
+            let codex = world.codex.artifact(artifact_id).expect("Shouldn't have shown the button");
+            let artifact = world.artifacts.get(artifact_id);
+
+
+            let name = Label::text(&artifact.name(&ctx.resources.materials)).font(Assets::font_heading_asset());
+            self.info_container.add(name);
+
+            let mut writer = Writer::new(world, &ctx.resources);
+            writer.describe_item(&artifact);
+            let description = Label::text(&writer.take_text()).font(Assets::font_heading_asset());
+            self.info_container.add(description);
+
+            for event_i in codex.events() {
+                let event = world.events.get(*event_i).expect("Should not return invalid");
+
+                let event = Label::text(&event.event_text(&ctx.resources, &world));
+                self.info_container.add(event);
+
+            }
+
+            // TODO(hu2htwck): Other info
+
+        }
+
+
     }
 
     fn creature_name(&self, creature_id: &CreatureId, world: &World, ctx: &GameContext) -> String {
@@ -145,7 +172,7 @@ impl UINode for CodexDialog {
         self.build_creatures(state, game_ctx);
     }
 
-    fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+    fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         perf().start("codex");
         let copy = ctx.layout_rect;
         ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
@@ -158,31 +185,6 @@ impl UINode for CodexDialog {
         }
 
         self.info_container.render(&(), ctx, game_ctx);
-
-        if let Selection::Artifact(artifact_id) = &self.selected {
-            let codex = state.codex.artifact(artifact_id).expect("Shouldn't have shown the button");
-            let artifact = state.artifacts.get(artifact_id);
-
-            let mut layout = [ctx.layout_rect[0] as i32 + 130, ctx.layout_rect[1] as i32 + 16];
-
-            if codex.know_name() {
-                ctx.text_shadow(&artifact.name(&game_ctx.resources.materials), assets().font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
-            } else {
-                ctx.text_shadow("?????", assets().font_heading(), [layout[0], layout[1]], &COLOR_WHITE);            
-            }
-            layout[1] += 16;
-
-            for event_i in codex.events() {
-                let event = state.events.get(*event_i).expect("Should not return invalid");
-
-                ctx.text_shadow(&event.event_text(&game_ctx.resources, &state), assets().font_standard(), [layout[0], layout[1]], &COLOR_WHITE);
-                layout[1] += 11;
-
-            }
-
-            // TODO(hu2htwck): Other info
-
-        }
 
         ctx.layout_rect = copy;
 

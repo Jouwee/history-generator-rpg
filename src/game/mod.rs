@@ -26,6 +26,7 @@ use crate::engine::scene::BusEvent;
 use crate::engine::{Color, COLOR_WHITE};
 use crate::game::chunk::{AiGroups, PLAYER_IDX};
 use crate::game::console::Console;
+use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
@@ -83,6 +84,7 @@ pub(crate) struct GameSceneState {
     character_dialog: DialogWrapper<CharacterDialog>,
     codex_dialog: DialogWrapper<CodexDialog>,
     inspect_dialog: DialogWrapper<InspectDialog>,
+    chat_dialog: DialogWrapper<ChatDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -128,6 +130,7 @@ impl GameSceneState {
             character_dialog: DialogWrapper::new(),
             codex_dialog: DialogWrapper::new(),
             inspect_dialog: DialogWrapper::new(),
+            chat_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -379,6 +382,7 @@ impl Scene for GameSceneState {
         self.character_dialog.render(self.chunk.player_mut(), ctx, game_ctx);
         self.codex_dialog.render(&mut self.world, ctx, game_ctx);
         self.inspect_dialog.render(&mut self.world, ctx, game_ctx);
+        self.chat_dialog.render(&mut self.world, ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
@@ -551,6 +555,7 @@ impl Scene for GameSceneState {
         }
         self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.inspect_dialog.input(&mut self.world, &evt.evt, ctx)?;
+        self.chat_dialog.input(&mut self.world, &evt.evt, ctx)?;
 
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
@@ -675,6 +680,10 @@ impl Scene for GameSceneState {
         match evt {
             BusEvent::ShowInspectDialog(data) => {
                 self.inspect_dialog.show(InspectDialog::new(data.clone()), &self.world, ctx);
+                return ControlFlow::Break(());
+            },
+            BusEvent::ShowChatDialog(data) => {
+                self.chat_dialog.show(ChatDialog::new(data.clone()), &self.world, ctx);
                 return ControlFlow::Break(());
             }
         }

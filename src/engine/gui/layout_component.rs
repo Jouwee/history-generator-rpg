@@ -24,14 +24,14 @@ impl LayoutComponent {
     pub(crate) fn compute_layout_rect(&mut self, layout_rect: [f64; 4]) -> [f64; 4] {
         let size = self.size;
         let x = match &self.anchor {
-            Anchor::TopLeft => layout_rect[0] + self.anchor_margin[0],
+            Anchor::TopLeft | Anchor::BottomLeft => layout_rect[0] + self.anchor_margin[0],
             Anchor::Center | Anchor::BottomCenter => layout_rect[0] + (layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
             Anchor::TopRight => layout_rect[0] + layout_rect[2] - self.anchor_margin[2] - size[0],
         };
         let y = match &self.anchor {
             Anchor::TopLeft | Anchor::TopRight => layout_rect[1] + self.anchor_margin[1],
             Anchor::Center => layout_rect[1] + (layout_rect[3] / 2.) - (size[1] / 2.) + self.anchor_margin[1],
-            Anchor::BottomCenter => layout_rect[1] + layout_rect[3] - size[1] + self.anchor_margin[3],
+            Anchor::BottomLeft | Anchor::BottomCenter => layout_rect[1] + layout_rect[3] - size[1] + self.anchor_margin[3],
         };
         self.last_layout = [x, y, size[0], size[1]];
         return self.last_layout;
@@ -81,6 +81,12 @@ impl LayoutComponent {
         return self
     }
 
+    pub(crate) fn anchor_bottom_left(&mut self, left: f64, bottom: f64) -> &mut Self {
+        self.anchor = Anchor::BottomLeft;
+        self.anchor_margin = [left, 0., 0., bottom];
+        return self
+    }
+
     pub(crate) fn anchor_bottom_center(&mut self, center: f64, bottom: f64) -> &mut Self {
         self.anchor = Anchor::BottomCenter;
         self.anchor_margin = [center, 0., 0., bottom];
@@ -103,7 +109,7 @@ pub enum Anchor {
     // CenterLeft,
     Center,
     // CenterRight,
-    // BottomLeft,
+    BottomLeft,
     BottomCenter,
     // BottomRight,
 }
