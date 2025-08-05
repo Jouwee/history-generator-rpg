@@ -1,3 +1,4 @@
+
 use crate::{engine::assets::{assets, GetSprite, ImageSheetAsset, ImageSheetSprite}, globals::perf::perf};
 
 use super::{render::RenderContext};
@@ -79,13 +80,16 @@ impl LayeredDualgridTilemap {
         ];
         let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
         let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
-        for y in y_range {
-            let py = (y * self.cell_height + hh) as f64;
-            for x in x_range.clone() {
-                let px = (x * self.cell_width + hw) as f64;
-                let transform = ctx.at(px, py);
-                for sprite in &self.collapsed_tiles[x + y * self.width] {
-                    sprite.draw(transform, ctx.gl);
+
+        for layer in 0..4 {
+            for y in y_range.clone() {
+                let py = (y * self.cell_height + hh) as f64;
+                for x in x_range.clone() {
+                    let px = (x * self.cell_width + hw) as f64;
+                    let transform = ctx.at(px, py);
+                    if let Some(sprite) = &self.collapsed_tiles[x + y * self.width].get(layer) {
+                        sprite.draw(transform, ctx.gl);
+                    }
                 }
             }
         }
