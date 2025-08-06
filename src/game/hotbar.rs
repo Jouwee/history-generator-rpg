@@ -87,7 +87,7 @@ impl UINode for Hotbar {
 
         let copy = ctx.layout_rect;
         ctx.layout_rect = rect;
-        ctx.layout_rect[0] += 62.;
+        ctx.layout_rect[0] += 74.;
         ctx.layout_rect[1] += 1.;
 
         for (id, button) in self.buttons.iter_mut() {

@@ -43,7 +43,7 @@ impl ItemFactory {
             1 => resources.item_blueprints.find("itb:tome_fireball"),
             2 => resources.item_blueprints.find("itb:tome_firebolt"),
             3 => resources.item_blueprints.find("itb:tome_teleport"),
-            _ => resources.item_blueprints.find("itb:tome_rockwall"),
+            _ => resources.item_blueprints.find("itb:tome_rockpillar"),
         };
         let item = blueprint.make(vec!(), &resources);
         return item;

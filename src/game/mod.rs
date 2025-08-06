@@ -104,15 +104,15 @@ impl GameSceneState {
         let player_pathfinding = AStar::new(chunk.size, chunk.player().xy);
 
         let mut button_map = Button::text("Map");
-        button_map.layout_component().anchor_bottom_center(-172.0, -1.0);
+        button_map.layout_component().anchor_bottom_center(-162.0, -1.0);
         let mut button_inventory = Button::text("Chr");
-        button_inventory.layout_component().anchor_bottom_center(-147.0, -1.0);
+        button_inventory.layout_component().anchor_bottom_center(-136.0, -1.0);
         let mut button_codex = Button::text("Cdx");
-        button_codex.layout_component().anchor_bottom_center(-122.0, -1.0);
+        button_codex.layout_component().anchor_bottom_center(-110.0, -1.0);
         let mut button_end_turn = Button::text("Trn");
-        button_end_turn.layout_component().anchor_bottom_center(147.0, -1.0);
+        button_end_turn.layout_component().anchor_bottom_center(157.0, -1.0);
         let mut button_toggle_turn_based = Button::text("Mod");
-        button_toggle_turn_based.layout_component().anchor_bottom_center(172.0, -1.0);
+        button_toggle_turn_based.layout_component().anchor_bottom_center(182.0, -1.0);
 
         GameSceneState {
             world,
