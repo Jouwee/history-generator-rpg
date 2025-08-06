@@ -26,9 +26,10 @@ impl ItemFactory {
 
     pub(crate) fn quest_reward(resources: &Resources) -> Item {
         let mut rng = Rng::rand();
-        match rng.randu_range(0, 4) {
-            1 | 2 => Self::inner_armor(&mut rng, resources),
-            _ => Self::weapon(&mut rng, resources).make(),
+        match rng.randu_range(0, 6) {
+            0 | 1 => Self::inner_armor(&mut rng, resources),
+            2 | 3 => Self::spell_tome(&mut rng, resources),
+            4 | 5 | _ => Self::weapon(&mut rng, resources).make(),
         }
     }
 
@@ -36,38 +37,45 @@ impl ItemFactory {
         return WeaponFactory { rng: rng, resources: resources, quality: None, material_pool: None, named: false }
     }
 
+    pub(crate) fn spell_tome<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let mut rng = Rng::rand();
+        let blueprint = match rng.randu_range(0, 4) {
+            1 => resources.item_blueprints.find("itb:tome_fireball"),
+            2 => resources.item_blueprints.find("itb:tome_firebolt"),
+            3 => resources.item_blueprints.find("itb:tome_teleport"),
+            _ => resources.item_blueprints.find("itb:tome_rockwall"),
+        };
+        let item = blueprint.make(vec!(), &resources);
+        return item;
+    }
+
     pub(crate) fn torso_garment<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:shirt");
-         let item = blueprint.make(vec!(
-        ), &resources);
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 
     pub(crate) fn crown<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:crown");
-         let item = blueprint.make(vec!(
-        ), &resources);
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 
     pub(crate) fn inner_armor<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:armor");
-         let item = blueprint.make(vec!(
-        ), &resources);
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 
     pub(crate) fn pants<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:pants");
-         let item = blueprint.make(vec!(
-        ), &resources);
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 
     pub(crate) fn boots<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:boots");
-         let item = blueprint.make(vec!(
-        ), &resources);
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 

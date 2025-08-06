@@ -774,6 +774,78 @@ impl Resources {
         };
         self.item_blueprints.add("itb:crown", shirt_blueprint);
 
+        let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/spell_tome_firebolt.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("spell tome (Fire Bolt)"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:firebolt")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+        };
+        self.item_blueprints.add("itb:tome_firebolt", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/spell_tome_fireball.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("spell tome (Fireball)"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:fireball")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+        };
+        self.item_blueprints.add("itb:tome_fireball", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/spell_tome_teleport.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("spell tome (Teleport)"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:teleport")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+        };
+        self.item_blueprints.add("itb:tome_teleport", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/spell_tome_rockpillar.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("spell tome (Rock Pillar)"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:rockpillar")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+        };
+        self.item_blueprints.add("itb:tome_rockpillar", mace_blueprint);
+
     }
 
 }

@@ -27,10 +27,6 @@ impl Hotbar {
 
     pub(crate) fn init(&mut self, actor: &Actor, ctx: &GameContext) {
         self.available_actions.insert(ctx.resources.actions.id_of("act:punch"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:firebolt"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:fireball"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:rockpillar"));
-        self.available_actions.insert(ctx.resources.actions.id_of("act:teleport"));
         self.equip(actor, ctx);
     }
 
@@ -38,7 +34,7 @@ impl Hotbar {
         self.equipped_actions = Vec::new();
         for (_slot, equipped) in actor.inventory.all_equipped() {
             if let Some(action_provider) = &equipped.action_provider {
-                self.equipped_actions = action_provider.actions.clone();
+                self.equipped_actions.append(&mut action_provider.actions.clone());
             }
         }
         self.update_buttons(actor, &ctx);

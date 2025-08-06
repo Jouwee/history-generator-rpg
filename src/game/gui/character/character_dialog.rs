@@ -12,6 +12,8 @@ pub(crate) struct CharacterDialog {
     equipment_slot_head: EquipmentSlot,
     equipment_slot_legs: EquipmentSlot,
     equipment_slot_feet: EquipmentSlot,
+    equipment_slot_trinket_1: EquipmentSlot,
+    equipment_slot_trinket_2: EquipmentSlot,
     slots: Vec<InventorySlot>,
     cursor_pos: [i32; 2]
 }
@@ -23,12 +25,14 @@ impl CharacterDialog {
         layout.anchor_center().size([360., 332.]).padding([8.; 4]);
         Self {
             layout,
-            equipment_slot_hand: EquipmentSlot::new(EquipmentType::Hand),
-            equipment_slot_garment: EquipmentSlot::new(EquipmentType::TorsoGarment),
-            equipment_slot_inner_armor: EquipmentSlot::new(EquipmentType::TorsoInner),
-            equipment_slot_head: EquipmentSlot::new(EquipmentType::Head),
-            equipment_slot_legs: EquipmentSlot::new(EquipmentType::Legs),
-            equipment_slot_feet: EquipmentSlot::new(EquipmentType::Feet),
+            equipment_slot_hand: EquipmentSlot::new(EquipmentType::Hand, 0),
+            equipment_slot_garment: EquipmentSlot::new(EquipmentType::TorsoGarment, 0),
+            equipment_slot_inner_armor: EquipmentSlot::new(EquipmentType::TorsoInner, 0),
+            equipment_slot_head: EquipmentSlot::new(EquipmentType::Head, 0),
+            equipment_slot_legs: EquipmentSlot::new(EquipmentType::Legs, 0),
+            equipment_slot_feet: EquipmentSlot::new(EquipmentType::Feet, 0),
+            equipment_slot_trinket_1: EquipmentSlot::new(EquipmentType::Trinket, 0),
+            equipment_slot_trinket_2: EquipmentSlot::new(EquipmentType::Trinket, 1),
             slots: Vec::new(),
             cursor_pos: [0; 2]
         }
@@ -144,10 +148,17 @@ impl UINode for CharacterDialog {
         ctx.layout_rect = base;
         self.equipment_slot_hand.render(&actor.inventory, ctx, game_ctx);
 
+        base[1] += 26.;
+
+        ctx.text_shadow("Trinkets", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
+        base[1] += 12.;
+        ctx.layout_rect = base;
+        self.equipment_slot_trinket_1.render(&actor.inventory, ctx, game_ctx);
+        ctx.layout_rect[0] += 26.;
+        self.equipment_slot_trinket_2.render(&actor.inventory, ctx, game_ctx);
+
         let mut base = layout.clone();
         base[0] += 112.;
-
-
 
         ctx.text_shadow("Head", assets().font_standard(), [base[0] as i32, base[1] as i32 + 11], &Color::from_hex("7f839c"));
         base[1] += 12.;
@@ -208,6 +219,9 @@ impl UINode for CharacterDialog {
         self.equipment_slot_inner_armor.input(&mut state.inventory, evt, ctx)?;
         self.equipment_slot_legs.input(&mut state.inventory, evt, ctx)?;
         self.equipment_slot_feet.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_head.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_trinket_1.input(&mut state.inventory, evt, ctx)?;
+        self.equipment_slot_trinket_2.input(&mut state.inventory, evt, ctx)?;
         for (i, slot) in self.slots.iter_mut().enumerate() {
             slot.input(&mut state.inventory.item_mut(i), evt, ctx)?;
         }

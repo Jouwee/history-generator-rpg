@@ -268,6 +268,7 @@ impl Actor {
                     EquipmentType::TorsoInner => 4,
                     EquipmentType::Head => 10,
                     EquipmentType::Hand => 200,
+                    EquipmentType::Trinket => 201,
                 };
                 let index = match self.sprite {
                     CreatureAppearance::Single(_, _) => 0,

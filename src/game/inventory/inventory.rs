@@ -1,5 +1,3 @@
-use std::slice::Iter;
-
 use crate::world::item::Item;
 
 use super::inventory_container::InventoryContainer;
@@ -7,14 +5,24 @@ use super::inventory_container::InventoryContainer;
 #[derive(Clone)]
 pub(crate) struct Inventory {
     container: InventoryContainer,
-    equipped: Vec<(EquipmentType, Item)>
+    slots: [(EquipmentType, Option<Item>); 8]
 }
 
 impl Inventory {
+
     pub(crate) fn new() -> Inventory {
         Inventory { 
             container: InventoryContainer::new(35),
-            equipped: Vec::new()
+            slots: [
+                (EquipmentType::TorsoInner, None),
+                (EquipmentType::TorsoGarment, None),
+                (EquipmentType::Legs, None),
+                (EquipmentType::Head, None),
+                (EquipmentType::Feet, None),
+                (EquipmentType::Hand, None),
+                (EquipmentType::Trinket, None),
+                (EquipmentType::Trinket, None)
+            ]
         }
     }
 
@@ -36,38 +44,72 @@ impl Inventory {
 
     pub(crate) fn take_all(&mut self) -> Vec<Item> {
         let mut items = self.container.take_all();
-        for (_, item) in self.equipped.drain(..) {
-            items.push(item);
+        for (_, item) in self.slots.iter_mut() {
+            let item = item.take();
+            if let Some(item) = item {
+                items.push(item);
+            }
         }
         return items;
     }
 
     pub(crate) fn equip(&mut self, slot: &EquipmentType, item: Item) {
-        if self.equipped(slot).is_none() {
-            self.equipped.push((slot.clone(), item));
-        }
+        self.equip_i(slot, 0, item);
     }
 
     pub(crate) fn unequip(&mut self, slot: &EquipmentType) -> Option<Item> {
-        let i = self.equipped.iter().position(|(i_slot, _)| i_slot == slot);
-        if let Some(i) = i {
-            let (_, item) = self.equipped.remove(i);
-            return Some(item)
-        }
-        return None;
+        self.unequip_i(slot, 0)
     }
 
     pub(crate) fn equipped(&self, slot: &EquipmentType) -> Option<&Item> {
-        for (i_slot, item) in self.equipped.iter() {
-            if i_slot == slot {
-                return Some(item);
+        self.equipped_i(slot, 0)
+    }
+
+    pub(crate) fn equip_i(&mut self, slot_type: &EquipmentType, i: usize, item: Item) {
+        let mut j = 0;
+        for slot in self.slots.iter_mut() {
+            if slot.0 == *slot_type {
+                if j == i {
+                    slot.1 = Some(item);
+                    break;
+                }
+                j = j + 1;
+            }
+        }
+    }
+
+    pub(crate) fn unequip_i(&mut self, slot_type: &EquipmentType, i: usize) -> Option<Item> {
+        let mut j = 0;
+        for slot in self.slots.iter_mut() {
+            if slot.0 == *slot_type {
+                if j == i {
+                    let item = slot.1.take();
+                    slot.1 = None;
+                    return item;
+                }
+                j = j + 1;
             }
         }
         return None;
     }
 
-    pub(crate) fn all_equipped(&self) -> Iter<(EquipmentType, Item)> {
-        self.equipped.iter()
+    pub(crate) fn equipped_i(&self, slot_type: &EquipmentType, i: usize) -> Option<&Item> {
+        let mut j = 0;
+        for slot in self.slots.iter() {
+            if slot.0 == *slot_type {
+                if j == i {
+                    return slot.1.as_ref();
+                }
+                j = j + 1;
+            }
+        }
+        return None;
+    }
+
+    pub(crate) fn all_equipped(&self) -> impl Iterator<Item = (&EquipmentType, &Item)> {
+        self.slots.iter()
+            .filter(|slot| slot.1.is_some())
+            .map(|slot| (&slot.0, slot.1.as_ref().unwrap()))
     }
 
     pub(crate) fn auto_equip(&mut self) {
@@ -99,6 +141,30 @@ pub(crate) enum EquipmentType {
     TorsoInner,
     Legs,
     Feet,
+    Trinket,
 }
 
-// TODO: Unit tests equipped
+#[cfg(test)]
+mod tests_ai_groups {
+    use crate::game::factory::item_factory::ItemFactory;
+
+    use super::*;
+
+    #[test]
+    fn test_equip() {
+
+        let item = ItemFactory::test();
+        let mut inventory = Inventory::new();
+
+        assert!(inventory.equipped(&EquipmentType::Hand).is_none());
+        
+        inventory.equip(&EquipmentType::Hand, item);
+        assert!(inventory.equipped(&EquipmentType::Hand).is_some());
+
+        let r = inventory.unequip(&EquipmentType::Hand);
+        assert!(r.is_some());
+        assert!(inventory.equipped(&EquipmentType::Hand).is_none());
+
+    }
+
+}

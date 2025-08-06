@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk}, resources::species::{SpeciesId, SpeciesMap}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints}, species::{SpeciesId, SpeciesMap}}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -158,6 +158,19 @@ impl Console {
 
                 return Result::Ok(format!("Cheater"));
             },
+            Some("/give") => {
+
+                let item = parts.next().ok_or("Param 1 should be the item")?;
+                let item_id = parse_item(item, &ctx.resources.item_blueprints)?;
+                let blueprint = ctx.resources.item_blueprints.get(&item_id);
+
+                let item = blueprint.make(vec!(), &ctx.resources);
+
+                let _ = chunk.player_mut().inventory.add(item);
+
+                return Result::Ok(format!("Item given"));
+            },
+            
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))
         }
     }
@@ -170,6 +183,14 @@ fn parse_species(string: &str, species: &SpeciesMap) -> Result<SpeciesId, String
         string = String::from("species:") + &string;
     }
     Ok(species.id_of(&string))
+}
+
+fn parse_item(string: &str, blueprints: &ItemBlueprints) -> Result<ItemBlueprintId, String> {
+    let mut string = String::from(string);
+    if !string.starts_with("itb:") {
+        string = String::from("itb:") + &string;
+    }
+    Ok(blueprints.id_of(&string))
 }
 
 fn parse_coords(string: &str) -> Result<Coord2, String> {
