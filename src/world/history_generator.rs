@@ -19,8 +19,14 @@ pub(crate) struct WorldGenerationParameters {
     // Storyteller settings
     /// Storyteller strength, from 0. to 1.
     pub(crate) st_strength: f32,
+    /// Target number of cities
+    pub(crate) st_city_count: u16,
     /// Target city population
     pub(crate) st_city_population: u16,
+    /// Target number of villages
+    pub(crate) st_village_count: u16,
+    /// Target villages population
+    pub(crate) st_village_population: u16,
 }
 
 pub(crate) struct WorldHistoryGenerator {

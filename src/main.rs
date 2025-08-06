@@ -210,7 +210,10 @@ fn main() {
         seed_cities_population: 15,
         num_plate_tectonics: 5,
         st_strength: 1.0,
-        st_city_population: 40,
+        st_city_count: 7,
+        st_city_population: 50,
+        st_village_count: 20,
+        st_village_population: 20,
     }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {

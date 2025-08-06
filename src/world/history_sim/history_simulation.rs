@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, storyteller::Storyteller}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -9,59 +9,23 @@ pub(crate) struct HistorySimulation {
     generation_params: WorldGenerationParameters,
     pub(crate) rng: Rng,
     pub(crate) resources: Resources,
+    storyteller: Storyteller,
 }
 
 impl HistorySimulation {
     pub(crate) fn new(rng: Rng, resources: Resources, generation_params: WorldGenerationParameters) -> Self {
         HistorySimulation {
             date: WorldDate::new(0, 0, 0),
-            generation_params,
+            generation_params: generation_params.clone(),
             rng,
-            resources
+            resources,
+            storyteller: Storyteller::new(generation_params)
         }
     }
 
     pub(crate) fn seed(&mut self, world: &mut World) {
-
-        let mut factory = CreatureFactory::new(self.rng.derive("creature"));
-
         for _ in 0..self.generation_params.number_of_seed_cities {
-
-            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), &world);
-            let pos = match pos {
-                None => break,
-                Some(candidate) => candidate,
-            };
-
-            let mut unit = Unit {
-                xy: pos,
-                creatures: Vec::new(),
-                cemetery: Vec::new(),
-                resources: UnitResources {
-                    // Enough food for a year
-                    food: self.generation_params.seed_cities_population as f32
-                },
-                settlement: Some(SettlementComponent {
-                    leader: None,
-                    material_stock: Vec::new()
-                }),
-                artifacts: Vec::new(),
-                population_peak: (0, 0),
-                unit_type: UnitType::Village
-            };
-
-            while unit.creatures.len() < self.generation_params.seed_cities_population as usize {
-                
-                let family = factory.make_family_or_single(&self.date, self.resources.species.id_of("species:human"), world, &self.resources);
-                for creature_id in family {
-                    unit.creatures.push(creature_id);
-                }
-
-            }
-
-            self.rng.next();
-
-            world.units.add::<UnitId>(unit);
+            let _err = world_ops::spawn_random_village(world, &mut self.rng, &self.resources, self.generation_params.seed_cities_population as u32);
         }
     }
 
@@ -70,8 +34,9 @@ impl HistorySimulation {
         world.date = self.date.clone();
         let now = Instant::now();
 
-        // TODO(tfWpiQPF): Find a cooler way to spawn
-        if self.rng.rand_chance(0.2) {
+        let chances = self.storyteller.global_chances(&mut self.rng, &world);
+
+        if self.rng.rand_chance(chances.spawn_varningr) {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
@@ -88,16 +53,11 @@ impl HistorySimulation {
                     unit_type: UnitType::VarningrLair,
                     xy: pos
                 };
-
-                println!("[!!!] spawn varningr");
-
                 world.units.add::<UnitId>(unit);
-
-            } else {
-                println!("[!!!] failed to spawn");
             }
-
-
+        }
+        if self.rng.rand_chance(chances.spawn_village) {
+            let _err = world_ops::spawn_random_village(world, &mut self.rng, &self.resources, self.generation_params.st_village_population as u32);
         }
 
         // Check plot completion
@@ -138,7 +98,7 @@ impl HistorySimulation {
 
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
 
-        let chances = Storyteller::new().story_teller_unit_chances(&self.generation_params, &unit);
+        let chances = self.storyteller.story_teller_unit_chances(unit_id, &unit);
 
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);

@@ -38,6 +38,10 @@ impl MapModal {
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
         let image = String::from("map_tiles/settlement_ruins.png");
         tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = String::from("map_tiles/settlement_big.png");
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
+        let image = String::from("map_tiles/settlement_small.png");
+        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
 
         let mut close_button = Button::text("Close");
         close_button.layout_component().anchor_top_right(0., 0.);
@@ -74,7 +78,11 @@ impl MapModal {
             let unit = world.units.get(&unit_id);
             let tile = match unit.unit_type {
                 UnitType::Village => {
-                    if unit.creatures.len() > 0 {
+                    if unit.creatures.len() > 30 {
+                        5
+                    } else if unit.creatures.len() > 10 {
+                        6
+                    } else if unit.creatures.len() > 0 {
                         1
                     } else {
                         4

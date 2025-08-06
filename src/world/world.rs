@@ -132,7 +132,6 @@ impl World {
 
 }
 
-
 #[cfg(test)]
 pub(crate) mod fixture {
     use std::cell::{Ref, RefMut};

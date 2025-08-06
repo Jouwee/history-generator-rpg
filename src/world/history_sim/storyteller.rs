@@ -1,20 +1,58 @@
-use crate::{commons::interpolate::lerp, world::{history_generator::WorldGenerationParameters, unit::{Unit, UnitType}}};
+use crate::{commons::{interpolate::lerp, rng::Rng}, world::{history_generator::WorldGenerationParameters, unit::{Unit, UnitId, UnitType}, world::World}};
 
 pub(crate) struct Storyteller {
+    params: WorldGenerationParameters,
+    selected_for_cities: Vec<UnitId>
 }
 
 impl Storyteller {
 
-    pub(crate) fn new() -> Self {
-        Self {  }
+    pub(crate) fn new(params: WorldGenerationParameters) -> Self {
+        Self {
+            params,
+            selected_for_cities: Vec::new(),
+        }
     }
 
-    pub(crate) fn story_teller_unit_chances(&self, params: &WorldGenerationParameters, unit: &Unit) -> UnitChances {
-        let mut chances = BASE_CHANCES.clone();
+    pub(crate) fn global_chances(&mut self, rng: &mut Rng, world: &World) -> GlobalChances {
+        let mut chances = BASE_GLOBAL_CHANCES.clone();
+
+        // Check city count, village count, and maybe promote village to city
+        let mut villages = 0;
+        for unit_id in world.units.iter_ids::<UnitId>() {
+            let unit = world.units.get(&unit_id);
+            if let UnitType::Village = unit.unit_type {
+                if unit.creatures.len() == 0 {
+                    self.selected_for_cities.retain(|id| id != &unit_id);
+                    continue;
+                }
+                if self.selected_for_cities.len() < self.params.st_city_count as usize && !self.selected_for_cities.contains(&unit_id) && rng.rand_chance(0.3) {
+                    self.selected_for_cities.push(unit_id);
+                } else {
+                    villages += 1;
+                }
+            }
+        }
+
+        if villages < self.params.st_village_count {
+            chances.spawn_village *= 1.5;
+        }
+
+        return lerp_global_chances(&BASE_GLOBAL_CHANCES, &chances, self.params.st_strength)
+    }
+
+    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, unit: &Unit) -> UnitChances {
+        let mut chances = BASE_UNIT_CHANCES.clone();
         
         if unit.unit_type == UnitType::Village {
+
+            let pop_goal = match self.selected_for_cities.contains(unit_id) {
+                true => self.params.st_city_population,
+                false => self.params.st_village_population,
+            };
+
             // Balances unit population
-            let population_divergence = unit.creatures.len() as f32 / params.st_city_population as f32;
+            let population_divergence = unit.creatures.len() as f32 / pop_goal as f32;
             if population_divergence < 0.8 {
                 chances.have_child = chances.have_child * 1.5;
                 chances.disease_death = chances.disease_death * 0.1;
@@ -30,7 +68,7 @@ impl Storyteller {
             }
         }
 
-        return lerp_chances(&BASE_CHANCES, &chances, params.st_strength)
+        return lerp_unit_chances(&BASE_UNIT_CHANCES, &chances, self.params.st_strength)
     }
 
 }
@@ -42,16 +80,35 @@ pub(crate) struct UnitChances {
     pub(crate) have_child: f32
 }
 
-const BASE_CHANCES: UnitChances = UnitChances {
+const BASE_UNIT_CHANCES: UnitChances = UnitChances {
     disease_death: 0.0015,
     have_child: 1.,
     leave_for_bandits: 0.001
 };
 
-fn lerp_chances(a: &UnitChances, b: &UnitChances, strength: f32) -> UnitChances {
+fn lerp_unit_chances(a: &UnitChances, b: &UnitChances, strength: f32) -> UnitChances {
     UnitChances {
         disease_death: lerp(a.disease_death as f64, b.disease_death as f64, strength as f64) as f32,
         have_child: lerp(a.have_child as f64, b.have_child as f64, strength as f64) as f32,
         leave_for_bandits: lerp(a.leave_for_bandits as f64, b.leave_for_bandits as f64, strength as f64) as f32,
+    }
+}
+
+
+#[derive(Clone)]
+pub(crate) struct GlobalChances {
+    pub(crate) spawn_varningr: f32,
+    pub(crate) spawn_village: f32,
+}
+
+const BASE_GLOBAL_CHANCES: GlobalChances = GlobalChances {
+    spawn_varningr: 0.1,
+    spawn_village: 0.01,
+};
+
+fn lerp_global_chances(a: &GlobalChances, b: &GlobalChances, strength: f32) -> GlobalChances {
+    GlobalChances {
+        spawn_varningr: lerp(a.spawn_varningr as f64, b.spawn_varningr as f64, strength as f64) as f32,
+        spawn_village: lerp(a.spawn_village as f64, b.spawn_village as f64, strength as f64) as f32,
     }
 }
