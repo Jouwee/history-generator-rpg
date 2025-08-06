@@ -61,10 +61,22 @@ impl ItemFactory {
         return item;
     }
 
-    pub(crate) fn inner_armor<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
-        let blueprint = resources.item_blueprints.find("itb:armor");
-        let item = blueprint.make(vec!(), &resources);
-        return item;
+    pub(crate) fn inner_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        if rng.rand_chance(0.5) {
+            let blueprint = resources.item_blueprints.find("itb:brigandine");
+            let item = blueprint.make(vec!(), &resources);
+            return item;
+        } else {
+            let blueprint = resources.item_blueprints.find("itb:cuirass");
+            let material_id = match rng.randu_range(0, 4) {
+                0 => resources.materials.id_of("mat:steel"),
+                1 => resources.materials.id_of("mat:iron"),
+                2 => resources.materials.id_of("mat:copper"),
+                _ => resources.materials.id_of("mat:bronze")
+            };
+            let item = blueprint.make(vec!(ItemMakeArguments::PrimaryMaterial(material_id)), &resources);
+            return item;
+        }
     }
 
     pub(crate) fn pants<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
@@ -80,9 +92,10 @@ impl ItemFactory {
     }
 
     pub(crate) fn statue(rng: &mut Rng, resources: &Resources, scene: ArtworkScene) -> Item {
-        let material_id = match rng.randu_range(0, 3) {
+        let material_id = match rng.randu_range(0, 4) {
             0 => resources.materials.id_of("mat:steel"),
-            1 => resources.materials.id_of("mat:copper"),
+            1 => resources.materials.id_of("mat:iron"),
+            2 => resources.materials.id_of("mat:copper"),
             _ => resources.materials.id_of("mat:bronze")
         };
 
@@ -143,9 +156,10 @@ impl<'a> WeaponFactory<'a> {
         };
 
         let mut item;
-        let blueprint = match self.rng.randu_range(0, 2) {
+        let blueprint = match self.rng.randu_range(0, 3) {
             0 => self.resources.item_blueprints.find("itb:sword"),
-            _ => self.resources.item_blueprints.find("itb:mace")
+            1 => self.resources.item_blueprints.find("itb:mace"),
+            _ => self.resources.item_blueprints.find("itb:axe"),
         };
 
         let mut arguments = vec!(ItemMakeArguments::Quality(quality));
@@ -156,6 +170,7 @@ impl<'a> WeaponFactory<'a> {
                 self.resources.materials.id_of("mat:birch"),
                 self.resources.materials.id_of("mat:copper"),
                 self.resources.materials.id_of("mat:bronze"),
+                self.resources.materials.id_of("mat:iron"),
                 self.resources.materials.id_of("mat:steel"),
             );
 

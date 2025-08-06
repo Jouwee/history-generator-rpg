@@ -46,19 +46,29 @@ impl Resources {
     }
 
     fn load_materials(&mut self) {
-        self.materials.add("mat:steel", Material::new_metal("steel"));
-
+        let mut steel = Material::new_metal("steel");
+        steel.color_pallete = [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")];
+        steel.sharpness = 4;
+        self.materials.add("mat:steel", steel);
+        
+        let mut iron = Material::new_metal("iron");
+        iron.color_pallete = [Color::from_hex("4d5666"), Color::from_hex("798494"), Color::from_hex("a1aab6"), Color::from_hex("c0c4cb")];
+        iron.sharpness = 3;
+        self.materials.add("mat:iron", iron);
+        
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
+        bronze.sharpness = 2;
         self.materials.add("mat:bronze", bronze);
+
+        let mut copper = Material::new_metal("copper");
+        copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
+        copper.sharpness = 1;
+        self.materials.add("mat:copper", copper);
 
         self.materials.add("mat:birch", Material::new_wood("birch"));
 
         self.materials.add("mat:oak", Material::new_wood("oak"));
-
-        let mut copper = Material::new_metal("copper");
-        copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
-        self.materials.add("mat:copper", copper);
 
         let mut bone = Material::new_bone("varningr's bone");
         bone.extra_damage = DamageRoll::arcane("1d6");
@@ -99,16 +109,16 @@ impl Resources {
     }
 
     fn load_actions(&mut self) {
-        self.actions.add("act:sword:slash", Action {
-            name: String::from("Slash"),
-            description: String::from("A slashing strike"),
+        self.actions.add("act:strike", Action {
+            name: String::from("Strike"),
+            description: String::from("Strikes with your weapon"),
             icon: String::from("gui/icons/actions/slashing_cut.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword_1.mp3", "sfx/sword_2.mp3", "sfx/sword_3.mp3"))),
             ap_cost: 40,
             stamina_cost: 3.,
             cooldown: 0,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
@@ -119,6 +129,7 @@ impl Resources {
             impact_sfx: None,
             damage_sfx: None
         });
+
         self.actions.add("act:sword:bleeding_cut", Action {
             name: String::from("Bleeding Cut"),
             description: String::from("A deep cut that causes bleeding"),
@@ -128,7 +139,7 @@ impl Resources {
             ap_cost: 60,
             stamina_cost: 20.,
             cooldown: 2,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
@@ -140,26 +151,7 @@ impl Resources {
             impact_sfx: None,
             damage_sfx: None
         });
-        self.actions.add("act:mace:smash", Action {
-            name: String::from("Smash"),
-            description: String::from("A heavy smash"),
-            log_use: true,
-            icon: String::from("gui/icons/actions/mace_smash.png"),
-            cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
-            ap_cost: 40,
-            stamina_cost: 3.,
-            cooldown: 0,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
-            area: ActionArea::Target,
-            effects: vec!(
-                ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
-            ),
-            cast_sprite: None,
-            projectile: None,
-            impact_sprite: None,
-            impact_sfx: None,
-            damage_sfx: None
-        });
+
         self.actions.add("act:mace:concussive_strike", Action {
             name: String::from("Concussive Strike"),
             description: String::from("An aimed hit at the head"),
@@ -169,7 +161,7 @@ impl Resources {
             ap_cost: 60,
             stamina_cost: 20.,
             cooldown: 2,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
@@ -190,7 +182,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 5.,
             cooldown: 0,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: false, damage: DamageRoll::bludgeoning("d4") },
@@ -210,7 +202,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 3.,
             cooldown: 0,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d6+6") },
@@ -231,7 +223,7 @@ impl Resources {
             ap_cost: 40,
             stamina_cost: 3.,
             cooldown: 0,
-            target: ActionTarget::Actor { range: 1., filter_mask: 0 },
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d4") },
@@ -399,7 +391,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             cooldown: 0,
-            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_DIG },
+            target: ActionTarget::Tile { range: 1.5, filter_mask: FILTER_CAN_DIG },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Dig
@@ -419,7 +411,7 @@ impl Resources {
             ap_cost: 20,
             stamina_cost: 1.,
             cooldown: 0,
-            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_ITEM },
+            target: ActionTarget::Tile { range: 1.5, filter_mask: FILTER_ITEM },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::PickUp
@@ -439,7 +431,7 @@ impl Resources {
             ap_cost: 0,
             stamina_cost: 0.,
             cooldown: 0,
-            target: ActionTarget::Tile { range: 1., filter_mask: FILTER_CAN_SLEEP },
+            target: ActionTarget::Tile { range: 1.5, filter_mask: FILTER_CAN_SLEEP },
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Sleep
@@ -636,7 +628,7 @@ impl Resources {
         let sword_blueprint = ItemBlueprint {
             name: String::from("sword"),
             placed_sprite, 
-            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:sword:slash"), actions.id_of("act:sword:bleeding_cut")) }),
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike"), actions.id_of("act:sword:bleeding_cut")) }),
             equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
@@ -661,6 +653,38 @@ impl Resources {
         };
         self.item_blueprints.add("itb:sword", sword_blueprint);
 
+        let image = ImageReader::open("./assets/sprites/species/human/axe_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/axe.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let sword_blueprint = ItemBlueprint {
+            name: String::from("axe"),
+            placed_sprite, 
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike")) }),
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
+                details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
+            }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing("1d8") }),
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
+                String::from("faller"),
+                String::from("blade"),
+                String::from("slash"),
+                String::from("fang"),
+                String::from("tongue"),
+                String::from("kiss"),
+                String::from("wing"),
+                String::from("edge"),
+                String::from("talon")
+            ) })
+        };
+        self.item_blueprints.add("itb:axe", sword_blueprint);
+
         let image = ImageReader::open("./assets/sprites/species/human/mace_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/mace.png").unwrap().decode().unwrap();
@@ -668,7 +692,7 @@ impl Resources {
         let mace_blueprint = ItemBlueprint {
             name: String::from("mace"),
             placed_sprite, 
-            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:mace:smash"), actions.id_of("act:mace:concussive_strike")) }),
+            action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike"), actions.id_of("act:mace:concussive_strike")) }),
             equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
@@ -743,7 +767,7 @@ impl Resources {
         let image = ImageReader::open("./assets/sprites/species/human/armor.png").unwrap().decode().unwrap();
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
-            name: String::from("armor"),
+            name: String::from("brigandine"),
             placed_sprite, 
             action_provider: None,
             equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner, cached_texture: RefCell::new(None) }),
@@ -754,7 +778,29 @@ impl Resources {
             artwork_scene: None,
             name_blueprint: None
         };
-        self.item_blueprints.add("itb:armor", shirt_blueprint);
+        self.item_blueprints.add("itb:brigandine", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/cuirass_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/cuirass.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("cuirass"),
+            placed_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner, cached_texture: RefCell::new(None) }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorComponent { protection: DamageModel::new_spb(5, 3, 3), coverage: vec!(BodyPart::Torso) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:cuirass", shirt_blueprint);
 
         let image = ImageReader::open("./assets/sprites/species/human/crown_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
