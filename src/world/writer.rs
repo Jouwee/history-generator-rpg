@@ -25,10 +25,16 @@ impl<'a> Writer<'a> {
 
     pub(crate) fn describe_quest(&mut self, quest: &Quest) {
         match quest.objective {
-            QuestObjective::KillCreature(creature_id) => {
+            QuestObjective::KillVarningr(creature_id) => {
                 let creature = self.world.creatures.get(&creature_id);
                 self.add_text(&format!("Kill {}", creature.name(&creature_id, self.world, self.resources)));
-            }
+            },
+            QuestObjective::KillWolves(_creature_id) => {
+                self.add_text(&format!("Kill all wolves at the den"));
+            },
+            QuestObjective::KillBandits(_creature_id) => {
+                self.add_text(&format!("Kill all bandits at the camp"));
+            },
         }
     }
 
@@ -110,11 +116,17 @@ impl<'a> Writer<'a> {
 
     pub(crate) fn chat_explain_quest(&mut self, quest: &Quest, actor: &Actor) {
         match &quest.objective {
-            QuestObjective::KillCreature(creature_id) => {
+            QuestObjective::KillVarningr(creature_id) => {
                 let creature = self.world.creatures.get(creature_id);
                 let species = self.resources.species.get(&creature.species);
                 self.quote_actor(&format!("A {} has been terrorising us. I want you to go to it's lair and kill it. Here, I marked it on your map.", species.name), actor);
-            }
+            },
+            QuestObjective::KillBandits(_unit_id) => {
+                self.quote_actor(&format!("A group of bandits has been robbing us. I want you to go to their camp and kill them. Here, I marked it on your map."), actor);
+            },
+            QuestObjective::KillWolves(_unit_id) => {
+                self.quote_actor(&format!("A group of wovles has been harassing our hunters. I want you to go to their den and kill them. Here, I marked it on your map."), actor);
+            },
         }
     }
 

@@ -693,7 +693,12 @@ impl Scene for GameSceneState {
                         continue;
                     }
                     let completed = match &quest.objective {
-                        QuestObjective::KillCreature(kill_id) => kill_id == creature_id
+                        QuestObjective::KillVarningr(kill_id) => kill_id == creature_id,
+                        QuestObjective::KillBandits(unit_id) | QuestObjective::KillWolves(unit_id) => {
+                            let mut unit = self.world.units.get_mut(unit_id);
+                            unit.remove_creature(&creature_id);
+                            unit.creatures.len() == 0
+                        }
                     };
                     if completed {
                         quest.status = QuestStatus::RewardPending;

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, slice::Iter};
 
-use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId}};
+use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId, unit::UnitId}};
 
 pub(crate) struct Codex {
     creatures: HashMap<CreatureId, CreatureCodex>,
@@ -51,10 +51,11 @@ impl Codex {
     pub(crate) fn add_quest(&mut self, quest: Quest) {
         // Makes sure the basic info about the quest is known
         match &quest.objective {
-            QuestObjective::KillCreature(creature_id) => {
+            QuestObjective::KillVarningr(creature_id) => {
                 let creature = self.creature_mut(creature_id);
                 creature.add_name();
-            }
+            },
+            _ => {}
         }
 
         self.quests.push(quest);
@@ -191,8 +192,12 @@ impl Quest {
 
 #[derive(Clone, Debug)]
 pub(crate) enum QuestObjective {
-    /// Kill a specific creature
-    KillCreature(CreatureId)
+    /// Kill a varningr
+    KillVarningr(CreatureId),
+    /// Kill wolves
+    KillWolves(UnitId),
+    /// Kill bandits
+    KillBandits(UnitId),
 }
 
 

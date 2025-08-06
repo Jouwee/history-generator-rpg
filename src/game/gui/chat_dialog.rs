@@ -77,13 +77,6 @@ impl ChatDialog {
 
         for unit_id in world.units.iter_ids::<UnitId>() {
             let unit = world.units.get(&unit_id);
-            let questable = match unit.unit_type {
-                /*UnitType::BanditCamp | */UnitType::VarningrLair => true,
-                _ => false,
-            };
-            if !questable {
-                continue;
-            }
             if unit.creatures.len() == 0 {
                 continue;
             }
@@ -92,17 +85,26 @@ impl ChatDialog {
                 continue;
             }
 
-            let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), QuestObjective::KillCreature(unit.creatures.first().unwrap().clone()));
-            writer.chat_explain_quest(&quest, &self.data.actor);
-            
-            let text = &writer.take_text();
-            for line in text.split("\n") {
-                let line = Label::text(&line);
-                self.chat_container.add(line);
-            }
+            let quest_objective = match unit.unit_type {
+                UnitType::VarningrLair => Some(QuestObjective::KillVarningr(unit.creatures.first().unwrap().clone())),
+                UnitType::BanditCamp => Some(QuestObjective::KillBandits(unit_id)),
+                UnitType::WolfPack => Some(QuestObjective::KillWolves(unit_id)),
+                _ => None,
+            };
 
-            world.codex.add_quest(quest);
-            return;
+            if let Some(quest_objective) = quest_objective {
+                let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), quest_objective);
+                writer.chat_explain_quest(&quest, &self.data.actor);
+                
+                let text = &writer.take_text();
+                for line in text.split("\n") {
+                    let line = Label::text(&line);
+                    self.chat_container.add(line);
+                }
+
+                world.codex.add_quest(quest);
+                return;
+            }
         }
 
         writer.quote_actor("These are times of peace, and I have nothing to ask of you. Perphaps ask in other towns?", &self.data.actor);
