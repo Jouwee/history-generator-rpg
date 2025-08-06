@@ -99,19 +99,9 @@ impl<'a> ChunkGenerator<'a> {
                     };
                     // self.generate_lair(&unit, &mut solver, &world, resources);
                     println!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
-                }
-            }
-
-        } else {
-            if self.rng.rand_chance(0.1) {
-                let ai_group = self.chunk.ai_groups.next_group();
-                let wolf_id = resources.species.id_of("species:wolf");
-                let wolf = resources.species.get(&wolf_id);
-                self.chunk.ai_groups.make_hostile(ai_group, AiGroups::player());
-                // Wildlife
-                for _ in 0..self.rng.randi_range(1, 4) {
-                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
-                    self.spawn(boss, Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2));
+                },
+                UnitType::WolfPack => {
+                    self.generate_wolf_pack(&unit, &world, resources);
                 }
             }
         }      
@@ -138,6 +128,12 @@ impl<'a> ChunkGenerator<'a> {
             UnitType::VarningrLair => ChunkFeaturePools {
                 start_pool: None,
                 detached_housing_pool: Some(String::from("varningr_lair")),
+                artifacts_pool: None,
+                cemetery_pool: None
+            },
+            UnitType::WolfPack => ChunkFeaturePools {
+                start_pool: None,
+                detached_housing_pool: None,
                 artifacts_pool: None,
                 cemetery_pool: None
             },
@@ -482,6 +478,17 @@ impl<'a> ChunkGenerator<'a> {
                     }
                 }
             }
+        }
+    }
+
+    fn generate_wolf_pack(&mut self, unit: &Unit, world: &World, resources: &Resources) {
+        let ai_group = self.chunk.ai_groups.next_group();
+        let pos = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2);
+        for creature_id in unit.creatures.iter() {
+            let creature = world.creatures.get(creature_id);
+            let species = resources.species.get(&creature.species);
+            let boss = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
+            self.spawn(boss, pos);
         }
     }
 

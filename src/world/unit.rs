@@ -55,6 +55,7 @@ impl Unit {
                 }
             },
             UnitType::VarningrLair => Profession::Beast,
+            UnitType::WolfPack => Profession::Beast,
         }
     }
 
@@ -109,6 +110,7 @@ mod tests_unit {
 pub(crate) enum UnitType {
     Village,
     BanditCamp,
+    WolfPack,
     VarningrLair,
 }
 

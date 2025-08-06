@@ -56,6 +56,30 @@ impl HistorySimulation {
                 world.units.add::<UnitId>(unit);
             }
         }
+        if self.rng.rand_chance(chances.spawn_wolf_pack) {
+            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
+
+            if let Some(pos) = pos {
+                let species = self.resources.species.id_of("species:wolf");
+                let mut factory = CreatureFactory::new(self.rng.derive("creature"));
+                let creatures = vec!(
+                    factory.make_single(species, 1, 0, world),
+                    factory.make_single(species, 1, 0, world),
+                    factory.make_single(species, 1, 0, world),
+                );
+                let unit = Unit {
+                    creatures,
+                    artifacts: Vec::new(),
+                    cemetery: Vec::new(),
+                    settlement: None,
+                    population_peak: (0, 0),
+                    resources: UnitResources { food: 2. },
+                    unit_type: UnitType::WolfPack,
+                    xy: pos
+                };
+                world.units.add::<UnitId>(unit);
+            }
+        }
         if self.rng.rand_chance(chances.spawn_village) {
             let _err = world_ops::spawn_random_village(world, &mut self.rng, &self.resources, self.generation_params.st_village_population as u32);
         }
@@ -399,6 +423,9 @@ impl HistorySimulation {
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();
                 if unit.creatures.len() == 0 {
+                    if unit.xy == candidate {
+                        return true;
+                    }
                     return false;
                 }
                 return unit.xy.dist_squared(&candidate) < 3. * 3.

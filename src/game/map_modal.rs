@@ -81,14 +81,14 @@ impl MapModal {
                     if unit.creatures.len() > 20 {
                         5
                     } else if unit.creatures.len() > 5 {
-                        6
-                    } else if unit.creatures.len() > 0 {
                         1
+                    } else if unit.creatures.len() > 0 {
+                        6
                     } else {
                         4
                     }
                 },
-                UnitType::VarningrLair | UnitType::BanditCamp => {
+                UnitType::VarningrLair | UnitType::BanditCamp | UnitType::WolfPack => {
                     if unit.creatures.len() > 0 {
                         3
                     } else {

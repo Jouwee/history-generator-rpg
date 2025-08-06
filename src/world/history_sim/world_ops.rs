@@ -51,6 +51,9 @@ fn search_new_unit_pos(world: &World, rng: &mut Rng) -> Result<Coord2, ()> {
         let too_close = world.units.iter().any(|unit| {
             let unit = unit.borrow();
             if unit.creatures.len() == 0 {
+                if unit.xy == candidate {
+                    return true;
+                }
                 return false;
             }
             return unit.xy.dist_squared(&candidate) < 3. * 3.

@@ -115,17 +115,20 @@ fn lerp_unit_chances(a: &UnitChances, b: &UnitChances, strength: f32) -> UnitCha
 #[derive(Clone)]
 pub(crate) struct GlobalChances {
     pub(crate) spawn_varningr: f32,
+    pub(crate) spawn_wolf_pack: f32,
     pub(crate) spawn_village: f32,
 }
 
 const BASE_GLOBAL_CHANCES: GlobalChances = GlobalChances {
     spawn_varningr: 0.01,
+    spawn_wolf_pack: 0.1,
     spawn_village: 0.01,
 };
 
 fn lerp_global_chances(a: &GlobalChances, b: &GlobalChances, strength: f32) -> GlobalChances {
     GlobalChances {
         spawn_varningr: lerp(a.spawn_varningr as f64, b.spawn_varningr as f64, strength as f64) as f32,
+        spawn_wolf_pack: lerp(a.spawn_wolf_pack as f64, b.spawn_wolf_pack as f64, strength as f64) as f32,
         spawn_village: lerp(a.spawn_village as f64, b.spawn_village as f64, strength as f64) as f32,
     }
 }
