@@ -206,14 +206,14 @@ fn main() {
         seed: 1234567,
         world_size: Size2D(64, 48),
         history_length: 2000,
-        number_of_seed_cities: 20,
+        number_of_seed_cities: 3,
         seed_cities_population: 15,
         num_plate_tectonics: 5,
         st_strength: 1.0,
         st_city_count: 7,
-        st_city_population: 50,
+        st_city_population: 20,
         st_village_count: 20,
-        st_village_population: 20,
+        st_village_population: 10,
     }, &app.context.resources));
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {

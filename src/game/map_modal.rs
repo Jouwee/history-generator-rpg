@@ -78,9 +78,9 @@ impl MapModal {
             let unit = world.units.get(&unit_id);
             let tile = match unit.unit_type {
                 UnitType::Village => {
-                    if unit.creatures.len() > 30 {
+                    if unit.creatures.len() > 20 {
                         5
-                    } else if unit.creatures.len() > 10 {
+                    } else if unit.creatures.len() > 5 {
                         6
                     } else if unit.creatures.len() > 0 {
                         1
@@ -97,7 +97,7 @@ impl MapModal {
                 },
             };
             self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, tile);
-            self.names.push((unit.xy, format!("{unit_id:?}")));
+            self.names.push((unit.xy, format!("{unit_id:?} {:?}", unit.unit_type)));
         }
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);

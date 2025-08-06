@@ -91,14 +91,15 @@ impl HistorySimulation {
     }
 
     fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) {
+
+        let chances = self.storyteller.story_teller_unit_chances(unit_id, &world);
+
         let mut unit = world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
 
         let mut resources = unit.resources.clone();
 
         let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
-
-        let chances = self.storyteller.story_teller_unit_chances(unit_id, &unit);
 
         for creature_id in unit.creatures.iter() {
             let mut creature = world.creatures.get_mut(creature_id);
@@ -294,9 +295,7 @@ impl HistorySimulation {
                     }
                     world.events.push(Event::CreatureMarriage { date: now.clone(), creature_id: candidate_a.0, spouse_id: candidate_b.0 });
                 },
-                None => {
-                    break
-                }
+                None => ()
             }
         }
 

@@ -105,7 +105,7 @@ mod tests_unit {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum UnitType {
     Village,
     BanditCamp,

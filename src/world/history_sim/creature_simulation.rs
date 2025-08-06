@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId}, world::World}};
+use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -19,7 +19,7 @@ pub(crate) enum CreatureSideEffect {
     ExecutePlot,
 }
 
-const YEARLY_CHANCE_MARRY: f32 = 0.4;
+const YEARLY_CHANCE_MARRY: f32 = 0.8;
 const CHANCE_TO_STARVE: f32 = 0.2;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
@@ -30,9 +30,9 @@ impl CreatureSimulation {
     pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by starvation
-        if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
-            return CreatureSideEffect::Death(CauseOfDeath::Starvation);
-        }
+        // if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
+        //     return CreatureSideEffect::Death(CauseOfDeath::Starvation);
+        // }
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
             return CreatureSideEffect::Death(CauseOfDeath::Disease);
@@ -45,7 +45,7 @@ impl CreatureSimulation {
         }
 
         // Get a profession
-        if creature.sim_flag_is_inteligent() {
+        if creature.sim_flag_is_inteligent() && unit.unit_type == UnitType::Village {
 
             match supported_plot {
                 None => {
@@ -118,15 +118,10 @@ impl CreatureSimulation {
     }
 
     fn chance_of_child(now: &WorldDate, creature: &Creature, unit_food_stock: f32, unit_population: usize, chances: &UnitChances) -> f32 {
-        let food_excess_pct = unit_food_stock / unit_population as f32;
-        let food_mult = (food_excess_pct - 1.).clamp(0.02, 1.);
-        
-        let children_mult = 1. - (creature.offspring.len() as f32 / 10.);
-        let age = (*now - creature.birth).year() as f32;
-        
+        let age = (*now - creature.birth).year() as f32;        
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
-        return (chances.have_child * fertility_mult * food_mult * children_mult).clamp(0., 1.);
+        return (chances.have_child * fertility_mult).clamp(0., 1.);
     }
 
     fn chance_of_death_by_old_age(age: f32) -> f32 {
@@ -169,7 +164,7 @@ impl CreatureSimulation {
 
 // Legendary beasts
 
-const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.8;
+const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.1;
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
 pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId, resources: &mut Resources) {

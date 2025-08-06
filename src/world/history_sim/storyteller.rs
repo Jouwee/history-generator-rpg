@@ -1,4 +1,4 @@
-use crate::{commons::{interpolate::lerp, rng::Rng}, world::{history_generator::WorldGenerationParameters, unit::{Unit, UnitId, UnitType}, world::World}};
+use crate::{commons::{interpolate::lerp, rng::Rng}, world::{history_generator::WorldGenerationParameters, unit::{UnitId, UnitType}, world::World}};
 
 pub(crate) struct Storyteller {
     params: WorldGenerationParameters,
@@ -34,37 +34,54 @@ impl Storyteller {
             }
         }
 
-        if villages < self.params.st_village_count {
-            chances.spawn_village *= 1.5;
+
+        let villages_divergence = villages as f32 / self.params.st_village_count as f32;
+        if villages_divergence > 1.2 {
+            chances.spawn_village *= 0.;
+        } else if villages_divergence < 0.8 {
+            chances.spawn_village *= 2.;
         }
 
         return lerp_global_chances(&BASE_GLOBAL_CHANCES, &chances, self.params.st_strength)
     }
 
-    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, unit: &Unit) -> UnitChances {
+    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, world: &World) -> UnitChances {
         let mut chances = BASE_UNIT_CHANCES.clone();
         
+        let unit = world.units.get(unit_id);
+
         if unit.unit_type == UnitType::Village {
 
             let pop_goal = match self.selected_for_cities.contains(unit_id) {
                 true => self.params.st_city_population,
                 false => self.params.st_village_population,
             };
+            let adults = unit.creatures.iter().filter(|id| {
+                let creature = world.creatures.get(*id);
+                (world.date - creature.birth).year() > 18
+            }).count();
 
             // Balances unit population
             let population_divergence = unit.creatures.len() as f32 / pop_goal as f32;
             if population_divergence < 0.8 {
                 chances.have_child = chances.have_child * 1.5;
-                chances.disease_death = chances.disease_death * 0.1;
-                chances.leave_for_bandits = chances.leave_for_bandits * 0.1;
             } else if population_divergence > 1.5 {
-                chances.have_child = chances.have_child * 0.2;
-                chances.disease_death = chances.disease_death * 1.2;
-                chances.leave_for_bandits = chances.leave_for_bandits * 1.0;
+                chances.have_child = chances.have_child * 0.;
             } else if population_divergence > 1.2 {
                 chances.have_child = chances.have_child * 0.5;
+            }
+
+            // Balances unit population
+            let population_divergence = adults as f32 / pop_goal as f32;
+            if population_divergence < 0.8 {
+                chances.disease_death = chances.disease_death * 0.;
+                chances.leave_for_bandits = chances.leave_for_bandits * 0.;
+            } else if population_divergence > 1.5 {
                 chances.disease_death = chances.disease_death * 1.2;
                 chances.leave_for_bandits = chances.leave_for_bandits * 1.1;
+            } else if population_divergence > 1.2 {
+                chances.disease_death = chances.disease_death * 1.2;
+                chances.leave_for_bandits = chances.leave_for_bandits * 1.0;
             }
         }
 
@@ -82,7 +99,7 @@ pub(crate) struct UnitChances {
 
 const BASE_UNIT_CHANCES: UnitChances = UnitChances {
     disease_death: 0.0015,
-    have_child: 1.,
+    have_child: 0.6,
     leave_for_bandits: 0.001
 };
 
@@ -102,7 +119,7 @@ pub(crate) struct GlobalChances {
 }
 
 const BASE_GLOBAL_CHANCES: GlobalChances = GlobalChances {
-    spawn_varningr: 0.1,
+    spawn_varningr: 0.01,
     spawn_village: 0.01,
 };
 
