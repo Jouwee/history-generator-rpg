@@ -7,6 +7,7 @@
 'c' = { ground= 4, object= 5 }
 't' = { ground= 4, object= 4 }
 'r' = { ground= 1, object= 8 }
+'d' = { ground= 4, object= 8 }
 '&' = { path_endpoint = true }
 'A' = { ground= 4, connect = "village_house_start" }
 'B' = { ground= 4, connect = "village_house_room" }
@@ -15,41 +16,31 @@
 [village_house_start]
 
 [village_house_start.a]
-size = [9, 8]
+size = [8, 8]
+allow_flip_hor = true
+allow_flip_ver = true
 template = """
-#########
-#_______#
-#_______B
-#_ct____#
-#__c____#
-#_______#
-##_######
-..&..rr.."""
+........
+.######.
+.#ctc_#.
+.#____B.
+.#____#.
+.#____#.
+.##_###.
+.r.&...."""
 
 [village_house_start.b]
 size = [9, 8]
+allow_rotate=true
 template = """
-#########
-#_______#
-#___ctc_#
-B_______#
-#_______#
-#_______#
-######_##
-.r....&.."""
-
-[village_house_start.d]
-size = [9, 8]
-template = """
-#########
-#_______#
-#_______#
-#_ct____#
-#__c____#
-#_______#
-##_######
-..&..rr.."""
-
+.........
+.#######.
+.#d__ct#.
+.#_____#.
+.#_____#.
+.#_____#.
+.##_####.
+...&....."""
 
 [village_house_room]
 

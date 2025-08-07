@@ -99,7 +99,7 @@ impl CreatureSimulation {
             }
         }
 
-        if age >= 60 {
+        if age >= 40 {
             // Death of old age
             if rng.rand_chance(Self::chance_of_death_by_old_age(age as f32)) {
                 return CreatureSideEffect::Death(CauseOfDeath::OldAge);
@@ -125,7 +125,7 @@ impl CreatureSimulation {
     }
 
     fn chance_of_death_by_old_age(age: f32) -> f32 {
-        return ((age - 60.) / 60.).powf(4.0).clamp(0., 1.)
+        return ((age - 40.) / 60.).clamp(0., 1.)
     }
 
     pub(crate) fn have_child_with_spouse(now: &WorldDate, world: &World, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
@@ -164,7 +164,7 @@ impl CreatureSimulation {
 
 // Legendary beasts
 
-const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.1;
+const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.01;
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
 pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId, resources: &mut Resources) {

@@ -120,8 +120,8 @@ pub(crate) struct GlobalChances {
 }
 
 const BASE_GLOBAL_CHANCES: GlobalChances = GlobalChances {
-    spawn_varningr: 0.01,
-    spawn_wolf_pack: 0.1,
+    spawn_varningr: 0.05,
+    spawn_wolf_pack: 0.2,
     spawn_village: 0.01,
 };
 
