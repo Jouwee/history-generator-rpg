@@ -18,7 +18,16 @@ impl EquipmentGenerator {
         let _ = inventory.add(ItemFactory::boots(rng, &resources));
         let _ = inventory.add(ItemFactory::pants(rng, &resources));
 
-        if creature.profession == Profession::Guard || creature.profession == Profession::Bandit || creature.profession == Profession::Ruler {
+        if creature.profession == Profession::Bandit {
+            let item = ItemFactory::weapon(rng, &resources).make();
+            let _ = inventory.add(item);
+
+            let blueprint = resources.item_blueprints.find("itb:brigandine");
+            let item = blueprint.make(vec!(), &resources);
+            let _ = inventory.add(item);
+        }
+
+        if creature.profession == Profession::Guard || creature.profession == Profession::Ruler {
             let item = ItemFactory::weapon(rng, &resources).make();
             let _ = inventory.add(item);
             let _ = inventory.add(ItemFactory::inner_armor(rng, &resources));

@@ -19,6 +19,7 @@ pub(crate) type SpeciesMap = ResourceMap<SpeciesId, Species>;
 pub(crate) struct Species {
     pub(crate) name: String,
     pub(crate) appearance: SpeciesAppearance,
+    pub(crate) max_hp: f32,
     pub(crate) intelligence: SpeciesIntelligence,
     pub(crate) attributes: Attributes,
     pub(crate) innate_actions: Vec<ActionId>,
@@ -32,12 +33,18 @@ impl Species {
         Species {
             name: String::from(name),
             appearance,
+            max_hp: 100.,
             intelligence: SpeciesIntelligence::Civilized,
             attributes: Attributes { strength: 13, agility: 13, constitution: 13, unallocated: 13 },
             innate_actions: Vec::new(),
             drops: Vec::new(),
             hurt_sound: None,
         }
+    }
+
+    pub(crate) fn max_hp(mut self, max_hp: f32) -> Self {
+        self.max_hp = max_hp;
+        return self
     }
 
     pub(crate) fn innate_actions(mut self, innate_actions: Vec<ActionId>) -> Self {

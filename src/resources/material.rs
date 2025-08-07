@@ -20,7 +20,7 @@ pub(crate) const MAT_TAG_BONE: u8 = 0b0000_0100;
 #[derive(Clone, Debug)]
 pub(crate) struct Material {
     pub(crate) name: String,
-    pub(crate) sharpness: i16,
+    pub(crate) sharpness: f32,
     pub(crate) color_pallete: [Color; 4],
     pub(crate) tags_bitmask: u8,
     pub(crate) extra_damage: DamageRoll,
@@ -31,7 +31,7 @@ impl Material {
     pub(crate) fn new_metal(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 2,
+            sharpness: 1.,
             color_pallete: [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")],
             tags_bitmask: MAT_TAG_METAL,
             extra_damage: DamageRoll::empty(),
@@ -41,7 +41,7 @@ impl Material {
     pub(crate) fn new_wood(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: -1,
+            sharpness: 0.5,
             color_pallete: [Color::from_hex("3d3333"), Color::from_hex("593e47"), Color::from_hex("7a5859"), Color::from_hex("a57855")],
             tags_bitmask: MAT_TAG_WOOD,
             extra_damage: DamageRoll::empty(),
@@ -51,7 +51,7 @@ impl Material {
     pub(crate) fn new_bone(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 0,
+            sharpness: 0.8,
             color_pallete: [Color::from_hex("d4c692"), Color::from_hex("fee1b8"), Color::from_hex("f1f6f0"), Color::from_hex("f1f6f0")],
             tags_bitmask: MAT_TAG_BONE,
             extra_damage: DamageRoll::empty(),

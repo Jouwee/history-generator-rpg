@@ -3,9 +3,9 @@ use std::{cell::RefCell, collections::HashMap};
 use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color, Resources};
+use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
 
-use super::{creature::CreatureId, world::World};
+use super::creature::CreatureId;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemId(usize);
@@ -159,7 +159,6 @@ pub(crate) struct ArmorComponent {
     pub(crate) coverage: Vec<BodyPart>
 }
 
-
 #[derive(Clone, Debug)]
 pub(crate) struct ArtworkSceneComponent {
     pub(crate) scene: ArtworkScene,
@@ -189,13 +188,13 @@ pub(crate) enum ItemQuality {
 }
 
 impl ItemQuality {
-    pub(crate) fn main_stat_modifier(&self) -> i16 {
+    pub(crate) fn main_stat_multiplier(&self) -> f32 {
         match self {
-            Self::Poor => -1,
-            Self::Normal => 0,
-            Self::Good => 1,
-            Self::Excelent => 2,
-            Self::Legendary => 4,
+            Self::Poor => 0.8,
+            Self::Normal => 1.,
+            Self::Good => 1.2,
+            Self::Excelent => 1.5,
+            Self::Legendary => 2.,
         }
     }
 }

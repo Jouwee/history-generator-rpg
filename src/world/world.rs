@@ -81,7 +81,7 @@ impl World {
             score += *events_per_item.get(&id).unwrap_or(&0.) as f32;
 
             if let Some(quality) = &i_item.quality {
-                score = score + quality.quality.main_stat_modifier() as f32;
+                score = score + quality.quality.main_stat_multiplier() as f32;
             }
 
             match artifact {

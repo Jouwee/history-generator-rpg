@@ -2,7 +2,7 @@ use std::{cell::RefCell, time::Instant};
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, ArmorComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM}, item_blueprint::ArmorBlueprintComponent, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
@@ -48,22 +48,22 @@ impl Resources {
     fn load_materials(&mut self) {
         let mut steel = Material::new_metal("steel");
         steel.color_pallete = [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")];
-        steel.sharpness = 4;
+        steel.sharpness = 1.75;
         self.materials.add("mat:steel", steel);
         
         let mut iron = Material::new_metal("iron");
         iron.color_pallete = [Color::from_hex("4d5666"), Color::from_hex("798494"), Color::from_hex("a1aab6"), Color::from_hex("c0c4cb")];
-        iron.sharpness = 3;
+        iron.sharpness = 1.5;
         self.materials.add("mat:iron", iron);
         
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
-        bronze.sharpness = 2;
+        bronze.sharpness = 1.2;
         self.materials.add("mat:bronze", bronze);
 
         let mut copper = Material::new_metal("copper");
         copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
-        copper.sharpness = 1;
+        copper.sharpness = 1.;
         self.materials.add("mat:copper", copper);
 
         self.materials.add("mat:birch", Material::new_wood("birch"));
@@ -71,7 +71,7 @@ impl Resources {
         self.materials.add("mat:oak", Material::new_wood("oak"));
 
         let mut bone = Material::new_bone("varningr's bone");
-        bone.extra_damage = DamageRoll::arcane("1d6");
+        bone.extra_damage = DamageRoll::arcane(10.);
         self.materials.add("mat:varningr_bone", bone);
     }
 
@@ -143,7 +143,7 @@ impl Resources {
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
-                ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
+                ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 3 } }
             ),
             cast_sprite: None,
             projectile: None,
@@ -185,7 +185,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::bludgeoning("d4") },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::bludgeoning(5.) },
             ),
             cast_sprite: None,
             projectile: None,
@@ -205,7 +205,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d6+6") },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(10.) },
                 ActionEffect::Inflicts { affliction: Affliction::Poisoned { duration: 10 } }
             ),
             cast_sprite: None,
@@ -226,7 +226,27 @@ impl Resources {
             target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing("2d4") },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(10.) },
+            ),
+            cast_sprite: None,
+            projectile: None,
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), 0.5, ImpactPosition::EachTarget, false)),
+            impact_sfx: None,
+            damage_sfx: Some(SoundEffect::new(vec!("sfx/damage_flesh_1.mp3", "sfx/damage_flesh_2.mp3", "sfx/damage_flesh_3.mp3"))),
+        });
+        self.actions.add("act:bite_varningr", Action {
+            name: String::from("Bite"),
+            description: String::from("A bite"),
+            icon: String::from("missing.png"),
+            log_use: true,
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
+            ap_cost: 40,
+            stamina_cost: 3.,
+            cooldown: 0,
+            target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
+            area: ActionArea::Target,
+            effects: vec!(
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(20.) },
             ),
             cast_sprite: None,
             projectile: None,
@@ -268,8 +288,8 @@ impl Resources {
             target: ActionTarget::Actor { range: 10., filter_mask: FILTER_CAN_VIEW },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire("2d6+4") },
-                ActionEffect::Inflicts { affliction: Affliction::OnFire { duration: 5 } }
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire(20.) },
+                ActionEffect::Inflicts { affliction: Affliction::OnFire { duration: 6 } }
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
@@ -290,7 +310,7 @@ impl Resources {
             target: ActionTarget::Tile { range: 10., filter_mask: FILTER_CAN_OCCUPY },
             area: ActionArea::Circle { radius: 2.5 },
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire("3d6+12") },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::fire(20.) },
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
@@ -474,7 +494,8 @@ impl Resources {
                 "species/human/hair_b.png".to_string(),
                 "species/human/hair_c.png".to_string(),
             )
-        }).innate_actions(vec!(self.actions.id_of("act:punch"))));
+        })
+        .innate_actions(vec!(self.actions.id_of("act:punch"))));
 
         self.species.add("species:spider", Species::new("spider", SpeciesAppearance::Single("species/spider.png".to_string()))
             .intelligence(SpeciesIntelligence::Instinctive)
@@ -494,7 +515,8 @@ impl Resources {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!(self.materials.id_of("mat:varningr_bone")))
-            .innate_actions(vec!(self.actions.id_of("act:bite"), self.actions.id_of("act:deafening_howl")))
+            .max_hp(200.)
+            .innate_actions(vec!(self.actions.id_of("act:bite_varningr"), self.actions.id_of("act:deafening_howl")))
         );
     }
 
@@ -636,7 +658,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing("1d6") }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(20.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
@@ -668,7 +690,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing("1d8") }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(30.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
@@ -700,7 +722,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning("1d6") }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning(20.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })
@@ -720,7 +742,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 8, 0), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -738,7 +760,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 0, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 0, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -756,7 +778,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 1), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -774,7 +796,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -796,7 +818,7 @@ impl Resources {
             }),
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(5, 3, 3), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(10, 10, 10), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             name_blueprint: None
         };
@@ -814,7 +836,7 @@ impl Resources {
             material: None,
             quality: None,
             mellee_damage: None,
-            armor: Some(ArmorComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Head) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Head) }),
             artwork_scene: None,
             name_blueprint: None
         };

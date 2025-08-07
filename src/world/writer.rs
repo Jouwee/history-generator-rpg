@@ -125,7 +125,7 @@ impl<'a> Writer<'a> {
                 self.quote_actor(&format!("A group of bandits has been robbing us. I want you to go to their camp and kill them. Here, I marked it on your map."), actor);
             },
             QuestObjective::KillWolves(_unit_id) => {
-                self.quote_actor(&format!("A group of wovles has been harassing our hunters. I want you to go to their den and kill them. Here, I marked it on your map."), actor);
+                self.quote_actor(&format!("A group of wolves has been harassing our hunters. I want you to go to their den and kill them. Here, I marked it on your map."), actor);
             },
         }
     }

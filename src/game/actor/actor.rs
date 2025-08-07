@@ -34,7 +34,7 @@ impl Actor {
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
-            hp: HealthComponent::new(),
+            hp: HealthComponent::new(species.max_hp),
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
@@ -58,7 +58,7 @@ impl Actor {
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
-            hp: HealthComponent::new(),
+            hp: HealthComponent::new(species.max_hp),
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
@@ -88,7 +88,7 @@ impl Actor {
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
-            hp: HealthComponent::new(),
+            hp: HealthComponent::new(species.max_hp),
             attributes: species.attributes.clone(),
             xp: 0,
             level: 1,
@@ -114,14 +114,14 @@ impl Actor {
             affliction.delta += 1;
             match affliction.affliction {
                 Affliction::Bleeding { duration: _ } => {
-                    // TODO: Rethink
-                    // self.hp.damage(1.);
-                    effect_layer.add_damage_number(self.xy, 1.);
+                    let target_body_part = BodyPart::random(&mut Rng::rand());
+                    self.hp.hit(target_body_part, 5.);
+                    effect_layer.add_damage_number(self.xy, 5.);
                 },
                 Affliction::OnFire { duration: _ } => {
                     let target_body_part = BodyPart::random(&mut Rng::rand());
-                    self.hp.hit(target_body_part, 2.);
-                    effect_layer.add_damage_number(self.xy, 2.);
+                    self.hp.hit(target_body_part, 5.);
+                    effect_layer.add_damage_number(self.xy, 5.);
                 },
                 Affliction::Poisoned { duration: _ } => {
                     // TODO: Rethink

@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::DamageRoll, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::actor::health_component::BodyPart, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemBlueprintId(usize);
@@ -22,7 +22,7 @@ pub(crate) struct ItemBlueprint {
     pub(crate) material: Option<MaterialBlueprintComponent>,
     pub(crate) quality: Option<QualityBlueprintComponent>,
     pub(crate) mellee_damage: Option<MelleeDamageBlueprintComponent>,
-    pub(crate) armor: Option<ArmorComponent>,
+    pub(crate) armor: Option<ArmorBlueprintComponent>,
     pub(crate) artwork_scene: Option<ArtworkSceneBlueprintComponent>,
     pub(crate) name_blueprint: Option<NameBlueprintComponent>,
 }
@@ -37,23 +37,11 @@ impl ItemBlueprint {
             action_provider: self.action_provider.clone(),
             equippable: self.equippable.clone(),
             owner: None,
-            material: match &self.material {
-                Some(material_blueprint) => Some(material_blueprint.make(&arguments)),
-                None => None,
-            },
-            quality: match &self.quality {
-                Some(quality_blueprint) => Some(quality_blueprint.make(&arguments)),
-                None => None,
-            },
-            mellee_damage: match &self.mellee_damage {
-                Some(mellee_blueprint) => Some(mellee_blueprint.make(&arguments, &resources)),
-                None => None
-            },
-            armor: self.armor.clone(),
-            artwork_scene: match &self.artwork_scene {
-                Some(artwork_scene) => Some(artwork_scene.make(&arguments)),
-                None => None
-            },
+            material: self.material.as_ref().map(|material_blueprint| material_blueprint.make(&arguments)),
+            quality: self.quality.as_ref().map(|quality_blueprint| quality_blueprint.make(&arguments)),
+            mellee_damage: self.mellee_damage.as_ref().map(|mellee_blueprint| mellee_blueprint.make(&arguments, &resources)),
+            armor: self.armor.as_ref().map(|armor| armor.make(&arguments, &resources)),
+            artwork_scene: self.artwork_scene.as_ref().map(|artwork_scene| artwork_scene.make(&arguments)),
         }
     }
 
@@ -131,10 +119,10 @@ impl MelleeDamageBlueprintComponent {
             match argument {
                 ItemMakeArguments::PrimaryMaterial(material) => {
                     let material = resources.materials.get(material);
-                    damage.add_modifier(material.sharpness);
+                    damage = damage.multiply(material.sharpness);
                 },
                 ItemMakeArguments::Quality(quality) => {
-                    damage.add_modifier(quality.main_stat_modifier());
+                    damage = damage.multiply(quality.main_stat_multiplier());
                 },
                 _ => ()
             }
@@ -142,6 +130,35 @@ impl MelleeDamageBlueprintComponent {
 
         return MelleeDamageComponent {
             damage
+        }
+    }
+
+}
+
+
+#[derive(Clone, Debug)]
+pub(crate) struct ArmorBlueprintComponent {
+    pub(crate) protection: DamageModel,
+    pub(crate) coverage: Vec<BodyPart>
+}
+
+impl ArmorBlueprintComponent {
+
+    fn make(&self, arguments: &Vec<ItemMakeArguments>, resources: &Resources) -> ArmorComponent {
+        let mut protection = self.protection.clone();
+        for argument in arguments.iter() {
+            match argument {
+                ItemMakeArguments::PrimaryMaterial(material) => {
+                    let material = resources.materials.get(material);
+                    protection = protection.multiply(material.sharpness);
+                },
+                _ => ()
+            }
+        }
+
+        return ArmorComponent {
+            protection,
+            coverage: self.coverage.clone(),
         }
     }
 

@@ -97,7 +97,7 @@ impl EffectLayer {
     }
 
     pub(crate) fn add_damage_number(&mut self, pos: Coord2, damage: f32) {
-        self.add_text_indicator(pos, &format!("{:.1}", damage), Palette::Red);
+        self.add_text_indicator(pos, &format!("{:.0}", damage), Palette::Red);
     }
 
     pub(crate) fn add_text_indicator(&mut self, pos: Coord2, text: &str, color: Palette) {

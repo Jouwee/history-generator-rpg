@@ -25,7 +25,7 @@ impl<'a> ActorStats<'a> {
     }
 
     pub(crate) fn dodge_chance(&self) -> f32 {
-        return self.actor.attributes.agility as f32 * 0.01
+        return 0.1 * self.actor.hp.body_part_condition(&BodyPart::Head).map(|c| c.condition()).unwrap_or(1.)
     }
 
     pub(crate) fn enemy_dodge_bonus(&self) -> f32 {

@@ -4,6 +4,7 @@ use crate::commons::rng::Rng;
 
 #[derive(Clone)]
 pub(crate) struct HealthComponent {
+    max_hp: f32,
     current_hp: f32,
     body_parts: HashMap<BodyPart, BodyPartCondition>
 }
@@ -12,17 +13,18 @@ const NON_CRITICAL_HIT_BODY_PART_DAMAGE_MULT: f32 = 0.25;
 
 impl HealthComponent {
 
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(max_hp: f32) -> Self {
         let mut instance = Self {
-            current_hp: 100.,
+            max_hp,
+            current_hp: max_hp,
             body_parts: HashMap::new()
         };
-        instance.body_parts.insert(BodyPart::Head, BodyPartCondition::new(25.));
-        instance.body_parts.insert(BodyPart::Torso, BodyPartCondition::new(40.));
-        instance.body_parts.insert(BodyPart::LeftArm, BodyPartCondition::new(30.));
-        instance.body_parts.insert(BodyPart::RightArm, BodyPartCondition::new(30.));
-        instance.body_parts.insert(BodyPart::LeftLeg, BodyPartCondition::new(30.));
-        instance.body_parts.insert(BodyPart::RightLeg, BodyPartCondition::new(30.));
+        instance.body_parts.insert(BodyPart::Head, BodyPartCondition::new(max_hp * 0.25));
+        instance.body_parts.insert(BodyPart::Torso, BodyPartCondition::new(max_hp * 0.40));
+        instance.body_parts.insert(BodyPart::LeftArm, BodyPartCondition::new(max_hp * 0.30));
+        instance.body_parts.insert(BodyPart::RightArm, BodyPartCondition::new(max_hp * 0.30));
+        instance.body_parts.insert(BodyPart::LeftLeg, BodyPartCondition::new(max_hp * 0.30));
+        instance.body_parts.insert(BodyPart::RightLeg, BodyPartCondition::new(max_hp * 0.30));
         return instance
     }
 
@@ -36,7 +38,7 @@ impl HealthComponent {
             overall_condition.0 += condition.health;
             overall_condition.1 += condition.max_health;
         }
-        return overall_condition.0 / overall_condition.1 * 100.;
+        return overall_condition.0 / overall_condition.1 * self.max_hp;
     }
 
     pub(crate) fn hit(&mut self, body_part: BodyPart, damage: f32) {
@@ -113,7 +115,7 @@ mod test_health_component {
 
     #[test]
     fn test_overall_health() {
-        let mut health = HealthComponent::new();
+        let mut health = HealthComponent::new(100.);
         assert_eq!(health.health_points(), 100.);
         assert_eq!(health.max_health_points(), 100.);
 
