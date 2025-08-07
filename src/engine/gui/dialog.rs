@@ -3,23 +3,28 @@ use std::ops::ControlFlow;
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{gui::{button::Button, UINode}, spritesheet::Spritesheet}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, UIEvent, UINode}, spritesheet::Spritesheet}, GameContext, RenderContext};
 
 
 pub(crate) struct DialogWrapper<T> where T: UINode {
     value: Option<T>,
-    close_button: Button,
+    close_button: Option<Button>,
 }
 
-impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
+impl<T, S> DialogWrapper<T> where T: UINode<State = S, Input = UIEvent> {
 
     pub(crate) fn new() -> Self {
         let mut close_button = Button::text(" X");
         close_button.layout_component().anchor_top_right(0., 0.);
         Self {
             value: None,
-            close_button
+            close_button: Some(close_button)
         }
+    }
+
+    pub(crate) fn hide_close_button(mut self) -> Self {
+        self.close_button = None;
+        return self;
     }
 
     pub(crate) fn show(&mut self, mut value: T, state: &S, game_ctx: &mut GameContext) {
@@ -66,10 +71,12 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
 
             v.render(state, ctx, game_ctx);
 
-            let copy = ctx.layout_rect;
-            ctx.layout_rect = v.layout_component().compute_layout_rect(ctx.layout_rect);
-            self.close_button.render(&(), ctx, game_ctx);
-            ctx.layout_rect = copy;
+            if let Some(close_button) = &mut self.close_button {
+                let copy = ctx.layout_rect;
+                ctx.layout_rect = v.layout_component().compute_layout_rect(ctx.layout_rect);
+                close_button.render(&(), ctx, game_ctx);
+                ctx.layout_rect = copy;
+            }
 
         }
 
@@ -77,15 +84,21 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S> {
 
     pub(crate) fn input(&mut self, state: &mut S, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let Some(value) = &mut self.value {
-            match self.close_button.input(&mut (), evt, ctx) {
-                ControlFlow::Break(_) => {
+            if let Some(close_button) = &mut self.close_button {
+                match close_button.input(&mut (), evt, ctx) {
+                    ControlFlow::Break(_) => {
+                        self.hide(state, ctx);
+                        return ControlFlow::Break(());
+                    },
+                    _ => ()
+                }
+            }
+            match value.input(state, evt, ctx) {
+                ControlFlow::Break(UIEvent::DialogClosed) => {
                     self.hide(state, ctx);
                     return ControlFlow::Break(());
                 },
-                _ => ()
-            }
-            if value.input(state, evt, ctx).is_break() {
-                return ControlFlow::Break(());
+                _ => return ControlFlow::Break(())
             }
         }
         ControlFlow::Continue(())

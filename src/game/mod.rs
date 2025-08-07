@@ -30,6 +30,7 @@ use crate::game::console::Console;
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
+use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -86,6 +87,7 @@ pub(crate) struct GameSceneState {
     codex_dialog: DialogWrapper<CodexDialog>,
     inspect_dialog: DialogWrapper<InspectDialog>,
     chat_dialog: DialogWrapper<ChatDialog>,
+    quest_complete_dialog: DialogWrapper<QuestCompleteDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -132,6 +134,7 @@ impl GameSceneState {
             codex_dialog: DialogWrapper::new(),
             inspect_dialog: DialogWrapper::new(),
             chat_dialog: DialogWrapper::new(),
+            quest_complete_dialog: DialogWrapper::new().hide_close_button(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -384,6 +387,7 @@ impl Scene for GameSceneState {
         self.codex_dialog.render(&mut self.world, ctx, game_ctx);
         self.inspect_dialog.render(&mut self.world, ctx, game_ctx);
         self.chat_dialog.render(&mut self.world, ctx, game_ctx);
+        self.quest_complete_dialog.render(&mut self.world, ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
@@ -531,7 +535,7 @@ impl Scene for GameSceneState {
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
 
-        if self.console.input(&mut self.chunk, &evt.evt, ctx).is_break() {
+        if self.console.input(&mut self.world, &mut self.chunk, &evt.evt, ctx).is_break() {
             return ControlFlow::Break(());
         }
 
@@ -557,6 +561,7 @@ impl Scene for GameSceneState {
         self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.inspect_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.chat_dialog.input(&mut self.world, &evt.evt, ctx)?;
+        self.quest_complete_dialog.input(&mut self.world, &evt.evt, ctx)?;
 
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
@@ -684,7 +689,16 @@ impl Scene for GameSceneState {
                 return ControlFlow::Break(());
             },
             BusEvent::ShowChatDialog(data) => {
-                self.chat_dialog.show(ChatDialog::new(data.clone()), &self.world, ctx);
+
+                let pending_quest = self.world.codex.quests()
+                    .filter(|quest| quest.quest_giver == data.actor.creature_id.unwrap() && quest.status == QuestStatus::RewardPending)
+                    .next();
+
+                if let Some(pending_quest) = pending_quest {
+                    self.quest_complete_dialog.show(QuestCompleteDialog::new(pending_quest.clone()), &self.world, ctx);
+                } else {
+                    self.chat_dialog.show(ChatDialog::new(data.clone()), &self.world, ctx);
+                }
                 return ControlFlow::Break(());
             },
             BusEvent::CreatureKilled(creature_id) => {

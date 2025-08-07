@@ -1,5 +1,6 @@
 pub(crate) mod character;
 pub(crate) mod chat_dialog;
 pub(crate) mod codex_dialog;
-pub(crate) mod inspect_dialog;
 pub(crate) mod hud;
+pub(crate) mod inspect_dialog;
+pub(crate) mod quest_complete_dialog;

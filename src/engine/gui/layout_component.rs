@@ -25,11 +25,11 @@ impl LayoutComponent {
         let size = self.size;
         let x = match &self.anchor {
             Anchor::TopLeft | Anchor::BottomLeft => layout_rect[0] + self.anchor_margin[0],
-            Anchor::Center | Anchor::BottomCenter => layout_rect[0] + (layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
+            Anchor::TopCenter | Anchor::Center | Anchor::BottomCenter => layout_rect[0] + (layout_rect[2] / 2.) - (size[0] / 2.) + self.anchor_margin[0],
             Anchor::TopRight => layout_rect[0] + layout_rect[2] - self.anchor_margin[2] - size[0],
         };
         let y = match &self.anchor {
-            Anchor::TopLeft | Anchor::TopRight => layout_rect[1] + self.anchor_margin[1],
+            Anchor::TopLeft | Anchor::TopRight | Anchor::TopCenter => layout_rect[1] + self.anchor_margin[1],
             Anchor::Center => layout_rect[1] + (layout_rect[3] / 2.) - (size[1] / 2.) + self.anchor_margin[1],
             Anchor::BottomLeft | Anchor::BottomCenter => layout_rect[1] + layout_rect[3] - size[1] + self.anchor_margin[3],
         };
@@ -76,6 +76,12 @@ impl LayoutComponent {
         return self
     }
 
+    pub(crate) fn anchor_top_center(&mut self, center: f64, top: f64) -> &mut Self {
+        self.anchor = Anchor::TopCenter;
+        self.anchor_margin = [center, top, 0., 0.];
+        return self
+    }
+
     pub(crate) fn anchor_center(&mut self) -> &mut Self {
         self.anchor = Anchor::Center;
         return self
@@ -104,7 +110,7 @@ impl LayoutComponent {
 #[derive(Debug)]
 pub enum Anchor {
     TopLeft,
-    // TopCenter,
+    TopCenter,
     TopRight,
     // CenterLeft,
     Center,

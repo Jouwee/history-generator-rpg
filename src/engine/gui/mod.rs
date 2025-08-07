@@ -39,5 +39,7 @@ pub(crate) trait UINode {
 }
 
 pub(crate) enum UIEvent {
+    None,
+    DialogClosed,
     ButtonClicked(String)
 }

@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, game::inventory::inventory::Inventory, Color, EquipmentType, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, UIEvent, UINode}, game::inventory::inventory::Inventory, Color, EquipmentType, InputEvent, Item};
 
 
 pub(crate) struct EquipmentSlot {
@@ -36,7 +36,7 @@ impl EquipmentSlot {
 
 impl UINode for EquipmentSlot {
     type State = Inventory;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout;
@@ -66,7 +66,7 @@ impl UINode for EquipmentSlot {
                             state.equip_i(&self.slot, self.slot_i, item);
                         }
                 }
-                    return ControlFlow::Break(());
+                    return ControlFlow::Break(UIEvent::None);
                 }
             },
             _ => (),

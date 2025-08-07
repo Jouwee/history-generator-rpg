@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -199,7 +199,7 @@ impl CodexDialog {
 
 impl UINode for CodexDialog {
     type State = World;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout
@@ -235,14 +235,14 @@ impl UINode for CodexDialog {
             self.artifacts_button.set_selected(false);
             self.creatures_button.set_selected(true);
             self.quests_button.set_selected(false);
-            return ControlFlow::Break(())
+            return ControlFlow::Break(UIEvent::None)
         }
         if self.artifacts_button.input(&mut (), evt, ctx).is_break() {
             self.build_artifacts(state, ctx);
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(true);
             self.quests_button.set_selected(false);
-            return ControlFlow::Break(())
+            return ControlFlow::Break(UIEvent::None)
 
         }
         if self.quests_button.input(&mut (), evt, ctx).is_break() {
@@ -250,7 +250,7 @@ impl UINode for CodexDialog {
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(false);
             self.quests_button.set_selected(true);
-            return ControlFlow::Break(())
+            return ControlFlow::Break(UIEvent::None)
 
         }
 
@@ -258,7 +258,7 @@ impl UINode for CodexDialog {
             if button.input(&mut (), evt, ctx).is_break() {
                 self.selected = selection.clone();
                 self.update_info(&state, ctx);
-                return ControlFlow::Break(())
+                return ControlFlow::Break(UIEvent::None)
             }
         }
         return ControlFlow::Continue(())

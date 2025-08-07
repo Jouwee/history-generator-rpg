@@ -24,13 +24,18 @@ impl ItemFactory {
         }
     }
 
-    pub(crate) fn quest_reward(resources: &Resources) -> Item {
+    pub(crate) fn quest_rewards(resources: &Resources, rewards_count: usize) -> Vec<Item> {
         let mut rng = Rng::rand();
-        match rng.randu_range(0, 6) {
-            0 | 1 => Self::inner_armor(&mut rng, resources),
-            2 | 3 => Self::spell_tome(&mut rng, resources),
-            4 | 5 | _ => Self::weapon(&mut rng, resources).make(),
+        let offset = rng.randu_range(0, 3);
+        let mut rewards = Vec::new();
+        for i in 0..rewards_count {
+            match (i + offset) % 3 {
+                0 => rewards.push(Self::inner_armor(&mut rng, resources)),
+                1 => rewards.push(Self::spell_tome(&mut rng, resources)),
+                _ => rewards.push(Self::weapon(&mut rng, resources).make()),
+            }
         }
+        return rewards
     }
 
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {

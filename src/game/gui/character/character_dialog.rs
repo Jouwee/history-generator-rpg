@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, UINode}, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, UIEvent, UINode}, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
 
@@ -42,7 +42,7 @@ impl CharacterDialog {
 
 impl UINode for CharacterDialog {
     type State = Actor;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout

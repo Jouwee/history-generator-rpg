@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UINode}, Color, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, UIEvent, UINode}, Color, InputEvent, Item};
 
 
 pub(crate) struct InventorySlot {
@@ -23,7 +23,7 @@ impl InventorySlot {
 
 impl UINode for InventorySlot {
     type State = Option<Item>;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout;
@@ -51,7 +51,7 @@ impl UINode for InventorySlot {
                     if let Some(item) = drag.take() {
                         state.replace(item);
                     }
-                    return ControlFlow::Break(());
+                    return ControlFlow::Break(UIEvent::None);
                 }
             },
             _ => (),

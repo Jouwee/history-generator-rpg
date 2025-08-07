@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::{BusEvent, ShowChatDialogData}}, game::{codex::{Quest, QuestObjective, QuestStatus}, factory::item_factory::ItemFactory}, globals::perf::perf, world::{creature::Profession, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::ShowChatDialogData}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::Profession, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct ChatDialog {
     layout: LayoutComponent,
@@ -52,6 +52,21 @@ impl ChatDialog {
     fn quest(&mut self, world: &mut World, game_ctx: &mut GameContext)  {
         let mut writer = Writer::new(&world, &game_ctx.resources);
         writer.add_text("\"Need help with something?\", you ask.");
+
+        if let Some(creature_id) = &self.data.actor.creature_id {
+            for quest in world.codex.quests() {
+                if quest.quest_giver == *creature_id && quest.status != QuestStatus::Complete {
+                    writer.quote_actor("I already gave you a task. Return to me when you completed it.", &self.data.actor);
+                    
+                    let text = &writer.take_text();
+                    for line in text.split("\n") {
+                        let line = Label::text(&line);
+                        self.chat_container.add(line);
+                    }
+                    return;
+                }
+            }
+        }
 
         let can_give_quest = match &self.data.actor.creature_id {
             Some(creature_id) => {
@@ -121,7 +136,7 @@ impl ChatDialog {
 
 impl UINode for ChatDialog {
     type State = World;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout
@@ -132,25 +147,7 @@ impl UINode for ChatDialog {
 
         writer.describe_actor(&self.data.actor);
 
-        let pending_quest = world.codex.quests()
-            .filter(|quest| quest.quest_giver == self.data.actor.creature_id.unwrap() && quest.status == QuestStatus::RewardPending)
-            .next();
-
-        if let Some(pending_quest) = pending_quest {
-            writer.quote_actor("I see you have completed my quest! Here, a reward.", &self.data.actor);
-
-            let reward = ItemFactory::quest_reward(&game_ctx.resources);
-            writer.add_text("\nHe gifts you a ");
-            writer.describe_item(&reward);
-
-            game_ctx.event_bus.push(BusEvent::AddItemToPlayer(reward));
-
-            // TODO: Mark as complete
-
-            writer.quote_actor("Can I help you with something else?", &self.data.actor);
-        } else {
-            writer.quote_actor("Yes?", &self.data.actor);    
-        }
+        writer.quote_actor("Yes?", &self.data.actor);    
 
         let text = &writer.take_text();
         for line in text.split("\n") {
@@ -179,7 +176,7 @@ impl UINode for ChatDialog {
                     "quest" => self.quest(world, ctx),
                     _ => ()
                 }
-                return ControlFlow::Break(());
+                return ControlFlow::Break(UIEvent::None);
             },
             _ => ()
         };

@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap};
 use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::pallete_sprite::{ColorMap, PalleteSprite}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::{gui::tooltip::Tooltip, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -48,6 +48,10 @@ impl Item {
             name = format!("{:?} {name}", quality.quality)
         }
         return name
+    }
+
+    pub(crate) fn make_tooltip(&self, materials: &Materials) -> Tooltip {
+        return Tooltip::new(self.name(materials))
     }
 
     pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {

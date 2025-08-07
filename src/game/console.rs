@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints}, species::{SpeciesId, SpeciesMap}}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk, codex::QuestStatus}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints}, species::{SpeciesId, SpeciesMap}}, world::world::World, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -30,7 +30,7 @@ impl Console {
         ctx.text(&format!("  {}", self.output), assets().font_standard(), [8, 24], &COLOR_WHITE);
     }
 
-    pub(crate) fn input(&mut self, chunk: &mut Chunk, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
+    pub(crate) fn input(&mut self, world: &mut World, chunk: &mut Chunk, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let InputEvent::Key { key: Key::Quote } = evt {
             self.visible = !self.visible;
             self.command = String::new();
@@ -88,7 +88,7 @@ impl Console {
                 Key::Slash => self.command = self.command.clone() + "/",
                 Key::Backspace => self.command = self.command[0..self.command.len()-1].to_string(),
                 Key::Return => {
-                    match self.run_command(chunk, ctx) {
+                    match self.run_command(world, chunk, ctx) {
                         Ok(str) => self.output = str,
                         Err(str) => self.output = str,
                     }
@@ -102,7 +102,7 @@ impl Console {
         return ControlFlow::Continue(())
     }
 
-    fn run_command(&mut self, chunk: &mut Chunk, ctx: &mut GameContext) -> Result<String, String> {
+    fn run_command(&mut self, world: &mut World, chunk: &mut Chunk, ctx: &mut GameContext) -> Result<String, String> {
         let mut parts = self.command.split(' ');
         let command = parts.next();
         match command {
@@ -169,6 +169,14 @@ impl Console {
                 let _ = chunk.player_mut().inventory.add(item);
 
                 return Result::Ok(format!("Item given"));
+            },
+            Some("/quest") => {
+                for quest in world.codex.quests_mut() {
+                    if quest.status == QuestStatus::InProgress {
+                        quest.status = QuestStatus::RewardPending;
+                    }
+                }
+                return Result::Ok(format!("All in-progress quests completed"));
             },
             
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))

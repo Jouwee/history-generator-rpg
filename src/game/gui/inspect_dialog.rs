@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UINode}, scene::ShowInspectDialogData}, game::chunk::TileMetadata, globals::perf::perf, world::{event::Event, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{gui::{containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::ShowInspectDialogData}, game::chunk::TileMetadata, globals::perf::perf, world::{event::Event, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct InspectDialog {
     layout: LayoutComponent,
@@ -28,7 +28,7 @@ impl InspectDialog {
 
 impl UINode for InspectDialog {
     type State = World;
-    type Input = ();
+    type Input = UIEvent;
 
     fn layout_component(&mut self) -> &mut LayoutComponent {
         return &mut self.layout
