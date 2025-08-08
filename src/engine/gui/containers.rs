@@ -45,11 +45,11 @@ impl UINode for SimpleContainer {
         let copy = ctx.layout_rect;
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
-        ctx.rectangle_fill(layout, Color::from_hex("ff808030"));
+        ctx.rectangle_fill(layout, Color::from_hex("ff808003"));
 
         self.auto_layout.reset_layout(layout);
         for child in self.children.iter_mut() {
-            child.recompute_layout(game_ctx);
+            child.recompute_layout(layout, game_ctx);
             ctx.layout_rect = self.auto_layout.layout_child(layout, child.layout_component());
             child.render(&(), ctx, game_ctx);
         }

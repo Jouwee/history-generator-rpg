@@ -17,7 +17,7 @@ pub(crate) trait UINode {
 
     fn layout_component(&mut self) -> &mut LayoutComponent;
 
-    fn recompute_layout(&mut self, _game_ctx: &mut GameContext) {}
+    fn recompute_layout(&mut self, container_layout: [f64; 4], _game_ctx: &mut GameContext) {}
 
     fn init(&mut self, _state: &Self::State, _game_ctx: &mut GameContext) {}
 

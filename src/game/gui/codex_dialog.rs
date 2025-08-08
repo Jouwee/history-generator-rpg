@@ -1,10 +1,13 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::Assets, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use graphics::Transformed;
+
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
     creatures_button: Button,
+    sites_button: Button,
     artifacts_button: Button,
     quests_button: Button,
     buttons: Vec<(Selection, Button)>,
@@ -19,22 +22,26 @@ impl CodexDialog {
         layout.anchor_center().size([400., 332.]).padding([8.; 4]);
 
         let mut creatures_button = Button::text("Creatures");
-        creatures_button.layout_component().anchor_top_left(16., 16.);
+        creatures_button.layout_component().anchor_top_left(0., 0.).size([56., 16.]);
         creatures_button.set_selected(true);
 
+        let mut sites_button = Button::text("Sites");
+        sites_button.layout_component().anchor_top_left(58., 0.).size([56., 16.]);
+
         let mut artifacts_button = Button::text("Artifacts");
-        artifacts_button.layout_component().anchor_top_left(80., 16.);
+        artifacts_button.layout_component().anchor_top_left(0., 18.).size([56., 16.]);
 
         let mut quests_button = Button::text("Quests");
-        quests_button.layout_component().anchor_top_left(120., 16.);
+        quests_button.layout_component().anchor_top_left(58., 18.).size([56., 16.]);
 
         let mut info_container = SimpleContainer::new();
-        info_container.layout_component().anchor_top_left(130., 16.);
+        info_container.layout_component().anchor_top_left(124., 0.).size([256., 316.]);
 
         Self {
             layout,
             creatures_button,
             artifacts_button,
+            sites_button,
             quests_button,
             buttons: Vec::new(),
             selected: Selection::None,
@@ -43,38 +50,38 @@ impl CodexDialog {
     }
 
     fn build_creatures(&mut self, state: &World, game_ctx: &mut GameContext) {
-        let mut y = 46.;
+        let mut y = 40.;
         self.buttons.clear();
         for id in state.codex.creatures() {
             let creature = state.creatures.get(id);
             let mut button = Button::text(&creature.name(id, state, &game_ctx.resources));
-            button.layout_component().anchor_top_left(24., y);
+            button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Creature(*id), button));
-            y += 24.;
+            y += 16.;
         }
     }
 
     fn build_artifacts(&mut self, state: &World, game_ctx: &mut GameContext) {
-        let mut y = 46.;
+        let mut y = 40.;
         self.buttons.clear();
         for id in state.codex.artifacts() {
             let artifact = state.artifacts.get(id);
             let mut button = Button::text(&artifact.name(&game_ctx.resources.materials));
-            button.layout_component().anchor_top_left(24., y);
+            button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Artifact(*id), button));
-            y += 24.;
+            y += 16.;
         }
     }
 
     fn build_quests(&mut self, state: &World, game_ctx: &mut GameContext) {
-        let mut y = 46.;
+        let mut y = 40.;
         self.buttons.clear();
         for quest in state.codex.quests() {
             // let mut button = Button::text(&quest.name(&game_ctx.resources.materials));
             let mut button = Button::text("Quest");
-            button.layout_component().anchor_top_left(24., y);
+            button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Quest(quest.clone()), button));
-            y += 24.;
+            y += 16.;
         }
     }
 
@@ -146,7 +153,7 @@ impl CodexDialog {
 
             let mut writer = Writer::new(world, &ctx.resources);
             writer.describe_item(&artifact);
-            let description = Label::text(&writer.take_text()).font(Assets::font_heading_asset());
+            let description = Label::text(&writer.take_text());
             self.info_container.add(description);
 
             for event_i in codex.events() {
@@ -215,12 +222,16 @@ impl UINode for CodexDialog {
         ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         self.creatures_button.render(&(), ctx, game_ctx);
+        self.sites_button.render(&(), ctx, game_ctx);
         self.artifacts_button.render(&(), ctx, game_ctx);
         self.quests_button.render(&(), ctx, game_ctx);
 
         for (_id, button) in self.buttons.iter_mut() {
             button.render(&(), ctx, game_ctx);
         }
+
+        let transform = ctx.at(ctx.layout_rect[0] + 120., ctx.layout_rect[1]).scale(1., 2.).rot_deg(90.);
+        ctx.texture(&assets().image("gui/divider_a.png").texture, transform);
 
         self.info_container.render(&(), ctx, game_ctx);
 

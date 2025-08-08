@@ -141,7 +141,13 @@ impl UINode for Button {
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
         image(self.frame.sprite(state_offset + 2, 1), transform, ctx.gl);
 
-        ctx.text(&self.text, assets().font_standard(), [layout[0]as i32 + 4, layout[1] as i32 + 15], &COLOR_WHITE);
+        let text_width = assets().font_standard().width(&self.text);
+        let text_height = assets().font_standard().line_height();
+        let pos = [
+            layout[0] + (layout[2] / 2.) - (text_width / 2.),
+            layout[1] + (layout[3] / 2.) - (text_height / 2.) + text_height -1.,
+        ];
+        ctx.text(&self.text, assets().font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
     }
 
     fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<UIEvent> {
