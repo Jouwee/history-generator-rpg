@@ -19,13 +19,13 @@ impl QuestCompleteDialog {
         layout.anchor_center().size([316., 32.*3.]).padding([8.; 4]);
 
         let mut chat_container = SimpleContainer::new();
-        chat_container.layout_component().size([300., 16.]).anchor_top_center(0., 0.);
+        chat_container.layout_component().size([296., 16.]).anchor_top_center(0., 0.);
 
         let mut response_container = SimpleContainer::new();
-        response_container.layout_component().size([32.*3., 32.]).anchor_center();
+        response_container.layout_component().size([24.*3.+8., 32.]).anchor_top_center(0., 24.);
 
         let mut actions_container = SimpleContainer::new();
-        actions_container.layout_component().size([80., 24.]).anchor_bottom_center(0., -24.);
+        actions_container.layout_component().size([24.*3.+8., 24.]).anchor_top_center(0., 16.+32.+4.);
 
         Self {
             layout,
@@ -63,7 +63,7 @@ impl UINode for QuestCompleteDialog {
         }
 
         let mut button = Button::text("Confirm reward").key("confirm");
-        button.layout_component().size([80., 24.]);
+        button.layout_component().size([24.*3.+8., 24.]);
         self.actions_container.add(button);
     }
 

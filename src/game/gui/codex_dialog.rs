@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use graphics::Transformed;
 
-use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -77,8 +77,12 @@ impl CodexDialog {
         let mut y = 40.;
         self.buttons.clear();
         for quest in state.codex.quests() {
-            // let mut button = Button::text(&quest.name(&game_ctx.resources.materials));
-            let mut button = Button::text("Quest");
+            let mut name = quest_name(quest);
+            if quest.status == QuestStatus::Complete {
+                name = name + "[OK]"
+            }
+
+            let mut button = Button::text(&name);
             button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Quest(quest.clone()), button));
             y += 16.;
@@ -173,6 +177,9 @@ impl CodexDialog {
             
             let mut writer = Writer::new(world, &ctx.resources);
             writer.describe_quest(&quest);
+
+            let name = Label::text(&quest_name(quest)).font(Assets::font_heading_asset());
+            self.info_container.add(name);
 
             let description = Label::text(&writer.take_text());
             self.info_container.add(description);
@@ -284,4 +291,12 @@ enum Selection {
     Creature(CreatureId),
     Artifact(ItemId),
     Quest(Quest)
+}
+
+fn quest_name(quest: &Quest) -> String {
+    return match quest.objective {
+        QuestObjective::KillBandits(_) => String::from("Kill bandits"),
+        QuestObjective::KillWolves(_) => String::from("Kill wolves"),
+        QuestObjective::KillVarningr(_) => String::from("Kill monster"),
+    };   
 }
