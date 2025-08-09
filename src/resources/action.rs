@@ -48,6 +48,7 @@ pub(crate) const FILTER_CAN_VIEW: u8 = 0b0000_0010;
 pub(crate) const FILTER_CAN_DIG: u8 = 0b0000_0100;
 pub(crate) const FILTER_CAN_SLEEP: u8 = 0b0000_1000;
 pub(crate) const FILTER_ITEM: u8 = 0b0001_0000;
+pub(crate) const FILTER_NOT_HOSTILE: u8 = 0b0010_0000;
 
 #[derive(Clone)]
 pub(crate) enum ActionTarget {
@@ -77,8 +78,13 @@ impl ActionTarget {
                     }
                 }
                 let target = chunk.actors_iter().find(|npc| npc.xy == *cursor);
-                if target.is_none() {
-                    return Err(ActionFailReason::NoValidTarget);
+                let target = target.ok_or_else(|| ActionFailReason::NoValidTarget)?;
+
+                if bitmask_get(*filter_mask, FILTER_NOT_HOSTILE) {
+                    // TODO: Maybe not player
+                    if chunk.ai_groups.is_hostile(target.ai_group, chunk.player().ai_group) {
+                        return Err(ActionFailReason::NoValidTarget);
+                    }
                 }
             },
             ActionTarget::Tile { range, filter_mask } => {

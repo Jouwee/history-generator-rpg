@@ -49,6 +49,12 @@ impl<'a> RenderContext<'a> {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
     }
 
+    pub(crate) fn set_clip_rect(&mut self, rect: Option<[u32; 4]>) -> Option<[u32; 4]> {
+        let copy = self.context.draw_state.scissor.clone();
+        self.context.draw_state.scissor = rect;
+        return copy;
+    }
+
     pub(crate) fn text(&mut self, text: &str, font: &mut Font, position: [i32; 2], color: &Color) {
         Text::new_color(color.f32_arr(), font.size)
             .round()

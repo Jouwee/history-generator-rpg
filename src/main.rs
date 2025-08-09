@@ -7,7 +7,7 @@ use sdl2_window::Sdl2Window;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use opengl_graphics::{GlGraphics, OpenGL};
-use piston::{event_loop::{EventSettings, Events}, ButtonArgs, EventLoop, UpdateArgs};
+use piston::{event_loop::{EventSettings, Events}, ButtonArgs, EventLoop, MouseScrollEvent, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
@@ -156,6 +156,7 @@ fn main() {
     let mut window: Sdl2Window =
         WindowSettings::new("Tales of Kathay", [1024, 768])
             .graphics_api(opengl)
+            // .fullscreen(true)
             .build()
             .unwrap();
 
@@ -255,6 +256,19 @@ fn main() {
             app.debug_overlay.input_time(now.elapsed());
         }
 
+        if let Some(k) = e.mouse_scroll_args() {
+            let now: Instant = Instant::now();
+            last_mouse_pos = k;
+            // TODO: Fake event
+            let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
+            let input_event = OldInputEvent {
+                button_args: b,
+                evt: InputEvent::from_mouse_scroll(k, &mut input_state)
+            };
+            app.input(&input_event);
+            app.debug_overlay.input_time(now.elapsed());
+        }
+
         if let Some(k) = e.button_args() {
             let now: Instant = Instant::now();
             if k.state == ButtonState::Press || k.state == ButtonState::Release {
@@ -283,11 +297,11 @@ fn main() {
                         let _ = player.inventory.add(ItemFactory::boots(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::pants(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+        //                let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+          //              let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+            //            let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+              //          let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
+                //        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
                         let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
                         let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());

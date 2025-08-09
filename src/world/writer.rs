@@ -1,4 +1,4 @@
-use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -108,7 +108,10 @@ impl<'a> Writer<'a> {
         if let Some(creature_id) = actor.creature_id {
             let creature = self.world.creatures.get(&creature_id);
             let name = creature.name(&creature_id, self.world, self.resources);
-            self.quote_actor(&format!("I'm {name}"), actor);
+            match creature.profession {
+                Profession::Ruler => self.quote_actor(&format!("I'm {name}, the ruler of this town"), actor),
+                _ => self.quote_actor(&format!("I'm {name}"), actor),
+            }
         } else {
             self.quote_actor("I'm nobody", actor);
         }
@@ -131,8 +134,11 @@ impl<'a> Writer<'a> {
     }
 
     pub(crate) fn quote_actor(&mut self, sentence: &str, actor: &Actor) {
-        // let species = self.resources.species.get(&actor.species);
-        self.add_text(&format!("\n\"{sentence}\", he says"));
+        let pronoun = match actor.gender {
+            CreatureGender::Male => "he",
+            CreatureGender::Female => "she",
+        };
+        self.add_text(&format!("\n\"{sentence}\", {pronoun} says"));
     }
 
     fn creature_name(&self, creature_id: &CreatureId) -> String {

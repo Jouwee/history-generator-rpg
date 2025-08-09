@@ -8,6 +8,7 @@ pub(crate) enum InputEvent {
     None,
     Click { button: MouseButton, pos: [f64; 2] },
     MouseMove { pos: [f64; 2] },
+    Scroll { pos: [f64; 2], offset: f64 },
     Drag { button: MouseButton, offset: [f64; 2] },
     Key { key: Key }
 }
@@ -56,6 +57,10 @@ impl InputEvent {
             return InputEvent::MouseMove { pos: mouse_pos }
         }
         return InputEvent::None
+    }
+
+    pub(crate) fn from_mouse_scroll(mouse_scroll: [f64; 2], state:  &mut InputState) -> InputEvent {
+        return InputEvent::Scroll { pos: state.last_mouse, offset: mouse_scroll[1] };
     }
 }
 

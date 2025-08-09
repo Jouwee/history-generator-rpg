@@ -128,6 +128,14 @@ impl CreatureGender {
         return false
     }
 
+    pub(crate) fn random() -> Self {
+        if Rng::rand().rand_chance(0.5) {
+            return Self::Male;
+        } else {
+            return Self::Female;
+        }
+    }
+
 }
 
 #[derive(Clone, Copy, Debug)]

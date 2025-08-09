@@ -13,8 +13,6 @@ pistoncore-sdl2_window = "0.71.0"
 image = "0.25.5"
 rodio = "0.20.1"
 toml = "0.8.22"
-regex = "1.11.1"
-flamegraph = "0.6.8"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.

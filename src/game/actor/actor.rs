@@ -18,6 +18,7 @@ pub(crate) struct Actor {
     pub(crate) sprite_flipped: bool,
     pub(crate) sprite: CreatureAppearance,
     pub(crate) creature_id: Option<CreatureId>,
+    pub(crate) gender: CreatureGender,
     pub(crate) species: SpeciesId,
     pub(crate) xp: u32,
     pub(crate) level: u32,
@@ -29,6 +30,7 @@ pub(crate) struct Actor {
 impl Actor {
 
     pub(crate) fn player(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
+        let gender = CreatureGender::random();
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -43,9 +45,9 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
+            gender,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            // TODO:
-            sprite: species.appearance.collapse(&CreatureGender::Male),
+            sprite: species.appearance.collapse(&gender),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -53,6 +55,7 @@ impl Actor {
     }
 
     pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species, ai_group: u8) -> Actor {
+        let gender = CreatureGender::random();
         Actor {
             xy,
             animation: AnimationTransform::new(),
@@ -67,9 +70,9 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: None,
+            gender,
             sprite_flipped: Rng::rand().rand_chance(0.5),
-            // TODO:
-            sprite: species.appearance.collapse(&CreatureGender::Male),
+            sprite: species.appearance.collapse(&gender),
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
@@ -97,6 +100,7 @@ impl Actor {
             ai: AiRunner::new(),
             species: *species_id,
             creature_id: Some(creature_id),
+            gender: creature.gender,
             sprite_flipped: Rng::rand().rand_chance(0.5),
             sprite: species.appearance.collapse(&creature.gender),
             inventory,

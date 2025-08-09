@@ -272,6 +272,7 @@ impl UINode for CodexDialog {
                 return ControlFlow::Break(UIEvent::None)
             }
         }
+        self.info_container.input(&mut (), evt, ctx)?;
         return ControlFlow::Continue(())
     }
 

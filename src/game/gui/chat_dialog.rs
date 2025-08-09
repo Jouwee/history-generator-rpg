@@ -6,20 +6,20 @@ pub(crate) struct ChatDialog {
     layout: LayoutComponent,
     data: ShowChatDialogData,
     chat_container: SimpleContainer,
-    response_container: SimpleContainer
+    response_container: SimpleContainer,
 }
 
 impl ChatDialog {
     
     pub(crate) fn new(inspected: ShowChatDialogData) -> Self {
         let mut layout = LayoutComponent::new();
-        layout.anchor_center().size([400., 332.]).padding([8.; 4]);
+        layout.anchor_center().size([400., 200.]).padding([8.; 4]);
 
         let mut chat_container = SimpleContainer::new();
-        chat_container.layout_component().anchor_top_left(0., 0.);
+        chat_container.layout_component().anchor_top_left(0. , 0.).size([384., 200.-16.-48.]);
 
         let mut response_container = SimpleContainer::new();
-        response_container.layout_component().anchor_bottom_left(0., -56.);
+        response_container.layout_component().anchor_bottom_left(0., 0.).size([384., 44.]);
 
         Self {
             layout,
@@ -51,7 +51,7 @@ impl ChatDialog {
 
     fn quest(&mut self, world: &mut World, game_ctx: &mut GameContext)  {
         let mut writer = Writer::new(&world, &game_ctx.resources);
-        writer.add_text("\"Need help with something?\", you ask.");
+        writer.add_text("\"Need help with anything?\", you ask.");
 
         if let Some(creature_id) = &self.data.actor.creature_id {
             for quest in world.codex.quests() {
@@ -155,8 +155,13 @@ impl UINode for ChatDialog {
             self.chat_container.add(line);
         }
 
-        self.response_container.add(Button::text("Who are you?").key("who"));
-        self.response_container.add(Button::text("Need help with anything?").key("quest"));
+        let mut button = Button::text("Who are you?").key("who");
+        button.layout_component().size([72., 20.]);
+        self.response_container.add(button);
+
+        let mut button = Button::text("Need help with anything?").key("quest");
+        button.layout_component().size([124., 20.]);
+        self.response_container.add(button);
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
@@ -180,6 +185,7 @@ impl UINode for ChatDialog {
             },
             _ => ()
         };
+        self.chat_container.input(&mut (), evt, ctx)?;
         return ControlFlow::Continue(())
     }
 
