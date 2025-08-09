@@ -74,8 +74,8 @@ impl MapModal {
             }
         }
 
-        for unit_id in world.units.iter_ids::<UnitId>() {
-            let unit = world.units.get(&unit_id);
+        for unit_id in world.codex.units() {
+            let unit = world.units.get(unit_id);
             let tile = match unit.unit_type {
                 UnitType::Village => {
                     if unit.creatures.len() > 20 {

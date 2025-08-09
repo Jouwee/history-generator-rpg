@@ -283,6 +283,7 @@ fn main() {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let mut world = scene.into_world();
                         world.find_goal(&mut app.context.resources);
+                        world.init_codex();
                         world.dump_events("lore.log", &app.context.resources);
 
                         let species_id = app.context.resources.species.id_of("species:human");

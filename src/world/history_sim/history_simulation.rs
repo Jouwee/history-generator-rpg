@@ -46,6 +46,7 @@ impl HistorySimulation {
                 let unit = Unit {
                     artifacts: Vec::new(),
                     cemetery: Vec::new(),
+                    name: None,
                     creatures: vec!(creature),
                     settlement: None,
                     population_peak: (0, 0),
@@ -72,6 +73,7 @@ impl HistorySimulation {
                     artifacts: Vec::new(),
                     cemetery: Vec::new(),
                     settlement: None,
+                    name: None,
                     population_peak: (0, 0),
                     resources: UnitResources { food: 2. },
                     unit_type: UnitType::WolfPack,
@@ -228,6 +230,7 @@ impl HistorySimulation {
                                         leader: Some(creature_id),
                                         material_stock: Vec::new(),
                                     }),
+                                    name: None,
                                     population_peak: (0, 0),
                                     unit_type: UnitType::BanditCamp,
                                     resources: UnitResources {

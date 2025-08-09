@@ -19,6 +19,7 @@ pub(crate) type Units = IdVec<Unit>;
 
 pub(crate) struct Unit {
     pub(crate) xy: Coord2,
+    pub(crate) name: Option<String>,
     pub(crate) creatures: Vec<CreatureId>,
     pub(crate) cemetery: Vec<CreatureId>,
     pub(crate) resources: UnitResources,
@@ -29,6 +30,18 @@ pub(crate) struct Unit {
 }
 
 impl Unit {
+
+    pub(crate) fn name(&self) -> &str {
+        if let Some(name) = &self.name {
+            return name.as_str();
+        }
+        match &self.unit_type {
+            UnitType::BanditCamp => "Bandit camp",
+            UnitType::VarningrLair => "Varningr lair",
+            UnitType::WolfPack => "Wolf den",
+            UnitType::Village => "Village",
+        }
+    }
 
     pub(crate) fn remove_creature(&mut self, id: &CreatureId) {
         if let Some(idx) = self.creatures.iter().position(|another| another == id) {
@@ -93,6 +106,7 @@ mod tests_unit {
             resources: UnitResources {
                 food: 0.
             },
+            name: None,
             settlement: None,
             artifacts: Vec::new(),
             population_peak: (0, 0),

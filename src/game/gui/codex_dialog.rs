@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use graphics::Transformed;
 
-use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -69,6 +69,18 @@ impl CodexDialog {
             let mut button = Button::text(&artifact.name(&game_ctx.resources.materials));
             button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Artifact(*id), button));
+            y += 16.;
+        }
+    }
+
+    fn build_units(&mut self, state: &World, game_ctx: &mut GameContext) {
+        let mut y = 40.;
+        self.buttons.clear();
+        for id in state.codex.units() {
+            let unit = state.units.get(id);
+            let mut button = Button::text(unit.name());
+            button.layout_component().anchor_top_left(0., y).size([114., 16.]);
+            self.buttons.push((Selection::Unit(*id), button));
             y += 16.;
         }
     }
@@ -151,7 +163,6 @@ impl CodexDialog {
             let codex = world.codex.artifact(artifact_id).expect("Shouldn't have shown the button");
             let artifact = world.artifacts.get(artifact_id);
 
-
             let name = Label::text(&artifact.name(&ctx.resources.materials)).font(Assets::font_heading_asset());
             self.info_container.add(name);
 
@@ -193,6 +204,23 @@ impl CodexDialog {
             let description = Label::text(status);
             self.info_container.add(description);
 
+        }
+
+        if let Selection::Unit(unit_id) = &self.selected {
+            let unit = world.units.get(unit_id);
+
+            let name = Label::text(&unit.name()).font(Assets::font_heading_asset());
+            self.info_container.add(name);
+
+            let text = match &unit.unit_type {
+                UnitType::Village => String::from("A village."),
+                UnitType::BanditCamp => String::from("A camp of bandits."),
+                UnitType::VarningrLair => String::from("A lair of a Varningr."),
+                UnitType::WolfPack => String::from("A den of wolves."),
+            };
+
+            let description = Label::text(&text);
+            self.info_container.add(description);
         }
 
 
@@ -252,6 +280,7 @@ impl UINode for CodexDialog {
             self.build_creatures(state, ctx);
             self.artifacts_button.set_selected(false);
             self.creatures_button.set_selected(true);
+            self.sites_button.set_selected(false);
             self.quests_button.set_selected(false);
             return ControlFlow::Break(UIEvent::None)
         }
@@ -259,6 +288,16 @@ impl UINode for CodexDialog {
             self.build_artifacts(state, ctx);
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(true);
+            self.sites_button.set_selected(false);
+            self.quests_button.set_selected(false);
+            return ControlFlow::Break(UIEvent::None)
+
+        }
+        if self.sites_button.input(&mut (), evt, ctx).is_break() {
+            self.build_units(state, ctx);
+            self.creatures_button.set_selected(false);
+            self.artifacts_button.set_selected(false);
+            self.sites_button.set_selected(true);
             self.quests_button.set_selected(false);
             return ControlFlow::Break(UIEvent::None)
 
@@ -267,6 +306,7 @@ impl UINode for CodexDialog {
             self.build_quests(state, ctx);
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(false);
+            self.sites_button.set_selected(false);
             self.quests_button.set_selected(true);
             return ControlFlow::Break(UIEvent::None)
 
@@ -290,6 +330,7 @@ enum Selection {
     None,
     Creature(CreatureId),
     Artifact(ItemId),
+    Unit(UnitId),
     Quest(Quest)
 }
 

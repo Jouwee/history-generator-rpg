@@ -90,7 +90,7 @@ impl ChatDialog {
             return;
         }
 
-        let mut quest: Option<(QuestObjective, f32)> = None;
+        let mut quest: Option<(QuestObjective, UnitId, f32)> = None;
 
         for unit_id in world.units.iter_ids::<UnitId>() {
             let unit = world.units.get(&unit_id);
@@ -119,15 +119,15 @@ impl ChatDialog {
                 };
                 let score = dst * mult;
 
-                let current_score = quest.as_ref().map(|q| q.1).unwrap_or(0.);
+                let current_score = quest.as_ref().map(|q| q.2).unwrap_or(0.);
                 if score > current_score {
-                    quest = Some((quest_objective, score));
+                    quest = Some((quest_objective, unit_id, score));
                 }
             }
         }
 
-        if let Some(quest) = quest {
-            let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), quest.0);
+        if let Some((objective, unit_id, _)) = quest {
+            let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), objective);
             writer.chat_explain_quest(&quest, &self.data.actor);
             
             let text = &writer.take_text();
@@ -137,6 +137,7 @@ impl ChatDialog {
             }
 
             world.codex.add_quest(quest);
+            world.codex.unit_mut(&unit_id);
             return;
         }
 

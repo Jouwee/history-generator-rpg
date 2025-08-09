@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, io::Write};
 
-use crate::{game::codex::Codex, world::{item::ItemId, plot::Plots}, Event, Item, Resources};
+use crate::{game::codex::Codex, world::{item::ItemId, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -32,6 +32,15 @@ impl World {
             artifacts: IdVec::new(),
             events: Vec::new(),
             codex: Codex::new(),
+        }
+    }
+
+    pub(crate) fn init_codex(&mut self) {
+        for unit_id in self.units.iter_ids::<UnitId>() {
+            let unit = self.units.get(&unit_id);
+            if unit.creatures.len() > 0 && unit.unit_type == UnitType::Village {
+                self.codex.unit_mut(&unit_id);
+            }
         }
     }
 
@@ -245,6 +254,7 @@ pub(crate) mod fixture {
             let _: UnitId = world.units.add(Unit {
                 artifacts: Vec::new(),
                 cemetery: Vec::new(),
+                name: None,
                 creatures: vec!(creature_a1, creature_a2, creature_a3, creature_a4),
                 population_peak: (2, 1),
                 resources: UnitResources { food: 0. },

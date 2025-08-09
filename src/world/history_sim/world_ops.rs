@@ -1,8 +1,10 @@
-use crate::{commons::rng::Rng, engine::geometry::Coord2, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, unit::*, world::World}};
+use crate::{commons::{rng::Rng, strings::Strings}, engine::geometry::Coord2, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, unit::*, world::World}};
 
 pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: &Resources, population: u32) -> Result<UnitId, ()> {
     let pos = search_new_unit_pos(world, rng)?;
 
+    let name = resources.cultures.get(&resources.cultures.random()).city_name_model.generate(rng, 3, 10);
+    let name = Strings::capitalize(&name);
     let mut unit = Unit {
         xy: pos,
         creatures: Vec::new(),
@@ -11,6 +13,7 @@ pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: 
             // Enough food for a year
             food: population as f32
         },
+        name: Some(name),
         settlement: Some(SettlementComponent {
             leader: None,
             material_stock: Vec::new()

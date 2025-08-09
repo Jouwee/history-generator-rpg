@@ -28,4 +28,5 @@ pub(crate) struct Culture {
     pub(crate) first_name_male_model: MarkovChainSingleWordModel,
     pub(crate) first_name_female_model: MarkovChainSingleWordModel,
     pub(crate) last_name_model: MarkovChainSingleWordModel,
+    pub(crate) city_name_model: MarkovChainSingleWordModel,
 }
