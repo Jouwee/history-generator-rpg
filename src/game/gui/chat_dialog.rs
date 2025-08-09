@@ -90,13 +90,17 @@ impl ChatDialog {
             return;
         }
 
+        let mut quest: Option<(QuestObjective, f32)> = None;
+
         for unit_id in world.units.iter_ids::<UnitId>() {
             let unit = world.units.get(&unit_id);
             if unit.creatures.len() == 0 {
                 continue;
             }
+
+            let dst = unit.xy.dist(&self.data.world_coord);
             
-            if unit.xy.dist_squared(&self.data.world_coord) > 7.*7. {
+            if dst > 15. {
                 continue;
             }
 
@@ -108,18 +112,32 @@ impl ChatDialog {
             };
 
             if let Some(quest_objective) = quest_objective {
-                let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), quest_objective);
-                writer.chat_explain_quest(&quest, &self.data.actor);
-                
-                let text = &writer.take_text();
-                for line in text.split("\n") {
-                    let line = Label::text(&line);
-                    self.chat_container.add(line);
-                }
+                let mult = match quest_objective {
+                    QuestObjective::KillWolves(_) => 3.,
+                    QuestObjective::KillVarningr(_) => 1.5,
+                    QuestObjective::KillBandits(_) => 1.,
+                };
+                let score = dst * mult;
 
-                world.codex.add_quest(quest);
-                return;
+                let current_score = quest.as_ref().map(|q| q.1).unwrap_or(0.);
+                if score > current_score {
+                    quest = Some((quest_objective, score));
+                }
             }
+        }
+
+        if let Some(quest) = quest {
+            let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), quest.0);
+            writer.chat_explain_quest(&quest, &self.data.actor);
+            
+            let text = &writer.take_text();
+            for line in text.split("\n") {
+                let line = Label::text(&line);
+                self.chat_container.add(line);
+            }
+
+            world.codex.add_quest(quest);
+            return;
         }
 
         writer.quote_actor("These are times of peace, and I have nothing to ask of you. Perphaps ask in other towns?", &self.data.actor);
