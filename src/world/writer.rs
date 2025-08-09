@@ -1,4 +1,4 @@
-use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use crate::{commons::strings::Strings, game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -20,7 +20,28 @@ impl<'a> Writer<'a> {
 
     pub(crate) fn describe_actor(&mut self, actor: &Actor) {
         let species = self.resources.species.get(&actor.species);
-        self.add_text(&format!("A {}.", species.name));
+        let gender = match &actor.gender {
+            CreatureGender::Male => "male",
+            CreatureGender::Female => "female",
+        };
+        self.add_text(&format!("A {gender} {}.", species.name));
+    }
+
+    pub(crate) fn describe_actor_health(&mut self, actor: &Actor) {
+        let pronoun = match &actor.gender {
+            CreatureGender::Male => "he",
+            CreatureGender::Female => "she",
+        };
+        let health_pct = actor.hp.health_points() / actor.hp.max_health_points();
+        if health_pct > 0.9 {
+            self.add_text(&Strings::capitalize(&format!("{pronoun} seems perfectly healthy.")));
+        } else if health_pct > 0.5 {
+            self.add_text(&Strings::capitalize(&format!("{pronoun} seems slightly hurt.")));
+        } else if health_pct > 0.2 {
+            self.add_text(&Strings::capitalize(&format!("{pronoun} seems very hurt.")));
+        } else {
+            self.add_text(&Strings::capitalize(&format!("{pronoun} seems close to death.")));
+        }
     }
 
     pub(crate) fn describe_quest(&mut self, quest: &Quest) {

@@ -12,10 +12,10 @@ impl InspectDialog {
     
     pub(crate) fn new(inspected: ShowInspectDialogData) -> Self {
         let mut layout = LayoutComponent::new();
-        layout.anchor_center().size([400., 332.]).padding([8.; 4]);
+        layout.anchor_center().size([236., 116.]).padding([8.; 4]);
 
         let mut info_container = SimpleContainer::new();
-        info_container.layout_component().anchor_top_left(0., 0.);
+        info_container.layout_component().anchor_top_left(0., 0.).size([220., 100.]);
 
         Self {
             layout,
@@ -39,6 +39,7 @@ impl UINode for InspectDialog {
 
         if let Some(actor) = &self.inspected.actor {
             writer.describe_actor(actor);
+            writer.describe_actor_health(actor);
         }
 
         if let Some(item) = &self.inspected.item {
