@@ -95,7 +95,6 @@ pub(crate) struct GameSceneState {
     map_modal: Option<MapModal>,
     game_log: GameLog,
     player_pathing: PlayerPathing,
-    player_pathfinding: AStar,
     console: Console,
     action_runner: ActionRunner,
     camera_offset: [f64; 2],
@@ -103,8 +102,6 @@ pub(crate) struct GameSceneState {
 
 impl GameSceneState {
     pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
-        let player_pathfinding = AStar::new(chunk.size, chunk.player().xy);
-
         let mut button_map = Button::text("Map");
         button_map.layout_component().anchor_bottom_center(-162.0, -1.0);
         let mut button_inventory = Button::text("Chr");
@@ -142,7 +139,6 @@ impl GameSceneState {
             map_modal: None,
             game_log: GameLog::new(),
             player_pathing: PlayerPathing::new(),
-            player_pathfinding,
             console: Console::new(),
             action_runner: ActionRunner::new(),
             camera_offset: [0.; 2]
@@ -412,10 +408,6 @@ impl Scene for GameSceneState {
             lerp(self.camera_offset[1], center.y as f64 * 24., 0.2),
         ];
 
-        // TODO (OLaU4Dth): Ideally not every update
-        if self.chunk.player().xy != *self.player_pathfinding.to() {
-            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
-        }
         if self.turn_mode == TurnMode::TurnBased {
             self.hud.preview_action_points(self.chunk.player(), self.player_pathing.get_preview_ap_cost());
         }
@@ -577,10 +569,6 @@ impl Scene for GameSceneState {
                 &mut self.game_log,
                 ctx
             );
-            // Refreshes pathing
-            self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
-            self.player_pathing.invalidate_pathing();
-
             return ControlFlow::Break(());
         }
 
@@ -630,8 +618,9 @@ impl Scene for GameSceneState {
         }
 
         if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
-            self.player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
-            self.player_pathing.set_preview(self.player_pathfinding.get_path(self.cursor_pos));
+            let mut player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
+            player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
+            self.player_pathing.set_preview(self.cursor_pos, player_pathfinding.get_path(self.cursor_pos));
         }
 
         match evt.evt {
@@ -665,9 +654,6 @@ impl Scene for GameSceneState {
                         &mut self.game_log,
                         ctx
                     );
-                    // Refreshes pathing
-                    self.player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
-                    self.player_pathing.invalidate_pathing();
                 } else {
                     if let Some(path) = &mut self.player_pathing.get_preview() {
                         self.player_pathing.start_running(path.clone());
@@ -721,7 +707,7 @@ impl Scene for GameSceneState {
                 return ControlFlow::Continue(());
             },
             BusEvent::AddItemToPlayer(item) => {
-                self.chunk.player_mut().inventory.add(item.clone());
+                let _ = self.chunk.player_mut().inventory.add(item.clone());
                 return ControlFlow::Break(());
             }
         }

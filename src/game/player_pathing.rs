@@ -3,6 +3,7 @@ use crate::{game::{chunk::{Chunk, PLAYER_IDX}, game_log::GameLog}, resources::ac
 use super::TurnMode;
 
 pub(crate) struct PlayerPathing {
+    last_path_to: Option<Coord2>,
     preview: Option<Vec<Coord2>>,
     running: Option<Vec<Coord2>>,
     wait: f64,
@@ -12,6 +13,7 @@ impl PlayerPathing {
     
     pub(crate) fn new() -> Self {
         Self { 
+            last_path_to: None,
             preview: None,
             running: None,
             wait: 0.,
@@ -43,26 +45,18 @@ impl PlayerPathing {
         }
     }
 
-    pub(crate) fn invalidate_pathing(&mut self) {
-        self.preview = None
-    }
-
     pub(crate) fn should_recompute_pathing(&mut self, cursor: Coord2) -> bool {
-        return match &self.preview {
+        return match &self.last_path_to {
             None => true,
-            Some(path) => {
-                match path.first() {
-                    None => true,
-                    Some(coord) => *coord != cursor,
-                }
-            }
+            Some(coord) => *coord != cursor,
         };
     }
 
-    pub(crate) fn set_preview(&mut self, mut path: Vec<Coord2>) {
+    pub(crate) fn set_preview(&mut self, cursor: Coord2, mut path: Vec<Coord2>) {
         // Removes the first move as it's always the current position
         let _ = path.pop();
         self.preview = Some(path);
+        self.last_path_to = Some(cursor);
     }
 
     pub(crate) fn get_preview_ap_cost(&self) -> i32 {
