@@ -26,10 +26,6 @@ impl AStar {
         return astar
     }
 
-    pub(crate) fn to(&self) -> &Coord2 {
-        return &self.to;
-    }
-
     pub(crate) fn find_path<F>(&mut self, from: Coord2, cost: F) where F: Fn(Coord2) -> MovementCost {
         while !self.frontier.is_empty() {
             let (_, depth, current) = self.frontier.pop_front().unwrap();

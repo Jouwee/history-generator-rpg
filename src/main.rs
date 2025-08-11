@@ -3,7 +3,7 @@ use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
-use sdl2_window::Sdl2Window;
+use sdl2_window::{Sdl2Window};
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -12,7 +12,7 @@ use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
 use piston::MouseCursorEvent;
-use piston::window::WindowSettings;
+use piston::window::{Window, WindowSettings};
 
 use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}};
 
@@ -31,6 +31,7 @@ enum SceneEnum {
 }
 
 pub(crate) struct App {
+    window: Sdl2Window,
     gl: GlGraphics, // OpenGL drawing backend.
     sprite_i: usize,
     sprite_c: f64,
@@ -153,7 +154,7 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    let mut window: Sdl2Window =
+    let window: Sdl2Window =
         WindowSettings::new("Tales of Kathay", [1024, 768])
             .graphics_api(opengl)
             // .fullscreen(true)
@@ -173,6 +174,7 @@ fn main() {
     // Create a new game and run it.
     let mut app = App {
         gl,
+        window,
         context: GameContext {
             audio: Audio::new(options.audio.clone()),
             resources,
@@ -230,7 +232,7 @@ fn main() {
     let mut input_state = InputState::new();
 
     let mut events = Events::new(event_settings);
-    while let Some(e) = events.next(&mut window) {
+    while let Some(e) = events.next(&mut app.window) {
         if let Some(args) = e.render_args() {
             let now: Instant = Instant::now();
             app.render(&args);
@@ -342,6 +344,19 @@ fn main() {
         let events: Vec<BusEvent> = app.context.event_bus.drain(..).collect();
         for event in events {
             app.event(&event);
+
+            match event {
+                BusEvent::QuitToMenu => {
+                    // TODO: Menu
+                    app.window.set_should_close(true);
+                },
+                BusEvent::CreateNewCharacter => {
+                    if let SceneEnum::Game(state) = app.scene {
+                        app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.world, &app.context.resources));
+                    }
+                }
+                _ => ()
+            }
         }
 
     }

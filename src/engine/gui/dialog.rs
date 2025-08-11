@@ -39,6 +39,10 @@ impl<T, S> DialogWrapper<T> where T: UINode<State = S, Input = UIEvent> {
         return self.value.take();
     }
 
+    pub(crate) fn is_visible(&self) -> bool {
+        return self.value.is_some();
+    }
+
     pub(crate) fn render(&mut self, state: &mut S, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         if let Some(v) = &mut self.value {
             let rect = v.layout_component().compute_layout_rect(ctx.layout_rect);

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, io::Write};
 
-use crate::{game::codex::Codex, world::{item::ItemId, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
+use crate::{game::codex::Codex, world::{history_generator::WorldGenerationParameters, item::ItemId, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -8,6 +8,7 @@ use crate::commons::id_vec::IdVec;
 
 pub(crate) struct World {
     pub(crate) date: WorldDate,
+    pub(crate) generation_parameters: WorldGenerationParameters,
     pub(crate) map: WorldTopology,
     pub(crate) units: Units,
     pub(crate) lineages: Lineages,
@@ -21,9 +22,10 @@ pub(crate) struct World {
 
 impl World {
 
-    pub(crate) fn new(map: WorldTopology) -> World {
+    pub(crate) fn new(map: WorldTopology, generation_parameters: WorldGenerationParameters) -> World {
         return World {
             date: WorldDate::new(1, 1, 1),
+            generation_parameters,
             map,
             units: Units::new(),
             creatures: Creatures::new(),
@@ -164,7 +166,22 @@ pub(crate) mod fixture {
     impl WorldFixture {
 
         pub fn new() -> Self {
-            let mut world = World::new(WorldTopology::new(Size2D(10, 10)));
+
+            let generation_parameters = WorldGenerationParameters { 
+                seed: 0,
+                world_size: Size2D(10, 10),
+                num_plate_tectonics: 0,
+                history_length: 0,
+                number_of_seed_cities: 0,
+                seed_cities_population: 0,
+                st_strength: 0.,
+                st_city_count: 0,
+                st_city_population: 0,
+                st_village_count: 0,
+                st_village_population: 0
+            };
+
+            let mut world = World::new(WorldTopology::new(Size2D(10, 10)), generation_parameters);
 
             let mut resources = Resources::new();
             resources.load();

@@ -29,6 +29,7 @@ use crate::game::codex::{QuestObjective, QuestStatus};
 use crate::game::console::Console;
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
+use crate::game::gui::death_dialog::DeathDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
@@ -88,6 +89,7 @@ pub(crate) struct GameSceneState {
     inspect_dialog: DialogWrapper<InspectDialog>,
     chat_dialog: DialogWrapper<ChatDialog>,
     quest_complete_dialog: DialogWrapper<QuestCompleteDialog>,
+    death_dialog: DialogWrapper<DeathDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -132,6 +134,7 @@ impl GameSceneState {
             inspect_dialog: DialogWrapper::new(),
             chat_dialog: DialogWrapper::new(),
             quest_complete_dialog: DialogWrapper::new().hide_close_button(),
+            death_dialog: DialogWrapper::new().hide_close_button(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -384,6 +387,7 @@ impl Scene for GameSceneState {
         self.inspect_dialog.render(&mut self.world, ctx, game_ctx);
         self.chat_dialog.render(&mut self.world, ctx, game_ctx);
         self.quest_complete_dialog.render(&mut self.world, ctx, game_ctx);
+        self.death_dialog.render(&mut (), ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
@@ -527,6 +531,12 @@ impl Scene for GameSceneState {
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
 
+        if self.death_dialog.is_visible() {
+            self.death_dialog.input(&mut (), &evt.evt, ctx)?;
+            // Returns to avoid any other component receiving events
+            return ControlFlow::Continue(());
+        }
+
         if self.console.input(&mut self.world, &mut self.chunk, &evt.evt, ctx).is_break() {
             return ControlFlow::Break(());
         }
@@ -554,7 +564,6 @@ impl Scene for GameSceneState {
         self.inspect_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.chat_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.quest_complete_dialog.input(&mut self.world, &evt.evt, ctx)?;
-
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
@@ -709,7 +718,12 @@ impl Scene for GameSceneState {
             BusEvent::AddItemToPlayer(item) => {
                 let _ = self.chunk.player_mut().inventory.add(item.clone());
                 return ControlFlow::Break(());
-            }
+            },
+            BusEvent::PlayerDied => {
+                self.death_dialog.show(DeathDialog::new(), &(), ctx);
+                return ControlFlow::Break(());
+            },
+            _ => ControlFlow::Continue(()),
         }
     }
 

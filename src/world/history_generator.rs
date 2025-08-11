@@ -30,7 +30,6 @@ pub(crate) struct WorldGenerationParameters {
 }
 
 pub(crate) struct WorldHistoryGenerator {
-    pub(crate) year: u32,
     pub(crate) world: World,
     pub(crate) parameters: WorldGenerationParameters,
     history_sim: HistorySimulation,
@@ -54,7 +53,7 @@ impl WorldHistoryGenerator {
         // println!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &resources.biomes);
 
-        let mut world = World::new(world_map);
+        let mut world = World::new(world_map, parameters.clone());
 
         let mut history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters.clone());
         history_sim.seed(&mut world);
@@ -64,7 +63,23 @@ impl WorldHistoryGenerator {
             parameters,
             history_sim,
             world,
-            year: 1,
+            stop: false,
+        };
+
+        return generator;
+    }
+
+    pub(crate) fn simulator(world: World, resources: &Resources) -> WorldHistoryGenerator {
+        let parameters = world.generation_parameters.clone();
+
+        let rng = Rng::seeded(parameters.seed);
+
+        let history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters.clone());
+
+        let generator = WorldHistoryGenerator {
+            parameters,
+            history_sim,
+            world,
             stop: false,
         };
 
@@ -73,7 +88,6 @@ impl WorldHistoryGenerator {
 
     pub(crate) fn simulate_year(&mut self) {
         self.stop = !self.history_sim.simulate_step(WorldDate::new(1, 0, 0), &mut self.world);
-        self.year = self.history_sim.date.year() as u32;
     }
 
 }

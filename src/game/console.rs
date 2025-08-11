@@ -86,7 +86,11 @@ impl Console {
                 Key::Underscore => self.command = self.command.clone() + "_",
                 Key::At => self.command = self.command.clone() + "@",
                 Key::Slash => self.command = self.command.clone() + "/",
-                Key::Backspace => self.command = self.command[0..self.command.len()-1].to_string(),
+                Key::Backspace => {
+                    if self.command.len() > 0 {
+                        self.command = self.command[0..self.command.len()-1].to_string()
+                    }
+                },
                 Key::Return => {
                     match self.run_command(world, chunk, ctx) {
                         Ok(str) => self.output = str,

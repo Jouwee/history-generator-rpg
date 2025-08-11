@@ -5,7 +5,6 @@ use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
 pub(crate) struct HistorySimulation {
-    pub(crate) date: WorldDate,
     generation_params: WorldGenerationParameters,
     pub(crate) rng: Rng,
     pub(crate) resources: Resources,
@@ -15,7 +14,6 @@ pub(crate) struct HistorySimulation {
 impl HistorySimulation {
     pub(crate) fn new(rng: Rng, resources: Resources, generation_params: WorldGenerationParameters) -> Self {
         HistorySimulation {
-            date: WorldDate::new(0, 0, 0),
             generation_params: generation_params.clone(),
             rng,
             resources,
@@ -30,8 +28,7 @@ impl HistorySimulation {
     }
 
     pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) -> bool {
-        self.date = self.date + step;
-        world.date = self.date.clone();
+        world.date = world.date + step;
         let now = Instant::now();
 
         let chances = self.storyteller.global_chances(&mut self.rng, &world);
@@ -99,14 +96,14 @@ impl HistorySimulation {
             creatures += unit.creatures.len();
             drop(unit);
 
-            self.simulate_step_unit(world, &step, &self.date.clone(), self.rng.clone(), &id);
+            self.simulate_step_unit(world, &step, &world.date.clone(), self.rng.clone(), &id);
             self.rng.next();
         }
 
 
         println!("");
         println!("Elapsed: {:.2?}", now.elapsed());
-        println!("Year: {}", self.date.year());
+        println!("Year: {}", world.date.year());
         println!("Total units: {}", world.units.len());
         println!("Total creatures: {}", world.creatures.len());
         println!("Simulated creatures: {}", creatures);

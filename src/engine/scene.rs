@@ -21,7 +21,10 @@ pub(crate) enum BusEvent {
     ShowInspectDialog(ShowInspectDialogData),
     ShowChatDialog(ShowChatDialogData),
     CreatureKilled(CreatureId),
-    AddItemToPlayer(Item)
+    AddItemToPlayer(Item),
+    PlayerDied,
+    QuitToMenu,
+    CreateNewCharacter,
 }
 
 #[derive(Clone)]

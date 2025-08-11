@@ -177,7 +177,7 @@ impl Chunk {
     pub(crate) fn actors_iter(&self) -> impl Iterator<Item = &Actor> {
         let player = iter::once(&self.player);
         let others = self.actors.iter();
-        others.chain(player)
+        return others.chain(player);
     }
 
     // TODO(QZ94ei4M): Remove
@@ -229,6 +229,11 @@ impl Chunk {
     }
 
     pub(crate) fn remove_npc(&mut self, i: usize, ctx: &mut GameContext) {
+        if i == PLAYER_IDX || i >= self.actors.len() {
+            ctx.event_bus.push(BusEvent::PlayerDied);
+            return;
+        }
+
         let npc = self.actors.get_mut(i).unwrap();
         for item in npc.inventory.take_all() {
             let texture = item.make_texture(&ctx.resources.materials);
