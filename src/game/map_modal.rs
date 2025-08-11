@@ -16,7 +16,7 @@ impl MapModal {
 
     pub(crate) fn new() -> MapModal {
         let mut close_button = Button::text("Close");
-        close_button.layout_component().anchor_top_right(0., 0.);
+        close_button.layout_component().anchor_top_right(0., 0.).size([32., 20.]);
 
         MapModal {
             map: MapComponent::new(),
@@ -42,7 +42,7 @@ impl MapModal {
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
-        ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
+        ctx.center_camera_on([self.offset.x.max(0.) as f64, self.offset.y.max(0.) as f64]);
         self.map.render(&(), ctx, game_ctx);
 
         let cursor = [self.player_pos.x * 16, self.player_pos.y * 16];
@@ -57,11 +57,17 @@ impl MapModal {
             ctx.image(&"map_tiles/player.png", cursor_clamp);
         }
 
-        for (coord, name, _) in self.map.names.iter() {
+        let mut l_assets = assets();
+        let font = l_assets.font_standard();
+        for (coord, _, _) in self.map.names.iter() {
             if self.mouse_over == *coord {
-                ctx.text(name, assets().font_standard(), [coord.x * 16, coord.y * 16], &COLOR_WHITE);
+                let text = "Click to fast-travel";
+                let width = font.width(text);
+                ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16], &COLOR_WHITE);
+                break;
             }
         }
+        drop(l_assets);
 
         let _ = ctx.try_pop();
         // Control
@@ -101,11 +107,15 @@ impl MapModal {
                 self.offset.y = (self.offset.y - offset[1] as f32).clamp(clamp[1][0] as f32, clamp[1][1] as f32);
             },
             InputEvent::Click { button: MouseButton::Left, pos } => {
-                let coord = Coord2::xy(
+                let mouse = Coord2::xy(
                     ((pos[0] + camera[0] as f64) / 16.) as i32, 
                     ((pos[1] + camera[1] as f64) / 16.) as i32
                 );
-                return MapModalEvent::InstaTravelTo(coord)
+                for (coord, _, _) in self.map.names.iter() {
+                    if mouse == *coord {
+                        return MapModalEvent::InstaTravelTo(mouse)
+                    }
+                }
             }
             _ => ()
         }
