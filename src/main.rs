@@ -14,7 +14,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, game::chunk::AiGroups, world::{main_menu::{MainMenuOption, MainMenuScene}}};
 
 pub(crate) mod engine;
 pub(crate) mod commons;
@@ -302,36 +302,22 @@ fn main() {
                 if let Button::Keyboard(Key::Return) = k.button {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let mut world = scene.into_world();
-                        world.find_goal(&mut app.context.resources);
-                        world.init_codex();
+
+                        let (creature_id, pos) = world.create_scenario().expect("No playable scenario found");
                         world.dump_events("lore.log", &app.context.resources);
 
-                        let species_id = app.context.resources.species.id_of("species:human");
-                        let species = app.context.resources.species.get(&species_id);
-                        let mut player = Actor::player(Coord2::xy(16, 16), &species_id, species);
+                        let creature = world.creatures.get(&creature_id);
+                        let species = app.context.resources.species.get(&creature.species);
+                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, species, &world, &app.context.resources);
+                        drop(creature);
 
                         let mut rng = Rng::seeded("player");
-
-                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
-                        let _ = player.inventory.add(ItemFactory::torso_garment(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::boots(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::pants(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-        //                let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-          //              let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-            //            let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-              //          let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                //        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::inner_armor(&mut rng, &app.context.resources));
-                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
-                        let _ = player.inventory.add(ItemFactory::weapon(&mut rng, &app.context.resources).make());
+                        let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &app.context.resources).make());
 
                         player.inventory.auto_equip();
 
-                        let cursor = Coord2::xy(world.map.size.0 as i32 / 2, world.map.size.1 as i32 / 2);
-                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, cursor, ChunkLayer::Surface, player);
-                        let mut scene = GameSceneState::new(world, cursor, chunk);
+                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, pos, ChunkLayer::Surface, player);
+                        let mut scene = GameSceneState::new(world, pos, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
 

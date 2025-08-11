@@ -39,7 +39,11 @@ impl ItemFactory {
     }
 
     pub(crate) fn weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
-        return WeaponFactory { rng: rng, resources: resources, quality: None, material_pool: None, named: false }
+        return WeaponFactory { rng: rng, resources: resources, quality: None, primary_material: None, material_pool: None, named: false }
+    }
+
+    pub(crate) fn starter_weapon<'a>(rng: &'a mut Rng, resources: &'a Resources) -> WeaponFactory<'a> {
+        return WeaponFactory { rng: rng, resources: resources, quality: Some(ItemQuality::Normal), primary_material: Some(resources.materials.id_of("mat:copper")), material_pool: None, named: false }
     }
 
     pub(crate) fn spell_tome<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
@@ -121,6 +125,7 @@ pub(crate) struct WeaponFactory<'a> {
     rng: &'a mut Rng,
     resources: &'a Resources,
     quality: Option<ItemQuality>,
+    primary_material: Option<MaterialId>,
     material_pool: Option<&'a mut MaterialPool>,
     named: bool,
 }
@@ -179,7 +184,10 @@ impl<'a> WeaponFactory<'a> {
                 self.resources.materials.id_of("mat:steel"),
             );
 
-            let primary = self.pick_material(material_blueprint.primary_tag_bitmask, &always_available);
+            let primary = match &self.primary_material {
+                Some(id) => *id,
+                None => self.pick_material(material_blueprint.primary_tag_bitmask, &always_available)
+            };
             arguments.push(ItemMakeArguments::PrimaryMaterial(primary));
 
             if let Some(secondary_bitmask) = material_blueprint.secondary_tag_bitmask {

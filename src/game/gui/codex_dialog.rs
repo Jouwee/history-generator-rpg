@@ -53,8 +53,7 @@ impl CodexDialog {
         let mut y = 40.;
         self.buttons.clear();
         for id in state.codex.creatures() {
-            let creature = state.creatures.get(id);
-            let mut button = Button::text(&creature.name(id, state, &game_ctx.resources));
+            let mut button = Button::text(&&self.creature_name(id, state, &game_ctx));
             button.layout_component().anchor_top_left(0., y).size([114., 16.]);
             self.buttons.push((Selection::Creature(*id), button));
             y += 16.;
@@ -73,7 +72,7 @@ impl CodexDialog {
         }
     }
 
-    fn build_units(&mut self, state: &World, game_ctx: &mut GameContext) {
+    fn build_units(&mut self, state: &World, _game_ctx: &mut GameContext) {
         let mut y = 40.;
         self.buttons.clear();
         for id in state.codex.units() {
@@ -85,7 +84,7 @@ impl CodexDialog {
         }
     }
 
-    fn build_quests(&mut self, state: &World, game_ctx: &mut GameContext) {
+    fn build_quests(&mut self, state: &World, _game_ctx: &mut GameContext) {
         let mut y = 40.;
         self.buttons.clear();
         for quest in state.codex.quests() {
@@ -231,7 +230,11 @@ impl CodexDialog {
         let creature = world.creatures.get(creature_id);
 
         if codex.know_name() {
-            return creature.name(creature_id, world, &ctx.resources);
+            let name = creature.name(creature_id, world, &ctx.resources);
+            if world.is_played_creature(creature_id) {
+                return name + " (You)"
+            }
+            return name;
         }
 
         return String::from("???????");

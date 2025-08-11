@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{fs::File, io::Write};
 
-use crate::{game::codex::Codex, world::{history_generator::WorldGenerationParameters, item::ItemId, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
+use crate::{engine::geometry::Coord2, game::codex::Codex, world::{history_generator::WorldGenerationParameters, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -17,7 +17,7 @@ pub(crate) struct World {
     pub(crate) events: Vec<Event>,
     pub(crate) artifacts: IdVec<Item>,
     pub(crate) codex: Codex,
-
+    played_creature: Option<CreatureId>
 }
 
 impl World {
@@ -34,93 +34,75 @@ impl World {
             artifacts: IdVec::new(),
             events: Vec::new(),
             codex: Codex::new(),
+            played_creature: None,
         }
     }
 
-    pub(crate) fn init_codex(&mut self) {
-        for unit_id in self.units.iter_ids::<UnitId>() {
+    pub(crate) fn create_scenario(&mut self) -> Result<(CreatureId, Coord2), ()> {
+        let mut candidate = None;
+        'outer: for unit_id in self.units.iter_ids::<UnitId>() {
             let unit = self.units.get(&unit_id);
-            if unit.creatures.len() > 0 && unit.unit_type == UnitType::Village {
-                self.codex.unit_mut(&unit_id);
-            }
-        }
-    }
-
-    pub(crate) fn find_goal(&mut self, resources: &mut Resources) {
-        let mut artifact = None;
-
-        let mut events_per_item = HashMap::new();
-        for event in self.events.iter() {
-            let event_score = match event {
-                Event::CreatureDeath { date: _, creature_id: _, cause_of_death: _ } => 0.5,
-                _ => 0.01
-            };
-            for item_id in event.related_artifacts() {
-                match events_per_item.get(&item_id) {
-                    Some(v) => events_per_item.insert(item_id, *v + event_score),
-                    None => events_per_item.insert(item_id, event_score),
-                };
-            }
-        }
-
-        for (id, item) in self.artifacts.iter_id_val::<ItemId>() {
-            let i_item = item.borrow();
-
-            // Ignores artworks
-            if i_item.artwork_scene.is_some() {
-                continue;
-            }
-            
-            let mut score = 1.;
-
-            if let Some(owner) = i_item.owner {
-                let owner = self.creatures.get(&owner);
-                if owner.death.is_some() {
-                    // Dead owner - Viable, but less preferable
-                    score -= 1.;
-                } else {
-                    // Ignore alive owners
-                    continue;
-                }
-            }
-
-            // More special damage = More interesting
-            let extra = i_item.extra_damage(&resources.materials);
-            score += extra.average();
-            
-            // More events = More interesting
-            score += *events_per_item.get(&id).unwrap_or(&0.) as f32;
-
-            if let Some(quality) = &i_item.quality {
-                score = score + quality.quality.main_stat_multiplier() as f32;
-            }
-
-            match artifact {
-                None => artifact = Some((id, item, score)),
-                Some((_id, _item, c_score)) => {
-                    if score > c_score {
-                        artifact = Some((id, item, score));
+            if unit.unit_type == UnitType::Village {
+                for creature_id in unit.creatures.iter() {
+                    let creature = self.creatures.get(creature_id);
+                    let age = (self.date - creature.birth).year();
+                    if age > 20 && age < 40 && creature.spouse.is_none() {
+                        candidate = Some((creature_id.clone(), unit.xy.clone()));
+                        break 'outer;
                     }
                 }
             }
         }
-        if let Some((id, item, _score)) = artifact {
-            // TODO(NJ5nTVIV): Title screen
-            println!("You have heard of the legends of the ancient artifact {}. You set out into the world to find it's secrets.", item.borrow().name(&resources.materials));
-            let codex = self.codex.artifact_mut(&id);
-            codex.add_name();
+        if let Some(candidate) = candidate {
+            self.played_creature = Some(candidate.0);
+            self.codex = Codex::new();
 
-            // TODO(NJ5nTVIV): What events to add?
-            for (i, event) in self.events.iter().enumerate() {
-                if event.relates_to_artifact(&id) {
-                    codex.add_event(i);
+            // Major sites
+            for unit_id in self.units.iter_ids::<UnitId>() {
+                let unit = self.units.get(&unit_id);
+                if unit.creatures.len() > 0 && unit.unit_type == UnitType::Village {
+                    self.codex.unit_mut(&unit_id);
                 }
             }
 
+            // Information about myself
+            let myself = self.codex.creature_mut(&candidate.0);
+            myself.add_name();
+            myself.add_father();
+            myself.add_mother();
+            myself.add_birth();
+            myself.add_death();
+            myself.add_appearance();
+            for (i, event) in self.events.iter().enumerate() {
+                if event.relates_to_creature(&candidate.0) {
+                    myself.add_event(i);
+                }
+            }
 
-        } else {
-            println!("NO GOAL FOUND");
+            // Information about my family
+            let myself = self.creatures.get(&candidate.0);
+
+            let father = self.codex.creature_mut(&myself.father);
+            father.add_name();
+            father.add_appearance();
+            father.add_birth();
+            father.add_death();
+            let mother = self.codex.creature_mut(&myself.mother);
+            mother.add_name();
+            mother.add_appearance();
+            mother.add_birth();
+            mother.add_death();
+
+            // Information about my relationships
+            for another in myself.relationships.iter() {
+                let another = self.codex.creature_mut(&another.creature_id);
+                another.add_name();
+                another.add_appearance();
+            }
+
+            return Ok(candidate);
         }
+        return Err(());
     }
 
     pub(crate) fn dump_events(&self, filename: &str, resources: &Resources) {
@@ -139,6 +121,14 @@ impl World {
 
     pub(crate) fn date_desc(&self, date: &WorldDate) -> String {
         return String::from(format!("{}-{}-{}", date.year(), date.month(), date.day()))
+    }
+
+
+    pub(crate) fn is_played_creature(&self, creature_id: &CreatureId) -> bool {
+        match &self.played_creature {
+            None => false,
+            Some(id) => id == creature_id
+        }
     }
 
 }
