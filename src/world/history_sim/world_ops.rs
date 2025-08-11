@@ -42,14 +42,6 @@ fn search_new_unit_pos(world: &World, rng: &mut Rng) -> Result<Coord2, ()> {
     for _ in 0..100 {
         let x = rng.randu_range(3, world.map.size.x() - 3);
         let y = rng.randu_range(3, world.map.size.y() - 3);
-        let tile = world.map.tile(x, y);
-        match tile.region_id {
-            // Ocean
-            0 => continue,
-            // Desert
-            4 => continue,
-            _ => ()
-        }
         let candidate = Coord2::xy(x as i32, y as i32);
         let too_close = world.units.iter().any(|unit| {
             let unit = unit.borrow();

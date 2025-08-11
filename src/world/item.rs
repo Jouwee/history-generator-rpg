@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap};
 use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{commons::damage_model::{DamageModel, DamageRoll}, engine::{gui::tooltip::Tooltip, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -51,7 +51,11 @@ impl Item {
     }
 
     pub(crate) fn make_tooltip(&self, materials: &Materials) -> Tooltip {
-        return Tooltip::new(self.name(materials))
+        let mut tooltip = Tooltip::new(&Strings::capitalize(&self.name(materials)));
+        if let Some(_) = self.mellee_damage {
+            tooltip.add_line(TooltipLine::DamageRoll(self.total_damage(materials)));
+        }
+        return tooltip;
     }
 
     pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {

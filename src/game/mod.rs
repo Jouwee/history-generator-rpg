@@ -19,6 +19,7 @@ use crate::commons::interpolate::lerp;
 use crate::engine::assets::assets;
 use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;
+use crate::engine::gui::tooltip::Tooltip;
 use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent as NewInputEvent;
 
@@ -105,15 +106,15 @@ pub(crate) struct GameSceneState {
 
 impl GameSceneState {
     pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
-        let mut button_map = Button::text("Map");
+        let mut button_map = Button::text("Map").tooltip(Tooltip::new("Show map"));
         button_map.layout_component().anchor_bottom_center(-162.0, -1.0);
-        let mut button_inventory = Button::text("Chr");
+        let mut button_inventory = Button::text("Chr").tooltip(Tooltip::new("Character and inventory"));
         button_inventory.layout_component().anchor_bottom_center(-136.0, -1.0);
-        let mut button_codex = Button::text("Cdx");
+        let mut button_codex = Button::text("Cdx").tooltip(Tooltip::new("Codex"));
         button_codex.layout_component().anchor_bottom_center(-110.0, -1.0);
-        let mut button_end_turn = Button::text("Trn");
+        let mut button_end_turn = Button::text("Trn").tooltip(Tooltip::new("End turn"));
         button_end_turn.layout_component().anchor_bottom_center(157.0, -1.0);
-        let mut button_toggle_turn_based = Button::text("Mod");
+        let mut button_toggle_turn_based = Button::text("Mod").tooltip(Tooltip::new("Togle Turn-based / Real time"));
         button_toggle_turn_based.layout_component().anchor_bottom_center(182.0, -1.0);
 
         GameSceneState {
@@ -637,7 +638,7 @@ impl Scene for GameSceneState {
 
         match evt.evt {
             NewInputEvent::Key { key: Key::Escape } => {
-                self.hotbar.selected_action = None;
+                self.hotbar.clear_selected();
             },
             NewInputEvent::Key { key: Key::Space } => {
                 if let TurnMode::TurnBased = self.turn_mode {

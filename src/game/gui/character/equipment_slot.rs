@@ -69,6 +69,15 @@ impl UINode for EquipmentSlot {
                     return ControlFlow::Break(UIEvent::None);
                 }
             },
+            InputEvent::MouseMove { pos } => {
+                if self.layout.hitbox(pos) {
+                    if let Some(equipped) = state.equipped(&self.slot) {
+                        ctx.tooltips.show_delayed(&equipped.make_tooltip(&ctx.resources.materials), *pos);
+                    } else {
+                        ctx.tooltips.hide();
+                    }
+                }
+            }
             _ => (),
         }
         return ControlFlow::Continue(());

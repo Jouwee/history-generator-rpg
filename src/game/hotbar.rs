@@ -49,10 +49,9 @@ impl Hotbar {
     }
 
     fn build_tooltip(action: &Action, actor: &Actor, ctx: &GameContext) -> Tooltip {
-        let mut tooltip = Tooltip::new(action.name.clone());
+        let mut tooltip = Tooltip::new(&action.name);
         tooltip.add_line(TooltipLine::ApCost(action.ap_cost));
         tooltip.add_line(TooltipLine::StaminaCost(action.stamina_cost));
-        tooltip.add_line(TooltipLine::Body(action.description.clone()));
         for effect in action.effects.iter() {
             match &effect {
                 ActionEffect::Damage { add_weapon, damage } => {
@@ -64,12 +63,20 @@ impl Hotbar {
                             damage = damage + item.extra_damage(&ctx.resources.materials)
                         }
                     }
-                    tooltip.add_line(TooltipLine::Body(damage.to_string()));
+                    tooltip.add_line(TooltipLine::DamageRoll(damage));
                 },
                 _ => {}
             }
         }
+        tooltip.add_line(TooltipLine::Body(action.description.clone()));
         return tooltip;
+    }
+
+    pub(crate) fn clear_selected(&mut self) {
+        self.selected_action = None;
+        for (_action_id, button) in self.buttons.iter_mut() {
+            button.set_selected(false);
+        }
     }
 }
 

@@ -76,35 +76,17 @@ impl Resources {
     }
 
     fn load_biomes(&mut self) {
-        self.biomes.add("biome:ocean", Biome {
-            elevation: (-2000, 0),
-            temperature: (0, 5),
-            vegetation: (0.0, 0.0),
-            soil_fertility_range: (0.8, 1.2),
-        });
-        self.biomes.add("biome:coast", Biome {
-            elevation: (0, 16),
-            temperature: (0, 5),
-            vegetation: (0.0, 0.1),
-            soil_fertility_range: (0.8, 1.2),
-        });
         self.biomes.add("biome:grasslands", Biome {
-            elevation: (16, 255),
-            temperature: (0, 2),
+            elevation: (-255, 255),
+            temperature: (0, 255),
             vegetation: (0.5, 1.),
             soil_fertility_range: (1.0, 1.4),
         });
         self.biomes.add("biome:forest", Biome {
-            elevation: (16, 255),
-            temperature: (0, 2),
+            elevation: (-255, 255),
+            temperature: (0, 255),
             vegetation: (0.5, 1.),
             soil_fertility_range: (1.0, 1.4),
-        });
-        self.biomes.add("biome:desert", Biome {
-            elevation: (16, 255),
-            temperature: (3, 6),
-            vegetation: (0.0, 0.1),
-            soil_fertility_range: (0.5, 0.9),
         });
     }
 

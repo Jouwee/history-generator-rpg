@@ -11,16 +11,10 @@ impl MapComponent {
 
     pub(crate) fn new() -> MapComponent {
         let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageSheetAsset::new("map_tiles/ocean.png", Size2D(16, 16));
-        dual_tileset.add(1, image);
-        let image = ImageSheetAsset::new("map_tiles/coast.png", Size2D(16, 16));
-        dual_tileset.add(0, image);
         let image = ImageSheetAsset::new("map_tiles/grassland.png", Size2D(16, 16));
         dual_tileset.add(4, image);
         let image = ImageSheetAsset::new("map_tiles/forest.png", Size2D(16, 16));
         dual_tileset.add(5, image);
-        let image = ImageSheetAsset::new("map_tiles/desert.png", Size2D(16, 16));
-        dual_tileset.add(3, image);
 
         let mut tileset = TileSet::new();
         let image = String::from("map_tiles/settlement.png");
@@ -51,14 +45,7 @@ impl MapComponent {
         for x in 0..map.size.x() {
             for y in 0..map.size.y() {
                 let tile = map.tile(x, y);
-                match tile.region_id {
-                    0 => self.tilemap.set_tile(x, y, 0),
-                    1 => self.tilemap.set_tile(x, y, 1),
-                    2 => self.tilemap.set_tile(x, y, 2),
-                    3 => self.tilemap.set_tile(x, y, 3),
-                    4 => self.tilemap.set_tile(x, y, 4),
-                    _ => ()
-                }
+                self.tilemap.set_tile(x, y, tile.region_id as usize);
             }
         }
     }

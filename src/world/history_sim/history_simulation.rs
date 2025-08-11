@@ -411,14 +411,6 @@ impl HistorySimulation {
         for _ in 0..100 {
             let x = rng.randu_range(3, world.map.size.x() - 3);
             let y = rng.randu_range(3, world.map.size.y() - 3);
-            let tile = world.map.tile(x, y);
-            match tile.region_id {
-                // Ocean
-                0 => continue,
-                // Desert
-                4 => continue,
-                _ => ()
-            }
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();
@@ -450,14 +442,6 @@ impl HistorySimulation {
         for _ in 0..100 {
             let x = rng.randi_range(x_limit[0], x_limit[1]) as usize;
             let y = rng.randi_range(y_limit[0], y_limit[1]) as usize;
-            let tile = world.map.tile(x, y);
-            match tile.region_id {
-                // Ocean
-                0 => continue,
-                // Desert
-                4 => continue,
-                _ => ()
-            }
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();

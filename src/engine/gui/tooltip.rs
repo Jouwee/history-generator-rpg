@@ -1,9 +1,9 @@
-use std::hash::{Hash, Hasher};
+use std::{hash::{DefaultHasher, Hash, Hasher}, ops::ControlFlow};
 
 use graphics::{image, Transformed};
 use ::image::ImageReader;
 
-use crate::{engine::{assets::{assets, Font}, gui::{layout_component::LayoutComponent, UINode}, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
+use crate::{commons::damage_model::DamageRoll, engine::{assets::{assets, Font}, gui::{layout_component::LayoutComponent, UINode}, input::InputEvent, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent
@@ -93,6 +93,13 @@ impl UINode for TooltipOverlay {
 
         }
     }
+
+    fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
+        if let InputEvent::MouseMove { pos: _ } = evt {
+            ctx.tooltips.hide();
+        }
+        return ControlFlow::Continue(());
+    }
 }
 
 pub(crate) struct TooltipRegistry {
@@ -105,6 +112,13 @@ impl TooltipRegistry {
         Self { 
             current_tooltip: None
         }
+    }
+
+    pub(crate) fn show_delayed(&mut self, tooltip: &Tooltip, position: [f64; 2]) {
+        let mut hasher = DefaultHasher::new();
+        tooltip.hash(&mut hasher);
+        let hash = hasher.finish();
+        self.show_delayed_prehash(hash, tooltip, position);
     }
     
     pub(crate) fn show_delayed_prehash(&mut self, hash: u64, tooltip: &Tooltip, position: [f64; 2]) {
@@ -127,6 +141,10 @@ impl TooltipRegistry {
         }
     }
 
+    pub(crate) fn hide(&mut self) {
+        self.current_tooltip = None;
+    }
+
     pub(crate) fn hide_prehash(&mut self, hash: u64) {
         if let Some((current_hash, _, _, _)) = &self.current_tooltip {
             if hash == *current_hash {
@@ -145,8 +163,8 @@ pub(crate) struct Tooltip {
 
 impl Tooltip {
 
-    pub(crate) fn new(title: String) -> Self {
-        Self { lines: vec!(TooltipLine::Title(title)) }
+    pub(crate) fn new(title: &str) -> Self {
+        Self { lines: vec!(TooltipLine::Title(String::from(title))) }
     }
 
     pub(crate) fn add_line(&mut self, line: TooltipLine) {
@@ -162,6 +180,7 @@ pub(crate) enum TooltipLine {
     Body(String),
     ApCost(u16),
     StaminaCost(f32),
+    DamageRoll(DamageRoll),
 }
 
 impl TooltipLine {
@@ -178,6 +197,7 @@ impl TooltipLine {
     fn render(&self, pos: [i32; 2], ctx: &mut RenderContext) {
         match &self {
             Self::Title(title) => ctx.text(&title, assets().font_standard(), pos, &COLOR_WHITE),
+            Self::DamageRoll(roll) => ctx.text(&roll.to_string(), assets().font_standard(), pos, &COLOR_WHITE),
             Self::Body(body) => ctx.text(&body, assets().font_standard(), pos, &Color::from_hex("5a6069")),
             Self::ApCost(ap_cost) => ctx.text(&format!("{ap_cost} AP"), assets().font_standard(), pos, &Color::from_hex("446d99")),
             Self::StaminaCost(stamina_cost) => ctx.text(&format!("{stamina_cost} ST"), assets().font_standard(), pos, &Color::from_hex("88ae59")),
