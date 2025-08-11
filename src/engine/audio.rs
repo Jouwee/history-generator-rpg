@@ -86,11 +86,13 @@ impl Audio {
             MusicSink::SinkB => &self.music_sink_b,
         };
         if sink.empty() {
-            let (i, vec) = self.tracks.get_mut(&self.current_mood).unwrap();
-            *i = (*i + 1) % vec.len();
-            let sound = vec.get(*i).unwrap();
-            sink.append(sound.source().amplify(0.2));
-            sink.play();
+            let tracks = self.tracks.get_mut(&self.current_mood);
+            if let Some((i, vec)) = tracks {
+                *i = (*i + 1) % vec.len();
+                let sound = vec.get(*i).unwrap();
+                sink.append(sound.source().amplify(0.2));
+                sink.play();
+            }
         }
     }
 

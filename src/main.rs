@@ -1,4 +1,4 @@
-use std::{time::Instant, vec};
+use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
@@ -14,7 +14,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}};
+use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod engine;
 pub(crate) mod commons;
@@ -26,6 +26,7 @@ pub(crate) mod game;
 
 enum SceneEnum {
     None,
+    MainMenu(MainMenuScene),
     WorldGen(WorldGenScene),
     Game(GameSceneState)
 }
@@ -77,6 +78,9 @@ impl App {
         };
         match &mut self.scene {
             SceneEnum::None => {},
+            SceneEnum::MainMenu(game_state) => {
+                game_state.render(&mut context, &mut self.context);
+            },
             SceneEnum::WorldGen(game_state) => {
                 game_state.render(&mut context, &mut self.context);
             },
@@ -114,6 +118,9 @@ impl App {
         self.debug_overlay.update(&update);
         match &mut self.scene {
             SceneEnum::None => {},
+            SceneEnum::MainMenu(game_state) => {
+                game_state.update(&update, &mut self.context);
+            },
             SceneEnum::WorldGen(game_state) => {
                 game_state.update(&update, &mut self.context);
             },
@@ -127,6 +134,27 @@ impl App {
         self.debug_overlay.input(args);
         match &mut self.scene {
             SceneEnum::None => {},
+            SceneEnum::MainMenu(game_state) => {
+                match game_state.input(args, &mut self.context) {
+                    ControlFlow::Break(MainMenuOption::NewGame) => {
+                        self.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
+                            seed: 1234567,
+                            world_size: Size2D(64, 48),
+                            history_length: 2000,
+                            number_of_seed_cities: 3,
+                            seed_cities_population: 15,
+                            num_plate_tectonics: 5,
+                            st_strength: 1.0,
+                            st_city_count: 7,
+                            st_city_population: 20,
+                            st_village_count: 20,
+                            st_village_population: 10,
+                        }, &self.context.resources));
+                    }
+                    ControlFlow::Break(MainMenuOption::Quit) => self.window.set_should_close(true),
+                    _ => ()
+                }
+            },
             SceneEnum::WorldGen(game_state) => {
                 game_state.input(args, &mut self.context);
             },
@@ -139,6 +167,9 @@ impl App {
     fn event(&mut self, event: &BusEvent) {
         match &mut self.scene {
             SceneEnum::None => {},
+            SceneEnum::MainMenu(game_state) => {
+                game_state.event(event, &mut self.context);
+            },
             SceneEnum::WorldGen(game_state) => {
                 game_state.event(event, &mut self.context);
             },
@@ -157,7 +188,6 @@ fn main() {
     let window: Sdl2Window =
         WindowSettings::new("Tales of Kathay", [1024, 768])
             .graphics_api(opengl)
-            // .fullscreen(true)
             .build()
             .unwrap();
 
@@ -205,19 +235,7 @@ fn main() {
     app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/cinematic-battle-music-271343.mp3"));
     app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/fantasy-pagan-medieval-cinematic-epic-war-battle-119770.mp3"));
 
-    app.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
-        seed: 1234567,
-        world_size: Size2D(64, 48),
-        history_length: 2000,
-        number_of_seed_cities: 3,
-        seed_cities_population: 15,
-        num_plate_tectonics: 5,
-        st_strength: 1.0,
-        st_city_count: 7,
-        st_city_population: 20,
-        st_village_count: 20,
-        st_village_population: 10,
-    }, &app.context.resources));
+    app.scene = SceneEnum::MainMenu(MainMenuScene::new());
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
         scene.init(&mut app.context);
@@ -347,8 +365,7 @@ fn main() {
 
             match event {
                 BusEvent::QuitToMenu => {
-                    // TODO: Menu
-                    app.window.set_should_close(true);
+                    app.scene = SceneEnum::MainMenu(MainMenuScene::new());
                 },
                 BusEvent::CreateNewCharacter => {
                     if let SceneEnum::Game(state) = app.scene {

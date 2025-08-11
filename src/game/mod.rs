@@ -304,6 +304,8 @@ impl GameSceneState {
 }
 
 impl Scene for GameSceneState {
+    type Input = ();
+
     fn init(&mut self, ctx: &mut GameContext) {
         self.save_creature_appearances();
         self.chunk.turn_controller.roll_initiative(self.chunk.actors.len());

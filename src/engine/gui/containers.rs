@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{layout_component::LayoutComponent, UIEvent, UINode}, input::InputEvent, Color}, GameContext, RenderContext};
+use crate::{engine::{gui::{layout_component::LayoutComponent, UIEvent, UINode}, input::InputEvent}, GameContext, RenderContext};
 
 
 /// A simple, layout-less container
@@ -48,8 +48,6 @@ impl UINode for SimpleContainer {
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let copy = ctx.layout_rect;
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
-
-        // ctx.rectangle_fill(layout, Color::from_hex("ff808003"));
 
         // SMELL: *2 because this is screen space, doesn't share the context
         let old_clip = ctx.set_clip_rect(Some([

@@ -52,6 +52,7 @@ impl WorldGenScene {
 }
 
 impl Scene for WorldGenScene {
+    type Input = ();
 
     fn init(&mut self, ctx: &mut GameContext) {
         ctx.audio.switch_music(TrackMood::Regular);
