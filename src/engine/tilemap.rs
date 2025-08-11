@@ -29,6 +29,10 @@ impl TileMap {
         }
     }
 
+    pub(crate) fn reset(&mut self) {
+        self.tiles = vec![(0, false); self.height * self.width];
+    }
+
     pub(crate) fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
         self.tiles[(y*self.width) + x].0 = tile;
     }

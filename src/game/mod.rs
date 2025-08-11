@@ -48,6 +48,7 @@ pub(crate) mod game_context_menu;
 pub(crate) mod hotbar;
 pub(crate) mod gui;
 pub(crate) mod inventory;
+pub(crate) mod map_component;
 pub(crate) mod map_modal;
 pub(crate) mod options;
 pub(crate) mod player_pathing;

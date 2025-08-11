@@ -40,8 +40,8 @@ pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: 
 
 fn search_new_unit_pos(world: &World, rng: &mut Rng) -> Result<Coord2, ()> {
     for _ in 0..100 {
-        let x = rng.randu_range(0, world.map.size.x());
-        let y = rng.randu_range(0, world.map.size.y());
+        let x = rng.randu_range(3, world.map.size.x() - 3);
+        let y = rng.randu_range(3, world.map.size.y() - 3);
         let tile = world.map.tile(x, y);
         match tile.region_id {
             // Ocean

@@ -1,14 +1,12 @@
-use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, scene::Update, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{unit::{UnitId, UnitType}, world::World}, GameContext};
+use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, COLOR_WHITE}, game::map_component::MapComponent, world::{world::World}, GameContext};
 use piston::{Button as Btn, ButtonState, Key, MouseButton};
 
 use super::InputEvent as OldInputEvent;
 
 pub(crate) struct MapModal {
     world_size: Size2D,
-    tilemap: LayeredDualgridTilemap,
-    objects: TileMap,
+    map: MapComponent,
     offset: Vec2,
-    names: Vec<(Coord2, String)>,
     player_pos: Coord2,
     mouse_over: Coord2,
     close_button: Button
@@ -17,88 +15,23 @@ pub(crate) struct MapModal {
 impl MapModal {
 
     pub(crate) fn new() -> MapModal {
-        let mut dual_tileset = LayeredDualgridTileset::new();
-        let image = ImageSheetAsset::new("map_tiles/ocean.png", Size2D(16, 16));
-        dual_tileset.add(1, image);
-        let image = ImageSheetAsset::new("map_tiles/coast.png", Size2D(16, 16));
-        dual_tileset.add(0, image);
-        let image = ImageSheetAsset::new("map_tiles/grassland.png", Size2D(16, 16));
-        dual_tileset.add(4, image);
-        let image = ImageSheetAsset::new("map_tiles/forest.png", Size2D(16, 16));
-        dual_tileset.add(5, image);
-        let image = ImageSheetAsset::new("map_tiles/desert.png", Size2D(16, 16));
-        dual_tileset.add(3, image);
-
-        let mut tileset = TileSet::new();
-        let image = String::from("map_tiles/settlement.png");
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = ImageSheetAsset::new("map_tiles/road.png", Size2D(16, 16));
-        tileset.add(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)));
-        let image = String::from("map_tiles/marker.png");
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = String::from("map_tiles/settlement_ruins.png");
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = String::from("map_tiles/settlement_big.png");
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-        let image = String::from("map_tiles/settlement_small.png");
-        tileset.add(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)));
-
         let mut close_button = Button::text("Close");
         close_button.layout_component().anchor_top_right(0., 0.);
 
         MapModal {
-            tilemap: LayeredDualgridTilemap::new(dual_tileset, 256, 256, 16, 16),
-            objects: TileMap::new(tileset, 256, 256, 16, 16),
+            map: MapComponent::new(),
             offset: Vec2::xy(128.*16., 128.*16.),
             player_pos: Coord2::xy(0, 0),
             mouse_over: Coord2::xy(0, 0),
             world_size: Size2D(0, 0),
-            names: Vec::new(),
             close_button
         }
     }
 
     pub(crate) fn init(&mut self, world: &World, player_pos: &Coord2) {
-        let map = &world.map;
-        for x in 0..map.size.x() {
-            for y in 0..map.size.y() {
-                let tile = map.tile(x, y);
-                match tile.region_id {
-                    0 => self.tilemap.set_tile(x, y, 0),
-                    1 => self.tilemap.set_tile(x, y, 1),
-                    2 => self.tilemap.set_tile(x, y, 2),
-                    3 => self.tilemap.set_tile(x, y, 3),
-                    4 => self.tilemap.set_tile(x, y, 4),
-                    _ => ()
-                }
-            }
-        }
-
-        for unit_id in world.codex.units() {
-            let unit = world.units.get(unit_id);
-            let tile = match unit.unit_type {
-                UnitType::Village => {
-                    if unit.creatures.len() > 20 {
-                        5
-                    } else if unit.creatures.len() > 5 {
-                        1
-                    } else if unit.creatures.len() > 0 {
-                        6
-                    } else {
-                        4
-                    }
-                },
-                UnitType::VarningrLair | UnitType::BanditCamp | UnitType::WolfPack => {
-                    if unit.creatures.len() > 0 {
-                        3
-                    } else {
-                        0
-                    }
-                },
-            };
-            self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, tile);
-            self.names.push((unit.xy, format!("{unit_id:?} {:?}", unit.unit_type)));
-        }
+        self.map.set_topology(&world.map);
+        // TODO:
+        self.map.update_visible_units(world, |id, _unit| world.codex.unit(id).is_some());
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);
         self.player_pos = player_pos.clone();
@@ -110,8 +43,7 @@ impl MapModal {
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
         ctx.center_camera_on([self.offset.x as f64, self.offset.y as f64]);
-        self.tilemap.render(ctx);
-        self.objects.render(ctx, game_ctx, |_, _, _, _| {});
+        self.map.render(&(), ctx, game_ctx);
 
         let cursor = [self.player_pos.x * 16, self.player_pos.y * 16];
         
@@ -125,7 +57,7 @@ impl MapModal {
             ctx.image(&"map_tiles/player.png", cursor_clamp);
         }
 
-        for (coord, name) in self.names.iter() {
+        for (coord, name, _) in self.map.names.iter() {
             if self.mouse_over == *coord {
                 ctx.text(name, assets().font_standard(), [coord.x * 16, coord.y * 16], &COLOR_WHITE);
             }

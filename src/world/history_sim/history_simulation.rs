@@ -409,8 +409,8 @@ impl HistorySimulation {
 
     fn find_unit_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
         for _ in 0..100 {
-            let x = rng.randu_range(0, world.map.size.x());
-            let y = rng.randu_range(0, world.map.size.y());
+            let x = rng.randu_range(3, world.map.size.x() - 3);
+            let y = rng.randu_range(3, world.map.size.y() - 3);
             let tile = world.map.tile(x, y);
             match tile.region_id {
                 // Ocean
@@ -440,12 +440,12 @@ impl HistorySimulation {
 
     fn find_unit_suitable_position_closeby(&self, center: Coord2, max_radius: i32, rng: &mut Rng, world: &World) -> Option<Coord2> {
         let x_limit = [
-            (center.x - max_radius).max(0),
-            (center.x + max_radius).min(world.map.size.x() as i32)
+            (center.x - max_radius).max(3),
+            (center.x + max_radius).min(world.map.size.x() as i32 - 3)
         ];
         let y_limit = [
-            (center.y - max_radius).max(0),
-            (center.y + max_radius).min(world.map.size.y() as i32)
+            (center.y - max_radius).max(3),
+            (center.y + max_radius).min(world.map.size.y() as i32 - 3)
         ];
         for _ in 0..100 {
             let x = rng.randi_range(x_limit[0], x_limit[1]) as usize;
