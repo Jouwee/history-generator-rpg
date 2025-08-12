@@ -24,6 +24,7 @@ pub(crate) struct Actor {
     pub(crate) level: u32,
     pub(crate) inventory: Inventory,
     pub(crate) cooldowns: Vec<(ActionId, u16)>,
+    just_entered_fight: bool,
     afflictions: Vec<RunningAffliction>,
 }
 
@@ -51,6 +52,7 @@ impl Actor {
             inventory: Inventory::new(),
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
+            just_entered_fight: false,
         }
     }
 
@@ -79,7 +81,8 @@ impl Actor {
             sprite: species.appearance.collapse(&creature.gender),
             inventory,
             afflictions: Vec::new(),
-            cooldowns: Vec::new()
+            cooldowns: Vec::new(),
+            just_entered_fight: false,
         }
     }
 
@@ -124,7 +127,7 @@ impl Actor {
             cooldown.1 -= 1;
             return cooldown.1 > 0;
         });
-
+        self.just_entered_fight = false;
     }
 
     pub(crate) fn stats<'a>(&'a self) -> ActorStats<'a> {
@@ -232,6 +235,13 @@ impl Actor {
         return vec;
     }
 
+    pub(crate) fn set_ai_state(&mut self, ai_state: AiState) {
+        if ai_state == AiState::Fight && self.ai_state != ai_state {
+            self.just_entered_fight = true;
+        }
+        self.ai_state = ai_state;
+    }
+
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         for sprite in self.sprite.textures().iter() {
             sprite.draw(ctx.at(pos[0], pos[1]), ctx.gl);
@@ -289,7 +299,10 @@ impl Renderable for Actor {
                 _ => ()
             }
         }
-
+        if self.just_entered_fight {
+            let sheet = assets().image_sheet("status/entered_fight.png", Size2D(24, 32));
+            ctx.texture(sheet.textures.get(ctx.sprite_i % sheet.len()).unwrap(), ctx.at(11., 16.));
+        }
         let _ = ctx.try_pop();
     }
 }

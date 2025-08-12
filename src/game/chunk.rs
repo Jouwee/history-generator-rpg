@@ -324,34 +324,35 @@ impl Renderable for Chunk {
         if let ChunkLayer::Surface = self.layer {
             // Renders the nav borders
             {
-                for y in 1..self.size.y()-1 {
+                for y in 1..self.size.y()-2 {
                     ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12]);
-                    ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12]);
+                    ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 36, y as i32 * 24 + 12]);
                 }
             }
             {
-                for x in 1..self.size.x()-1 {
+                for x in 1..self.size.x()-2 {
                     ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 + 12, 12]);
-                    ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, self.size.y() as i32 * 24 - 12]);
+                    ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, self.size.y() as i32 * 24 - 36]);
                 }
             }
             {
                 let img = assets().image("gui/nav_corner.png");
                 let transform = ctx.context.transform;
                 image(&img.texture, transform.trans(12., 12.), ctx.gl);
-                image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., 12.).rot_deg(90.), ctx.gl);
-                image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., self.size.y() as f64 * 24. + 12.).rot_deg(180.), ctx.gl);
-                image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. + 12.).rot_deg(270.), ctx.gl);
-            }
-            // Renders some black bars outside the map to cover large tiles
-            {
-                let color = Color::from_hex("090714");
-                ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], color);
-                ctx.rectangle_fill([-64., self.size.y() as f64 * 24. + 12., self.size.x() as f64 * 24. + 76., 76.], color);
-                ctx.rectangle_fill([-64., -64., 76., self.size.y() as f64 * 24. + 76.], color);
-                ctx.rectangle_fill([self.size.x() as f64 * 24. + 12., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+                image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., 12.).rot_deg(90.), ctx.gl);
+                image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.).rot_deg(180.), ctx.gl);
+                image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. - 12.).rot_deg(270.), ctx.gl);
             }
         }
+        // Renders some black bars outside the map to cover large tiles
+        {
+            let color = Color::from_hex("090714");
+            ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], color);
+            ctx.rectangle_fill([-64., self.size.y() as f64 * 24. - 12., self.size.x() as f64 * 24. + 76., 76.], color);
+            ctx.rectangle_fill([-64., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+            ctx.rectangle_fill([self.size.x() as f64 * 24. - 12., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+        }
+
     }
 }
 

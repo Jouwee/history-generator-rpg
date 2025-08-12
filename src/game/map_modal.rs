@@ -1,7 +1,7 @@
-use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, COLOR_WHITE}, game::map_component::MapComponent, world::{world::World}, GameContext};
-use piston::{Button as Btn, ButtonState, Key, MouseButton};
+use std::ops::ControlFlow;
 
-use super::InputEvent as OldInputEvent;
+use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, COLOR_WHITE}, game::map_component::MapComponent, world::{world::World}, GameContext};
+use piston::{Key, MouseButton};
 
 pub(crate) struct MapModal {
     world_size: Size2D,
@@ -69,11 +69,17 @@ impl MapModal {
 
         let mut l_assets = assets();
         let font = l_assets.font_standard();
-        for (coord, _, _) in self.map.names.iter() {
+        for (coord, name, major) in self.map.names.iter() {
             if self.mouse_over == *coord {
                 let text = "Click to fast-travel";
                 let width = font.width(text);
-                ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16], &COLOR_WHITE);
+                ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16 - 4], &COLOR_WHITE);
+
+                if !major {
+                    let text = name;
+                    let width = font.width(text);
+                    ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16 + 20], &COLOR_WHITE);
+                }
                 break;
             }
         }
@@ -88,24 +94,19 @@ impl MapModal {
 
     pub(crate) fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {}
 
-    pub(crate) fn input(&mut self, evt: &OldInputEvent, ctx: &mut GameContext) -> MapModalEvent {
-        if evt.button_args.state == ButtonState::Press {
-            match evt.button_args.button {
-                Btn::Keyboard(Key::M) | Btn::Keyboard(Key::Escape) => {
-                    return MapModalEvent::Close
-                }
-                _ => ()
-            }
-        }
-        if self.close_button.input(&mut (), &evt.evt, ctx).is_break() {
-            return MapModalEvent::Close;
+    pub(crate) fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<MapModalEvent, ()> {
+        if self.close_button.input(&mut (), &evt, ctx).is_break() {
+            return ControlFlow::Break(MapModalEvent::Close)
         }
         let camera = ctx.display_context.camera_rect;
         let clamp = [
             [camera[2] / 2. + 16., (self.world_size.0 as f64 * 16.) - camera[2] / 2.],
             [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
         ];
-        match evt.evt {
+        match evt {
+            InputEvent::Key { key: Key::M } | InputEvent::Key { key: Key::Escape } => {
+                return ControlFlow::Break(MapModalEvent::Close)
+            }
             InputEvent::MouseMove { pos } => {
                 self.mouse_over = Coord2::xy(
                     ((pos[0] + camera[0] as f64) / 16.) as i32, 
@@ -123,13 +124,13 @@ impl MapModal {
                 );
                 for (coord, _, _) in self.map.names.iter() {
                     if mouse == *coord {
-                        return MapModalEvent::InstaTravelTo(mouse)
+                        return ControlFlow::Break(MapModalEvent::InstaTravelTo(mouse))
                     }
                 }
             }
             _ => ()
         }
-        return MapModalEvent::None
+        return ControlFlow::Break(MapModalEvent::None)
     }
 
 }

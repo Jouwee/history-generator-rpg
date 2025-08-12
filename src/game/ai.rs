@@ -39,7 +39,7 @@ impl AiRunner {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum AiState {
     Disabled,
     Fight,

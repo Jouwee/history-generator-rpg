@@ -166,6 +166,8 @@ impl UINode for Button {
                     } else {
                         ctx.tooltips.hide_prehash(*hash);
                     }
+                } else {
+                    ctx.tooltips.hide();
                 }
             }
             _ => ()

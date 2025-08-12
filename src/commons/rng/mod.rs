@@ -50,6 +50,10 @@ impl Rng {
         return self.randf_range(start_inclusive as f32, end_exclusive as f32) as i32;
     }
 
+    pub(crate) fn rand_u32(&mut self) -> u32 {
+        return self.xor_shift(self.seed);
+    }
+
     pub(crate) fn randu_range(&mut self, start_inclusive: usize, end_exclusive: usize) -> usize {
         if start_inclusive == end_exclusive {
             return end_exclusive

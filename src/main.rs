@@ -138,7 +138,7 @@ impl App {
                 match game_state.input(args, &mut self.context) {
                     ControlFlow::Break(MainMenuOption::NewGame) => {
                         self.scene = SceneEnum::WorldGen(WorldGenScene::new(WorldGenerationParameters {
-                            seed: 1234567,
+                            seed: Rng::rand().rand_u32(),
                             world_size: Size2D(64, 48),
                             history_length: 2000,
                             number_of_seed_cities: 3,
