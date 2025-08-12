@@ -74,11 +74,16 @@ impl ActionTarget {
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
                     if !chunk.map.check_line_of_sight(&actor_pos, &cursor) {
-                        return Err(ActionFailReason::NoValidTarget);
+                        return Err(ActionFailReason::CantSee);
                     }
                 }
                 let target = chunk.actors_iter().find(|npc| npc.xy == *cursor);
                 let target = target.ok_or_else(|| ActionFailReason::NoValidTarget)?;
+
+                // SMELL: Maybe not the best way to check self?
+                if actor_pos == cursor {
+                    return Err(ActionFailReason::NoValidTarget);
+                }
 
                 if bitmask_get(*filter_mask, FILTER_NOT_HOSTILE) {
                     // TODO: Maybe not player
@@ -680,5 +685,6 @@ pub(crate) enum ActionFailReason {
     NotEnoughStamina,
     OnCooldown,
     CantReach,
+    CantSee,
     NoValidTarget
 }
