@@ -12,6 +12,7 @@ pub(crate) const PLAYER_IDX: usize = usize::MAX;
 pub(crate) struct Chunk {
     pub(crate) world_coord: Coord2,
     pub(crate) size: Size2D,
+    layer: ChunkLayer,
     pub(crate) map: ChunkMap,
     pub(crate) player: Actor,
     pub(crate) actors: Vec<Actor>,
@@ -110,7 +111,7 @@ impl ChunkMap {
 }
 
 impl Chunk {
-    pub(crate) fn new(world_coord: Coord2, size: Size2D, player: Actor, resources: &Resources) -> Chunk {
+    pub(crate) fn new(world_coord: Coord2, size: Size2D, layer: ChunkLayer, player: Actor, resources: &Resources) -> Chunk {
 
         let mut tileset = TileSet::new();
         for tile in resources.object_tiles.iter() {
@@ -125,6 +126,7 @@ impl Chunk {
         Chunk {
             world_coord,
             size,
+            layer,
             map: ChunkMap {
                 tiles_clone: resources.tiles.clone(),
                 ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
@@ -145,6 +147,10 @@ impl Chunk {
 
     pub(crate) fn player_mut(&mut self) -> &mut Actor {
         return &mut self.player
+    }
+
+    pub(crate) fn is_player(&self, index: usize) -> bool {
+        return index == PLAYER_IDX || index >= self.actors.len();
     }
 
     pub(crate) fn actor(&self, index: usize) -> Option<&Actor> {
@@ -188,7 +194,7 @@ impl Chunk {
     }
 
     pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> Chunk {
-        let mut chunk = Self::new(Coord2::xy(0,0), Size2D(128, 128), player, resources);
+        let mut chunk = Self::new(Coord2::xy(0,0), Size2D(128, 128), ChunkLayer::Surface, player, resources);
         for x in 0..chunk.size.x() {
             for y in 0..chunk.size.y() {
                 chunk.map.ground_layer.set_tile(x, y, 1);
@@ -252,7 +258,7 @@ impl Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
-        let mut chunk = Chunk::new(xy, Size2D(64, 64), player, resources);
+        let mut chunk = Chunk::new(xy, Size2D(64, 64), layer, player, resources);
         let mut generator = ChunkGenerator::new(&mut chunk, rng);
         let params = ChunkGenParams {
             layer
@@ -314,34 +320,37 @@ impl Renderable for Chunk {
         for (pos, _item, texture) in self.map.items_on_ground.iter() {
             ctx.texture(texture, ctx.at(pos.x as f64 * 24., pos.y as f64 * 24.));
         }
-        // Renders the nav borders
-        {
-            for y in 1..self.size.y()-1 {
-                ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12]);
-                ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12]);
+
+        if let ChunkLayer::Surface = self.layer {
+            // Renders the nav borders
+            {
+                for y in 1..self.size.y()-1 {
+                    ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12]);
+                    ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 12, y as i32 * 24 + 12]);
+                }
             }
-        }
-        {
-            for x in 1..self.size.x()-1 {
-                ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 + 12, 12]);
-                ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, self.size.y() as i32 * 24 - 12]);
+            {
+                for x in 1..self.size.x()-1 {
+                    ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 + 12, 12]);
+                    ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, self.size.y() as i32 * 24 - 12]);
+                }
             }
-        }
-        {
-            let img = assets().image("gui/nav_corner.png");
-            let transform = ctx.context.transform;
-            image(&img.texture, transform.trans(12., 12.), ctx.gl);
-            image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., 12.).rot_deg(90.), ctx.gl);
-            image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., self.size.y() as f64 * 24. + 12.).rot_deg(180.), ctx.gl);
-            image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. + 12.).rot_deg(270.), ctx.gl);
-        }
-        // Renders some black bars outside the map to cover large tiles
-        {
-            let color = Color::from_hex("090714");
-            ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., self.size.y() as f64 * 24. + 12., self.size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., -64., 76., self.size.y() as f64 * 24. + 76.], color);
-            ctx.rectangle_fill([self.size.x() as f64 * 24. + 12., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+            {
+                let img = assets().image("gui/nav_corner.png");
+                let transform = ctx.context.transform;
+                image(&img.texture, transform.trans(12., 12.), ctx.gl);
+                image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., 12.).rot_deg(90.), ctx.gl);
+                image(&img.texture, transform.trans(self.size.x() as f64 * 24. + 12., self.size.y() as f64 * 24. + 12.).rot_deg(180.), ctx.gl);
+                image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. + 12.).rot_deg(270.), ctx.gl);
+            }
+            // Renders some black bars outside the map to cover large tiles
+            {
+                let color = Color::from_hex("090714");
+                ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], color);
+                ctx.rectangle_fill([-64., self.size.y() as f64 * 24. + 12., self.size.x() as f64 * 24. + 76., 76.], color);
+                ctx.rectangle_fill([-64., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+                ctx.rectangle_fill([self.size.x() as f64 * 24. + 12., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+            }
         }
     }
 }

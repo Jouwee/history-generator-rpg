@@ -432,6 +432,7 @@ impl ActionRunner {
                                         }
 
                                         for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
+                                            let target_is_player = chunk.is_player(i);
                                             let target = chunk.actor_mut(i).unwrap();
                                             
                                             let target_body_part = BodyPart::random(&mut Rng::rand());
@@ -451,7 +452,7 @@ impl ActionRunner {
                                                     effect_layer.add_damage_number(target.xy, damage);
                                                 },
                                             }
-                                            game_log.log(GameLogEntry::damage(target, action.actor == PLAYER_IDX, &damage, &world, &ctx.resources));
+                                            game_log.log(GameLogEntry::damage(target, target_is_player, &damage, &world, &ctx.resources));
                 
                                             let dead = target.hp.health_points();
                                             let target_ai = target.ai_group;

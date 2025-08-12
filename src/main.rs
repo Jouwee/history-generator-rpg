@@ -1,6 +1,6 @@
 use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
-use engine::{audio::{Audio, SoundFile, TrackMood}, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
+use engine::{audio::Audio, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
 use resources::resources::Resources;
 use sdl2_window::{Sdl2Window};
@@ -229,12 +229,6 @@ fn main() {
     };
     app.context.resources.load();
 
-    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/fantasy-music-lumina-143991.mp3"));
-    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/forgotten-land-epic-dark-fantasy-195835.mp3"));
-    app.context.audio.register_track(TrackMood::Regular, SoundFile::new("tracks/the-spell-dark-magic-background-music-ob-lix-8009.mp3"));
-    app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/cinematic-battle-music-271343.mp3"));
-    app.context.audio.register_track(TrackMood::Battle, SoundFile::new("tracks/fantasy-pagan-medieval-cinematic-epic-war-battle-119770.mp3"));
-
     app.scene = SceneEnum::MainMenu(MainMenuScene::new());
 
     if let SceneEnum::WorldGen(scene) = &mut app.scene {
@@ -244,7 +238,7 @@ fn main() {
     let mut last_mouse_pos = [0.0, 0.0];
 
     let mut event_settings = EventSettings::new();
-    event_settings.set_max_fps(40);
+    event_settings.set_max_fps(60);
     event_settings.set_ups(30);
 
     let mut input_state = InputState::new();

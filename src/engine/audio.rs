@@ -96,13 +96,13 @@ impl Audio {
         }
     }
 
-    pub(crate) fn register_track(&mut self, mood: TrackMood, sound: SoundFile) {
-        if !self.tracks.contains_key(&mood) {
-            self.tracks.insert(mood.clone(), (0, Vec::new()));
-        }
-        let (_, vec) = self.tracks.get_mut(&mood).unwrap();
-        vec.push(sound);
-    }
+    // pub(crate) fn register_track(&mut self, mood: TrackMood, sound: SoundFile) {
+    //     if !self.tracks.contains_key(&mood) {
+    //         self.tracks.insert(mood.clone(), (0, Vec::new()));
+    //     }
+    //     let (_, vec) = self.tracks.get_mut(&mood).unwrap();
+    //     vec.push(sound);
+    // }
 
     pub(crate) fn switch_music(&mut self, mood: TrackMood) {
         self.current_mood = mood;

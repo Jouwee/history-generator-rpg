@@ -55,13 +55,13 @@ impl GameLogEntry {
             DamageOutput::Hit(damage) => GameLogEntry::from_parts(vec!(
                 GameLogPart::Actor(Self::actor_name(target, world, resources), is_player),
                 GameLogPart::Text(String::from(" takes ")),
-                GameLogPart::Damage(format!("{:.2}", damage)),
+                GameLogPart::Damage(format!("{:.0}", damage)),
                 GameLogPart::Text(String::from(" damage")),
             )),
             DamageOutput::CriticalHit(damage) => GameLogEntry::from_parts(vec!(
                 GameLogPart::Actor(Self::actor_name(target, world, resources), is_player),
                 GameLogPart::Text(String::from(" takes ")),
-                GameLogPart::Damage(format!("{:.2}", damage)),
+                GameLogPart::Damage(format!("{:.0}", damage)),
                 GameLogPart::Text(String::from(" damage (crit)")),
             ))
         }

@@ -42,7 +42,17 @@ impl MapModal {
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.push();
-        ctx.center_camera_on([self.offset.x.max(0.) as f64, self.offset.y.max(0.) as f64]);
+
+        let camera = ctx.camera_rect;
+        let clamp = [
+            [camera[2] / 2. + 16., (self.world_size.0 as f64 * 16.) - camera[2] / 2.],
+            [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
+        ];
+        ctx.center_camera_on([
+            self.offset.x.clamp(clamp[0][0] as f32, clamp[0][1] as f32) as f64,
+            self.offset.y.clamp(clamp[1][0] as f32, clamp[1][1] as f32) as f64
+        ]);
+
         self.map.render(&(), ctx, game_ctx);
 
         let cursor = [self.player_pos.x * 16, self.player_pos.y * 16];

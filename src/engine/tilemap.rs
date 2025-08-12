@@ -111,19 +111,19 @@ impl TileMap {
             Tile::T16Subset(tile) => {
                 let sheet = assets().image_sheet(&tile.image_sheet.path, tile.image_sheet.tile_size.clone());
                 size = [sheet.tile_size.x() as f64, sheet.tile_size.y() as f64];
-                let mut u = false;
+                let mut u = true;
                 if y > 0 {
                     u = self.tiles[idx - self.width].0 == tile_i;
                 }
-                let mut d = false;
+                let mut d = true;
                 if y < self.height - 1 {
                     d = self.tiles[idx + self.width].0 == tile_i;
                 }
-                let mut l = false;
+                let mut l = true;
                 if x > 0 {
                     l = self.tiles[idx - 1].0 == tile_i;
                 }
-                let mut r = false;
+                let mut r = true;
                 if x < self.width - 1 {
                     r = self.tiles[idx + 1].0 == tile_i;
                 }

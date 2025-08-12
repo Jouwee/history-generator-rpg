@@ -35,6 +35,7 @@ use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::warn;
+use crate::world::unit::UnitId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
@@ -702,6 +703,12 @@ impl Scene for GameSceneState {
                 return ControlFlow::Break(());
             },
             BusEvent::CreatureKilled(creature_id) => {
+                // TODO: Full remove logic
+                for unit_id in self.world.units.iter_ids::<UnitId>() {
+                    let mut unit = self.world.units.get_mut(&unit_id);
+                    unit.remove_creature(&creature_id);
+                }
+
                 for quest in self.world.codex.quests_mut() {
                     if let QuestStatus::Complete = quest.status {
                         continue;
@@ -709,8 +716,7 @@ impl Scene for GameSceneState {
                     let completed = match &quest.objective {
                         QuestObjective::KillVarningr(kill_id) => kill_id == creature_id,
                         QuestObjective::KillBandits(unit_id) | QuestObjective::KillWolves(unit_id) => {
-                            let mut unit = self.world.units.get_mut(unit_id);
-                            unit.remove_creature(&creature_id);
+                            let unit = self.world.units.get(unit_id);
                             unit.creatures.len() == 0
                         }
                     };

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{assets::assets, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, COLOR_WHITE}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId}, GameContext};
+use crate::{engine::{assets::assets, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, COLOR_WHITE}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId, Affliction}, GameContext};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
@@ -65,6 +65,15 @@ impl Hotbar {
                     }
                     tooltip.add_line(TooltipLine::DamageRoll(damage));
                 },
+                ActionEffect::Inflicts { affliction } => {
+                    let text = match affliction {
+                        Affliction::Bleeding { duration } => format!("Target is bleeding for {duration} turns"),
+                        Affliction::OnFire { duration } => format!("Target is on fire for {duration} turns"),
+                        Affliction::Poisoned { duration } => format!("Target is poisoned for {duration} turns"),
+                        Affliction::Stunned { duration } => format!("Target is stunned for {duration} turns"),
+                    };
+                    tooltip.add_line(TooltipLine::Body(text));
+                }
                 _ => {}
             }
         }

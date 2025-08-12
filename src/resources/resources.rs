@@ -228,7 +228,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(20.) },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(15.) },
             ),
             cast_sprite: None,
             projectile: None,
@@ -245,11 +245,11 @@ impl Resources {
             cast_sfx: Some(SoundEffect::new(vec!("sfx/varningr_screech.mp3"))),
             ap_cost: 40,
             stamina_cost: 5.,
-            cooldown: 30,
+            cooldown: 6,
             target: ActionTarget::Caster,
             area: ActionArea::Circle { radius: 8.2 },
             effects: vec!(
-                ActionEffect::Inflicts { affliction: Affliction::Stunned { duration: 2 } }
+                ActionEffect::Inflicts { affliction: Affliction::Stunned { duration: 6 } }
             ),
             cast_sprite: None,
             projectile: None,
@@ -497,7 +497,7 @@ impl Resources {
             .intelligence(SpeciesIntelligence::Instinctive)
             .attributes(Attributes { strength: 5, agility: 12, constitution: 10, unallocated: 0 })
             .drops(vec!(self.materials.id_of("mat:varningr_bone")))
-            .max_hp(200.)
+            .max_hp(250.)
             .innate_actions(vec!(self.actions.id_of("act:bite_varningr"), self.actions.id_of("act:deafening_howl")))
         );
     }
@@ -643,7 +643,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(20.) }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(15.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
@@ -675,7 +675,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(30.) }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(20.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
@@ -707,7 +707,7 @@ impl Resources {
                 details_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE | MAT_TAG_METAL),
             }),
             quality: Some(QualityBlueprintComponent { }),
-            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning(20.) }),
+            mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning(15.) }),
             armor: None,
             artwork_scene: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })

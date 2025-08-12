@@ -1,5 +1,6 @@
 use std::{ops::ControlFlow, time::Instant};
 
+use graphics::Transformed;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
@@ -61,7 +62,10 @@ impl Scene for WorldGenScene {
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         ctx.scale(2.);
 
+        let copy = ctx.context.transform;
+        ctx.context.transform = ctx.context.transform.trans(-16., -16.);
         self.map.render(&(), ctx, game_ctx);
+        ctx.context.transform = copy;
 
         // Year banner
         let center = ctx.layout_rect[2] / 2.;

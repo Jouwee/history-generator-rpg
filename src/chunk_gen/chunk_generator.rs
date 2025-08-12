@@ -348,7 +348,7 @@ impl<'a> ChunkGenerator<'a> {
                                 let creature = world.creatures.get(creature_id);
                                 let species = resources.species.get(&creature.species);
                                 let actor = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
-                                self.spawn(actor, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 3);
+                                self.spawn(actor, *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 2);
                             }
                         }
                         
@@ -362,7 +362,7 @@ impl<'a> ChunkGenerator<'a> {
                 }
 
                 if collapsed_pos.is_none() {
-                    warn!("No position found" );
+                    warn!("No position found");
                     continue;
                 }
 

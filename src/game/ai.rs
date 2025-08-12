@@ -193,10 +193,10 @@ impl AiSolver {
                         ActionEffect::Inflicts { affliction } => {
                             for (_i, actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
                                 let score = match affliction {
-                                    Affliction::Bleeding { duration } => 1. * *duration as f64,
-                                    Affliction::OnFire { duration } => 1. * *duration as f64,
-                                    Affliction::Stunned { duration } => 0.8 * *duration as f64,
-                                    Affliction::Poisoned { duration } => 0.8 * *duration as f64,
+                                    Affliction::Bleeding { duration } => 5. * *duration as f64,
+                                    Affliction::OnFire { duration } => 5. * *duration as f64,
+                                    Affliction::Stunned { duration } => 4. * *duration as f64,
+                                    Affliction::Poisoned { duration } => 5. * *duration as f64,
                                 };
                                 if chunk.ai_groups.is_hostile(ctx.ai_group, actor.ai_group) {
                                     ctx.hostile_damage += score;
