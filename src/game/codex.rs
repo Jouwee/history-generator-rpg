@@ -45,7 +45,7 @@ impl Codex {
 
     pub(crate) fn artifact_mut(&mut self, artifact_id: &ItemId) -> &mut ArtifactCodex {
         if !self.artifacts.contains_key(artifact_id) {
-            self.artifacts.insert(*artifact_id, ArtifactCodex { facts_bitmask: 0, events: Vec::new() });    
+            self.artifacts.insert(*artifact_id, ArtifactCodex { events: Vec::new() });    
         }
         return self.artifacts.get_mut(artifact_id).expect("Just inserted");
     }
@@ -126,10 +126,6 @@ impl CreatureCodex {
         self.facts_bitmask = bitmask_set(self.facts_bitmask, CREATURE_FACT_DEATH);
     }
 
-    pub(crate) fn know_appearance(&self) -> bool {
-        return bitmask_get(self.facts_bitmask, CREATURE_FACT_APPEARANCE);
-    }
-
     pub(crate) fn add_appearance(&mut self) {
         self.facts_bitmask = bitmask_set(self.facts_bitmask, CREATURE_FACT_APPEARANCE);
     }
@@ -160,22 +156,11 @@ impl CreatureCodex {
 
 }
 
-const ARTIFACT_FACT_NAME: u8 = 0b0000_0001;
-
 pub(crate) struct ArtifactCodex {
-    facts_bitmask: u8,
     events: Vec<usize>,
 }
 
 impl ArtifactCodex {
-
-    pub(crate) fn know_name(&self) -> bool {
-        return bitmask_get(self.facts_bitmask, ARTIFACT_FACT_NAME);
-    }
-
-    pub(crate) fn add_name(&mut self) {
-        self.facts_bitmask = bitmask_set(self.facts_bitmask, ARTIFACT_FACT_NAME);
-    }
 
     pub(crate) fn add_event(&mut self, event: usize) {
         self.events.push(event)

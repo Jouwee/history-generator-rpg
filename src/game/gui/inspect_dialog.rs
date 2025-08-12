@@ -75,14 +75,6 @@ impl UINode for InspectDialog {
             }
         }
 
-        if let Some(item) = &self.inspected.item {
-            // TODO:
-            // if let Some(creature_id) = actor.creature_id {
-            //     let codex = world.codex.creature_mut(&creature_id);
-            //     codex.add_appearance();
-            // }
-        }
-
         match &self.inspected.tile_metadata {
             Some(TileMetadata::BurialPlace(creature_id)) => {
                 let events = world.events.iter().enumerate().filter(|(_, evt)| {
@@ -91,15 +83,24 @@ impl UINode for InspectDialog {
                         _ => return false,
                     };
                     return evt.relates_to_creature(creature_id)
-                }).map(|(i, _)| i);
+                });
+
+                for (i, event) in events.clone() {
+                    for artifact in event.related_artifacts() {
+                        let codex = world.codex.artifact_mut(&artifact);
+                        codex.add_event(i);
+                    }
+                }
+
                 let codex = world.codex.creature_mut(&creature_id);
                 codex.add_name();
                 codex.add_birth();
                 codex.add_death();
                 codex.add_father();
                 codex.add_mother();
-                for event in events {
-                    codex.add_event(event);
+                
+                for (i, _) in events {
+                    codex.add_event(i);
                 }
             },
             None => (),

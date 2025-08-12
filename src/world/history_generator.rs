@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
+use crate::{commons::rng::Rng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
 
 use super::world::World;
 
@@ -44,13 +44,13 @@ impl WorldHistoryGenerator {
         let mut world_map = WorldTopology::new(parameters.world_size);
         let now = Instant::now();
         world_map.plate_tectonics(&mut rng, parameters.num_plate_tectonics);
-        println!("Plate tectonics in {:.2?}", now.elapsed());
+        info!("Plate tectonics in {:.2?}", now.elapsed());
         let now: Instant = Instant::now();
         world_map.precipitation(&mut rng);
-        println!("Precipitation {:.2?}", now.elapsed());
+        info!("Precipitation {:.2?}", now.elapsed());
         // let now: Instant = Instant::now();
         // world_map.erosion(&mut params);
-        // println!("Erosion {:.2?}", now.elapsed());
+        // info!("Erosion {:.2?}", now.elapsed());
         world_map.noise(&rng, &resources.biomes);
 
         let mut world = World::new(world_map, parameters.clone());

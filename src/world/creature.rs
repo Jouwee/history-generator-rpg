@@ -141,7 +141,6 @@ impl CreatureGender {
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum CauseOfDeath {
     OldAge,
-    Starvation,
     Disease,
     KilledInBattle(CreatureId, Option<ItemId>)
 }

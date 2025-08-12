@@ -2,7 +2,7 @@ use std::{cell::RefCell, time::Instant};
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::ArmorBlueprintComponent, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::ArmorBlueprintComponent, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
@@ -42,7 +42,7 @@ impl Resources {
         self.load_cultures();
         self.load_biomes();
         self.load_item_blueprints();
-        println!("Loading resources took {:.2?}", now.elapsed())
+        info!("Loading resources took {:.2?}", now.elapsed())
     }
 
     fn load_materials(&mut self) {

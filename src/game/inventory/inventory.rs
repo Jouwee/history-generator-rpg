@@ -57,10 +57,6 @@ impl Inventory {
         self.equip_i(slot, 0, item);
     }
 
-    pub(crate) fn unequip(&mut self, slot: &EquipmentType) -> Option<Item> {
-        self.unequip_i(slot, 0)
-    }
-
     pub(crate) fn equipped(&self, slot: &EquipmentType) -> Option<&Item> {
         self.equipped_i(slot, 0)
     }
@@ -161,7 +157,7 @@ mod tests_ai_groups {
         inventory.equip(&EquipmentType::Hand, item);
         assert!(inventory.equipped(&EquipmentType::Hand).is_some());
 
-        let r = inventory.unequip(&EquipmentType::Hand);
+        let r = inventory.unequip_i(&EquipmentType::Hand, 0);
         assert!(r.is_some());
         assert!(inventory.equipped(&EquipmentType::Hand).is_none());
 

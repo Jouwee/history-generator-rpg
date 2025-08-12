@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{button::{self, Button}, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::BusEvent}, game::{codex::{Quest, QuestObjective, QuestStatus}, factory::item_factory::ItemFactory}, globals::perf::perf, resources, world::{creature::Profession, item::Item, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::BusEvent}, game::{codex::{Quest, QuestStatus}, factory::item_factory::ItemFactory}, globals::perf::perf, world::{item::Item, world::World}, GameContext, RenderContext};
 
 pub(crate) struct QuestCompleteDialog {
     layout: LayoutComponent,
@@ -22,10 +22,10 @@ impl QuestCompleteDialog {
         chat_container.layout_component().size([296., 16.]).anchor_top_center(0., 0.);
 
         let mut response_container = SimpleContainer::new();
-        response_container.layout_component().size([24.*3.+8., 32.]).anchor_top_center(0., 24.);
+        response_container.layout_component().size([24.*3.+16., 32.]).anchor_top_center(0., 24.);
 
         let mut actions_container = SimpleContainer::new();
-        actions_container.layout_component().size([24.*3.+8., 24.]).anchor_top_center(0., 16.+32.+4.);
+        actions_container.layout_component().size([24.*3.+16., 24.]).anchor_top_center(0., 16.+32.+4.);
 
         Self {
             layout,
@@ -48,7 +48,7 @@ impl UINode for QuestCompleteDialog {
         return &mut self.layout
     }
 
-    fn init(&mut self, world: &Self::State, game_ctx: &mut GameContext) {
+    fn init(&mut self, _world: &Self::State, game_ctx: &mut GameContext) {
 
         let label = Label::text("\"I see you have completed my quest! Here, choose a reward.\"");
         self.chat_container.add(label);
@@ -63,7 +63,7 @@ impl UINode for QuestCompleteDialog {
         }
 
         let mut button = Button::text("Confirm reward").key("confirm");
-        button.layout_component().size([24.*3.+8., 24.]);
+        button.layout_component().size([24.*3.+16., 24.]);
         self.actions_container.add(button);
     }
 

@@ -34,6 +34,7 @@ use crate::game::gui::death_dialog::DeathDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
+use crate::warn;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
@@ -489,7 +490,7 @@ impl Scene for GameSceneState {
                 if let Some((action_id, action, cursor)) = next {
                     let v = self.action_runner.try_use(&action_id, action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.game_log, ctx);
                     if let Err(v) = &v {
-                        println!("AI tried to use action invalid: {:?}", v);
+                        warn!("AI tried to use action invalid: {:?}", v);
                     }
                 } else {
                     self.next_turn(ctx);
@@ -518,7 +519,7 @@ impl Scene for GameSceneState {
                         // TODO: Borrow issues
                         // let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                         // if let Err(v) = &v {
-                        //     println!("AI tried to use action invalid: {:?}", v);
+                        //     warn!("AI tried to use action invalid: {:?}", v);
                         // }
                     } else {
                         end_turns_idxs.push(idx);

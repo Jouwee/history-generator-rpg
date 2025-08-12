@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs};
 
 use toml::{Table, Value};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, engine::geometry::Size2D};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, engine::geometry::Size2D, warn};
 
 use super::jigsaw_structure_generator::{JigsawPiece, JigsawPiecePool};
 
@@ -86,7 +86,7 @@ impl JigsawParser {
                                                     }
 
                                                     if tiles.len() != size.area() {
-                                                        println!("[ERR] Jigsaw piece {pool_name}.{piece_name} expected {} tiles but has {}", size.area(), tiles.len());
+                                                        warn!("[ERR] Jigsaw piece {pool_name}.{piece_name} expected {} tiles but has {}", size.area(), tiles.len());
                                                         continue;
                                                     }
 

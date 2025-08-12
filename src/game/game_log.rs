@@ -15,7 +15,6 @@ impl GameLog {
 
     pub fn log(&mut self, message: GameLogEntry) {
         self.entries.insert(0, message);
-        // println!("{}", message.text);0
     }
 
     pub fn render(&mut self, ctx: &mut RenderContext) {

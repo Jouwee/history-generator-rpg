@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::chunk::AiGroups, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::chunk::AiGroups, info, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -133,10 +133,10 @@ impl AiSolver {
         let mut runner = AiRunner::new();
         if let Some(path) = result {
             runner.actions = VecDeque::from(path.actions.clone());
-            println!("Winner: {:?}", path)
+            info!("Winner: {:?}", path)
         }
         let elapsed = now.elapsed();
-        println!("AI checked {} paths, elapsed {:.2?}", paths, elapsed);
+        info!("AI checked {} paths, elapsed {:.2?}", paths, elapsed);
 
         return runner
     }

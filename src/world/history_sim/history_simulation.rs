@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
@@ -29,7 +27,6 @@ impl HistorySimulation {
 
     pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) -> bool {
         world.date = world.date + step;
-        let now = Instant::now();
 
         let chances = self.storyteller.global_chances(&mut self.rng, &world);
 
@@ -99,17 +96,6 @@ impl HistorySimulation {
             self.simulate_step_unit(world, &step, &world.date.clone(), self.rng.clone(), &id);
             self.rng.next();
         }
-
-
-        println!("");
-        println!("Elapsed: {:.2?}", now.elapsed());
-        println!("Year: {}", world.date.year());
-        println!("Total units: {}", world.units.len());
-        println!("Total creatures: {}", world.creatures.len());
-        println!("Simulated creatures: {}", creatures);
-        println!("Total artifacts: {}", world.artifacts.len());
-        println!("Total events: {}", world.events.len());
-
         return creatures > 0;
     }
 

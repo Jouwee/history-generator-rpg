@@ -7,7 +7,8 @@ use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engin
 pub(crate) struct Console {
     visible: bool,
     output: String,
-    command: String
+    command: String,
+    last_command: String
 }
 
 impl Console {
@@ -16,6 +17,7 @@ impl Console {
         Self {
             visible: false,
             output: String::new(),
+            last_command: String::new(),
             command: String::new()
         }
     }
@@ -68,6 +70,9 @@ impl Console {
                 Key::X => self.command = self.command.clone() + "x",
                 Key::Y => self.command = self.command.clone() + "y",
                 Key::Z => self.command = self.command.clone() + "z",
+                Key::Up => {
+                    self.command = self.last_command.clone();
+                }
                 Key::NumPad0 | Key::D0 => self.command = self.command.clone() + "0",
                 Key::NumPad1 | Key::D1 => self.command = self.command.clone() + "1",
                 Key::NumPad2 | Key::D2 => self.command = self.command.clone() + "2",
@@ -96,6 +101,7 @@ impl Console {
                         Ok(str) => self.output = str,
                         Err(str) => self.output = str,
                     }
+                    self.last_command = self.command.clone();
                     self.command = String::new();
                 }
                 _ => ()
@@ -114,20 +120,17 @@ impl Console {
             Some("/generate") => {
                 let structure = parts.next().ok_or("Param 1 should be the structure name")?;
 
+                let rng = Rng::seeded(123456);
+
                 let pos = chunk.player().xy.clone();
-                let mut generator = ChunkGenerator::new(chunk, Rng::rand());
+                let mut generator = ChunkGenerator::new(chunk, rng.clone());
 
                 let mut solver = generator.get_jigsaw_solver();
-                let structure = solver.solve_structure(structure, pos, &mut Rng::rand(), Vec::new());
-                if let Some(structure) = structure {
-                    for (pos, piece) in structure.vec.iter() {
-                        generator.place_template(*pos, &piece, &ctx.resources);
-                    }
-                    return Result::Ok(format!("Generated"));
-                } else {
-                    return Result::Err(format!("Error while generating"));
+                let structure = solver.solve_structure(structure, pos, &mut rng.clone(), Vec::new())?;
+                for (pos, piece) in structure.vec.iter() {
+                    generator.place_template(*pos, &piece, &ctx.resources);
                 }
-
+                return Result::Ok(format!("Generated"));
                 
             },
             Some("/spawn") => {
@@ -158,7 +161,7 @@ impl Console {
                 chunk.player_mut().ap.action_points = chunk.player_mut().ap.max_action_points as i32;
                 chunk.player_mut().stamina.stamina = chunk.player_mut().stamina.max_stamina;
                 chunk.player_mut().cooldowns.clear();
-                chunk.player_mut().hp.recover_turn();
+                chunk.player_mut().hp.recover_full();
 
                 return Result::Ok(format!("Cheater"));
             },

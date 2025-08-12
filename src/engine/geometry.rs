@@ -77,7 +77,7 @@ impl Sub for Vec2 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct Coord2 {
     pub(crate) x: i32,
     pub(crate) y: i32

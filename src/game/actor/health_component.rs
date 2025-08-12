@@ -53,10 +53,17 @@ impl HealthComponent {
         body_part.health = (body_part.health - damage).max(0.);
     }
 
-    pub(crate) fn recover_turn(&mut self) {
-        self.current_hp = (self.current_hp + 1.).min(self.max_health_points());
+    pub(crate) fn recover_full(&mut self) {
+        self.current_hp = self.max_hp;
         for (_body_part, condition) in self.body_parts.iter_mut() {
-            condition.health = (condition.health + 0.1).min(condition.max_health);
+            condition.health = condition.max_health;
+        }
+    }
+
+    pub(crate) fn recover_turn(&mut self) {
+        self.current_hp = (self.current_hp + 0.1).min(self.max_health_points());
+        for (_body_part, condition) in self.body_parts.iter_mut() {
+            condition.health = (condition.health + 0.01).min(condition.max_health);
         }
     }
 
@@ -122,7 +129,6 @@ mod test_health_component {
         health.hit(BodyPart::Torso, 5.);
         assert_eq!(health.health_points(), 95.);
         assert_eq!(health.max_health_points(), 99.324326);
-        
         
     }
 

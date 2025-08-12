@@ -1,6 +1,6 @@
 use graphics::Transformed;
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, chunk::AiGroups, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -29,31 +29,6 @@ pub(crate) struct Actor {
 
 impl Actor {
 
-    pub(crate) fn player(xy: Coord2, species_id: &SpeciesId, species: &Species) -> Actor {
-        let gender = CreatureGender::random();
-        Actor {
-            xy,
-            animation: AnimationTransform::new(),
-            ap: ActionPointsComponent::new(),
-            stamina: StaminaComponent::new(),
-            hp: HealthComponent::new(species.max_hp),
-            attributes: species.attributes.clone(),
-            xp: 0,
-            level: 1,
-            ai_state: AiState::Disabled,
-            ai_group: AiGroups::player(),
-            ai: AiRunner::new(),
-            species: *species_id,
-            creature_id: None,
-            gender,
-            sprite_flipped: Rng::rand().rand_chance(0.5),
-            sprite: species.appearance.collapse(&gender),
-            inventory: Inventory::new(),
-            afflictions: Vec::new(),
-            cooldowns: Vec::new(),
-        }
-    }
-
     pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species, ai_group: u8) -> Actor {
         let gender = CreatureGender::random();
         Actor {
@@ -80,7 +55,6 @@ impl Actor {
     }
 
     pub(crate) fn from_creature(xy: Coord2, ai_group: u8, creature_id: CreatureId, creature: &Creature, species_id: &SpeciesId, species: &Species, world: &World, resources: &Resources) -> Actor {
-        // TODO: Determinate
         let mut rng = Rng::seeded(creature_id);
         let inventory = match creature.sim_flag_is_inteligent() {
             true => EquipmentGenerator::generate(&creature_id, &mut rng, world, resources),

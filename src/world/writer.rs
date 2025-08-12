@@ -171,7 +171,6 @@ impl<'a> Writer<'a> {
         match cause_of_death {
             CauseOfDeath::Disease => String::from("of a sudden illness"),
             CauseOfDeath::OldAge => String::from("peacefully in their sleep"),
-            CauseOfDeath::Starvation => String::from("of malnutrition"),
             CauseOfDeath::KilledInBattle(killer_id, _) => format!("by the hand of {}", self.creature_name(killer_id))
         }
     }

@@ -34,6 +34,13 @@ macro_rules! history_trace {
 
 
 #[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        $crate::engine::debug::log::log().log("INFO", &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
         $crate::engine::debug::log::log().log("WARN", &format!($($arg)*));

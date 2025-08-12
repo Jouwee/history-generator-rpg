@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use crate::{engine::{assets::{assets, Assets, Font, FontAsset}, gui::{layout_component::LayoutComponent, UIEvent, UINode}, COLOR_WHITE}, GameContext, RenderContext};
 
 /// Stateful label
@@ -67,11 +65,11 @@ impl UINode for Label {
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
-        let mut y = layout[1] + 15.;
         let lines = self.break_text(ctx.layout_rect[2]);
         let mut assets = assets();
         let font = assets.font(&self.font);
         let line_height = font.line_height();
+        let mut y = layout[1] + line_height;
         let x = layout[0]as i32 + 4;
         for line in lines {
             ctx.text_shadow(&line, font, [x, y as i32], &COLOR_WHITE);   

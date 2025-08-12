@@ -566,9 +566,8 @@ impl ActionRunner {
                                         }
                                     },
                                     ActionEffect::Sleep =>  {
-                                        // TODO: This healing doesn't work anymore.
-                                        // let mut actor = chunk.actor_mut(action.actor).unwrap();
-                                        // self.chunk.player.hp.refill();
+                                        let actor = chunk.actor_mut(action.actor).unwrap();
+                                        actor.hp.recover_full();
                                     },
                                     ActionEffect::PickUp => {
                                         let item_on_ground = match chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center) {

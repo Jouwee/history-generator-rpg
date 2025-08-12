@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
 
-use crate::{commons::rng::Rng, game::options::AudioOptions};
+use crate::{commons::rng::Rng, game::options::AudioOptions, warn};
 
 use super::scene::Update;
 
@@ -110,7 +110,7 @@ impl Audio {
 
     pub(crate) fn play_once(&self, sound: impl Sound) {
         if let Err(err) = self.stream_handle.play_raw(sound.source()) {
-            println!("Error playing audio: {err}")
+            warn!("Error playing audio: {err}")
         }
     }
 

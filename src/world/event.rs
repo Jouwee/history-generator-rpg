@@ -59,10 +59,6 @@ impl Event {
         }
     }
 
-    pub(crate) fn relates_to_artifact(&self, artifact_id: &ItemId) -> bool {
-        return self.related_artifacts().iter().any(|id| id == artifact_id);
-    }
-
     pub(crate) fn event_text(&self, resources: &Resources, world: &World) -> String {
         match self {
             Event::CreatureBirth { date, creature_id } => {

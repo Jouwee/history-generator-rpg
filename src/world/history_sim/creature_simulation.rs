@@ -20,7 +20,6 @@ pub(crate) enum CreatureSideEffect {
 }
 
 const YEARLY_CHANCE_MARRY: f32 = 0.8;
-const CHANCE_TO_STARVE: f32 = 0.2;
 const CHANCE_NEW_JOB: f32 = 0.005;
 const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
 
@@ -29,10 +28,6 @@ impl CreatureSimulation {
     // TODO: Smaller steps
     pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
-        // Death by starvation
-        // if unit.resources.food <= 0. && rng.rand_chance(CHANCE_TO_STARVE) {
-        //     return CreatureSideEffect::Death(CauseOfDeath::Starvation);
-        // }
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
             return CreatureSideEffect::Death(CauseOfDeath::Disease);
@@ -75,7 +70,7 @@ impl CreatureSimulation {
             if age >= 18 {
                 // Have child
                 if creature.gender.is_female() && creature.spouse.is_some()  {
-                    if rng.rand_chance(Self::chance_of_child(now, creature, unit.resources.food, unit.creatures.len(), chances)) {
+                    if rng.rand_chance(Self::chance_of_child(now, creature, chances)) {
                         return CreatureSideEffect::HaveChild;
                     }
                 }
@@ -117,7 +112,7 @@ impl CreatureSimulation {
         return CreatureSideEffect::None
     }
 
-    fn chance_of_child(now: &WorldDate, creature: &Creature, unit_food_stock: f32, unit_population: usize, chances: &UnitChances) -> f32 {
+    fn chance_of_child(now: &WorldDate, creature: &Creature, chances: &UnitChances) -> f32 {
         let age = (*now - creature.birth).year() as f32;        
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
@@ -287,7 +282,7 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
             // TODO(IhlgIYVA): Bug
             let creature = world.creatures.get(&target_id);
             if creature.death.is_some() {
-                println!("plot: creature is already dead");
+                warn!("plot: creature is already dead");
                 return;
             }
             drop(creature);
@@ -325,7 +320,7 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
 
             } else {
                 // TODO(IhlgIYVA): Error handling
-                println!("<plot> How????");
+                warn!("[plot] Shouldn't happen");
             }
 
         }
@@ -405,7 +400,7 @@ pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_fro
                     if relationship.friend_or_better() {
                         // TODO(IhlgIYVA): How did I get to a point where it killed his own "friend"?
                         if relationship_creature_id == *killer_id {
-                            println!("rel: {:?} killer: {:?}", relationship_creature_id, killer_id);
+                            warn!("Killed its own friend. rel: {:?} killer: {:?}", relationship_creature_id, killer_id);
                             continue
                         }
                         let killer = world.creatures.get(killer_id);

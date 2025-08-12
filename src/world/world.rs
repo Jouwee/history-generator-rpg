@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use crate::{engine::geometry::Coord2, game::codex::Codex, world::{history_generator::WorldGenerationParameters, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
+use crate::{engine::geometry::Coord2, game::codex::Codex, info, world::{creature::Profession, history_generator::WorldGenerationParameters, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -46,7 +46,7 @@ impl World {
                 for creature_id in unit.creatures.iter() {
                     let creature = self.creatures.get(creature_id);
                     let age = (self.date - creature.birth).year();
-                    if age > 20 && age < 40 && creature.spouse.is_none() {
+                    if age > 20 && age < 40 && creature.spouse.is_none() && creature.profession == Profession::Peasant {
                         candidate = Some((creature_id.clone(), unit.xy.clone()));
                         break 'outer;
                     }
@@ -107,7 +107,7 @@ impl World {
 
     pub(crate) fn dump_events(&self, filename: &str, resources: &Resources) {
         let mut f = File::create(filename).unwrap();
-        println!("{:?} events", self.events.len());
+        info!("{:?} events", self.events.len());
         for event in self.events.iter() {
             writeln!(&mut f, "{}", event.event_text(resources, &self)).unwrap();
         }

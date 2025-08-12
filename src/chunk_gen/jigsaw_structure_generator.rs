@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::{commons::rng::Rng, engine::geometry::Size2D, Coord2};
 
@@ -25,9 +25,9 @@ impl JigsawSolver {
         self.available_pools.insert(String::from(name), pool);
     }
 
-    pub(crate) fn solve_structure(&mut self, starter_pool: &str, position: Coord2, rng: &mut Rng, requirements: Vec<JigsawPieceRequirement>) -> Option<&Structure> {
-        let pool = self.available_pools.get(starter_pool).expect("Invalid pool");
-        let options = pool.pieces.values().collect();
+    pub(crate) fn solve_structure(&mut self, starter_pool: &str, position: Coord2, rng: &mut Rng, requirements: Vec<JigsawPieceRequirement>) -> Result<&Structure, String> {
+        let pool = self.available_pools.get(starter_pool).ok_or("No pool")?;
+        let options: Vec<&JigsawPiece> = pool.pieces.values().collect();
         let options = rng.shuffle(options);
         
         for selected in options.iter() {
@@ -49,9 +49,9 @@ impl JigsawSolver {
 
             self.structures.push(result.unwrap());
             
-            return Some(self.structures.last().unwrap());
+            return Ok(self.structures.last().unwrap());
         }
-        return None;
+        return Err(String::from("No valid position for structure"));
     }
 
     fn recursive_jigsaw(&self, vec: Structure, depth: usize, max_depth: usize, mut rng: Rng, requirements: &Vec<JigsawPieceRequirement>) -> Option<Structure> {
@@ -183,19 +183,19 @@ mod tests_jigsaw_solver {
 
         // Can add the first building
         let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), true);
+        assert_eq!(result.is_ok(), true);
 
         // Can't add another one if overlaps
         let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), false);
+        assert_eq!(result.is_ok(), false);
 
         // Still overlaps
         let result = solver.solve_structure("A", Coord2::xy(12, 12), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), false);
+        assert_eq!(result.is_ok(), false);
 
         // This is ok
         let result = solver.solve_structure("A", Coord2::xy(14, 14), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), true);
+        assert_eq!(result.is_ok(), true);
 
     }
 
@@ -215,13 +215,13 @@ mod tests_jigsaw_solver {
 
         // Can add the 2 piece building
         let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), true);
+        assert_eq!(result.is_ok(), true);
         let structure = result.unwrap();
         assert_eq!(structure.vec.len(), 2);
 
         // The subpiece can't overlap existing structures
         let result = solver.solve_structure("A", Coord2::xy(5, 10), &mut rng, Vec::new());
-        assert_eq!(result.is_some(), false);
+        assert_eq!(result.is_ok(), false);
 
     }
 
@@ -239,7 +239,7 @@ mod tests_jigsaw_solver {
         let result = solver.solve_structure("A", Coord2::xy(10, 10), &mut Rng::seeded(0), vec!(
             JigsawPieceRequirement::Exactly("c".to_string(), 1)
         ));
-        assert_eq!(result.is_some(), true);
+        assert_eq!(result.is_ok(), true);
         let structure = result.unwrap();
         assert_eq!(structure.vec.len(), 3);
 
@@ -247,7 +247,7 @@ mod tests_jigsaw_solver {
         let result = solver.solve_structure("A", Coord2::xy(5, 10), &mut Rng::seeded(0), vec!(
             JigsawPieceRequirement::Exactly("c".to_string(), 3)
         ));
-        assert_eq!(result.is_some(), true);
+        assert_eq!(result.is_ok(), true);
         let structure = result.unwrap();
         assert_eq!(structure.vec.len(), 5);
     }
@@ -260,14 +260,14 @@ pub(crate) enum JigsawPieceRequirement {
 }
 
 pub(crate) struct JigsawPiecePool {
-    pub(crate) pieces: HashMap<String, JigsawPiece>
+    pub(crate) pieces: BTreeMap<String, JigsawPiece>
 }
 
 impl JigsawPiecePool {
 
     pub(crate) fn new() -> Self {
         JigsawPiecePool {
-            pieces: HashMap::new()
+            pieces: BTreeMap::new()
         }
     }
 
