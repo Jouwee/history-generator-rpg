@@ -3,7 +3,7 @@
 'b' = { ground= 8, object= 13 }
 '#' = { ground= 8, object= 15 }
 'u' = { ground= 8, object= 17 }
-'d' = { ground= 8, object= 16 }
+'d' = { ground= 1, object= 16 }
 'M' = { ground= 8, object= 0, connect = "varningr_lair" }
 'R' = { ground= 8, object= 0, connect = "varningr_room" }
 'E' = { ground= 8, object= 0, connect = "varningr_entrance" }

@@ -276,6 +276,7 @@ impl GameSceneState {
         }
         // Creates the new chunk
         // TODO: When out of bounds, make a special chunk gen
+        self.world_layer = ChunkLayer::Surface;
         let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, world_pos, self.world_layer, player);
         // Switcheroo
         self.world_pos = world_pos;
