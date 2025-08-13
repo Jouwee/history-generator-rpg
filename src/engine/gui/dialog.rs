@@ -14,8 +14,8 @@ pub(crate) struct DialogWrapper<T> where T: UINode {
 impl<T, S> DialogWrapper<T> where T: UINode<State = S, Input = UIEvent> {
 
     pub(crate) fn new() -> Self {
-        let mut close_button = Button::text(" X");
-        close_button.layout_component().anchor_top_right(0., 0.);
+        let mut close_button = Button::text("X");
+        close_button.layout_component().anchor_top_right(1., 1.).size([16., 16.]);
         Self {
             value: None,
             close_button: Some(close_button)

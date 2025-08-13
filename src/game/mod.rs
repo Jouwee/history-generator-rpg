@@ -33,6 +33,7 @@ use crate::game::console::Console;
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::game::gui::death_dialog::DeathDialog;
+use crate::game::gui::help_dialog::HelpDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::resources::action::{ActionRunner, ActionArea};
@@ -86,6 +87,7 @@ pub(crate) struct GameSceneState {
     button_inventory: Button,
     button_codex: Button,
     button_map: Button,
+    button_help: Button,
     button_end_turn: Button,
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
@@ -96,6 +98,7 @@ pub(crate) struct GameSceneState {
     chat_dialog: DialogWrapper<ChatDialog>,
     quest_complete_dialog: DialogWrapper<QuestCompleteDialog>,
     death_dialog: DialogWrapper<DeathDialog>,
+    help_dialog: DialogWrapper<HelpDialog>,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -106,6 +109,7 @@ pub(crate) struct GameSceneState {
     console: Console,
     action_runner: ActionRunner,
     camera_offset: [f64; 2],
+    shown_help: bool,
 }
 
 impl GameSceneState {
@@ -116,6 +120,8 @@ impl GameSceneState {
         button_inventory.layout_component().anchor_bottom_center(-136.0, -1.0);
         let mut button_codex = Button::text("Cdx").tooltip(Tooltip::new("Codex"));
         button_codex.layout_component().anchor_bottom_center(-110.0, -1.0);
+        let mut button_help = Button::text("?").tooltip(Tooltip::new("Help"));
+        button_help.layout_component().anchor_bottom_center(132.0, -1.0);
         let mut button_end_turn = Button::text("Trn").tooltip(Tooltip::new("End turn (Space)"));
         button_end_turn.layout_component().anchor_bottom_center(157.0, -1.0);
         let mut button_toggle_turn_based = Button::text("Mod").tooltip(Tooltip::new("Togle Turn-based / Real time"));
@@ -133,6 +139,7 @@ impl GameSceneState {
             button_map,
             button_inventory,
             button_codex,
+            button_help,
             button_end_turn,
             button_toggle_turn_based,
             character_dialog: DialogWrapper::new(),
@@ -141,6 +148,7 @@ impl GameSceneState {
             chat_dialog: DialogWrapper::new(),
             quest_complete_dialog: DialogWrapper::new().hide_close_button(),
             death_dialog: DialogWrapper::new().hide_close_button(),
+            help_dialog: DialogWrapper::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -150,7 +158,8 @@ impl GameSceneState {
             player_pathing: PlayerPathing::new(),
             console: Console::new(),
             action_runner: ActionRunner::new(),
-            camera_offset: [0.; 2]
+            camera_offset: [0.; 2],
+            shown_help: false,
         }
     }
 
@@ -328,6 +337,10 @@ impl Scene for GameSceneState {
         } else {
             ctx.audio.switch_music(TrackMood::Regular);
         }
+        if !self.shown_help {
+            self.help_dialog.show(HelpDialog::new(), &mut (), ctx);
+            self.shown_help = true;
+        }
     }
 
     fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
@@ -389,6 +402,7 @@ impl Scene for GameSceneState {
         self.button_inventory.render(&(), ctx, game_ctx);
         self.button_codex.render(&(), ctx, game_ctx);
         self.button_map.render(&(), ctx, game_ctx);
+        self.button_help.render(&(), ctx, game_ctx);
         if self.can_end_turn() {
             self.button_end_turn.render(&(), ctx, game_ctx);
         }
@@ -403,6 +417,7 @@ impl Scene for GameSceneState {
         self.chat_dialog.render(&mut self.world, ctx, game_ctx);
         self.quest_complete_dialog.render(&mut self.world, ctx, game_ctx);
         self.death_dialog.render(&mut (), ctx, game_ctx);
+        self.help_dialog.render(&mut (), ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
@@ -581,6 +596,7 @@ impl Scene for GameSceneState {
         self.inspect_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.chat_dialog.input(&mut self.world, &evt.evt, ctx)?;
         self.quest_complete_dialog.input(&mut self.world, &evt.evt, ctx)?;
+        self.help_dialog.input(&mut (), &evt.evt, ctx)?;
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
@@ -629,6 +645,11 @@ impl Scene for GameSceneState {
 
         if self.button_codex.input(&mut (), &evt.evt, ctx).is_break() {
             self.codex_dialog.show(CodexDialog::new(), &self.world, ctx);
+            return ControlFlow::Break(());
+        }
+
+        if self.button_help.input(&mut (), &evt.evt, ctx).is_break() {
+            self.help_dialog.show(HelpDialog::new(), &(), ctx);
             return ControlFlow::Break(());
         }
 
