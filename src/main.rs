@@ -156,10 +156,10 @@ impl App {
                 }
             },
             SceneEnum::WorldGen(game_state) => {
-                game_state.input(args, &mut self.context);
+                let _ = game_state.input(args, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.input(args, &mut self.context);
+                let _ = game_state.input(args, &mut self.context);
             },
         }
     }
@@ -168,13 +168,13 @@ impl App {
         match &mut self.scene {
             SceneEnum::None => {},
             SceneEnum::MainMenu(game_state) => {
-                game_state.event(event, &mut self.context);
+                let _ = game_state.event(event, &mut self.context);
             },
             SceneEnum::WorldGen(game_state) => {
-                game_state.event(event, &mut self.context);
+                let _ = game_state.event(event, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                game_state.event(event, &mut self.context);
+                let _ = game_state.event(event, &mut self.context);
             },
         }
     }
@@ -305,7 +305,7 @@ fn main() {
                         let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, species, &world, &app.context.resources);
                         drop(creature);
 
-                        let mut rng = Rng::seeded("player");
+                        let mut rng = Rng::seeded(creature_id).derive("equipment");
                         let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &app.context.resources).make());
 
                         player.inventory.auto_equip();

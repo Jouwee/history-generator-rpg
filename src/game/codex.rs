@@ -150,7 +150,7 @@ impl CreatureCodex {
         self.events.push(event)
     }
 
-    pub(crate) fn events(&self) -> Iter<usize> {
+    pub(crate) fn events(&'_ self) -> Iter<'_, usize> {
         return self.events.iter()
     }
 
@@ -166,7 +166,7 @@ impl ArtifactCodex {
         self.events.push(event)
     }
 
-    pub(crate) fn events(&self) -> Iter<usize> {
+    pub(crate) fn events(&'_ self) -> Iter<'_, usize> {
         return self.events.iter()
     }
 

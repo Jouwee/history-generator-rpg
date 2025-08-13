@@ -15,4 +15,9 @@ rodio = "0.20.1"
 toml = "0.8.22"
 
 [profile.release]
-strip = true  # Automatically strip symbols from the binary.
+# Stip symbols
+strip = true
+# All optimizations
+opt-level = 3
+# Link time optimizations (full)
+lto = true

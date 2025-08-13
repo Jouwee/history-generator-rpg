@@ -279,27 +279,27 @@ pub(crate) mod fixture {
             }
         }
 
-        pub(crate) fn creature_a1(&self) -> Ref<Creature> {
+        pub(crate) fn creature_a1(&'_ self) -> Ref<'_, Creature> {
             return self.world.creatures.get(&self.creature_a1);
         }
 
-        pub(crate) fn creature_a2(&self) -> Ref<Creature> {
+        pub(crate) fn creature_a2(&'_ self) -> Ref<'_, Creature> {
             return self.world.creatures.get(&self.creature_a2);
         }
 
-        pub(crate) fn creature_a3(&self) -> Ref<Creature> {
+        pub(crate) fn creature_a3(&'_ self) -> Ref<'_, Creature> {
             return self.world.creatures.get(&self.creature_a3);
         }
 
-        pub(crate) fn creature_a4(&self) -> Ref<Creature> {
+        pub(crate) fn creature_a4(&'_ self) -> Ref<'_, Creature> {
             return self.world.creatures.get(&self.creature_a4);
         }
 
-        pub(crate) fn creature_a3_mut(&mut self) -> RefMut<Creature> {
+        pub(crate) fn creature_a3_mut(&'_ mut self) -> RefMut<'_, Creature> {
             return self.world.creatures.get_mut(&self.creature_a3);
         }
 
-        pub(crate) fn creature_a4_mut(&mut self) -> RefMut<Creature> {
+        pub(crate) fn creature_a4_mut(&'_ mut self) -> RefMut<'_, Creature> {
             return self.world.creatures.get_mut(&self.creature_a4);
         }
 

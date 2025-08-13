@@ -431,7 +431,13 @@ impl HistorySimulation {
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.units.iter().any(|unit| {
                 let unit = unit.borrow();
-                return unit.xy.dist_squared(&candidate) < 5. * 5.
+                if unit.creatures.len() == 0 {
+                    if unit.xy == candidate {
+                        return true;
+                    }
+                    return false;
+                }
+                return unit.xy.dist_squared(&candidate) < 3. * 3.
             });
             if too_close {
                 continue;

@@ -28,13 +28,13 @@ impl<V> IdVec<V> {
         return id
     }
 
-    pub(crate) fn get<K>(&self, id: &K) -> Ref<V> where K: Id {
+    pub(crate) fn get<K>(&'_ self, id: &K) -> Ref<'_, V> where K: Id {
         return self.vector.get(id.as_usize())
             .expect("Using IdVec should be safe to unwrap")
             .borrow()
     }
 
-    pub(crate) fn get_mut<K>(&self, id: &K) -> RefMut<V> where K: Id {
+    pub(crate) fn get_mut<K>(&'_ self, id: &K) -> RefMut<'_, V> where K: Id {
         return self.vector.get(id.as_usize())
             .expect("Using IdVec should be safe to unwrap")
             .borrow_mut()

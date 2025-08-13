@@ -75,7 +75,7 @@ impl Storyteller {
             let population_divergence = adults as f32 / pop_goal as f32;
             if population_divergence < 0.8 {
                 chances.disease_death = chances.disease_death * 0.;
-                chances.leave_for_bandits = chances.leave_for_bandits * 0.;
+                chances.leave_for_bandits = chances.leave_for_bandits * 0.2;
             } else if population_divergence > 1.5 {
                 chances.disease_death = chances.disease_death * 1.2;
                 chances.leave_for_bandits = chances.leave_for_bandits * 1.1;

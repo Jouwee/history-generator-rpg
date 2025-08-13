@@ -92,6 +92,8 @@ impl ChatDialog {
 
         let mut quest: Option<(QuestObjective, UnitId, f32)> = None;
 
+        const MAX_DST: f32 = 15.;
+
         for unit_id in world.units.iter_ids::<UnitId>() {
             let unit = world.units.get(&unit_id);
             if unit.creatures.len() == 0 {
@@ -100,7 +102,7 @@ impl ChatDialog {
 
             let dst = unit.xy.dist(&self.data.world_coord);
             
-            if dst > 15. {
+            if dst > MAX_DST {
                 continue;
             }
 
@@ -117,7 +119,7 @@ impl ChatDialog {
                     QuestObjective::KillVarningr(_) => 1.5,
                     QuestObjective::KillBandits(_) => 1.,
                 };
-                let score = dst * mult;
+                let score = (MAX_DST - dst) * mult;
 
                 let current_score = quest.as_ref().map(|q| q.2).unwrap_or(0.);
                 if score > current_score {

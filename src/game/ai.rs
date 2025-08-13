@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::chunk::AiGroups, info, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::{chunk::AiGroups, inventory::inventory::EquipmentType}, info, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -67,7 +67,7 @@ impl AiSolver {
         }
     }
 
-    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &Chunk, ctx: &GameContext) -> AiRunner {
+    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &Chunk, game_ctx: &GameContext) -> AiRunner {
 
         if let AiState::Disabled = actor.ai_state {
             let mut runner = AiRunner::new();
@@ -85,11 +85,10 @@ impl AiSolver {
 
         let mut result = None;
         
-        
         let mut all_actions = vec!(
             actions.id_of("act:move"),
         );
-        let species = ctx.resources.species.get(&actor.species);
+        let species = game_ctx.resources.species.get(&actor.species);
         all_actions.extend(species.innate_actions.iter());
         for (_slot, item) in actor.inventory.all_equipped() {
             if let Some(action_provider) = &item.action_provider {
@@ -127,7 +126,7 @@ impl AiSolver {
             }
         });
 
-        let paths = Self::sim_step(ctx, &mut result, &all_actions, &mut astar, actions, chunk);
+        let paths = Self::sim_step(ctx, &mut result, &all_actions, &mut astar, actions, chunk, game_ctx);
 
 
         let mut runner = AiRunner::new();
@@ -141,7 +140,7 @@ impl AiSolver {
         return runner
     }
 
-    fn sim_step(ctx: SimContext, result: &mut Option<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk) -> u32 {
+    fn sim_step(ctx: SimContext, result: &mut Option<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk, game_ctx: &GameContext) -> u32 {
         Self::add_to_results(ctx.clone(), result);
         if ctx.depth > 10 {
             return 1
@@ -181,8 +180,16 @@ impl AiSolver {
             
                 for effect in action.effects.iter() {
                     match effect {
-                        ActionEffect::Damage{ damage, add_weapon: _ } => {
+                        ActionEffect::Damage{ damage, add_weapon } => {
                             for (_i, actor) in action.area.filter(point, ctx.actor_idx, chunk.actors_iter()) {
+                                let mut damage = damage.clone();
+                                if let Some(item) = actor.inventory.equipped(&EquipmentType::Hand) {
+                                    if *add_weapon {
+                                        damage = damage + item.total_damage(&game_ctx.resources.materials)
+                                    } else {
+                                        damage = damage + item.extra_damage(&game_ctx.resources.materials)
+                                    }
+                                }
                                 if chunk.ai_groups.is_hostile(ctx.ai_group, actor.ai_group) {
                                     ctx.hostile_damage += damage.average() as f64;
                                 } else {
@@ -219,7 +226,7 @@ impl AiSolver {
                 }
 
                 ctx.compute_final_score();
-                paths += Self::sim_step(ctx, result, available_actions, astar, actions, chunk);
+                paths += Self::sim_step(ctx, result, available_actions, astar, actions, chunk, game_ctx);
             }
         }
         return paths

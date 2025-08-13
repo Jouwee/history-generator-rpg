@@ -45,7 +45,7 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         }
     }
 
-    pub(crate) fn iter(&self) -> Iter<V> {
+    pub(crate) fn iter(&'_ self) -> Iter<'_, V> {
         return self.vector.iter()
     }
 
