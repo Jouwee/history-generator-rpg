@@ -31,12 +31,10 @@ macro_rules! history_trace {
         // $crate::engine::debug::log::log().log("HISTORY", &format!($($arg)*));
     }};
 }
-
-
 #[macro_export]
-macro_rules! info {
+macro_rules! fatal {
     ($($arg:tt)*) => {{
-        $crate::engine::debug::log::log().log("INFO", &format!($($arg)*));
+        $crate::engine::debug::log::log().log("FATAL", &format!($($arg)*));
     }};
 }
 
@@ -44,5 +42,12 @@ macro_rules! info {
 macro_rules! warn {
     ($($arg:tt)*) => {{
         $crate::engine::debug::log::log().log("WARN", &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        $crate::engine::debug::log::log().log("INFO", &format!($($arg)*));
     }};
 }

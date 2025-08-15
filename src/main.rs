@@ -1,9 +1,11 @@
+#![windows_subsystem = "windows"]
+
 use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::Audio, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
 use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
+use glutin_window::GlutinWindow;
 use resources::resources::Resources;
-use sdl2_window::{Sdl2Window};
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -33,7 +35,7 @@ enum SceneEnum {
 }
 
 pub(crate) struct App {
-    window: Sdl2Window,
+    window: GlutinWindow,
     gl: GlGraphics, // OpenGL drawing backend.
     sprite_i: usize,
     sprite_c: f64,
@@ -209,11 +211,16 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    let window: Sdl2Window =
-        WindowSettings::new("Tales of Kathay", [1024, 768])
-            .graphics_api(opengl)
-            .build()
-            .unwrap();
+    let window = GlutinWindow::new(
+        &WindowSettings::new("Tales of Kathay", [1024, 768]).graphics_api(opengl)
+    );
+    let window = match window {
+        Err(err) => {
+            fatal!("{err}");
+            panic!("Failed to create Window. Check logs.");
+        },
+        Ok(window) => window
+    };
 
     let resources = Resources::new();
 
