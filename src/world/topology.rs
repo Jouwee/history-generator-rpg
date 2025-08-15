@@ -1,8 +1,10 @@
 use std::{collections::{BTreeMap, VecDeque}, f32::consts::PI};
 
 use noise::{NoiseFn, Perlin};
+use serde::{Deserialize, Serialize};
 use crate::{commons::{matrix_index::MatrixIndex, rng::Rng}, engine::{geometry::{Size2D, Vector2}, Point2D}, resources::biome::Biomes};
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct WorldTopology {
     pub(crate) size: Size2D,
     pub(crate) elevation: Vec<i32>,

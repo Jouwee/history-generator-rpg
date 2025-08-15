@@ -14,15 +14,16 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, game::chunk::AiGroups, world::{main_menu::{MainMenuOption, MainMenuScene}}};
+use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, game::chunk::AiGroups, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
 
-pub(crate) mod engine;
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
+pub(crate) mod engine;
+pub(crate) mod game;
 pub(crate) mod globals;
+pub(crate) mod loadsave;
 pub(crate) mod resources;
 pub(crate) mod world;
-pub(crate) mod game;
 
 enum SceneEnum {
     None,
@@ -150,6 +151,29 @@ impl App {
                             st_village_count: 20,
                             st_village_population: 10,
                         }, &self.context.resources));
+                    },
+                    ControlFlow::Break(MainMenuOption::LoadGame) => {
+                        let load_save_manager = LoadSaveManager::new();
+                        // TODO(ROO4JcDl): Unwrap
+                        let mut world = load_save_manager.load_world().unwrap();
+
+                        // TODO(ROO4JcDl): These should be stored
+                        let (creature_id, pos) = world.create_scenario().expect("No playable scenario found");
+
+                        let creature = world.creatures.get(&creature_id);
+                        let species = self.context.resources.species.get(&creature.species);
+                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, species, &world, &self.context.resources);
+                        drop(creature);
+
+                        let mut rng = Rng::seeded(creature_id).derive("equipment");
+                        let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &self.context.resources).make());
+
+                        player.inventory.auto_equip();
+
+                        let chunk = Chunk::from_world_tile(&world, &self.context.resources, pos, ChunkLayer::Surface, player);
+                        let mut scene = GameSceneState::new(world, pos, chunk);
+                        scene.init(&mut self.context);
+                        self.scene = SceneEnum::Game(scene);
                     }
                     ControlFlow::Break(MainMenuOption::Quit) => self.window.set_should_close(true),
                     _ => ()
@@ -297,6 +321,10 @@ fn main() {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let mut world = scene.into_world();
 
+                        let load_save_manager = LoadSaveManager::new();
+                        // TODO(ROO4JcDl): Unwrap
+                        load_save_manager.save_world(&world).unwrap();
+
                         let (creature_id, pos) = world.create_scenario().expect("No playable scenario found");
                         world.dump_events("lore.log", &app.context.resources);
 
@@ -351,7 +379,7 @@ fn main() {
                     if let SceneEnum::Game(state) = app.scene {
                         app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.world, &app.context.resources));
                     }
-                }
+                },
                 _ => ()
             }
         }

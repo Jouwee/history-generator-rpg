@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::{id_vec::IdVec, rng::Rng}, resources::culture::{Culture, CultureId}};
 
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct LineageId(usize);
 impl crate::commons::id_vec::Id for LineageId {
     fn new(id: usize) -> Self {
@@ -14,7 +16,7 @@ impl crate::commons::id_vec::Id for LineageId {
 
 pub(crate) type Lineages = IdVec<Lineage>;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Lineage {
     pub(crate) name: String,
     pub(crate) culture: CultureId,

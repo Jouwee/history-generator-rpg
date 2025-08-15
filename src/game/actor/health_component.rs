@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::commons::rng::Rng;
 
 #[derive(Clone)]
@@ -73,7 +75,7 @@ impl HealthComponent {
 
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum BodyPart {
     Head,
     Torso,

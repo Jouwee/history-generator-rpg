@@ -1,8 +1,10 @@
 use std::usize;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::{id_vec::IdVec, xp_table::xp_to_level}, world::{creature::{Creature, CreatureId}, world::World}};
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord, Serialize, Deserialize)]
 pub(crate) struct PlotId(usize);
 
 impl crate::commons::id_vec::Id for PlotId {
@@ -16,7 +18,7 @@ impl crate::commons::id_vec::Id for PlotId {
 
 pub(crate) type Plots = IdVec<Plot>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Plot {
     pub(crate) goal: PlotGoal,
     plotter: CreatureId,
@@ -107,7 +109,7 @@ impl Plot {
 
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum PlotGoal {
     KillBeast(CreatureId),
 }
@@ -126,7 +128,7 @@ impl PlotGoal {
 }
 
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum PlotStatus {
     Ongoing,
     Failed,

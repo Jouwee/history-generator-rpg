@@ -1,7 +1,10 @@
 use std::{collections::HashMap, slice::Iter};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId, unit::UnitId}};
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct Codex {
     creatures: HashMap<CreatureId, CreatureCodex>,
     artifacts: HashMap<ItemId, ArtifactCodex>,
@@ -95,6 +98,7 @@ const CREATURE_FACT_APPEARANCE: u8 = 0b0000_1000;
 const CREATURE_FACT_FATHER: u8 = 0b0001_0000;
 const CREATURE_FACT_MOTHER: u8 = 0b0010_0000;
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct CreatureCodex {
     facts_bitmask: u8,
     events: Vec<usize>,
@@ -156,6 +160,7 @@ impl CreatureCodex {
 
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct ArtifactCodex {
     events: Vec<usize>,
 }
@@ -173,7 +178,7 @@ impl ArtifactCodex {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Quest {
     pub(crate) status: QuestStatus,
     pub(crate) quest_giver: CreatureId,
@@ -192,7 +197,7 @@ impl Quest {
 
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) enum QuestObjective {
     /// Kill a varningr
     KillVarningr(CreatureId),
@@ -203,12 +208,13 @@ pub(crate) enum QuestObjective {
 }
 
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum QuestStatus {
     InProgress,
     RewardPending,
     Complete
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct UnitCodex {
 }

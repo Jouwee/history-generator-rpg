@@ -1,11 +1,13 @@
 use std::usize;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, world::plot::{PlotGoal, PlotId}, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
 
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord, Serialize, Deserialize)]
 pub(crate) struct CreatureId(usize);
 impl CreatureId {
     pub(crate) fn ancients() -> CreatureId {
@@ -27,7 +29,7 @@ pub(crate) type Creatures = IdVec<Creature>;
 pub(crate) const SIM_FLAG_INTELIGENT: u8 = 0b00000001;
 pub(crate) const SIM_FLAG_GREAT_BEAST: u8 = 0b00000010;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Creature {
     pub(crate) species: SpeciesId,
     pub(crate) birth: WorldDate,
@@ -109,12 +111,12 @@ impl Creature {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct CreatureDetails {
     pub(crate) inventory: Vec<ItemId>
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub(crate) enum CreatureGender {
     Male, Female
 }
@@ -138,7 +140,7 @@ impl CreatureGender {
 
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub(crate) enum CauseOfDeath {
     OldAge,
     Disease,
@@ -146,7 +148,7 @@ pub(crate) enum CauseOfDeath {
 }
 
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub(crate) enum Profession {
     // Someone that doesn't work. Usually children and elders, but could be reserved for nitwits.
     None,
@@ -207,7 +209,7 @@ impl Profession {
 
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 /// A structure representing the relationship between a creature that holds this creature, and another creature
 pub(crate) struct Relationship {
     /// Who the relationship is with
@@ -318,7 +320,7 @@ mod tests_relationship {
 
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) enum Goal {
     /// Wants a creature dead, by any means necessary
     KillBeast(CreatureId)

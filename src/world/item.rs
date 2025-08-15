@@ -2,12 +2,13 @@ use std::{cell::RefCell, collections::HashMap};
 
 use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
+use serde::{Deserialize, Serialize};
 
 use crate::{commons::{damage_model::{DamageModel, DamageRoll}, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct ItemId(usize);
 impl crate::commons::id_vec::Id for ItemId {
     fn new(id: usize) -> Self {
@@ -96,7 +97,7 @@ impl Item {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct ActionProviderComponent {
     pub(crate) actions: Vec<ActionId>
 }
@@ -129,12 +130,12 @@ impl EquippableComponent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct QualityComponent {
     pub(crate) quality: ItemQuality,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct MaterialComponent {
     pub(crate) primary: MaterialId,
     pub(crate) secondary: Option<MaterialId>,
@@ -156,18 +157,18 @@ impl MaterialComponent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct MelleeDamageComponent {
     pub(crate) damage: DamageRoll,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct ArmorComponent {
     pub(crate) protection: DamageModel,
     pub(crate) coverage: Vec<BodyPart>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct ArtworkSceneComponent {
     pub(crate) scene: ArtworkScene,
 }
@@ -180,13 +181,13 @@ pub(crate) enum ItemMakeArguments {
     Scene(ArtworkScene),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) enum ArtworkScene {
     Bust { creature_id: CreatureId },
     FullBody { creature_id: CreatureId, artifact_id: Option<ItemId> }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub(crate) enum ItemQuality {
     Poor,
     Normal,

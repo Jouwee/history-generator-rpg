@@ -1,7 +1,9 @@
 use std::{f64::consts::PI, ops::{Add, Sub}};
 
+use serde::{Deserialize, Serialize};
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub(crate) struct Size2D(pub(crate) usize, pub(crate) usize);
 
 impl Size2D {
@@ -77,7 +79,7 @@ impl Sub for Vec2 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub(crate) struct Coord2 {
     pub(crate) x: i32,
     pub(crate) y: i32

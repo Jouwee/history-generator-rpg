@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::{damage_model::{DamageRoll}, resource_map::ResourceMap}, engine::Color};
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct MaterialId(usize);
 impl crate::commons::id_vec::Id for MaterialId {
     fn new(id: usize) -> Self {

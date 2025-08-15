@@ -1,11 +1,14 @@
 use std::{fs::File, io::Write};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{engine::geometry::Coord2, game::codex::Codex, info, world::{creature::Profession, history_generator::WorldGenerationParameters, plot::Plots, unit::{UnitId, UnitType}}, Event, Item, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
 use crate::commons::id_vec::IdVec;
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct World {
     pub(crate) date: WorldDate,
     pub(crate) generation_parameters: WorldGenerationParameters,
@@ -15,6 +18,7 @@ pub(crate) struct World {
     pub(crate) creatures: Creatures,
     pub(crate) plots: Plots,
     pub(crate) events: Vec<Event>,
+    #[serde(skip)] // TODO(ROO4JcDl):
     pub(crate) artifacts: IdVec<Item>,
     pub(crate) codex: Codex,
     played_creature: Option<CreatureId>

@@ -1,10 +1,12 @@
 use std::ops::Add;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2, resources::material::MaterialId};
 
 use super::{creature::{CreatureId, Profession}, item::ItemId};
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct UnitId(usize);
 impl crate::commons::id_vec::Id for UnitId {
     fn new(id: usize) -> Self {
@@ -17,6 +19,7 @@ impl crate::commons::id_vec::Id for UnitId {
 
 pub(crate) type Units = IdVec<Unit>;
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct Unit {
     pub(crate) xy: Coord2,
     pub(crate) name: Option<String>,
@@ -74,6 +77,7 @@ impl Unit {
 
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct SettlementComponent {
     pub(crate) leader: Option<CreatureId>,
     pub(crate) material_stock: Vec<(MaterialId, usize)>
@@ -120,7 +124,7 @@ mod tests_unit {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum UnitType {
     Village,
     BanditCamp,
@@ -128,7 +132,7 @@ pub(crate) enum UnitType {
     VarningrLair,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct UnitResources {
     // 1 unit = enough food for 1 adult for 1 year
     pub(crate) food: f32,

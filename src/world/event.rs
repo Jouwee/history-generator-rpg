@@ -1,7 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{resources::resources::Resources, world::world::World};
 
 use super::{creature::{CauseOfDeath, CreatureId, Profession}, date::WorldDate, item::ItemId, unit::UnitId};
 
+#[derive(Serialize, Deserialize)]
 pub(crate) enum Event {
     CreatureDeath { date: WorldDate, creature_id: CreatureId, cause_of_death: CauseOfDeath },
     CreatureBirth { date: WorldDate, creature_id: CreatureId },

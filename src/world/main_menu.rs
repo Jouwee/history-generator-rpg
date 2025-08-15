@@ -11,11 +11,15 @@ pub(crate) struct MainMenuScene {
 impl MainMenuScene {
     pub(crate) fn new() -> Self {
         let mut container = SimpleContainer::new();
-        container.layout_component().anchor_center().size([124., 52.]);
+        container.layout_component().anchor_center().size([124., 28. * 3. - 4.]);
         
         let mut new_game = Button::text("New game").key("new_game");
         new_game.layout_component().size([124., 24.]);
         container.add(new_game);
+
+        let mut load_game = Button::text("Load game").key("load_game");
+        load_game.layout_component().size([124., 24.]);
+        container.add(load_game);
 
         let mut quit = Button::text("Quit").key("quit");
         quit.layout_component().size([124., 24.]);
@@ -52,6 +56,7 @@ impl Scene for MainMenuScene {
             ControlFlow::Break(UIEvent::ButtonClicked(button)) => {
                 match button.as_str() {
                     "new_game" => ControlFlow::Break(MainMenuOption::NewGame),
+                    "load_game" => ControlFlow::Break(MainMenuOption::LoadGame),
                     "quit" => ControlFlow::Break(MainMenuOption::Quit),
                     _ => ControlFlow::Continue(()),
                 }
@@ -67,5 +72,6 @@ impl Scene for MainMenuScene {
 
 pub(crate) enum MainMenuOption {
     NewGame,
+    LoadGame,
     Quit,
 }

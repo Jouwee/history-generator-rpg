@@ -1,5 +1,7 @@
 use std::cell::{Ref, RefCell, RefMut};
 
+use serde::{Deserialize, Serialize};
+
 pub(crate) trait Id: Clone + Copy {
 
     fn as_usize(&self) -> usize;
@@ -12,6 +14,7 @@ pub(crate) trait Id: Clone + Copy {
 
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct IdVec<V> {
     vector: Vec<RefCell<V>>,
 }
@@ -56,4 +59,10 @@ impl<V> IdVec<V> {
         return (0..self.len()).map(|idx| K::new(idx))
     }
 
+}
+
+impl<V> Default for IdVec<V> {
+    fn default() -> Self {
+        Self::new()
+    }
 }

@@ -1,10 +1,13 @@
 use std::time::Instant;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::rng::Rng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
 
 use super::world::World;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
+
 pub(crate) struct WorldGenerationParameters {
     pub(crate) seed: u32,
     // Terain

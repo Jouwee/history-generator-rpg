@@ -1,8 +1,10 @@
 use std::{fmt::Display, ops::{Add, Sub}};
 
+use serde::{Deserialize, Serialize};
+
 use crate::commons::rng::Rng;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct DamageRoll {
     pub(crate) slashing: f32,
     pub(crate) piercing: f32,
@@ -148,7 +150,7 @@ mod tests_damage_roll {
 
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct DamageModel {
     pub(crate) slashing: i32,
     pub(crate) piercing: i32,
