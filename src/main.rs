@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::Audio, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
@@ -185,11 +187,16 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    let window: GlutinWindow =
-        WindowSettings::new("Tales of Kathay", [1024, 768])
-            .graphics_api(opengl)
-            .build()
-            .unwrap();
+    let window = GlutinWindow::new(
+        &WindowSettings::new("Tales of Kathay", [1024, 768]).graphics_api(opengl)
+    );
+    let window = match window {
+        Err(err) => {
+            fatal!("{err}");
+            panic!("Failed to create Window. Check logs.");
+        },
+        Ok(window) => window
+    };
 
     let resources = Resources::new();
 
