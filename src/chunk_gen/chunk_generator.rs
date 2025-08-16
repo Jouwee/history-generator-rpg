@@ -305,6 +305,8 @@ impl<'a> ChunkGenerator<'a> {
         if let Some(detached_housing_pool) = &pools.detached_housing_pool {
 
             while homeless.len() > 0 {
+                let mut is_ruler = false;
+
                 let creature_id = homeless.pop().unwrap();
                 if world.is_played_creature(&creature_id) {
                     continue;
@@ -312,10 +314,13 @@ impl<'a> ChunkGenerator<'a> {
 
                 let mut family = vec!(creature_id);
                 let creature = world.creatures.get(&creature_id);
+                is_ruler = is_ruler || creature.profession == Profession::Ruler;
                 if let Some(spouse) = creature.spouse {
                     let in_homeless = homeless.iter().position(|id| *id == spouse);
                     if let Some(index) = in_homeless {
                         homeless.remove(index);
+                        let creature = world.creatures.get(&spouse);
+                        is_ruler = is_ruler || creature.profession == Profession::Ruler;
                         family.push(spouse);
                     }
                 }
@@ -325,6 +330,8 @@ impl<'a> ChunkGenerator<'a> {
                         let child = world.creatures.get(child_id);
                         if child.profession != Profession::None {
                             homeless.remove(index);
+                            let creature = world.creatures.get(child_id);
+                            is_ruler = is_ruler || creature.profession == Profession::Ruler;
                             family.push(*child_id);
                         }
                     }
@@ -336,7 +343,12 @@ impl<'a> ChunkGenerator<'a> {
 
                     let pos = building_seed_cloud.pop().unwrap();
 
-                    let structure = solver.solve_structure(detached_housing_pool, pos, &mut self.rng, Vec::new());
+                    let mut pool = detached_housing_pool.as_str();
+                    if is_ruler && unit.unit_type == UnitType::Village {
+                        pool = "village_house_ruler";
+                    }
+
+                    let structure = solver.solve_structure(pool, pos, &mut self.rng, Vec::new());
                     if let Ok(structure) = structure {
                         collapsed_pos = Some(pos);
 
@@ -365,8 +377,6 @@ impl<'a> ChunkGenerator<'a> {
                     warn!("No position found");
                     continue;
                 }
-
-                
 
             }
         }
