@@ -258,7 +258,7 @@ impl Chunk {
         let mut rng = Rng::seeded(xy);
         rng.next();
         // TODO: Size from params
-        let mut chunk = Chunk::new(xy, Size2D(64, 64), layer, player, resources);
+        let mut chunk = Chunk::new(xy, Size2D(80, 80), layer, player, resources);
         let mut generator = ChunkGenerator::new(&mut chunk, rng);
         let params = ChunkGenParams {
             layer
