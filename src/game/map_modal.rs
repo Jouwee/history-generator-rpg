@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, COLOR_WHITE}, game::map_component::MapComponent, world::{world::World}, GameContext};
+use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, Color, COLOR_WHITE}, game::map_component::MapComponent, world::world::World, GameContext};
 use piston::{Key, MouseButton};
 
 pub(crate) struct MapModal {
@@ -41,13 +41,10 @@ impl MapModal {
     }
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
+        ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("09071480"));
         ctx.push();
 
-        let camera = ctx.camera_rect;
-        let clamp = [
-            [camera[2] / 2. + 16., (self.world_size.0 as f64 * 16.) - camera[2] / 2.],
-            [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
-        ];
+        let clamp = self.get_offset_clamp(ctx.camera_rect);
         ctx.center_camera_on([
             self.offset.x.clamp(clamp[0][0] as f32, clamp[0][1] as f32) as f64,
             self.offset.y.clamp(clamp[1][0] as f32, clamp[1][1] as f32) as f64
@@ -99,10 +96,7 @@ impl MapModal {
             return ControlFlow::Break(MapModalEvent::Close)
         }
         let camera = ctx.display_context.camera_rect;
-        let clamp = [
-            [camera[2] / 2. + 16., (self.world_size.0 as f64 * 16.) - camera[2] / 2.],
-            [camera[3] / 2. + 16., (self.world_size.1 as f64 * 16.) - camera[3] / 2.],
-        ];
+        let clamp = self.get_offset_clamp(camera);
         match evt {
             InputEvent::Key { key: Key::M } | InputEvent::Key { key: Key::Escape } => {
                 return ControlFlow::Break(MapModalEvent::Close)
@@ -131,6 +125,27 @@ impl MapModal {
             _ => ()
         }
         return ControlFlow::Break(MapModalEvent::None)
+    }
+
+
+    fn get_offset_clamp(&self, camera_rect: [f64; 4]) -> [[f64; 2]; 2] {
+        let map_size = [self.world_size.0 as f64 * 16., self.world_size.1 as f64 * 16.];
+        let x;
+        dbg!(camera_rect);
+        dbg!(map_size);
+        if camera_rect[2] > map_size[0] {
+            x = [map_size[0] / 2.; 2]
+        } else {
+            x = [camera_rect[2] / 2., map_size[0] - camera_rect[2] / 2.]
+        }
+
+        let y;
+        if camera_rect[3] > map_size[1] {
+            y = [map_size[1] / 2.; 2]
+        } else {
+            y = [camera_rect[3] / 2., map_size[1] - camera_rect[3] / 2.]
+        }
+        return [x, y]
     }
 
 }
