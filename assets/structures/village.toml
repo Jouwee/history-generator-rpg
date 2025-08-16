@@ -8,6 +8,8 @@
 't' = { ground= 4, object= 4 }
 'r' = { ground= 1, object= 8 }
 'd' = { ground= 4, object= 8 }
+'-' = { ground= 9 }
+'$' = { ground= 4, object=18 }
 '&' = { path_endpoint = true }
 'A' = { ground= 4, connect = "village_house_start" }
 'B' = { ground= 4, connect = "village_house_room" }
@@ -41,6 +43,21 @@ template = """
 .#_____#.
 .##_####.
 ...&....."""
+
+[village_house_ruler]
+[village_house_ruler.a]
+size = [9, 10]
+template = """
+.........
+.#######.
+.#__$__#.
+.#_---_#.
+.#_---_#.
+.#_---_#.
+.#_---_#.
+.#_____#.
+.###_###.
+....&...."""
 
 [village_house_room]
 

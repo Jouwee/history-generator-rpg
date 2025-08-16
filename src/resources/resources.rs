@@ -549,6 +549,10 @@ impl Resources {
         let mut tile = Tile::new(4, "chunk_tiles/cave_floor.png");
         tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_stone_1.mp3", "sfx/step_stone_2.mp3", "sfx/step_stone_3.mp3")));
         self.tiles.add("tile:cave_floor", tile);
+
+        let mut tile = Tile::new(4, "chunk_tiles/carpet_red.png");
+        tile.step_sound_effect = Some(SoundEffect::new(vec!("sfx/step_wood_1.mp3", "sfx/step_wood_2.mp3", "sfx/step_wood_3.mp3")));
+        self.tiles.add("tile:carpet_red", tile);
     }
 
     pub(crate) fn load_object_tiles(&mut self) {
@@ -603,6 +607,10 @@ impl Resources {
 
         let image = String::from("chunk_tiles/ladder_up.png");
         self.object_tiles.add("obj:ladder_up", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
+        let image = String::from("chunk_tiles/chair.png");
+        self.object_tiles.add("obj:chair", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+
     }
 
     fn load_item_blueprints(&mut self) {
