@@ -4,6 +4,7 @@ mkdir ./build_rust
 
 find assets/ -name '*.png' -exec cp --parents \{\} ./build_rust/ \;
 find assets/ -name '*.mp3' -exec cp --parents \{\} ./build_rust/ \;
+find assets/ -name '*.wav' -exec cp --parents \{\} ./build_rust/ \;
 find assets/ -name '*.ttf' -exec cp --parents \{\} ./build_rust/ \;
 find assets/ -name '*.toml' -exec cp --parents \{\} ./build_rust/ \;
 

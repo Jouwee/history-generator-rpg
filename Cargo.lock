@@ -2181,7 +2181,7 @@ dependencies = [
 
 [[package]]
 name = "tales_of_kathay"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "ciborium",
