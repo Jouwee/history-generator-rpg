@@ -145,7 +145,7 @@ mod tests_damage_roll {
     #[test]
     fn to_string() {
         let roll = DamageRoll::slashing(20.) + DamageRoll::fire(10.);
-        assert_eq!(roll.to_string(), "15-25 slashing + 7.5-12.5 fire");
+        assert_eq!(roll.to_string(), "15-25 slashing + 8-12 fire");
     }
 
 }

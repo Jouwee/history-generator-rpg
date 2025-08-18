@@ -38,6 +38,12 @@ impl<'a, I, V> Deref for Identified<'a, I, V> {
     }
 }
 
+impl<'a, I, V> AsRef<V> for Identified<'a, I, V> {
+    fn as_ref(&self) -> &V {
+        return self.value;
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub(crate) struct IdVec<V> {
     vector: Vec<RefCell<V>>,

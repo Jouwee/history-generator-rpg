@@ -1,4 +1,4 @@
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::actor::health_component::BodyPart, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::actor::health_component::BodyPart, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct ItemBlueprintId(usize);
@@ -27,13 +27,17 @@ pub(crate) struct ItemBlueprint {
     pub(crate) name_blueprint: Option<NameBlueprintComponent>,
 }
 
-impl ItemBlueprint {
+pub(crate) trait ItemMaker {
+    fn make(&self, arguments: Vec<ItemMakeArguments>, resources: &Resources) -> Item;
+}
 
-    pub(crate) fn make(&self, arguments: Vec<ItemMakeArguments>, resources: &Resources) -> Item {
+impl<'_a> ItemMaker for Identified<'_a, ItemBlueprintId, ItemBlueprint> {
+
+    fn make(&self, arguments: Vec<ItemMakeArguments>, resources: &Resources) -> Item {
         Item {
+            blueprint_id: *self.id(),
             name: self.name.clone(),
             special_name: None,
-            placed_sprite: self.placed_sprite.clone(),
             action_provider: self.action_provider.clone(),
             equippable: self.equippable.clone(),
             owner: None,

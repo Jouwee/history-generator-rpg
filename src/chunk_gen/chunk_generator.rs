@@ -569,7 +569,7 @@ impl<'a> ChunkGenerator<'a> {
                 },
                 Some(spot) => {
                     let item = world.artifacts.get(item);
-                    let texture = item.make_texture(&resources.materials);
+                    let texture = item.make_texture(&resources);
                     self.chunk.map.items_on_ground.push((spot, item.clone(), texture));
                 }
             }

@@ -23,7 +23,7 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         return id
     }
 
-    pub(crate) fn get(&'_ self, id: &I) -> Identified<'_, I, V> {
+    pub(crate) fn get<'a>(&'a self, id: &I) -> Identified<'a, I, V> {
         let value = self.vector.get(id.as_usize()).expect("Using ResourceMap should be safe to unwrap");
         return Identified::new(id.clone(), value);
     }

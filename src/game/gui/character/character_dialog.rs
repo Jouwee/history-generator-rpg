@@ -202,7 +202,7 @@ impl UINode for CharacterDialog {
 
 
         if let Some(item) = &game_ctx.drag_item {
-            let texture = item.make_texture(&game_ctx.resources.materials);
+            let texture = item.make_texture(&game_ctx.resources);
             ctx.texture_old(texture, [self.cursor_pos[0] as f64 - 12., self.cursor_pos[1] as f64 - 12.]);
         }
 

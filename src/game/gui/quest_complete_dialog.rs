@@ -77,7 +77,7 @@ impl UINode for QuestCompleteDialog {
                 for (button, item) in self.rewards.iter_mut() {
                     ctx.layout_rect[0] = ctx_copy[0] + x;
                     button.render(&(), ctx, game_ctx);
-                    ctx.texture_old(item.make_texture(&game_ctx.resources.materials), [ctx.layout_rect[0], ctx.layout_rect[1]]);
+                    ctx.texture_old(item.make_texture(&game_ctx.resources), [ctx.layout_rect[0], ctx.layout_rect[1]]);
                     x += 32.;
                 }
             }, ctx);

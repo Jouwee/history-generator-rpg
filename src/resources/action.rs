@@ -566,7 +566,7 @@ impl ActionRunner {
                                                         if let Some(details) = &creature.details {
                                                             for item in details.inventory.iter() {
                                                                 let item = world.artifacts.get(item);
-                                                                chunk.map.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources.materials)));
+                                                                chunk.map.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources)));
                                                             }
                                                         }
                                                     }

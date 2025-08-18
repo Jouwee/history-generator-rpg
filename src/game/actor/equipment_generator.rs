@@ -1,4 +1,4 @@
-use crate::{game::inventory::inventory::Inventory, world::{creature::{Creature, CreatureId, Profession}, world::World}, ItemFactory, Resources, Rng};
+use crate::{game::inventory::inventory::Inventory, resources::item_blueprint::ItemMaker, world::{creature::{Creature, CreatureId, Profession}, world::World}, ItemFactory, Resources, Rng};
 
 pub(crate) struct EquipmentGenerator {
 

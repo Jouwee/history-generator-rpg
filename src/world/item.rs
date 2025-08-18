@@ -4,7 +4,7 @@ use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, material::{MaterialId, Materials}, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -21,10 +21,10 @@ impl crate::commons::id_vec::Id for ItemId {
 
 #[derive(Clone, Debug)]
 pub(crate) struct Item {
+    pub(crate) blueprint_id: ItemBlueprintId,
     pub(crate) name: String,
     pub(crate) special_name: Option<String>,
     pub(crate) owner: Option<CreatureId>,
-    pub(crate) placed_sprite: PalleteSprite,
     pub(crate) action_provider: Option<ActionProviderComponent>,
     pub(crate) equippable: Option<EquippableComponent>,
     pub(crate) material: Option<MaterialComponent>,
@@ -59,12 +59,13 @@ impl Item {
         return tooltip;
     }
 
-    pub(crate) fn make_texture(&self, materials: &Materials) -> Texture {
+    pub(crate) fn make_texture(&self, resources: &Resources) -> Texture {
         let mut map = HashMap::new();
         if let Some(material) = &self.material {
-            map = material.pallete_sprite(materials);
+            map = material.pallete_sprite(&resources.materials);
         }
-        let image = self.placed_sprite.remap(map);
+        let placed_sprite = &resources.item_blueprints.get(&self.blueprint_id).placed_sprite;
+        let image = placed_sprite.remap(map);
         let settings = TextureSettings::new().filter(Filter::Nearest);
         return Texture::from_image(&image, &settings)
     }

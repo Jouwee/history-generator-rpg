@@ -216,12 +216,12 @@ impl Chunk {
             let point = Coord2::xy(60 + (i % 10), 68 + (i / 10));
             if i < 10 {
                 let item = ItemFactory::weapon(&mut rng, &resources).make();
-                let texture = item.make_texture(&resources.materials);
+                let texture = item.make_texture(&resources);
                 chunk.map.items_on_ground.push((point, item, texture));
             } else {
                 let i = rng.randu_range(0, world.artifacts.len());
                 let item = world.artifacts.get(&ItemId::new(i));
-                let texture = item.make_texture(&resources.materials);
+                let texture = item.make_texture(&resources);
                 chunk.map.items_on_ground.push((point, item.clone(), texture));
             }         
         }
@@ -242,7 +242,7 @@ impl Chunk {
 
         let npc = self.actors.get_mut(i).unwrap();
         for item in npc.inventory.take_all() {
-            let texture = item.make_texture(&ctx.resources.materials);
+            let texture = item.make_texture(&ctx.resources);
             self.map.items_on_ground.push((npc.xy, item, texture));
         }
 

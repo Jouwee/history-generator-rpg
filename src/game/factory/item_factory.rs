@@ -1,4 +1,4 @@
-use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::NameBlueprintComponent, material::MaterialId}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
+use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::{ItemMaker, NameBlueprintComponent}, material::MaterialId}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
 
 pub(crate) struct ItemFactory {}
 
@@ -6,10 +6,10 @@ impl ItemFactory {
 
     #[cfg(test)]
     pub(crate) fn test() -> Item {
-        use image::ImageReader;
-        use crate::engine::pallete_sprite::PalleteSprite;
-        let image = ImageReader::open("./assets/sprites/missing.png").unwrap().decode().unwrap();
+        use crate::{commons::id_vec::Id, resources::item_blueprint::ItemBlueprintId};
+
         return Item {
+            blueprint_id: ItemBlueprintId::mock(0),
             action_provider: None,
             artwork_scene: None,
             equippable: None,
@@ -17,7 +17,6 @@ impl ItemFactory {
             mellee_damage: None,
             armor: None,
             name: String::from(""),
-            placed_sprite: PalleteSprite::new(image),
             quality: None,
             special_name: None,
             owner: None,

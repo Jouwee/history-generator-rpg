@@ -35,7 +35,7 @@ impl UINode for InventorySlot {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
         ctx.rectangle_fill(layout, Color::from_hex("24232a"));
         if let Some(item) = &state {
-            let texture = item.make_texture(&game_ctx.resources.materials);
+            let texture = item.make_texture(&game_ctx.resources);
             ctx.texture_old(texture, [layout[0], layout[1]]);
         }
     }
