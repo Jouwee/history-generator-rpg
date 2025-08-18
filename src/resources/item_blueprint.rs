@@ -1,6 +1,11 @@
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::actor::health_component::BodyPart, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, EquippableComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use std::cell::RefCell;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
+use serde::{Deserialize, Serialize};
+
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+
+// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct ItemBlueprintId(usize);
 impl crate::commons::id_vec::Id for ItemBlueprintId {
     fn new(id: usize) -> Self {
@@ -17,6 +22,7 @@ pub(crate) type ItemBlueprints = ResourceMap<ItemBlueprintId, ItemBlueprint>;
 pub(crate) struct ItemBlueprint {
     pub(crate) name: String,
     pub(crate) placed_sprite: PalleteSprite,
+    pub(crate) inventory_sprite: PalleteSprite,
     pub(crate) action_provider: Option<ActionProviderComponent>,
     pub(crate) equippable: Option<EquippableComponent>,
     pub(crate) material: Option<MaterialBlueprintComponent>,
@@ -39,13 +45,15 @@ impl<'_a> ItemMaker for Identified<'_a, ItemBlueprintId, ItemBlueprint> {
             name: self.name.clone(),
             special_name: None,
             action_provider: self.action_provider.clone(),
-            equippable: self.equippable.clone(),
+            // equippable: self.equippable.clone(),
             owner: None,
             material: self.material.as_ref().map(|material_blueprint| material_blueprint.make(&arguments)),
             quality: self.quality.as_ref().map(|quality_blueprint| quality_blueprint.make(&arguments)),
             mellee_damage: self.mellee_damage.as_ref().map(|mellee_blueprint| mellee_blueprint.make(&arguments, &resources)),
             armor: self.armor.as_ref().map(|armor| armor.make(&arguments, &resources)),
             artwork_scene: self.artwork_scene.as_ref().map(|artwork_scene| artwork_scene.make(&arguments)),
+            cached_inventory_texture: RefCell::new(None),
+            cached_placed_texture: RefCell::new(None)
         }
     }
 
@@ -107,6 +115,12 @@ impl QualityBlueprintComponent {
         }
     }
 
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(crate) struct EquippableComponent {
+    pub(crate) slot: EquipmentType,
 }
 
 

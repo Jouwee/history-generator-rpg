@@ -40,7 +40,7 @@ impl EquipmentGenerator {
 
         Self::add_artifacts(&mut inventory, &creature, world);
 
-        inventory.auto_equip();
+        inventory.auto_equip(resources);
 
         return inventory
     }

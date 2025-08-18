@@ -1,8 +1,8 @@
-use std::{cell::RefCell, time::Instant};
+use std::time::Instant;
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::ArmorBlueprintComponent, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::{ActionProviderComponent, EquippableComponent}}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 #[derive(Clone)]
@@ -620,7 +620,8 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let statue = ItemBlueprint {
             name: String::from("statue"),
-            placed_sprite, 
+            placed_sprite: placed_sprite.clone(),
+            inventory_sprite: placed_sprite,
             action_provider: None,
             equippable: None,
             material: Some(MaterialBlueprintComponent {
@@ -642,9 +643,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let sword_blueprint = ItemBlueprint {
             name: String::from("sword"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike"), actions.id_of("act:sword:bleeding_cut")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Hand }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
@@ -674,9 +676,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let sword_blueprint = ItemBlueprint {
             name: String::from("axe"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Hand }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
@@ -706,9 +709,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let mace_blueprint = ItemBlueprint {
             name: String::from("mace"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:strike"), actions.id_of("act:mace:concussive_strike")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Hand, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Hand }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: Some(MAT_TAG_WOOD | MAT_TAG_BONE),
@@ -729,9 +733,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("peasant shirt"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoGarment, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::TorsoGarment }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -747,9 +752,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("pants"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Legs, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Legs }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -765,9 +771,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("boots"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Feet, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Feet }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -783,9 +790,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("brigandine"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::TorsoInner }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -801,9 +809,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("cuirass"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::TorsoInner, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::TorsoInner }),
             material: Some(MaterialBlueprintComponent {
                 primary_tag_bitmask: MAT_TAG_METAL,
                 secondary_tag_bitmask: None,
@@ -823,9 +832,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("crown"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: None,
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Head, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Head }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -841,9 +851,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let mace_blueprint = ItemBlueprint {
             name: String::from("spell tome (Fire Bolt)"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:firebolt")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Trinket }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -859,9 +870,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let mace_blueprint = ItemBlueprint {
             name: String::from("spell tome (Fireball)"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:fireball")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Trinket }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -877,9 +889,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let mace_blueprint = ItemBlueprint {
             name: String::from("spell tome (Teleport)"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:teleport")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Trinket }),
             material: None,
             quality: None,
             mellee_damage: None,
@@ -895,9 +908,10 @@ impl Resources {
         let placed_sprite = PalleteSprite::new(image);
         let mace_blueprint = ItemBlueprint {
             name: String::from("spell tome (Rock Pillar)"),
-            placed_sprite, 
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
             action_provider: Some(ActionProviderComponent { actions: vec!(actions.id_of("act:rockpillar")) }),
-            equippable: Some(EquippableComponent { sprite: pallete_sprite, slot: EquipmentType::Trinket, cached_texture: RefCell::new(None) }),
+            equippable: Some(EquippableComponent { slot: EquipmentType::Trinket }),
             material: None,
             quality: None,
             mellee_damage: None,

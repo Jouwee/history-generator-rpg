@@ -6,13 +6,14 @@ impl ItemFactory {
 
     #[cfg(test)]
     pub(crate) fn test() -> Item {
+        use std::cell::RefCell;
+
         use crate::{commons::id_vec::Id, resources::item_blueprint::ItemBlueprintId};
 
         return Item {
             blueprint_id: ItemBlueprintId::mock(0),
             action_provider: None,
             artwork_scene: None,
-            equippable: None,
             material: None,
             mellee_damage: None,
             armor: None,
@@ -20,6 +21,8 @@ impl ItemFactory {
             quality: None,
             special_name: None,
             owner: None,
+            cached_inventory_texture: RefCell::new(None),
+            cached_placed_texture: RefCell::new(None),
         }
     }
 

@@ -248,7 +248,8 @@ impl Actor {
         }
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
-            if let Some(equippable) = &item.equippable {
+            let blueprint = game_ctx.resources.item_blueprints.get(&item.blueprint_id);
+            if let Some(equippable) = &blueprint.equippable {
                 let z_order = match slot {
                     EquipmentType::Feet => 1,
                     EquipmentType::Legs => 2,
@@ -262,7 +263,7 @@ impl Actor {
                     CreatureAppearance::Single(_, _) => 0,
                     CreatureAppearance::Composite { index, base: _, top: _ } => index
                 };
-                textures.push((z_order, equippable.make_texture(index, &item.material, &game_ctx.resources.materials)));
+                textures.push((z_order, item.make_inventory_texture(index, &game_ctx.resources)));
             }
         }
         textures.sort_by(|a, b| a.0.cmp(&b.0));

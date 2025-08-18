@@ -131,8 +131,6 @@ impl MapModal {
     fn get_offset_clamp(&self, camera_rect: [f64; 4]) -> [[f64; 2]; 2] {
         let map_size = [self.world_size.0 as f64 * 16., self.world_size.1 as f64 * 16.];
         let x;
-        dbg!(camera_rect);
-        dbg!(map_size);
         if camera_rect[2] > map_size[0] {
             x = [map_size[0] / 2.; 2]
         } else {

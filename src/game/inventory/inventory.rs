@@ -1,4 +1,6 @@
-use crate::world::item::Item;
+use serde::{Deserialize, Serialize};
+
+use crate::{resources::resources::Resources, world::item::Item};
 
 use super::inventory_container::InventoryContainer;
 
@@ -108,11 +110,12 @@ impl Inventory {
             .map(|slot| (&slot.0, slot.1.as_ref().unwrap()))
     }
 
-    pub(crate) fn auto_equip(&mut self) {
+    pub(crate) fn auto_equip(&mut self, resources: &Resources) {
         for i in 0..self.container.len() {
             let mut equip_slot = None;
             if let Some(item) = self.container.item(i) {
-                if let Some(equippable) = &item.equippable {
+                let blueprint = resources.item_blueprints.get(&item.blueprint_id);
+                if let Some(equippable) = &blueprint.equippable {
                     // TODO: Choose best
                     if self.equipped(&equippable.slot).is_none() {
                         equip_slot = Some(equippable.slot.clone());
@@ -129,7 +132,7 @@ impl Inventory {
 
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum EquipmentType {
     Head,
     Hand,

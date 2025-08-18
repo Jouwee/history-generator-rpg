@@ -4,7 +4,7 @@ use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::{ColorMap, PalleteSprite}}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -19,19 +19,25 @@ impl crate::commons::id_vec::Id for ItemId {
     }
 }
 
-#[derive(Clone, Debug)]
+pub(crate) type Items = IdVec<Item>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Item {
     pub(crate) blueprint_id: ItemBlueprintId,
     pub(crate) name: String,
     pub(crate) special_name: Option<String>,
     pub(crate) owner: Option<CreatureId>,
     pub(crate) action_provider: Option<ActionProviderComponent>,
-    pub(crate) equippable: Option<EquippableComponent>,
     pub(crate) material: Option<MaterialComponent>,
     pub(crate) quality: Option<QualityComponent>,
     pub(crate) mellee_damage: Option<MelleeDamageComponent>,
     pub(crate) armor: Option<ArmorComponent>,
-    pub(crate) artwork_scene: Option<ArtworkSceneComponent>
+    pub(crate) artwork_scene: Option<ArtworkSceneComponent>,
+    // In-memory cache, shouldn't save
+    #[serde(skip)] 
+    pub(crate) cached_placed_texture: RefCell<Option<RgbaImage>>,
+    #[serde(skip)]
+    pub(crate) cached_inventory_texture: RefCell<Option<RgbaImage>>,
 }
 
 impl Item {
@@ -60,12 +66,35 @@ impl Item {
     }
 
     pub(crate) fn make_texture(&self, resources: &Resources) -> Texture {
-        let mut map = HashMap::new();
-        if let Some(material) = &self.material {
-            map = material.pallete_sprite(&resources.materials);
+        if self.cached_placed_texture.borrow().is_none() {
+            let mut map = HashMap::new();
+            if let Some(material) = &self.material {
+                map = material.pallete_sprite(&resources.materials);
+            }
+            let placed_sprite = &resources.item_blueprints.get(&self.blueprint_id).placed_sprite;
+            let image = placed_sprite.remap(map);
+            self.cached_placed_texture.borrow_mut().replace(image);
         }
-        let placed_sprite = &resources.item_blueprints.get(&self.blueprint_id).placed_sprite;
-        let image = placed_sprite.remap(map);
+        let image = self.cached_placed_texture.borrow();
+        let image = image.as_ref().expect("Just populated");
+        let settings = TextureSettings::new().filter(Filter::Nearest);
+        return Texture::from_image(&image, &settings)
+    }
+
+    pub(crate) fn make_inventory_texture(&self, index: usize, resources: &Resources) -> Texture {
+        if self.cached_inventory_texture.borrow().is_none() {
+            let mut map = HashMap::new();
+            if let Some(material) = &self.material {
+                map = material.pallete_sprite(&resources.materials);
+            }
+            let inventory_sprite = &resources.item_blueprints.get(&self.blueprint_id).inventory_sprite;
+            let image = inventory_sprite.remap(map);
+            let image = DynamicImage::ImageRgba8(image);
+            let image = image.crop_imm((index * SPECIES_SPRITE_SIZE.x()) as u32, 0, SPECIES_SPRITE_SIZE.x() as u32, SPECIES_SPRITE_SIZE.y() as u32).to_rgba8();
+            self.cached_inventory_texture.borrow_mut().replace(image);
+        }
+        let image = self.cached_inventory_texture.borrow();
+        let image = image.as_ref().expect("Just populated");
         let settings = TextureSettings::new().filter(Filter::Nearest);
         return Texture::from_image(&image, &settings)
     }
@@ -101,34 +130,6 @@ impl Item {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct ActionProviderComponent {
     pub(crate) actions: Vec<ActionId>
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct EquippableComponent {
-    pub(crate) sprite: PalleteSprite,
-    pub(crate) slot: EquipmentType,
-    pub(crate) cached_texture: RefCell<Option<RgbaImage>>
-}
-
-impl EquippableComponent {
-
-    pub(crate) fn make_texture(&self, index: usize, material: &Option<MaterialComponent>, materials: &Materials) -> Texture {
-        if self.cached_texture.borrow().is_none() {
-            let mut map = HashMap::new();
-            if let Some(material) = &material {
-                map = material.pallete_sprite(materials);
-            }
-            let image = self.sprite.remap(map);
-            let image = DynamicImage::ImageRgba8(image);
-            let image = image.crop_imm((index * SPECIES_SPRITE_SIZE.x()) as u32, 0, SPECIES_SPRITE_SIZE.x() as u32, SPECIES_SPRITE_SIZE.y() as u32).to_rgba8();
-            self.cached_texture.borrow_mut().replace(image);
-        }
-
-        let image = self.cached_texture.borrow();
-        let image = image.as_ref().expect("Just populated");
-        let settings = TextureSettings::new().filter(Filter::Nearest);
-        return Texture::from_image(&image, &settings)
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -170,7 +170,7 @@ impl App {
                         let mut rng = Rng::seeded(creature_id).derive("equipment");
                         let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &self.context.resources).make());
 
-                        player.inventory.auto_equip();
+                        player.inventory.auto_equip(&self.context.resources);
 
                         let chunk = Chunk::from_world_tile(&world, &self.context.resources, pos, ChunkLayer::Surface, player);
                         let mut scene = GameSceneState::new(world, pos, chunk);
@@ -343,7 +343,7 @@ fn main() {
                         let mut rng = Rng::seeded(creature_id).derive("equipment");
                         let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &app.context.resources).make());
 
-                        player.inventory.auto_equip();
+                        player.inventory.auto_equip(&app.context.resources);
 
                         let chunk = Chunk::from_world_tile(&world, &app.context.resources, pos, ChunkLayer::Surface, player);
                         let mut scene = GameSceneState::new(world, pos, chunk);
