@@ -1,7 +1,7 @@
 use std::{ops::ControlFlow, sync::Arc};
 
 use graphics::Transformed;
-use crate::{engine::{assets::{assets, Image}, gui::{button::Button, containers::SimpleContainer, UIEvent, UINode}, render::RenderContext, scene::{Scene, Update}}, game::InputEvent, GameContext};
+use crate::{engine::{assets::{assets, Image}, gui::{button::Button, containers::SimpleContainer, UIEvent, UINode}, render::RenderContext, scene::{Scene, Update}}, game::InputEvent, loc, GameContext};
 
 pub(crate) struct MainMenuScene {
     logo: Arc<Image>,
@@ -13,15 +13,15 @@ impl MainMenuScene {
         let mut container = SimpleContainer::new();
         container.layout_component().anchor_center().size([124., 28. * 3. - 4.]);
         
-        let mut new_game = Button::text("New game").key("new_game");
+        let mut new_game = Button::text(loc!("main-menu-new-game")).key("new_game");
         new_game.layout_component().size([124., 24.]);
         container.add(new_game);
 
-        let mut load_game = Button::text("Load game").key("load_game");
+        let mut load_game = Button::text(loc!("main-menu-continue")).key("load_game");
         load_game.layout_component().size([124., 24.]);
         container.add(load_game);
 
-        let mut quit = Button::text("Quit").key("quit");
+        let mut quit = Button::text(loc!("main-menu-quit")).key("quit");
         quit.layout_component().size([124., 24.]);
         container.add(quit);
 

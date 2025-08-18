@@ -24,6 +24,7 @@ pub(crate) mod engine;
 pub(crate) mod game;
 pub(crate) mod globals;
 pub(crate) mod loadsave;
+pub(crate) mod localization;
 pub(crate) mod resources;
 pub(crate) mod world;
 
