@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell, RefMut};
+use std::{cell::{Ref, RefCell, RefMut}, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +12,30 @@ pub(crate) trait Id: Clone + Copy {
         return Self::new(id)
     }
 
+}
+
+pub(crate) struct Identified<'a, I, V> {
+    id: I,
+    value: &'a V
+}
+
+impl<'a, I, V> Identified<'a, I, V> {
+
+    pub(crate) fn new(id: I, value: &'a V) -> Self {
+        Self { id, value }
+    }
+
+    pub(crate) fn id(&self) -> &I {
+        return &self.id;
+    }
+
+}
+
+impl<'a, I, V> Deref for Identified<'a, I, V> {
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        return self.value;
+    }
 }
 
 #[derive(Serialize, Deserialize)]

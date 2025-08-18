@@ -183,8 +183,8 @@ pub(crate) mod fixture {
             let human_id = resources.species.id_of("species:human");
             let culture = resources.cultures.random();
 
-            let lineage_1 = world.lineages.add(Lineage::new(culture, resources.cultures.get(&culture)));
-            let lineage_2 = world.lineages.add(Lineage::new(culture, resources.cultures.get(&culture)));
+            let lineage_1 = world.lineages.add(Lineage::new(culture, &resources.cultures.get(&culture)));
+            let lineage_2 = world.lineages.add(Lineage::new(culture, &resources.cultures.get(&culture)));
 
             let creature_a1 = world.creatures.add(Creature {
                 birth: WorldDate::new(1, 1, 1),

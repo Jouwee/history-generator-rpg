@@ -44,7 +44,7 @@ impl Hotbar {
         self.buttons.clear();
         for action_id in self.available_actions.iter().chain(self.equipped_actions.iter()) {
             let action = ctx.resources.actions.get(action_id);
-            self.buttons.push((*action_id, Button::image(action.icon.clone()).tooltip(Self::build_tooltip(action, actor, ctx))))
+            self.buttons.push((*action_id, Button::image(action.icon.clone()).tooltip(Self::build_tooltip(&action, actor, ctx))))
         }
     }
 

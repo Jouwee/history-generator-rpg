@@ -483,7 +483,7 @@ impl<'a> ChunkGenerator<'a> {
                     let wolf = resources.species.get(&wolf_id);
                     // Minion wolves
                     for _ in 0..self.rng.randi_range(1, 4) {
-                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
                         self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 7);
                     }
                 }
@@ -529,7 +529,7 @@ impl<'a> ChunkGenerator<'a> {
                 }
                 // Minion wolves
                 for _ in 0..3 {
-                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
                     self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                 }
             }
@@ -538,7 +538,7 @@ impl<'a> ChunkGenerator<'a> {
                 if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
                     // Minion wolves
                     for _ in 0..self.rng.randi_range(1, 4) {
-                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, wolf, ai_group);
+                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
                         self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                     }
                 }

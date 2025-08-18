@@ -1,4 +1,4 @@
-use crate::commons::resource_map::ResourceMap;
+use crate::commons::{id_vec::Identified, resource_map::ResourceMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 pub(crate) struct BiomeId(usize);
@@ -15,7 +15,7 @@ pub(crate) type Biomes = ResourceMap<BiomeId, Biome>;
 
 impl Biomes {
 
-    pub (crate) fn get_u8(&self, id: u8) -> &Biome {
+    pub (crate) fn get_u8(&'_ self, id: u8) -> Identified<'_, BiomeId, Biome> {
         return self.get(&BiomeId(id as usize));
     }
 

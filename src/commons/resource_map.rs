@@ -1,5 +1,7 @@
 use std::{collections::HashMap, slice::Iter};
 
+use crate::commons::id_vec::Identified;
+
 use super::id_vec::Id;
 
 #[derive(Clone)]
@@ -21,15 +23,16 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         return id
     }
 
-    pub(crate) fn get(&self, id: &I) -> &V {
-        return self.vector.get(id.as_usize()).expect("Using ResourceMap should be safe to unwrap")
+    pub(crate) fn get(&'_ self, id: &I) -> Identified<'_, I, V> {
+        let value = self.vector.get(id.as_usize()).expect("Using ResourceMap should be safe to unwrap");
+        return Identified::new(id.clone(), value);
     }
 
     pub(crate) fn try_get(&self, id: usize) -> Option<&V> {
         return self.vector.get(id)
     }
 
-    pub(crate) fn find(&self, key: &str) -> &V {
+    pub(crate) fn find(&'_ self, key: &str) -> Identified<'_, I, V> {
         return self.get(&self.id_of(key))
     }
 

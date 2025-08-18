@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::{chunk::AiGroups, inventory::inventory::EquipmentType}, info, resources::action::{Action, ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
+use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::{chunk::AiGroups, inventory::inventory::EquipmentType}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor, chunk::Chunk};
 
@@ -21,13 +21,13 @@ impl AiRunner {
         }
     }
 
-    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<(ActionId, &'a Action, Coord2)> {
+    pub(crate) fn next_action<'a>(&mut self, actions: &'a Actions) -> Option<(ActionId, Coord2)> {
         let action = self.actions.pop_front();
         if let Some((action_id, pos)) = action {
             let action = actions.get(&action_id);
             self.delay = 0.;
             self.delay_target = action.ap_cost as f64 / 200.;
-            return Some((action_id, action, pos))
+            return Some((action_id, pos))
         }
         return None
     }

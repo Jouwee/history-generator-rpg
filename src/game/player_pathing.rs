@@ -79,7 +79,7 @@ impl PlayerPathing {
             if let Some(pos) = pos {
                 let action_id = ctx.resources.actions.id_of("act:move");  
                 let action = ctx.resources.actions.get(&action_id);  
-                let result = action_runner.try_use(&action_id, action, PLAYER_IDX, pos, chunk, world, game_log, ctx);
+                let result = action_runner.try_use(&action_id, &action, PLAYER_IDX, pos, chunk, world, game_log, ctx);
                 if result.is_err() {
                     self.clear_running();
                 }

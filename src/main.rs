@@ -164,7 +164,7 @@ impl App {
 
                         let creature = world.creatures.get(&creature_id);
                         let species = self.context.resources.species.get(&creature.species);
-                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, species, &world, &self.context.resources);
+                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, &species, &world, &self.context.resources);
                         drop(creature);
 
                         let mut rng = Rng::seeded(creature_id).derive("equipment");
@@ -337,7 +337,7 @@ fn main() {
 
                         let creature = world.creatures.get(&creature_id);
                         let species = app.context.resources.species.get(&creature.species);
-                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, species, &world, &app.context.resources);
+                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, &species, &world, &app.context.resources);
                         drop(creature);
 
                         let mut rng = Rng::seeded(creature_id).derive("equipment");

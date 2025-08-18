@@ -356,7 +356,7 @@ impl Scene for GameSceneState {
         if let Some(action_id) = &self.hotbar.selected_action {
             // TODO: Cleanup
             let action = game_ctx.resources.actions.get(action_id);
-            let can_use = ActionRunner::can_use(action_id, action, PLAYER_IDX, self.cursor_pos, &self.chunk);
+            let can_use = ActionRunner::can_use(action_id, &action, PLAYER_IDX, self.cursor_pos, &self.chunk);
             let color = match can_use {
                 Ok(_) => (COLOR_WHITE.alpha(0.2), COLOR_WHITE),
                 Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
@@ -515,8 +515,9 @@ impl Scene for GameSceneState {
                 }
 
                 let next = npc.ai.next_action(&ctx.resources.actions);
-                if let Some((action_id, action, cursor)) = next {
-                    let v = self.action_runner.try_use(&action_id, action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.game_log, ctx);
+                if let Some((action_id, cursor)) = next {
+                    let action = ctx.resources.actions.get(&action_id);
+                    let v = self.action_runner.try_use(&action_id, &action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.game_log, ctx);
                     if let Err(v) = &v {
                         warn!("AI tried to use action invalid: {:?}", v);
                     }
@@ -543,8 +544,9 @@ impl Scene for GameSceneState {
                     }
 
                     let next = npc.ai.next_action(&ctx.resources.actions);
-                    if let Some((_, _, _)) = next {
+                    if let Some((_, _)) = next {
                         // TODO: Borrow issues
+                        // let action = ctx.resources.actions.get(&action_id);
                         // let v = self.action_runner.try_use(action, self.chunk.turn_controller.npc_idx(), cursor, &mut self.chunk, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
                         // if let Err(v) = &v {
                         //     warn!("AI tried to use action invalid: {:?}", v);
@@ -604,7 +606,7 @@ impl Scene for GameSceneState {
 
             let _ = self.action_runner.try_use(
                 &action_id,
-                action,
+                &action,
                 PLAYER_IDX,
                 cursor,
                 &mut self.chunk,
@@ -694,7 +696,7 @@ impl Scene for GameSceneState {
                     let action = ctx.resources.actions.get(action_id);
                     let _ = self.action_runner.try_use(
                         action_id,
-                        action,
+                        &action,
                         PLAYER_IDX,
                         self.cursor_pos,
                         &mut self.chunk,
