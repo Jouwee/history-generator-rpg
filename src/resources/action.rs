@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{Chunk, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{GameState, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -65,14 +65,14 @@ pub(crate) enum ActionTarget {
 
 impl ActionTarget {
     
-    pub(crate) fn can_use(&self, actor_pos: &Coord2, chunk: &Chunk, cursor: &Coord2) -> Result<(), ActionFailReason> {
+    pub(crate) fn can_use(&self, actor_pos: &Coord2, chunk: &GameState, cursor: &Coord2) -> Result<(), ActionFailReason> {
         match &self {
             ActionTarget::Caster => return Ok(()),
             ActionTarget::Actor { range, filter_mask } => {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
                     return Err(ActionFailReason::CantReach);
                 }
-                if !chunk.size.in_bounds(*cursor) {
+                if !chunk.map.size.in_bounds(*cursor) {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
@@ -99,7 +99,7 @@ impl ActionTarget {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
                     return Err(ActionFailReason::CantReach);
                 }
-                if !chunk.size.in_bounds(*cursor) {
+                if !chunk.map.size.in_bounds(*cursor) {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
@@ -283,7 +283,7 @@ impl ActionRunner {
         }
     }
 
-    pub(crate) fn can_use(action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &Chunk) -> Result<(), ActionFailReason> {
+    pub(crate) fn can_use(action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &GameState) -> Result<(), ActionFailReason> {
         let actor = chunk.actor(actor_index).unwrap();
         if !actor.ap.can_use(action.ap_cost) {
             return Err(ActionFailReason::NotEnoughAP);
@@ -297,7 +297,7 @@ impl ActionRunner {
         return action.target.can_use(&actor.xy, chunk, &cursor);
     }
 
-    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
+    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut GameState, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
         let r = Self::can_use(action_id, action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
@@ -412,7 +412,7 @@ impl ActionRunner {
         return Ok(());
     }
 
-    pub(crate) fn update(&mut self, update: &Update, chunk: &mut Chunk, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &mut GameContext) {
+    pub(crate) fn update(&mut self, update: &Update, chunk: &mut GameState, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &mut GameContext) {
         let mut clear_running_action = false;
         if let Some(action) = &mut self.running_action {
 
@@ -547,7 +547,7 @@ impl ActionRunner {
                                             .and_then(|i| chunk.actor(*i).cloned());
                                         if let Some(actor) = actor {
                                             ctx.event_bus.push(BusEvent::ShowChatDialog(ShowChatDialogData {
-                                                world_coord: chunk.world_coord,
+                                                world_coord: chunk.coord.xy,
                                                 actor,
                                             }))
                                         }

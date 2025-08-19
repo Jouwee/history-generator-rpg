@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::Chunk, codex::QuestStatus}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::world::World, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, chunk::GameState, codex::QuestStatus}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::world::World, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -32,7 +32,7 @@ impl Console {
         ctx.text(&format!("  {}", self.output), assets().font_standard(), [8, 24], &COLOR_WHITE);
     }
 
-    pub(crate) fn input(&mut self, world: &mut World, chunk: &mut Chunk, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
+    pub(crate) fn input(&mut self, world: &mut World, chunk: &mut GameState, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let InputEvent::Key { key: Key::Quote } = evt {
             self.visible = !self.visible;
             self.command = String::new();
@@ -112,7 +112,7 @@ impl Console {
         return ControlFlow::Continue(())
     }
 
-    fn run_command(&mut self, world: &mut World, chunk: &mut Chunk, ctx: &mut GameContext) -> Result<String, String> {
+    fn run_command(&mut self, world: &mut World, chunk: &mut GameState, ctx: &mut GameContext) -> Result<String, String> {
         let mut parts = self.command.split(' ');
         let command = parts.next();
         match command {

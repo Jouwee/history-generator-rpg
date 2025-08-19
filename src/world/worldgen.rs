@@ -4,7 +4,7 @@ use graphics::Transformed;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::{map_component::MapComponent, InputEvent}, resources::resources::Resources, world::unit::UnitType, GameContext};
+use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, input::InputEvent, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::map_component::MapComponent, resources::resources::Resources, world::unit::UnitType, GameContext};
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 

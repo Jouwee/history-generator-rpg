@@ -3,20 +3,20 @@
 use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::Audio, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::actor::Actor, chunk::Chunk, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState, InputEvent as OldInputEvent};
+use game::{actor::actor::Actor, chunk::GameState, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState};
 use glutin_window::GlutinWindow;
 use resources::resources::Resources;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
 
 use opengl_graphics::{GlGraphics, OpenGL};
-use piston::{event_loop::{EventSettings, Events}, ButtonArgs, EventLoop, MouseScrollEvent, UpdateArgs};
+use piston::{event_loop::{EventSettings, Events}, EventLoop, MouseScrollEvent, UpdateArgs};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::input::{Button, ButtonState, Key};
 use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{chunk_gen::chunk_generator::ChunkLayer, engine::{geometry::Size2D, scene::BusEvent}, game::chunk::AiGroups, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::chunk::{AiGroups, ChunkCoord, ChunkLayer}, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
@@ -134,8 +134,8 @@ impl App {
         }
     }
 
-    fn input(&mut self, args: &OldInputEvent) {
-        self.debug_overlay.input(args);
+    fn input(&mut self, args: &InputEvent) {
+        self.debug_overlay.input(&args);
         match &mut self.scene {
             SceneEnum::None => {},
             SceneEnum::MainMenu(game_state) => {
@@ -173,8 +173,8 @@ impl App {
 
                         player.inventory.auto_equip(&self.context.resources);
 
-                        let chunk = Chunk::from_world_tile(&world, &self.context.resources, pos, ChunkLayer::Surface, player);
-                        let mut scene = GameSceneState::new(world, pos, chunk);
+                        let chunk = GameState::from_world_tile(&world, &self.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
+                        let mut scene = GameSceneState::new(world, chunk);
                         scene.init(&mut self.context);
                         self.scene = SceneEnum::Game(scene);
                     }
@@ -292,12 +292,7 @@ fn main() {
         if let Some(k) = e.mouse_cursor_args() {
             let now: Instant = Instant::now();
             last_mouse_pos = k;
-            // TODO: Fake event
-            let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
-            let input_event = OldInputEvent {
-                button_args: b,
-                evt: InputEvent::from_mouse_move(k, &app.display_context, &mut input_state)
-            };
+            let input_event = InputEvent::from_mouse_move(k, &app.display_context, &mut input_state);
             app.input(&input_event);
             app.debug_overlay.input_time(now.elapsed());
         }
@@ -305,12 +300,7 @@ fn main() {
         if let Some(k) = e.mouse_scroll_args() {
             let now: Instant = Instant::now();
             last_mouse_pos = k;
-            // TODO: Fake event
-            let b = ButtonArgs { state: ButtonState::Release, button: Button::Keyboard(Key::AcBookmarks), scancode: None };
-            let input_event = OldInputEvent {
-                button_args: b,
-                evt: InputEvent::from_mouse_scroll(k, &mut input_state)
-            };
+            let input_event = InputEvent::from_mouse_scroll(k, &mut input_state);
             app.input(&input_event);
             app.debug_overlay.input_time(now.elapsed());
         }
@@ -318,10 +308,7 @@ fn main() {
         if let Some(k) = e.button_args() {
             let now: Instant = Instant::now();
             if k.state == ButtonState::Press || k.state == ButtonState::Release {
-                let input_event = OldInputEvent {
-                    button_args: k,
-                    evt: InputEvent::from_button_args(&k, &mut input_state)
-                };
+                let input_event = InputEvent::from_button_args(&k, &mut input_state);
 
                 app.input(&input_event);
 
@@ -346,8 +333,8 @@ fn main() {
 
                         player.inventory.auto_equip(&app.context.resources);
 
-                        let chunk = Chunk::from_world_tile(&world, &app.context.resources, pos, ChunkLayer::Surface, player);
-                        let mut scene = GameSceneState::new(world, pos, chunk);
+                        let chunk = GameState::from_world_tile(&world, &app.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
+                        let mut scene = GameSceneState::new(world, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
 
@@ -357,8 +344,8 @@ fn main() {
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
-                        let chunk = Chunk::playground(&app.context.resources, scene.chunk.player().clone(), &scene.world);
-                        let mut scene = GameSceneState::new(scene.world, scene.world_pos, chunk);
+                        let chunk = GameState::playground(&app.context.resources, scene.chunk.player().clone(), &scene.world);
+                        let mut scene = GameSceneState::new(scene.world, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
                         continue

@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::{gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}}, game::chunk::Chunk, resources::action::{ActionId, ActionRunner}, warn, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::{gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}}, game::chunk::GameState, resources::action::{ActionId, ActionRunner}, warn, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,
@@ -18,7 +18,7 @@ impl GameContextMenu {
         }
     }
 
-    pub(crate) fn show(&mut self, actor_index: usize, cursor: Coord2, chunk: &mut Chunk, ctx: &mut GameContext, position: [f64; 2]) {
+    pub(crate) fn show(&mut self, actor_index: usize, cursor: Coord2, chunk: &mut GameState, ctx: &mut GameContext, position: [f64; 2]) {
         let actor = chunk.actor(actor_index).unwrap();
 
         let actions: Vec<(i32, String)> = actor.get_all_available_actions(ctx).iter()

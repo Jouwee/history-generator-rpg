@@ -2,18 +2,20 @@ use std::{collections::HashMap, iter};
 
 use graphics::{image, Transformed};
 use opengl_graphics::Texture;
+use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator, ChunkLayer}, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, scene::BusEvent, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator}, commons::{astar::MovementCost, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{assets::assets, audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, scene::BusEvent, tilemap::{TileMap, TileSet}, Color}, game::TurnController, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item, ItemId}, world::World}, GameContext};
 
 use super::{actor::actor::Actor, factory::item_factory::ItemFactory, Renderable};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
-pub(crate) struct Chunk {
-    pub(crate) world_coord: Coord2,
-    pub(crate) size: Size2D,
-    layer: ChunkLayer,
-    pub(crate) map: ChunkMap,
+
+// #[derive(Serialize, Deserialize)]
+/// Game state, passed to several functions, and is saved/loaded
+pub(crate) struct GameState {
+    pub(crate) coord: ChunkCoord,
+    pub(crate) map: Chunk,
     pub(crate) player: Actor,
     pub(crate) actors: Vec<Actor>,
     pub(crate) turn_controller: TurnController,
@@ -25,7 +27,9 @@ pub(crate) enum TileMetadata {
     BurialPlace(CreatureId)
 }
 
-pub(crate) struct ChunkMap {
+pub(crate) struct Chunk {
+    pub(crate) coord: ChunkCoord,
+    pub(crate) size: Size2D,
     pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
     pub(crate) tiles_clone: ResourceMap<TileId, Tile>,
@@ -33,7 +37,7 @@ pub(crate) struct ChunkMap {
     pub(crate) object_layer: TileMap,
 }
 
-impl ChunkMap {
+impl Chunk {
 
     pub(crate) fn blocks_movement(&self, pos: Coord2) -> bool {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
@@ -110,8 +114,8 @@ impl ChunkMap {
 
 }
 
-impl Chunk {
-    pub(crate) fn new(world_coord: Coord2, size: Size2D, layer: ChunkLayer, player: Actor, resources: &Resources) -> Chunk {
+impl GameState {
+    pub(crate) fn new(coord: ChunkCoord, size: Size2D, player: Actor, resources: &Resources) -> GameState {
 
         let mut tileset = TileSet::new();
         for tile in resources.object_tiles.iter() {
@@ -123,11 +127,11 @@ impl Chunk {
             dual_tileset.add(tile.tile_layer, tile.tileset_image.clone());
         }
 
-        Chunk {
-            world_coord,
-            size,
-            layer,
-            map: ChunkMap {
+        GameState {
+            coord,
+            map: Chunk {
+                coord,
+                size,
                 tiles_clone: resources.tiles.clone(),
                 ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
                 object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
@@ -193,10 +197,10 @@ impl Chunk {
         others.chain(player)
     }
 
-    pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> Chunk {
-        let mut chunk = Self::new(Coord2::xy(0,0), Size2D(128, 128), ChunkLayer::Surface, player, resources);
-        for x in 0..chunk.size.x() {
-            for y in 0..chunk.size.y() {
+    pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> GameState {
+        let mut chunk = Self::new(ChunkCoord::new(Coord2::xy(0,0), ChunkLayer::Surface), Size2D(128, 128), player, resources);
+        for x in 0..chunk.map.size.x() {
+            for y in 0..chunk.map.size.y() {
                 chunk.map.ground_layer.set_tile(x, y, 1);
             }
         }
@@ -254,22 +258,22 @@ impl Chunk {
         self.turn_controller.remove(i);
     }
 
-    pub(crate) fn from_world_tile(world: &World, resources: &Resources, xy: Coord2, layer: ChunkLayer, player: Actor) -> Chunk {
-        let mut rng = Rng::seeded(xy);
+    pub(crate) fn from_world_tile(world: &World, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
+        let mut rng = Rng::seeded(coord.xy);
         rng.next();
         // TODO: Size from params
-        let mut chunk = Chunk::new(xy, Size2D(80, 80), layer, player, resources);
+        let mut chunk = GameState::new(coord, Size2D(80, 80), player, resources);
         let mut generator = ChunkGenerator::new(&mut chunk, rng);
         let params = ChunkGenParams {
-            layer
+            layer: coord.layer
         };
-        generator.generate(&params, world, xy, resources);
+        generator.generate(&params, world, coord.xy, resources);
         return chunk;
     }
 
 
     pub(crate) fn astar_movement_cost(&self, xy: Coord2) -> MovementCost {
-        if !self.size.in_bounds(xy) || !self.can_occupy(&xy) {
+        if !self.map.size.in_bounds(xy) || !self.can_occupy(&xy) {
             return MovementCost::Impossible;
         } else {
             return MovementCost::Cost(1.);
@@ -285,7 +289,7 @@ impl Chunk {
 
 }
 
-impl Renderable for Chunk {
+impl Renderable for GameState {
     fn render(&self, ctx: &mut crate::engine::render::RenderContext, game_ctx: &mut GameContext) {
         self.map.ground_layer.render(ctx);
 
@@ -321,39 +325,61 @@ impl Renderable for Chunk {
             ctx.texture(texture, ctx.at(pos.x as f64 * 24., pos.y as f64 * 24.));
         }
 
-        if let ChunkLayer::Surface = self.layer {
+        let size = self.map.size;
+        if let ChunkLayer::Surface = self.coord.layer {
             // Renders the nav borders
             {
-                for y in 1..self.size.y()-2 {
+                for y in 1..size.y()-2 {
                     ctx.image("gui/nav_arrow_left.png", [12, y as i32 * 24 + 12]);
-                    ctx.image("gui/nav_arrow_right.png", [self.size.x() as i32 * 24 - 36, y as i32 * 24 + 12]);
+                    ctx.image("gui/nav_arrow_right.png", [size.x() as i32 * 24 - 36, y as i32 * 24 + 12]);
                 }
             }
             {
-                for x in 1..self.size.x()-2 {
+                for x in 1..size.x()-2 {
                     ctx.image("gui/nav_arrow_up.png", [x as i32 * 24 + 12, 12]);
-                    ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, self.size.y() as i32 * 24 - 36]);
+                    ctx.image("gui/nav_arrow_down.png", [x as i32 * 24 + 12, size.y() as i32 * 24 - 36]);
                 }
             }
             {
                 let img = assets().image("gui/nav_corner.png");
                 let transform = ctx.context.transform;
                 image(&img.texture, transform.trans(12., 12.), ctx.gl);
-                image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., 12.).rot_deg(90.), ctx.gl);
-                image(&img.texture, transform.trans(self.size.x() as f64 * 24. - 12., self.size.y() as f64 * 24. - 12.).rot_deg(180.), ctx.gl);
-                image(&img.texture, transform.trans(12., self.size.y() as f64 * 24. - 12.).rot_deg(270.), ctx.gl);
+                image(&img.texture, transform.trans(size.x() as f64 * 24. - 12., 12.).rot_deg(90.), ctx.gl);
+                image(&img.texture, transform.trans(size.x() as f64 * 24. - 12., size.y() as f64 * 24. - 12.).rot_deg(180.), ctx.gl);
+                image(&img.texture, transform.trans(12., size.y() as f64 * 24. - 12.).rot_deg(270.), ctx.gl);
             }
         }
         // Renders some black bars outside the map to cover large tiles
         {
             let color = Color::from_hex("090714");
-            ctx.rectangle_fill([-64., -64., self.size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., self.size.y() as f64 * 24. - 12., self.size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., -64., 76., self.size.y() as f64 * 24. + 76.], color);
-            ctx.rectangle_fill([self.size.x() as f64 * 24. - 12., -64., 76., self.size.y() as f64 * 24. + 76.], color);
+            ctx.rectangle_fill([-64., -64., size.x() as f64 * 24. + 76., 76.], color);
+            ctx.rectangle_fill([-64., size.y() as f64 * 24. - 12., size.x() as f64 * 24. + 76., 76.], color);
+            ctx.rectangle_fill([-64., -64., 76., size.y() as f64 * 24. + 76.], color);
+            ctx.rectangle_fill([size.x() as f64 * 24. - 12., -64., 76., size.y() as f64 * 24. + 76.], color);
         }
 
     }
+}
+
+
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub(crate) struct ChunkCoord {
+    pub(crate) xy: Coord2,
+    pub(crate) layer: ChunkLayer,    
+}
+
+impl ChunkCoord {
+
+    pub(crate) fn new(xy: Coord2, layer: ChunkLayer) -> Self {
+        return ChunkCoord { xy, layer }
+    }
+
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub(crate) enum ChunkLayer {
+    Surface,
+    Underground
 }
 
 pub(crate) struct AiGroups {

@@ -249,7 +249,7 @@ impl Actor {
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
             let blueprint = game_ctx.resources.item_blueprints.get(&item.blueprint_id);
-            if let Some(equippable) = &blueprint.equippable {
+            if blueprint.equippable.is_some() {
                 let z_order = match slot {
                     EquipmentType::Feet => 1,
                     EquipmentType::Legs => 2,

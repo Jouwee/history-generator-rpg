@@ -1,8 +1,8 @@
 use std::time::{Duration, Instant};
 
-use piston::{Button, ButtonState, Key};
+use piston::Key;
 
-use crate::{engine::{assets::assets, render::RenderContext, scene::Update, COLOR_BLACK, COLOR_WHITE}, game::InputEvent, globals::perf::perf};
+use crate::{engine::{assets::assets, input::InputEvent, render::RenderContext, scene::Update, COLOR_BLACK, COLOR_WHITE}, globals::perf::perf};
 
 pub(crate) struct DebugOverlay {
     active: bool,
@@ -63,10 +63,8 @@ impl DebugOverlay {
     }
 
     pub(crate) fn input(&mut self, input: &InputEvent) {
-        if input.button_args.state == ButtonState::Press {
-            if let Button::Keyboard(Key::F3) = input.button_args.button {
-                self.active = !self.active;
-            }
+        if let InputEvent::Key { key: Key::F3 } = input {
+            self.active = !self.active;
         }
     }
 }

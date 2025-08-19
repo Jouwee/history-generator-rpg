@@ -1,4 +1,4 @@
-use crate::{game::{chunk::{Chunk, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
+use crate::{game::{chunk::{GameState, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
 
 use super::TurnMode;
 
@@ -73,7 +73,7 @@ impl PlayerPathing {
         return self.running.is_some()
     }
 
-    pub(crate) fn update_running(&mut self, chunk: &mut Chunk, world: &mut World, game_log: &mut GameLog, update: &Update, action_runner: &mut ActionRunner, ctx: &mut GameContext) {
+    pub(crate) fn update_running(&mut self, chunk: &mut GameState, world: &mut World, game_log: &mut GameLog, update: &Update, action_runner: &mut ActionRunner, ctx: &mut GameContext) {
         if self.add_update_delta(update.delta_time) {
             let pos = self.pop_running();
             if let Some(pos) = pos {

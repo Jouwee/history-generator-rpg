@@ -1,7 +1,7 @@
 use std::{ops::ControlFlow, sync::Arc};
 
 use graphics::Transformed;
-use crate::{engine::{assets::{assets, Image}, gui::{button::Button, containers::SimpleContainer, UIEvent, UINode}, render::RenderContext, scene::{Scene, Update}}, game::InputEvent, loc, GameContext};
+use crate::{engine::{assets::{assets, Image}, gui::{button::Button, containers::SimpleContainer, UIEvent, UINode}, input::InputEvent, render::RenderContext, scene::{Scene, Update}}, loc, GameContext};
 
 pub(crate) struct MainMenuScene {
     logo: Arc<Image>,
@@ -52,7 +52,7 @@ impl Scene for MainMenuScene {
     }
 
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<MainMenuOption> {
-        match self.container.input(&mut (), &evt.evt, ctx) {
+        match self.container.input(&mut (), &evt, ctx) {
             ControlFlow::Break(UIEvent::ButtonClicked(button)) => {
                 match button.as_str() {
                     "new_game" => ControlFlow::Break(MainMenuOption::NewGame),

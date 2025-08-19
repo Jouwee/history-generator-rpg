@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use ai::AiSolver;
-use chunk::Chunk;
+use chunk::GameState;
 use effect_layer::EffectLayer;
 use game_context_menu::GameContextMenu;
 use game_log::GameLog;
@@ -11,9 +11,9 @@ use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
 use map_modal::{MapModal, MapModalEvent};
-use piston::{ButtonArgs, Key, MouseButton};
+use piston::{Key, MouseButton};
 use player_pathing::PlayerPathing;
-use crate::chunk_gen::chunk_generator::ChunkLayer;
+use serde::{Deserialize, Serialize};
 use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
 use crate::engine::assets::assets;
@@ -22,12 +22,12 @@ use crate::engine::gui::button::Button;
 use crate::engine::gui::dialog::DialogWrapper;
 use crate::engine::gui::tooltip::Tooltip;
 use crate::engine::gui::UINode;
-use crate::engine::input::InputEvent as NewInputEvent;
+use crate::engine::input::InputEvent;
 
 use crate::engine::scene::BusEvent;
 use crate::engine::{Color, COLOR_WHITE};
 use crate::game::ai::AiState;
-use crate::game::chunk::{AiGroups, PLAYER_IDX};
+use crate::game::chunk::{AiGroups, ChunkCoord, ChunkLayer, PLAYER_IDX};
 use crate::game::codex::{QuestObjective, QuestStatus};
 use crate::game::console::Console;
 use crate::game::gui::chat_dialog::ChatDialog;
@@ -36,6 +36,7 @@ use crate::game::gui::death_dialog::DeathDialog;
 use crate::game::gui::help_dialog::HelpDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
+use crate::loadsave::LoadSaveManager;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::warn;
 use crate::world::unit::UnitId;
@@ -65,13 +66,7 @@ pub(crate) trait Renderable {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext);
 }
 
-// TODO: Wtf is this?
-pub(crate) struct InputEvent {
-    pub(crate) button_args: ButtonArgs,
-    pub(crate) evt: NewInputEvent
-}
-
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum TurnMode {
     TurnBased,
     RealTime
@@ -79,10 +74,8 @@ pub(crate) enum TurnMode {
 
 pub(crate) struct GameSceneState {
     pub(crate) world: World,
-    pub(crate) world_pos: Coord2,
-    world_layer: ChunkLayer,
-    pub(crate) chunk: Chunk,
     turn_mode: TurnMode,
+    pub(crate) chunk: GameState,
     player_turn_timer: f64,
     button_inventory: Button,
     button_codex: Button,
@@ -113,7 +106,7 @@ pub(crate) struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub(crate) fn new(world: World, world_pos: Coord2, chunk: Chunk) -> GameSceneState {
+    pub(crate) fn new(world: World, chunk: GameState) -> GameSceneState {
         let mut button_map = Button::text("Map").tooltip(Tooltip::new("Show map (M)"));
         button_map.layout_component().anchor_bottom_center(-162.0, -1.0);
         let mut button_inventory = Button::text("Chr").tooltip(Tooltip::new("Character and inventory"));
@@ -129,10 +122,8 @@ impl GameSceneState {
 
         GameSceneState {
             world,
-            chunk,
-            world_pos,
-            world_layer: ChunkLayer::Surface,
             turn_mode: TurnMode::RealTime,
+            chunk,
             player_turn_timer: 0.,
             hotbar: Hotbar::new(),
             hud: HeadsUpDisplay::new(),
@@ -261,25 +252,22 @@ impl GameSceneState {
     fn move_to_chunk(&mut self, world_pos: Coord2, ctx: &mut GameContext) {
         // Move player to opposite side
         let mut player = self.chunk.player().clone();
-        let offset = world_pos - self.world_pos;
+        let offset = world_pos - self.chunk.coord.xy;
         if offset.x < 0 {
-            player.xy.x = self.chunk.size.x() as i32 - 3;
+            player.xy.x = self.chunk.map.size.x() as i32 - 3;
         }
         if offset.x > 0 {
             player.xy.x = 2;
         }
         if offset.y < 0 {
-            player.xy.y = self.chunk.size.y() as i32 - 3;
+            player.xy.y = self.chunk.map.size.y() as i32 - 3;
         }
         if offset.y > 0 {
             player.xy.y = 2;
         }
         // Creates the new chunk
-        // TODO: When out of bounds, make a special chunk gen
-        self.world_layer = ChunkLayer::Surface;
-        let chunk = Chunk::from_world_tile(&self.world, &ctx.resources, world_pos, self.world_layer, player);
-        // Switcheroo
-        self.world_pos = world_pos;
+        let coord = ChunkCoord::new(world_pos, ChunkLayer::Surface);
+        let chunk = GameState::from_world_tile(&self.world, &ctx.resources, coord, player);
         self.chunk = chunk;
         // Re-init
         self.init(ctx);
@@ -287,10 +275,10 @@ impl GameSceneState {
 
     fn move_to_layer(&mut self, layer: ChunkLayer, ctx: &mut GameContext) {
         // Creates the new chunk
-        let mut chunk = Chunk::from_world_tile(&self.world, &ctx.resources, self.world_pos, layer, self.chunk.player().clone());
+        let mut chunk = GameState::from_world_tile(&self.world, &ctx.resources, ChunkCoord::new(self.chunk.coord.xy, layer), self.chunk.player().clone());
         // Finds the exit
-        'outer: for x in 0..chunk.size.x() {
-            for y in 0..chunk.size.y() {
+        'outer: for x in 0..chunk.map.size.x() {
+            for y in 0..chunk.map.size.y() {
                 let pos = Coord2::xy(x as i32, y as i32);
                 if chunk.map.get_object_idx(pos) == 17 {
                     chunk.player_mut().xy = pos + Coord2::xy(0, -1);
@@ -299,7 +287,6 @@ impl GameSceneState {
             }
         }
         // Switcheroo
-        self.world_layer = layer;
         self.chunk = chunk;
         // Re-init
         self.init(ctx);
@@ -329,6 +316,12 @@ impl Scene for GameSceneState {
     type Input = ();
 
     fn init(&mut self, ctx: &mut GameContext) {
+
+        // TODO:
+        let load_save_manager = LoadSaveManager::new();
+        // TODO(ROO4JcDl): Unwrap
+        // load_save_manager.save_game_state(&self.state).unwrap();
+
         self.save_creature_appearances();
         self.chunk.turn_controller.roll_initiative(self.chunk.actors.len());
         self.hotbar.init(&self.chunk.player(), ctx);
@@ -384,7 +377,7 @@ impl Scene for GameSceneState {
         // Effects
         self.effect_layer.render(ctx);
 
-        if let ChunkLayer::Underground = self.world_layer {
+        if let ChunkLayer::Underground = self.chunk.coord.layer {
             let draw_state = DrawState::new_alpha();
             let draw_state = draw_state.blend(Blend::Multiply);
             Rectangle::new(Color::from_hex("90a8b9ff").f32_arr()).draw(ctx.camera_rect, &draw_state, ctx.context.transform, ctx.gl);
@@ -474,19 +467,19 @@ impl Scene for GameSceneState {
 
         // Check movement between chunks
         if self.chunk.player().xy.x <= 1 {
-            self.move_to_chunk(self.world_pos + Coord2::xy(-1, 0), ctx);
+            self.move_to_chunk(self.chunk.coord.xy + Coord2::xy(-1, 0), ctx);
             return
         }
         if self.chunk.player().xy.y <= 1 {
-            self.move_to_chunk(self.world_pos + Coord2::xy(0, -1), ctx);
+            self.move_to_chunk(self.chunk.coord.xy + Coord2::xy(0, -1), ctx);
             return
         }
-        if self.chunk.player().xy.x >= self.chunk.size.x() as i32 - 2 {
-            self.move_to_chunk(self.world_pos + Coord2::xy(1, 0), ctx);
+        if self.chunk.player().xy.x >= self.chunk.map.size.x() as i32 - 2 {
+            self.move_to_chunk(self.chunk.coord.xy + Coord2::xy(1, 0), ctx);
             return
         }
-        if self.chunk.player().xy.y >= self.chunk.size.y() as i32 - 2 {
-            self.move_to_chunk(self.world_pos + Coord2::xy(0, 1), ctx);
+        if self.chunk.player().xy.y >= self.chunk.map.size.y() as i32 - 2 {
+            self.move_to_chunk(self.chunk.coord.xy + Coord2::xy(0, 1), ctx);
             return
         }
         // TODO: Resources
@@ -567,17 +560,17 @@ impl Scene for GameSceneState {
     fn input(&mut self, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
 
         if self.death_dialog.is_visible() {
-            self.death_dialog.input(&mut (), &evt.evt, ctx)?;
+            self.death_dialog.input(&mut (), &evt, ctx)?;
             // Returns to avoid any other component receiving events
             return ControlFlow::Continue(());
         }
 
-        if self.console.input(&mut self.world, &mut self.chunk, &evt.evt, ctx).is_break() {
+        if self.console.input(&mut self.world, &mut self.chunk, &evt, ctx).is_break() {
             return ControlFlow::Break(());
         }
 
         if let Some(map) = &mut self.map_modal {
-            match map.input(&evt.evt, ctx) {
+            match map.input(&evt, ctx) {
                 ControlFlow::Break(MapModalEvent::Close) => self.map_modal = None,
                 ControlFlow::Break(MapModalEvent::InstaTravelTo(coord)) => {
                     self.move_to_chunk(coord, ctx);
@@ -588,20 +581,20 @@ impl Scene for GameSceneState {
             return ControlFlow::Continue(());
         }
 
-        self.hotbar.input(&mut self.chunk.player, &evt.evt, ctx)?;
-        self.hud.input(self.chunk.player(), &evt.evt, ctx);
+        self.hotbar.input(&mut self.chunk.player, &evt, ctx)?;
+        self.hud.input(self.chunk.player(), &evt, ctx);
 
-        if self.character_dialog.input(self.chunk.player_mut(), &evt.evt, ctx).is_break() {
+        if self.character_dialog.input(self.chunk.player_mut(), &evt, ctx).is_break() {
             self.hotbar.equip(&self.chunk.player(), ctx);
             return ControlFlow::Break(());
         }
-        self.codex_dialog.input(&mut self.world, &evt.evt, ctx)?;
-        self.inspect_dialog.input(&mut self.world, &evt.evt, ctx)?;
-        self.chat_dialog.input(&mut self.world, &evt.evt, ctx)?;
-        self.quest_complete_dialog.input(&mut self.world, &evt.evt, ctx)?;
-        self.help_dialog.input(&mut (), &evt.evt, ctx)?;
+        self.codex_dialog.input(&mut self.world, &evt, ctx)?;
+        self.inspect_dialog.input(&mut self.world, &evt, ctx)?;
+        self.chat_dialog.input(&mut self.world, &evt, ctx)?;
+        self.quest_complete_dialog.input(&mut self.world, &evt, ctx)?;
+        self.help_dialog.input(&mut (), &evt, ctx)?;
 
-        if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt.evt, ctx) {
+        if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
             let _ = self.action_runner.try_use(
@@ -619,13 +612,13 @@ impl Scene for GameSceneState {
 
 
         if self.can_end_turn() {
-            if self.button_end_turn.input(&mut (), &evt.evt, ctx).is_break() {
+            if self.button_end_turn.input(&mut (), &evt, ctx).is_break() {
                 self.next_turn(ctx);
                 return ControlFlow::Break(());
             }
         }
         if self.can_change_turn_mode() {
-            if self.button_toggle_turn_based.input(&mut (), &evt.evt, ctx).is_break() {
+            if self.button_toggle_turn_based.input(&mut (), &evt, ctx).is_break() {
                 match self.turn_mode {
                     TurnMode::RealTime => self.set_turn_mode(TurnMode::TurnBased, ctx),
                     TurnMode::TurnBased => self.set_turn_mode(TurnMode::RealTime, ctx),
@@ -634,24 +627,24 @@ impl Scene for GameSceneState {
             }
         }
 
-        if self.button_map.input(&mut (), &evt.evt, ctx).is_break() {
+        if self.button_map.input(&mut (), &evt, ctx).is_break() {
             let mut map = MapModal::new();
-            map.init(&self.world, &self.world_pos);
+            map.init(&self.world, &self.chunk.coord.xy);
             self.map_modal = Some(map);
             return ControlFlow::Break(());
         }
 
-        if self.button_inventory.input(&mut (), &evt.evt, ctx).is_break() {
+        if self.button_inventory.input(&mut (), &evt, ctx).is_break() {
             self.character_dialog.show(CharacterDialog::new(), self.chunk.player(), ctx);
             return ControlFlow::Break(());
         }
 
-        if self.button_codex.input(&mut (), &evt.evt, ctx).is_break() {
+        if self.button_codex.input(&mut (), &evt, ctx).is_break() {
             self.codex_dialog.show(CodexDialog::new(), &self.world, ctx);
             return ControlFlow::Break(());
         }
 
-        if self.button_help.input(&mut (), &evt.evt, ctx).is_break() {
+        if self.button_help.input(&mut (), &evt, ctx).is_break() {
             self.help_dialog.show(HelpDialog::new(), &(), ctx);
             return ControlFlow::Break(());
         }
@@ -668,29 +661,29 @@ impl Scene for GameSceneState {
         }
 
         if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
-            let mut player_pathfinding = AStar::new(self.chunk.size, self.chunk.player().xy);
+            let mut player_pathfinding = AStar::new(self.chunk.map.size, self.chunk.player().xy);
             player_pathfinding.find_path(self.cursor_pos, |xy| self.chunk.astar_movement_cost(xy));
             self.player_pathing.set_preview(self.cursor_pos, player_pathfinding.get_path(self.cursor_pos));
         }
 
-        match evt.evt {
-            NewInputEvent::Key { key: Key::Escape } => {
+        match evt {
+            InputEvent::Key { key: Key::Escape } => {
                 self.hotbar.clear_selected();
             },
-            NewInputEvent::Key { key: Key::Space } => {
+            InputEvent::Key { key: Key::Space } => {
                 if let TurnMode::TurnBased = self.turn_mode {
                     self.next_turn(ctx);
                 }
             },
-            NewInputEvent::Key { key: Key::M } => {
+            InputEvent::Key { key: Key::M } => {
                 let mut map = MapModal::new();
-                map.init(&self.world, &self.world_pos);
+                map.init(&self.world, &self.chunk.coord.xy);
                 self.map_modal = Some(map);
             },
-            NewInputEvent::Click { button: MouseButton::Right, pos } => {
-                self.game_context_menu.show(PLAYER_IDX, self.cursor_pos, &mut self.chunk, ctx, pos);
+            InputEvent::Click { button: MouseButton::Right, pos } => {
+                self.game_context_menu.show(PLAYER_IDX, self.cursor_pos, &mut self.chunk, ctx, *pos);
             }
-            NewInputEvent::Click { button: MouseButton::Left, pos: _ } => {
+            InputEvent::Click { button: MouseButton::Left, pos: _ } => {
                 if let Some(action_id) = &self.hotbar.selected_action {
 
                     let action = ctx.resources.actions.get(action_id);

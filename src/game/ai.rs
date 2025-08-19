@@ -2,7 +2,7 @@ use std::{collections::VecDeque, time::Instant, vec};
 
 use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::{chunk::AiGroups, inventory::inventory::EquipmentType}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
-use super::{actor::actor::Actor, chunk::Chunk};
+use super::{actor::actor::Actor, chunk::GameState};
 
 #[derive(Clone)]
 pub(crate) struct AiRunner {
@@ -53,7 +53,7 @@ const DETECTION_RANGE_SQRD: f32 = 12. * 12.;
 
 impl AiSolver {
 
-    pub(crate) fn check_state(actor: &Actor, chunk: &Chunk) -> AiState {
+    pub(crate) fn check_state(actor: &Actor, chunk: &GameState) -> AiState {
         match actor.ai_state {
             AiState::Disabled => {
                 for hostile in chunk.actors_iter() {
@@ -67,7 +67,7 @@ impl AiSolver {
         }
     }
 
-    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &Chunk, game_ctx: &GameContext) -> AiRunner {
+    pub(crate) fn choose_actions(actions: &Actions, actor: &Actor, actor_idx: usize, chunk: &GameState, game_ctx: &GameContext) -> AiRunner {
 
         if let AiState::Disabled = actor.ai_state {
             let mut runner = AiRunner::new();
@@ -116,10 +116,10 @@ impl AiSolver {
             team_damage: 0.,
         };
 
-        let mut astar = AStar::new(chunk.size, chunk.player().xy);
+        let mut astar = AStar::new(chunk.map.size, chunk.player().xy);
         
         astar.find_path(ctx.xy, |xy| {
-            if !chunk.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
+            if !chunk.map.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);
@@ -140,7 +140,7 @@ impl AiSolver {
         return runner
     }
 
-    fn sim_step(ctx: SimContext, result: &mut Option<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &Chunk, game_ctx: &GameContext) -> u32 {
+    fn sim_step(ctx: SimContext, result: &mut Option<SimContext>, available_actions: &Vec<ActionId>, astar: &mut AStar, actions: &Actions, chunk: &GameState, game_ctx: &GameContext) -> u32 {
         Self::add_to_results(ctx.clone(), result);
         if ctx.depth > 10 {
             return 1
@@ -232,7 +232,7 @@ impl AiSolver {
         return paths
     }
 
-    fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &Chunk) -> f64 {
+    fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &GameState) -> f64 {
         let dist = ctx.xy.dist(&chunk.player().xy) as f64;
         if dist <= 1.5 {
             return 1.;
