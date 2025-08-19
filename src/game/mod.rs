@@ -322,6 +322,7 @@ impl Scene for GameSceneState {
         let load_save_manager = LoadSaveManager::new();
         // TODO(ROO4JcDl): Unwrap
         load_save_manager.save_game_state(&self.state).unwrap();
+        load_save_manager.save_chunk(&self.state.chunk).unwrap();
 
         self.save_creature_appearances();
         self.state.turn_controller.roll_initiative(self.state.actors.len());

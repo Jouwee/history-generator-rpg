@@ -1,14 +1,9 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{id_vec::Id}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{resources::Resources}, world::{creature::CreatureId, item::Item}};
-
-#[derive(Clone)]
-pub(crate) enum TileMetadata {
-    BurialPlace(CreatureId)
-}
+use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{object_tile::ObjectTileId, resources::Resources, tile::TileId}, world::{creature::CreatureId, item::Item}};
 
 pub(crate) struct Chunk {
     pub(crate) coord: ChunkCoord,
@@ -133,6 +128,55 @@ impl Chunk {
 
 }
 
+/// Serializable version of a chunk
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ChunkSerialized {
+    pub(crate) coord: ChunkCoord,
+    pub(crate) size: Size2D,
+    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
+    pub(crate) items_on_ground: Vec<(Coord2, Item)>,
+    pub(crate) ground_layer: Vec<Option<TileId>>,
+    pub(crate) object_layer: Vec<Option<ObjectTileId>>,
+}
+
+impl ChunkSerialized {
+    pub(crate) fn from_chunk(chunk: &Chunk) -> Self {
+        Self {
+            coord: chunk.coord,
+            size: chunk.size,
+            tiles_metadata: chunk.tiles_metadata.clone(),
+            items_on_ground: chunk.items_on_ground.iter().map(|i| (i.0, i.1.clone())).collect(),
+            ground_layer: chunk.ground_layer.tiles().iter().map(|i| i.and_then(|i| Some(TileId::new(i)))).collect(),
+            object_layer: chunk.object_layer.tiles().iter().map(|(i, _)| match i {
+                0 => None,
+                // SMELL: See other smells in this file
+                i => Some(ObjectTileId::new(i - 1))
+            }).collect()
+        }
+    }
+
+    pub(crate) fn to_chunk(&self, resources: &Resources) -> Chunk {
+        let mut chunk = Chunk::new(self.coord, self.size, resources);
+
+        chunk.tiles_metadata = self.tiles_metadata.clone();
+        chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0, i.1.clone(), i.1.make_texture(resources))).collect();
+
+        for x in 0..self.size.x() {
+            for y in 0..self.size.y() {
+                let i = (y * self.size.x()) + x;
+                if let Some(tile) = self.ground_layer[i] {
+                    chunk.ground_layer.set_tile(x, y, tile.as_usize());
+                }
+                if let Some(tile) = self.object_layer[i] {
+                    // SMELL: See other smells in this file
+                    chunk.set_object_idx(Coord2::xy(x as i32, y as i32), tile.as_usize() + 1, resources);
+                }
+            }
+        }
+        return chunk;
+    }
+}
+
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct ChunkCoord {
     pub(crate) xy: Coord2,
@@ -151,4 +195,9 @@ impl ChunkCoord {
 pub(crate) enum ChunkLayer {
     Surface,
     Underground
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) enum TileMetadata {
+    BurialPlace(CreatureId)
 }

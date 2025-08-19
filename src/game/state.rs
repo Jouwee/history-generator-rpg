@@ -145,17 +145,6 @@ impl GameState {
         self.turn_controller.remove(i);
     }
 
-    pub(crate) fn set_coord(&mut self, coord: ChunkCoord, world: &World, resources: &Resources) {
-        self.chunk = Chunk::new(coord, Size2D(80, 80), resources);
-        let mut rng = Rng::seeded(coord.xy);
-        rng.next();
-        let mut generator = ChunkGenerator::new(self, rng);
-        let params = ChunkGenParams {
-            layer: coord.layer
-        };
-        generator.generate(&params, world, coord.xy, resources);
-    }
-
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
         let mut rng = Rng::seeded(coord.xy);
         rng.next();

@@ -3,7 +3,7 @@ use std::{fmt::Display, fs::File, path::{Path, PathBuf}, time::Instant};
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::{game::state::GameState, info, world::world::World};
+use crate::{game::{chunk::{Chunk, ChunkSerialized}, state::GameState}, info, resources::resources::Resources, world::world::World};
 
 pub(crate) struct LoadSaveManager {
 }
@@ -66,6 +66,35 @@ impl LoadSaveManager {
         info!("load_game_state took {:.2?}", timing.elapsed());
 
         return Ok(state);
+    }
+
+    pub(crate) fn save_chunk(&self, chunk: &Chunk) -> Result<(), LoadSaveError> {
+        let timing = Instant::now();
+
+        let mut metadata = self.load_or_create_metadata()?;
+        metadata.last_played = Local::now();
+        // TODO(ROO4JcDl): Playtime
+        self.save_metadata(&metadata)?;
+
+        let chunk = ChunkSerialized::from_chunk(chunk);
+        let buffer = File::create(self.path("chunk")?)?;
+        ciborium::into_writer(&chunk, buffer)?;
+
+        info!("save_chunk took {:.2?}", timing.elapsed());
+
+        return Ok(())
+    }
+
+    pub(crate) fn load_chunk(&self, resources: &Resources) -> Result<Chunk, LoadSaveError> {
+        let timing = Instant::now();
+
+        let buffer = File::open(self.path("chunk")?)?;
+        let chunk: ChunkSerialized = ciborium::from_reader(buffer)?;
+        let chunk = chunk.to_chunk(resources);
+
+        info!("load_chunk took {:.2?}", timing.elapsed());
+
+        return Ok(chunk);
     }
 
     fn load_or_create_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {

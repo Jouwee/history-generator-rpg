@@ -29,6 +29,10 @@ impl TileMap {
         }
     }
 
+    pub(crate) fn tiles(&self) -> &Vec<(usize, bool)> {
+        return &self.tiles
+    }
+
     pub(crate) fn reset(&mut self) {
         self.tiles = vec![(0, false); self.height * self.width];
     }

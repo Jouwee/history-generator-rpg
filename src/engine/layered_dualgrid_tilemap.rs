@@ -48,6 +48,10 @@ impl LayeredDualgridTilemap {
         }
     }
 
+    pub(crate) fn tiles(&self) -> &Vec<Option<usize>> {
+        return &self.tiles
+    }
+
     pub(crate) fn tile(&self, x: usize, y: usize) -> Option<usize> {
         return self.tiles[x + y * self.width]
     }

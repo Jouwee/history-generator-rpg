@@ -162,8 +162,8 @@ impl App {
 
                         let mut state = load_save_manager.load_game_state().unwrap();
 
-                        // TODO(ROO4JcDl): Review
-                        state.set_coord(state.coord, &world, &self.context.resources);
+                        let chunk = load_save_manager.load_chunk(&self.context.resources).unwrap();
+                        state.chunk = chunk;
 
                         let mut scene = GameSceneState::new(world, state);
                         scene.init(&mut self.context);
