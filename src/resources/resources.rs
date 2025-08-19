@@ -1,9 +1,20 @@
-use std::time::Instant;
+use std::{sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard}, time::Instant};
 
 use image::ImageReader;
 
 use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
+
+static RESOURCES: LazyLock<RwLock<Resources>> = LazyLock::new(|| RwLock::new(Resources::new()));
+
+pub(crate) fn resources() -> RwLockReadGuard<'static, Resources> {
+    RESOURCES.read().unwrap()
+}
+
+pub(crate) fn resources_mut() -> RwLockWriteGuard<'static, Resources> {
+    RESOURCES.write().unwrap()
+}
+
 
 #[derive(Clone)]
 pub(crate) struct Resources {

@@ -16,7 +16,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::LoadSaveManager, resources::resources::resources_mut, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
@@ -48,6 +48,7 @@ pub(crate) struct App {
 
 pub(crate) struct GameContext {
     audio: Audio,
+    // TODO: Eventually, make deprecated
     resources: Resources,
     tooltips: TooltipRegistry,
     display_context: DisplayContext,
@@ -250,6 +251,8 @@ fn main() {
             gui_rect: [0.; 4]
         }
     };
+
+    resources_mut().load();
     app.context.resources.load();
 
     app.scene = SceneEnum::MainMenu(MainMenuScene::new());

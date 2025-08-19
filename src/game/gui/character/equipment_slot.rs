@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{engine::gui::{layout_component::LayoutComponent, UIEvent, UINode}, game::inventory::inventory::Inventory, resources::resources::Resources, Color, EquipmentType, InputEvent, Item};
+use crate::{engine::gui::{layout_component::LayoutComponent, UIEvent, UINode}, game::inventory::inventory::Inventory, resources::resources::resources, Color, EquipmentType, InputEvent, Item};
 
 
 pub(crate) struct EquipmentSlot {
@@ -23,9 +23,10 @@ impl EquipmentSlot {
         }
     }
 
-    fn can_place_drag_item(&self, drag_item: &Option<Item>, resources: &Resources) -> bool {
+    fn can_place_drag_item(&self, drag_item: &Option<Item>) -> bool {
         if let Some(item) = drag_item {
-            let blueprint = resources.item_blueprints.get(&item.blueprint_id);
+            let res = resources();
+            let blueprint = res.item_blueprints.get(&item.blueprint_id);
             if let Some(equippable) = &blueprint.equippable {
                 return equippable.slot == self.slot;
             }
@@ -58,7 +59,7 @@ impl UINode for EquipmentSlot {
         match evt {
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
-                    if ctx.drag_item.is_none() || self.can_place_drag_item(&ctx.drag_item, &ctx.resources) {
+                    if ctx.drag_item.is_none() || self.can_place_drag_item(&ctx.drag_item) {
                         let mut drag = ctx.drag_item.take();
                         if state.equipped(&self.slot).is_some() {
                             ctx.drag_item = state.unequip_i(&self.slot, self.slot_i);
