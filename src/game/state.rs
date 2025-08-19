@@ -1,15 +1,18 @@
 use std::{collections::HashMap, iter};
 
 use graphics::{image, Transformed};
+use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator}, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, scene::BusEvent, tilemap::{TileMap, TileSet}, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, resources::resources::Resources, world::{item::ItemId, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator}, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, resources::resources::Resources, world::{item::ItemId, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
-// #[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 /// Game state, passed to several functions, and is saved/loaded
 pub(crate) struct GameState {
     pub(crate) coord: ChunkCoord,
+    /// The chunk will be serialized separately
+    #[serde(skip)]
     pub(crate) chunk: Chunk,
     pub(crate) player: Actor,
     pub(crate) actors: Vec<Actor>,
@@ -17,31 +20,11 @@ pub(crate) struct GameState {
     pub(crate) ai_groups: AiGroups,
 }
 
-
 impl GameState {
     pub(crate) fn new(coord: ChunkCoord, size: Size2D, player: Actor, resources: &Resources) -> GameState {
-
-        let mut tileset = TileSet::new();
-        for tile in resources.object_tiles.iter() {
-            tileset.add(tile.tile.clone());    
-        }
-
-        let mut dual_tileset = LayeredDualgridTileset::new();
-        for tile in resources.tiles.iter() {
-            dual_tileset.add(tile.tile_layer, tile.tileset_image.clone());
-        }
-
         GameState {
             coord,
-            chunk: Chunk {
-                coord,
-                size,
-                tiles_clone: resources.tiles.clone(),
-                ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
-                object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
-                items_on_ground: Vec::new(),
-                tiles_metadata: HashMap::new(),
-            },
+            chunk: Chunk::new(coord, size, resources),
             ai_groups: AiGroups::new(),
             player,
             actors: Vec::new(),
@@ -162,6 +145,17 @@ impl GameState {
         self.turn_controller.remove(i);
     }
 
+    pub(crate) fn set_coord(&mut self, coord: ChunkCoord, world: &World, resources: &Resources) {
+        self.chunk = Chunk::new(coord, Size2D(80, 80), resources);
+        let mut rng = Rng::seeded(coord.xy);
+        rng.next();
+        let mut generator = ChunkGenerator::new(self, rng);
+        let params = ChunkGenParams {
+            layer: coord.layer
+        };
+        generator.generate(&params, world, coord.xy, resources);
+    }
+
     pub(crate) fn from_world_tile(world: &World, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
         let mut rng = Rng::seeded(coord.xy);
         rng.next();
@@ -174,7 +168,6 @@ impl GameState {
         generator.generate(&params, world, coord.xy, resources);
         return chunk;
     }
-
 
     pub(crate) fn astar_movement_cost(&self, xy: Coord2) -> MovementCost {
         if !self.chunk.size.in_bounds(xy) || !self.can_occupy(&xy) {
@@ -265,6 +258,8 @@ impl Renderable for GameState {
     }
 }
 
+
+#[derive(Serialize, Deserialize)]
 pub(crate) struct AiGroups {
     next_group: u8,
     ai_group_mask: [u8; 8]   
@@ -301,6 +296,12 @@ impl AiGroups {
 
 }
 
+impl Default for AiGroups {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests_ai_groups {
     use super::*;
@@ -326,7 +327,7 @@ mod tests_ai_groups {
 
 }
 
-
+#[derive(Serialize, Deserialize)]
 pub(crate) struct TurnController {
     turn_idx: usize,
     initiative: Vec<usize>

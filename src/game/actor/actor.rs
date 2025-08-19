@@ -1,12 +1,14 @@
 use graphics::Transformed;
+use serde::{Deserialize, Serialize};
 
 use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Actor {
     pub(crate) xy: Coord2,
+    #[serde(skip)]
     pub(crate) animation: AnimationTransform,
     pub(crate) ap: ActionPointsComponent,
     pub(crate) stamina: StaminaComponent,
@@ -14,6 +16,7 @@ pub(crate) struct Actor {
     pub(crate) attributes: Attributes,
     pub(crate) ai_state: AiState,
     pub(crate) ai_group: u8,
+    #[serde(skip)]
     pub(crate) ai: AiRunner,
     pub(crate) sprite_flipped: bool,
     pub(crate) sprite: CreatureAppearance,
@@ -308,7 +311,7 @@ impl Renderable for Actor {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct ActionPointsComponent {
     pub(crate) action_points: i32,
     pub(crate) max_action_points: u16,
@@ -343,7 +346,7 @@ impl ActionPointsComponent {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct StaminaComponent {
     pub(crate) stamina: f32,
     pub(crate) max_stamina: f32,
@@ -372,7 +375,7 @@ impl StaminaComponent {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct RunningAffliction {
     affliction: Affliction,
     delta: usize,

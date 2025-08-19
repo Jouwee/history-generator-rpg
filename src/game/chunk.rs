@@ -3,7 +3,7 @@ use std::{collections::HashMap};
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{id_vec::Id, resource_map::ResourceMap}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap}, tilemap::{TileMap}}, resources::{resources::Resources, tile::{Tile, TileId}}, world::{creature::CreatureId, item::{Item}}};
+use crate::{commons::{id_vec::Id}, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{resources::Resources}, world::{creature::CreatureId, item::Item}};
 
 #[derive(Clone)]
 pub(crate) enum TileMetadata {
@@ -15,12 +15,48 @@ pub(crate) struct Chunk {
     pub(crate) size: Size2D,
     pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
-    pub(crate) tiles_clone: ResourceMap<TileId, Tile>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
     pub(crate) object_layer: TileMap,
 }
 
+/// This is used as a temporary value during deserialization, but the chunk in this state is not useful
+impl Default for Chunk {
+
+    fn default() -> Self {
+        Self {
+            coord: ChunkCoord::new(Coord2::xy(1, 1), ChunkLayer::Surface),
+            size: Size2D(1, 1),
+            tiles_metadata: HashMap::new(),
+            items_on_ground: Vec::new(),
+            ground_layer: LayeredDualgridTilemap::new(LayeredDualgridTileset::new(), 1, 1, 1, 1),
+            object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1)
+        }
+    }
+
+}
+
 impl Chunk {
+
+    pub(crate) fn new(coord: ChunkCoord, size: Size2D, resources: &Resources) -> Self {
+        let mut tileset = TileSet::new();
+        for tile in resources.object_tiles.iter() {
+            tileset.add(tile.tile.clone());    
+        }
+
+        let mut dual_tileset = LayeredDualgridTileset::new();
+        for tile in resources.tiles.iter() {
+            dual_tileset.add(tile.tile_layer, tile.tileset_image.clone());
+        }
+        
+        Chunk {
+            coord,
+            size,
+            ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
+            object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
+            items_on_ground: Vec::new(),
+            tiles_metadata: HashMap::new(),
+        }
+    }
 
     pub(crate) fn blocks_movement(&self, pos: Coord2) -> bool {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
@@ -85,9 +121,9 @@ impl Chunk {
         self.object_layer.set_tile(pos.x as usize, pos.y as usize, 0);
     }
 
-    pub(crate) fn get_step_sound(&self, pos: Coord2) -> Option<SoundEffect> {
+    pub(crate) fn get_step_sound(&self, pos: Coord2, resources: &Resources) -> Option<SoundEffect> {
         if let Some(tile) = self.ground_layer.tile(pos.x as usize, pos.y as usize) {
-            let tile = self.tiles_clone.try_get(tile);
+            let tile = resources.tiles.try_get(tile);
             if let Some(tile) = tile {
                 return tile.step_sound_effect.clone()
             }

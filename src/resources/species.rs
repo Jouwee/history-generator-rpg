@@ -118,7 +118,7 @@ impl SpeciesAppearance {
 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) enum CreatureAppearance {
     Single(String, usize),
     Composite {

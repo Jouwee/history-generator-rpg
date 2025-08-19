@@ -158,23 +158,14 @@ impl App {
                     ControlFlow::Break(MainMenuOption::LoadGame) => {
                         let load_save_manager = LoadSaveManager::new();
                         // TODO(ROO4JcDl): Unwrap
-                        let mut world = load_save_manager.load_world().unwrap();
+                        let world = load_save_manager.load_world().unwrap();
 
-                        // TODO(ROO4JcDl): These should be stored
-                        let (creature_id, pos) = world.create_scenario().expect("No playable scenario found");
+                        let mut state = load_save_manager.load_game_state().unwrap();
 
-                        let creature = world.creatures.get(&creature_id);
-                        let species = self.context.resources.species.get(&creature.species);
-                        let mut player = Actor::from_creature(Coord2::xy(16, 16), AiGroups::player(), creature_id, &creature, &creature.species, &species, &world, &self.context.resources);
-                        drop(creature);
+                        // TODO(ROO4JcDl): Review
+                        state.set_coord(state.coord, &world, &self.context.resources);
 
-                        let mut rng = Rng::seeded(creature_id).derive("equipment");
-                        let _ = player.inventory.add(ItemFactory::starter_weapon(&mut rng, &self.context.resources).make());
-
-                        player.inventory.auto_equip(&self.context.resources);
-
-                        let chunk = GameState::from_world_tile(&world, &self.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
-                        let mut scene = GameSceneState::new(world, chunk);
+                        let mut scene = GameSceneState::new(world, state);
                         scene.init(&mut self.context);
                         self.scene = SceneEnum::Game(scene);
                     }

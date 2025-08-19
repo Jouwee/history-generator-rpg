@@ -29,6 +29,12 @@ impl AnimationTransform {
 
 }
 
+impl Default for AnimationTransform {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) struct Animation {
     translate_keyframes: Vec<KeyFrame>

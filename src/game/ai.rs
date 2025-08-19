@@ -1,5 +1,7 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::{inventory::inventory::EquipmentType, state::{AiGroups, GameState}}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor};
@@ -39,7 +41,13 @@ impl AiRunner {
 
 }
 
-#[derive(Clone, PartialEq, Eq)]
+impl Default for AiRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum AiState {
     Disabled,
     Fight,

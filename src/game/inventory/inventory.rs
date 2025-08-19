@@ -4,7 +4,7 @@ use crate::{resources::resources::Resources, world::item::Item};
 
 use super::inventory_container::InventoryContainer;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Inventory {
     container: InventoryContainer,
     slots: [(EquipmentType, Option<Item>); 8]

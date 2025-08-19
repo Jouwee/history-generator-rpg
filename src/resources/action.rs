@@ -252,7 +252,7 @@ pub(crate) enum ActionEffect {
     PickUp,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) enum Affliction {
     Bleeding { duration: usize },
     Poisoned { duration: usize },
@@ -521,7 +521,7 @@ impl ActionRunner {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
                                         actor.xy = action.center;
                                         actor.animation.play(&Self::build_walk_anim());
-                                        if let Some(sound) = chunk.chunk.get_step_sound(action.center) {
+                                        if let Some(sound) = chunk.chunk.get_step_sound(action.center, &ctx.resources) {
                                             ctx.audio.play_once(sound);
                                         }
                                     },

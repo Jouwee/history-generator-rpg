@@ -3,7 +3,7 @@ use std::{fmt::Display, fs::File, path::{Path, PathBuf}, time::Instant};
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::{info, world::world::World};
+use crate::{game::state::GameState, info, world::world::World};
 
 pub(crate) struct LoadSaveManager {
 }
@@ -41,32 +41,32 @@ impl LoadSaveManager {
         return Ok(world);
     }
 
-    // pub(crate) fn save_game_state(&self, state: &GameState) -> Result<(), LoadSaveError> {
-    //     let timing = Instant::now();
+    pub(crate) fn save_game_state(&self, state: &GameState) -> Result<(), LoadSaveError> {
+        let timing = Instant::now();
 
-    //     let mut metadata = self.load_or_create_metadata()?;
-    //     metadata.last_played = Local::now();
-    //     // TODO(ROO4JcDl): Playtime
-    //     self.save_metadata(&metadata)?;
+        let mut metadata = self.load_or_create_metadata()?;
+        metadata.last_played = Local::now();
+        // TODO(ROO4JcDl): Playtime
+        self.save_metadata(&metadata)?;
 
-    //     let buffer = File::create(self.path("state")?)?;
-    //     // ciborium::into_writer(&state, buffer)?;
+        let buffer = File::create(self.path("state")?)?;
+        ciborium::into_writer(&state, buffer)?;
 
-    //     info!("save_game_state took {:.2?}", timing.elapsed());
+        info!("save_game_state took {:.2?}", timing.elapsed());
 
-    //     return Ok(())
-    // }
+        return Ok(())
+    }
 
-    // pub(crate) fn load_game_state(&self) -> Result<GameState, LoadSaveError> {
-    //     let timing = Instant::now();
+    pub(crate) fn load_game_state(&self) -> Result<GameState, LoadSaveError> {
+        let timing = Instant::now();
 
-    //     let buffer = File::open(self.path("state")?)?;
-    //     let state = ciborium::from_reader(buffer)?;
+        let buffer = File::open(self.path("state")?)?;
+        let state = ciborium::from_reader(buffer)?;
 
-    //     info!("load_game_state took {:.2?}", timing.elapsed());
+        info!("load_game_state took {:.2?}", timing.elapsed());
 
-    //     return Ok(state);
-    // }
+        return Ok(state);
+    }
 
     fn load_or_create_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
         if !Path::new(&self.path("savefile")?).exists() {

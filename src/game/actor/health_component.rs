@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::commons::rng::Rng;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct HealthComponent {
     max_hp: f32,
     current_hp: f32,
@@ -100,7 +100,7 @@ impl BodyPart {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct BodyPartCondition {
     health: f32,
     max_health: f32,
