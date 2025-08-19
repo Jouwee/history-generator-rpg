@@ -3,7 +3,7 @@
 use std::{ops::ControlFlow, time::Instant, vec};
 use commons::{markovchains::MarkovChainSingleWordModel, rng::Rng};
 use engine::{audio::Audio, debug::overlay::DebugOverlay, geometry::Coord2, gui::tooltip::TooltipRegistry, input::{InputEvent, InputState}, render::RenderContext, scene::{Scene, Update}, Color};
-use game::{actor::actor::Actor, chunk::GameState, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState};
+use game::{actor::actor::Actor, factory::item_factory::ItemFactory, inventory::inventory::EquipmentType, options::GameOptions, GameSceneState};
 use glutin_window::GlutinWindow;
 use resources::resources::Resources;
 use world::{event::*, history_generator::WorldGenerationParameters, item::Item, worldgen::WorldGenScene};
@@ -16,7 +16,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::chunk::{AiGroups, ChunkCoord, ChunkLayer}, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::LoadSaveManager, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
@@ -344,7 +344,7 @@ fn main() {
 
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
-                        let chunk = GameState::playground(&app.context.resources, scene.chunk.player().clone(), &scene.world);
+                        let chunk = GameState::playground(&app.context.resources, scene.state.player().clone(), &scene.world);
                         let mut scene = GameSceneState::new(scene.world, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);

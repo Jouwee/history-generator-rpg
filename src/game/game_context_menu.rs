@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::MouseButton;
 
-use crate::{commons::id_vec::Id, engine::{gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}}, game::chunk::GameState, resources::action::{ActionId, ActionRunner}, warn, Coord2, GameContext, InputEvent};
+use crate::{commons::id_vec::Id, engine::gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UINode}, game::state::GameState, resources::action::{ActionId, ActionRunner}, warn, Coord2, GameContext, InputEvent};
 
 pub(crate) struct GameContextMenu {
     layout: LayoutComponent,

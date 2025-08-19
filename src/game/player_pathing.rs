@@ -1,4 +1,4 @@
-use crate::{game::{chunk::{GameState, PLAYER_IDX}, game_log::GameLog}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
+use crate::{game::{game_log::GameLog, state::{GameState, PLAYER_IDX}}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
 
 use super::TurnMode;
 

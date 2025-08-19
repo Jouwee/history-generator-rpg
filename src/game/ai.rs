@@ -1,8 +1,8 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
-use crate::{commons::{astar::{AStar, MovementCost}}, engine::geometry::Coord2, game::{chunk::AiGroups, inventory::inventory::EquipmentType}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
+use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::{inventory::inventory::EquipmentType, state::{AiGroups, GameState}}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
-use super::{actor::actor::Actor, chunk::GameState};
+use super::{actor::actor::Actor};
 
 #[derive(Clone)]
 pub(crate) struct AiRunner {
@@ -116,10 +116,10 @@ impl AiSolver {
             team_damage: 0.,
         };
 
-        let mut astar = AStar::new(chunk.map.size, chunk.player().xy);
+        let mut astar = AStar::new(chunk.chunk.size, chunk.player().xy);
         
         astar.find_path(ctx.xy, |xy| {
-            if !chunk.map.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
+            if !chunk.chunk.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);

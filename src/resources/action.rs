@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::{GameState, TileMetadata, PLAYER_IDX}, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -72,11 +72,11 @@ impl ActionTarget {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
                     return Err(ActionFailReason::CantReach);
                 }
-                if !chunk.map.size.in_bounds(*cursor) {
+                if !chunk.chunk.size.in_bounds(*cursor) {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                    if !chunk.map.check_line_of_sight(&actor_pos, &cursor) {
+                    if !chunk.chunk.check_line_of_sight(&actor_pos, &cursor) {
                         return Err(ActionFailReason::CantSee);
                     }
                 }
@@ -99,7 +99,7 @@ impl ActionTarget {
                 if actor_pos.dist_squared(&cursor) > (range*range) as f32 {
                     return Err(ActionFailReason::CantReach);
                 }
-                if !chunk.map.size.in_bounds(*cursor) {
+                if !chunk.chunk.size.in_bounds(*cursor) {
                     return Err(ActionFailReason::CantReach);
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_OCCUPY) {
@@ -108,26 +108,26 @@ impl ActionTarget {
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
-                    let tile_metadata = chunk.map.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                    let tile_metadata = chunk.chunk.tiles_metadata.get(&cursor).and_then(|m| Some(m));
                     if tile_metadata.is_none() {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
                     // TODO: Bed
-                    let object_tile = chunk.map.get_object_idx(*cursor);
+                    let object_tile = chunk.chunk.get_object_idx(*cursor);
                     if object_tile != 3 {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_ITEM) {
-                    let item_on_ground = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| xy == cursor);
+                    let item_on_ground = chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| xy == cursor);
                     if item_on_ground.is_none() {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_VIEW) {
-                    if !chunk.map.check_line_of_sight(actor_pos, &cursor) {
+                    if !chunk.chunk.check_line_of_sight(actor_pos, &cursor) {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
@@ -510,7 +510,7 @@ impl ActionRunner {
                                     },
                                     ActionEffect::ReplaceObject { tile } => {
                                         for point in action.spell_area.points(action.center) {
-                                            chunk.map.object_layer.set_tile(point.x as usize, point.y as usize, tile.as_usize() + 1);
+                                            chunk.chunk.object_layer.set_tile(point.x as usize, point.y as usize, tile.as_usize() + 1);
                                         }
                                     },
                                     ActionEffect::TeleportActor => {
@@ -521,7 +521,7 @@ impl ActionRunner {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
                                         actor.xy = action.center;
                                         actor.animation.play(&Self::build_walk_anim());
-                                        if let Some(sound) = chunk.map.get_step_sound(action.center) {
+                                        if let Some(sound) = chunk.chunk.get_step_sound(action.center) {
                                             ctx.audio.play_once(sound);
                                         }
                                     },
@@ -530,10 +530,10 @@ impl ActionRunner {
                                             .first()
                                             .and_then(|i| chunk.actor(*i).cloned());
 
-                                        let item = chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center)
+                                        let item = chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center)
                                             .and_then(|(_, (_, item, _))| Some(item.clone()));
 
-                                        let tile_metadata = chunk.map.tiles_metadata.get(&action.center).cloned();
+                                        let tile_metadata = chunk.chunk.tiles_metadata.get(&action.center).cloned();
 
                                         ctx.event_bus.push(BusEvent::ShowInspectDialog(ShowInspectDialogData {
                                             actor,
@@ -554,19 +554,19 @@ impl ActionRunner {
                                     },
                                     ActionEffect::Dig => {
                                         for point in action.spell_area.points(action.center) {
-                                            let tile_metadata = chunk.map.tiles_metadata.get(&point).cloned();
+                                            let tile_metadata = chunk.chunk.tiles_metadata.get(&point).cloned();
                                             if let Some(meta) = &tile_metadata {
                                                 match meta {
                                                     TileMetadata::BurialPlace(creature_id) => {
 
-                                                        chunk.map.remove_object(point.clone());
-                                                        chunk.map.tiles_metadata.remove(&point);
+                                                        chunk.chunk.remove_object(point.clone());
+                                                        chunk.chunk.tiles_metadata.remove(&point);
 
                                                         let creature = world.creatures.get(creature_id);
                                                         if let Some(details) = &creature.details {
                                                             for item in details.inventory.iter() {
                                                                 let item = world.artifacts.get(item);
-                                                                chunk.map.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources)));
+                                                                chunk.chunk.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources)));
                                                             }
                                                         }
                                                     }
@@ -579,14 +579,14 @@ impl ActionRunner {
                                         actor.hp.recover_full();
                                     },
                                     ActionEffect::PickUp => {
-                                        let item_on_ground = match chunk.map.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center) {
+                                        let item_on_ground = match chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center) {
                                             None => None,
                                             Some((i, (_, item, _))) => Some((i, item.clone()))
                                         };
                                         if let Some((i, item)) = item_on_ground {
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             if let Ok(_) = actor.inventory.add(item.clone()) {
-                                                chunk.map.items_on_ground.remove(i);
+                                                chunk.chunk.items_on_ground.remove(i);
                                             }
                                         }
                                     },

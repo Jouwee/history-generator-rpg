@@ -17,7 +17,7 @@ impl MainMenuScene {
         new_game.layout_component().size([124., 24.]);
         container.add(new_game);
 
-        let mut load_game = Button::text(loc!("main-menu-continue")).key("load_game");
+        let mut load_game = Button::text(loc!("main-menu-continue-game")).key("load_game");
         load_game.layout_component().size([124., 24.]);
         container.add(load_game);
 
