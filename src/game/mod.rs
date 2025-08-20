@@ -160,19 +160,6 @@ impl GameSceneState {
         }
     }
 
-    fn save_creature_appearances(&mut self) {
-        for npc in self.state.actors.iter() {
-            if let Some(_id) = npc.creature_id {
-                // TODO:
-                // let mut creature = self.world.creatures.get_mut(&id).unwrap();
-                // creature.appearance_hints = HashMap::new();
-                // for (k, v) in npc.sprite.map.iter() {
-                //     creature.appearance_hints.insert(k.clone(), v.0.clone());
-                // }
-            }
-        }
-    }
-
     pub(crate) fn next_turn(&mut self, ctx: &mut GameContext) {
         if self.state.turn_controller.is_player_turn() {
             self.state.player_mut().ap.fill();
@@ -322,7 +309,6 @@ impl Scene for GameSceneState {
     type Input = ();
 
     fn init(&mut self, ctx: &mut GameContext) {
-        self.save_creature_appearances();
         self.state.turn_controller.roll_initiative(self.state.actors.len());
         self.hotbar.init(&self.state.player(), ctx);
         self.game_context_menu.init(&(), ctx);
@@ -759,8 +745,16 @@ impl Scene for GameSceneState {
             BusEvent::CreatureKilled(creature_id) => {
                 // TODO: Full remove logic
                 for unit_id in self.world.units.iter_ids::<UnitId>() {
-                    let mut unit = self.world.units.get_mut(&unit_id);
-                    unit.remove_creature(&creature_id);
+
+                    let unit = self.world.units.get_mut(&unit_id);
+                    let creature_lives_here = unit.creatures.contains(creature_id);
+                    drop(unit);
+                    if creature_lives_here { 
+                        // TODO: Item
+                        // TODO: Maybe not player?
+                        self.world.creature_kill_creature(*creature_id, unit_id, self.state.player().creature_id.unwrap(), None, unit_id);
+                        break;
+                    }
                 }
 
                 for quest in self.world.codex.quests_mut() {

@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, kill_creature, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -152,7 +152,7 @@ impl HistorySimulation {
 
             match side_effect {
                 CreatureSideEffect::None => (),
-                CreatureSideEffect::Death(cause_of_death) => kill_creature(world, creature_id, *unit_id, *unit_id, cause_of_death, &mut self.resources),
+                CreatureSideEffect::Death(cause_of_death) => world.kill_creature(creature_id, *unit_id, *unit_id, cause_of_death),
                 CreatureSideEffect::HaveChild => {
                     let mut creature = world.creatures.get_mut(&creature_id);
                     let child = CreatureSimulation::have_child_with_spouse(now, &world, &mut rng, &creature_id, &mut creature);
@@ -236,10 +236,10 @@ impl HistorySimulation {
                     let mut creature = world.creatures.get_mut(&creature_id);
                     creature.profession = Profession::Bandit;
                 },
-                CreatureSideEffect::AttackNearbyUnits => attack_nearby_unit(world, &mut rng, *unit_id, &mut self.resources),
+                CreatureSideEffect::AttackNearbyUnits => attack_nearby_unit(world, &mut rng, *unit_id),
                 CreatureSideEffect::StartPlot(goal) => start_plot(world, creature_id, goal),
                 CreatureSideEffect::FindSupportersForPlot => find_supporters_for_plot(world, creature_id),
-                CreatureSideEffect::ExecutePlot => execute_plot(world, *unit_id, creature_id, &mut rng, &mut self.resources),
+                CreatureSideEffect::ExecutePlot => execute_plot(world, *unit_id, creature_id, &mut rng),
             }
         }
 

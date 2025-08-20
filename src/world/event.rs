@@ -4,7 +4,7 @@ use crate::{resources::resources::Resources, world::world::World};
 
 use super::{creature::{CauseOfDeath, CreatureId, Profession}, date::WorldDate, item::ItemId, unit::UnitId};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum Event {
     CreatureDeath { date: WorldDate, creature_id: CreatureId, cause_of_death: CauseOfDeath },
     CreatureBirth { date: WorldDate, creature_id: CreatureId },
@@ -23,7 +23,14 @@ impl Event {
 
     pub(crate) fn related_creatures(&self) -> Vec<CreatureId> {
         match self {
-            Self::CreatureDeath { date: _, creature_id, cause_of_death: _ } => vec!(*creature_id),
+            Self::CreatureDeath { date: _, creature_id, cause_of_death } => {
+                let mut vec = vec!(*creature_id);
+                match cause_of_death {
+                    CauseOfDeath::KilledInBattle(killer_id, _) => vec.push(*killer_id),
+                    _ => ()
+                }
+                return vec;
+            },
             Self::CreatureBirth { date: _, creature_id } => vec!(*creature_id),
             Self::CreatureMarriage { date: _, creature_id, spouse_id } => vec!(*creature_id, *spouse_id),
             Self::CreatureProfessionChange { date: _, creature_id, new_profession: _ } => vec!(*creature_id),

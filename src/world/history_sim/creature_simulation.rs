@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, resources::resources::Resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Goal, Profession}, date::WorldDate, event::Event, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
+use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -162,7 +162,7 @@ impl CreatureSimulation {
 const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.01;
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
-pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId, resources: &mut Resources) {
+pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {
     let mut candidates = Vec::new();
     {
         let source_unit = world.units.get(&unit_id);
@@ -193,7 +193,7 @@ pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: Unit
             };
             let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
             drop(killer);
-            kill_creature(world, id, unit_id, *target, cause_of_death, resources);
+            world.kill_creature(id, unit_id, *target, cause_of_death);
         }
 
         for (id, xp) in battle.xp_add {
@@ -261,7 +261,7 @@ pub(crate) fn find_supporters_for_plot(world: &mut World, creature_id: CreatureI
 
 }
 
-pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: CreatureId, rng: &mut Rng, resources: &mut Resources) {
+pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: CreatureId, rng: &mut Rng) {
     let creature = world.creatures.get(&creature_id);
     let plot_id_o = creature.supports_plot;
     // TODO(IhlgIYVA): Kind of a smell
@@ -310,7 +310,7 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
                     };
                     let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
                     drop(killer);
-                    kill_creature(world, id, unit_id, target_id, cause_of_death, resources);
+                    world.kill_creature(id, unit_id, target_id, cause_of_death);
                 }
         
                 for (id, xp) in battle.xp_add {
@@ -331,159 +331,10 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
 
 }
 
-
-// Global functions
-
-pub(crate) fn kill_creature(world: &mut World, creature_id: CreatureId, unit_from_id: UnitId, unit_death_id: UnitId, cause_of_death: CauseOfDeath, resources: &mut Resources) {
-    let now = world.date.clone();
-    let died_home = unit_from_id == unit_death_id;
-    {
-        let mut creature = world.creatures.get_mut(&creature_id);
-        if creature.death.is_some() {
-            warn!("Trying to kill already dead creature");
-            return;
-        }
-        creature.death = Some((now.clone(), cause_of_death));
-        if let Some(spouse_id) = creature.spouse {
-            let mut spouse = world.creatures.get_mut(&spouse_id);
-            spouse.spouse = None;
-        }
-        let mut unit = world.units.get_mut(&unit_from_id);
-        let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
-        let id = unit.creatures.remove(i);
-
-        if let Some(plot_id) = creature.supports_plot {
-            let mut plot = world.plots.get_mut(&plot_id);
-            plot.remove_supporter(creature_id, &mut creature);
-        }
-
-        // Else, the body is lost
-        if died_home {
-            unit.cemetery.push(id);
-        } else {
-            let mut death_unit = world.units.get_mut(&unit_death_id);
-            if let Some(settlement) = &mut death_unit.settlement {
-                let species = resources.species.get(&creature.species);
-                for drop in species.drops.iter() {
-                    settlement.add_material(drop, 1);
-                }
-            }
-        }    
-
-        drop(unit);
-
-        let mut inheritor = None;
-        let mut has_possession = false;
-
-        if let Some(details) = &creature.details {
-            if details.inventory.len() > 0 {
-                has_possession = true;
-                if died_home {
-                    for candidate_id in creature.offspring.iter() {
-                        let candidate = world.creatures.get(candidate_id);
-                        if candidate.death.is_none() {
-                            inheritor = Some(*candidate_id);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // TODO(IhlgIYVA): Extract
-        if let CauseOfDeath::KilledInBattle(killer_id, _) = &cause_of_death {
-            for relationship in creature.relationships.iter() {
-                let relationship_creature_id = relationship.creature_id;
-                let mut relationship_creature = world.creatures.get_mut(&relationship_creature_id);
-                let relationship = relationship_creature.relationship_find(creature_id);
-                if let Some(relationship) = relationship {
-                    if relationship.friend_or_better() {
-                        // TODO(IhlgIYVA): How did I get to a point where it killed his own "friend"?
-                        if relationship_creature_id == *killer_id {
-                            warn!("Killed its own friend. rel: {:?} killer: {:?}", relationship_creature_id, killer_id);
-                            continue
-                        }
-                        let killer = world.creatures.get(killer_id);
-                        let killer_relationship = relationship_creature.relationship_find_mut_or_insert(&relationship_creature_id, *killer_id, &killer);
-                        killer_relationship.add_opinion(-75);
-
-                        if killer_relationship.mortal_enemy_or_worse() {
-                            // TODO(IhlgIYVA): Determinate
-                            // TODO(IhlgIYVA): Magic number
-                            if Rng::rand().rand_chance(0.8) {
-                                let goal = Goal::KillBeast(*killer_id);
-                                history_trace!("creature_add_goal creature_id:{:?} goal:{:?}", relationship_creature_id, goal);
-                                relationship_creature.goals.push(goal);
-                            }
-                        }
-
-                    }
-                }
-            }
-        }
-
-        // Purges unnecessary data after death
-        creature.relationships.clear();
-
-        drop(creature);
-
-        if has_possession {
-            if let Some(inheritor_id) = inheritor {
-                transfer_inventory(creature_id, inheritor_id, world);
-            } else {
-                if died_home {
-                    let creature = world.creatures.get(&creature_id);
-                    if let Some(details) = &creature.details {
-                        let inventory = details.inventory.clone();
-                        world.events.push(Event::BurriedWithPosessions { date: now.clone(), creature_id, items_ids: inventory });
-                    }
-                } else {
-                    drop_inventory(creature_id, world);
-                }
-            }
-        }
-
-        // TODO: Inherit leadership
-
-    }
-    world.events.push(Event::CreatureDeath { date: now.clone(), creature_id: creature_id, cause_of_death: cause_of_death });
-}
-
 // Artifact operations
 
 
 pub(crate) fn add_item_to_inventory(item_id: ItemId, item: &mut Item, new_owner_id: CreatureId, new_owner: &mut Creature) {
     new_owner.details().inventory.push(item_id);
     item.owner = Some(new_owner_id);
-}
-
-
-fn transfer_inventory(current_id: CreatureId, new_owner_id: CreatureId, world: &mut World) {
-    let mut current = world.creatures.get_mut(&current_id);
-    let mut inventory: Vec<ItemId> = current.details().inventory.drain(..).collect();
-    for item_id in inventory.iter() {
-        let mut item = world.artifacts.get_mut(item_id);
-        item.owner = Some(new_owner_id);
-    }
-
-    history_trace!("transfer_inventory {:?}", current_id, new_owner_id);
-
-    let mut new_owner = world.creatures.get_mut(&new_owner_id);
-    for item in inventory.iter() {
-        world.events.push(Event::InheritedArtifact { date: world.date.clone(), creature_id: new_owner_id, from: current_id, item: *item });
-    }
-    new_owner.details().inventory.append(&mut inventory);
-}
-
-fn drop_inventory(creature_id: CreatureId, world: &mut World) {
-    history_trace!("drop_inventory {:?}", creature_id);
-
-    let mut current = world.creatures.get_mut(&creature_id);
-    let inventory: Vec<ItemId> = current.details().inventory.drain(..).collect();
-    for item_id in inventory.iter() {
-        let mut item = world.artifacts.get_mut(item_id);
-        item.owner = None;
-    }
-
-    // TODO(NJ5nTVIV): Add to death unit
 }
