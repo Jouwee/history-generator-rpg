@@ -50,14 +50,14 @@ impl HeadsUpDisplay {
         let w2 = rect[2] as f64 * bar.0;
         let h = rect[3] as f64;
         let hh = h / 2.;
-        ctx.rectangle_fill([x, y, w1, h], COLOR_WHITE);
-        ctx.rectangle_fill([x, y, w2, hh], color_1);
-        ctx.rectangle_fill([x, y + hh, w2, hh], color_2);
+        ctx.rectangle_fill([x, y, w1, h], &COLOR_WHITE);
+        ctx.rectangle_fill([x, y, w2, hh], &color_1);
+        ctx.rectangle_fill([x, y + hh, w2, hh], &color_2);
         if let Some(preview) = bar.2 {
             let w3 = rect[2] as f64 * preview;
             let x = x + w3;
             let w3 = w2 - w3;
-            ctx.rectangle_fill([x, y, w3, h], COLOR_WHITE.alpha(0.2));
+            ctx.rectangle_fill([x, y, w3, h], &COLOR_WHITE.alpha(0.2));
         }
     }
 

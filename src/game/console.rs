@@ -27,7 +27,7 @@ impl Console {
             return
         }
 
-        ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1], ctx.layout_rect[2], 32.], COLOR_BLACK.alpha(0.5));
+        ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1], ctx.layout_rect[2], 32.], &COLOR_BLACK.alpha(0.5));
         ctx.text(&format!("> {}", self.command), assets().font_standard(), [8, 8], &COLOR_WHITE);
         ctx.text(&format!("  {}", self.output), assets().font_standard(), [8, 24], &COLOR_WHITE);
     }

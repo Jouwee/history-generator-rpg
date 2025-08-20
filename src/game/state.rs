@@ -238,10 +238,10 @@ impl Renderable for GameState {
         // Renders some black bars outside the map to cover large tiles
         {
             let color = Color::from_hex("090714");
-            ctx.rectangle_fill([-64., -64., size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., size.y() as f64 * 24. - 12., size.x() as f64 * 24. + 76., 76.], color);
-            ctx.rectangle_fill([-64., -64., 76., size.y() as f64 * 24. + 76.], color);
-            ctx.rectangle_fill([size.x() as f64 * 24. - 12., -64., 76., size.y() as f64 * 24. + 76.], color);
+            ctx.rectangle_fill([-64., -64., size.x() as f64 * 24. + 76., 76.], &color);
+            ctx.rectangle_fill([-64., size.y() as f64 * 24. - 12., size.x() as f64 * 24. + 76., 76.], &color);
+            ctx.rectangle_fill([-64., -64., 76., size.y() as f64 * 24. + 76.], &color);
+            ctx.rectangle_fill([size.x() as f64 * 24. - 12., -64., 76., size.y() as f64 * 24. + 76.], &color);
         }
 
     }

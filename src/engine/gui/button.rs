@@ -4,8 +4,11 @@ use graphics::{image, Transformed};
 use ::image::ImageReader;
 use piston::MouseButton;
 
-use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UIEvent, UINode}, spritesheet::Spritesheet, COLOR_WHITE}, GameContext, InputEvent, RenderContext};
+use crate::{commons::bitmask::{bitmask_get, bitmask_set, bitmask_unset}, engine::{assets::assets, audio::SoundEffect, gui::{layout_component::LayoutComponent, tooltip::Tooltip, UIEvent, UINode}, spritesheet::Spritesheet, COLOR_WHITE}, GameContext, InputEvent, RenderContext};
 
+const STATE_HOVER: u8 = 0b0000_0001;
+const STATE_PRESSED: u8 = 0b0000_0010;
+const STATE_SELECTED: u8 = 0b0000_0100;
 
 pub(crate) struct Button {
     layout: LayoutComponent,
@@ -73,27 +76,40 @@ impl Button {
 
     pub(crate) fn set_selected(&mut self, selected: bool) {
         if selected {
-            self.state_bitmask |= 0b0000_0010;
+            self.state_bitmask = bitmask_set(self.state_bitmask, STATE_SELECTED);
         } else {
-            self.state_bitmask &= 0b1111_1101;
+            self.state_bitmask = bitmask_unset(self.state_bitmask, STATE_SELECTED);
         }
     }
 
     pub(crate) fn is_selected(&self) -> bool {
-        return self.state_bitmask & 0b0000_0010 > 0
+        bitmask_get(self.state_bitmask, STATE_SELECTED)
     }
 
-    pub(crate) fn set_hover(&mut self, selected: bool) {
-        if selected {
-            self.state_bitmask |= 0b0000_0001;
+    pub(crate) fn set_hover(&mut self, hover: bool) {
+        if hover {
+            self.state_bitmask = bitmask_set(self.state_bitmask, STATE_HOVER);
         } else {
-            self.state_bitmask &= 0b1111_1110;
+            self.state_bitmask = bitmask_unset(self.state_bitmask, STATE_HOVER);
         }
     }
 
     pub(crate) fn is_hover(&self) -> bool {
-        return self.state_bitmask & 0b0000_0001 > 0
+        bitmask_get(self.state_bitmask, STATE_HOVER)
     }
+
+    pub(crate) fn set_pressed(&mut self, pressed: bool) {
+        if pressed {
+            self.state_bitmask = bitmask_set(self.state_bitmask, STATE_PRESSED);
+        } else {
+            self.state_bitmask = bitmask_unset(self.state_bitmask, STATE_PRESSED);
+        }
+    }
+
+    pub(crate) fn is_pressed(&self) -> bool {
+        bitmask_get(self.state_bitmask, STATE_PRESSED)
+    }
+
 
 }
 
@@ -116,10 +132,11 @@ impl UINode for Button {
         let transform = ctx.context.transform.trans(position[0], position[1]).scale(size[0] / 24., size[1] / 24.);
         image(&background.texture, transform, ctx.gl);
 
-        let state_offset = match (self.is_selected(), self.is_hover()) {
-            (false, false) => 0,
-            (false, true) => 3,
-            (true, _) => 6
+        let state_offset = match (self.is_selected(), self.is_pressed(), self.is_hover()) {
+            (true, _, _) => 6,
+            (false, true, _) => 9,
+            (false, false, true) => 3,
+            (false, false, false) => 0,
         };
 
         // Corners
@@ -152,13 +169,25 @@ impl UINode for Button {
 
     fn input(&mut self, _state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<UIEvent> {
         match evt {
+            InputEvent::MousePress { button: MouseButton::Left, pos } => {
+                if self.layout.hitbox(pos) {
+                    self.set_pressed(true);
+                } else {
+                    self.set_pressed(false);
+                }
+            }
             InputEvent::Click { button: MouseButton::Left, pos } => {
                 if self.layout.hitbox(pos) {
+                    ctx.audio.play_once(SoundEffect::new(vec!("ui/button-click.mp3")));
+                    self.set_pressed(false);
                     return ControlFlow::Break(UIEvent::ButtonClicked(self.key.as_ref().unwrap_or(&self.text).clone()));
                 }
             },
             InputEvent::MouseMove { pos } => {
                 let hit = self.layout.hitbox(pos);
+                if !hit {
+                    self.set_pressed(false);
+                }
                 self.set_hover(hit);
                 if let Some((hash, tooltip)) = &self.tooltip {
                     if hit {

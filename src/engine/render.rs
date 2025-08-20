@@ -45,7 +45,7 @@ impl<'a> RenderContext<'a> {
         return Ok(())
     }
 
-    pub(crate) fn rectangle_fill(&mut self, rect: [f64; 4], color: Color) {
+    pub(crate) fn rectangle_fill(&mut self, rect: [f64; 4], color: &Color) {
         rectangle(color.f32_arr(), rect, self.context.transform, self.gl);
     }
 

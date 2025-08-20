@@ -29,7 +29,7 @@ impl DebugOverlay {
     pub(crate) fn render(&mut self, context: &mut RenderContext) {
         self.fps.count();
         if self.active {
-            context.rectangle_fill([0., 0., 128., 36.], COLOR_BLACK.alpha(0.5));
+            context.rectangle_fill([0., 0., 128., 36.], &COLOR_BLACK.alpha(0.5));
             context.text(format!("FPS: {:.0} - {:.3}", self.fps.average(), self.render_time.average()).as_str(), assets().font_standard(), [0, 12], &COLOR_WHITE);
             context.text(format!("TPS: {:.0} - {:.3}", self.tps.average(), self.update_time.average()).as_str(), assets().font_standard(), [0, 20], &COLOR_WHITE);
             context.text(format!("Inp: {:.3}", self.input_time.average()).as_str(), assets().font_standard(), [0, 28], &COLOR_WHITE);
@@ -38,7 +38,7 @@ impl DebugOverlay {
             let perf_lines = perf().debug_lines();
             let mut y = 44.;
             for line in perf_lines {
-                context.rectangle_fill([0., y, 128., 8.], COLOR_BLACK.alpha(0.5));
+                context.rectangle_fill([0., y, 128., 8.], &COLOR_BLACK.alpha(0.5));
                 context.text(&line, assets().font_standard(), [0, y as i32+6], &COLOR_WHITE);
                 y += 8.
             }

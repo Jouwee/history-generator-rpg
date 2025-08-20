@@ -27,6 +27,7 @@ impl Point2D {
 
 }
 
+pub(crate) const COLOR_BACKDROP: Color = Color { r: 0., g: 0., b: 0., a: 0.5 };
 pub(crate) const COLOR_BLACK: Color = Color { r: 0., g: 0., b: 0., a: 1. };
 pub(crate) const COLOR_WHITE: Color = Color { r: 1., g: 1., b: 1., a: 1. };
 

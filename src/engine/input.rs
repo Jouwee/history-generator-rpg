@@ -6,6 +6,7 @@ use crate::DisplayContext;
 
 pub(crate) enum InputEvent {
     None,
+    MousePress { button: MouseButton, pos: [f64; 2] },
     Click { button: MouseButton, pos: [f64; 2] },
     MouseMove { pos: [f64; 2] },
     Scroll { pos: [f64; 2], offset: f64 },
@@ -17,6 +18,10 @@ impl InputEvent {
     pub(crate) fn from_button_args(args: &ButtonArgs, state:  &mut InputState) -> InputEvent {
         if args.state == ButtonState::Press {
             state.pressed.insert(args.button);
+            match args.button {
+                Button::Mouse(btn) => return InputEvent::MousePress { pos: state.last_mouse, button: btn.clone() },
+                _ => ()
+            }
         }
         if args.state == ButtonState::Release {
             state.drag_candidate = None;

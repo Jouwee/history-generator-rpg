@@ -8,7 +8,7 @@ use super::scene::Update;
 
 
 pub(crate) struct Audio {
-    // Not directly used, but needs to have ownership otherwise the audio strea is dropped
+    // Not directly used, but needs to have ownership otherwise the audio stream is dropped
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
     options: AudioOptions,

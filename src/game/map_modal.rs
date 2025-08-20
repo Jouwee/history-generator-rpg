@@ -41,7 +41,7 @@ impl MapModal {
     }
 
     pub(crate) fn render(&mut self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("09071480"));
+        ctx.rectangle_fill(ctx.layout_rect, &Color::from_hex("09071480"));
         ctx.push();
 
         let clamp = self.get_offset_clamp(ctx.camera_rect);

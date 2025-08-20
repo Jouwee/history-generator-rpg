@@ -29,6 +29,7 @@ use crate::game::ai::AiState;
 use crate::game::chunk::{ChunkCoord, ChunkLayer};
 use crate::game::codex::{QuestObjective, QuestStatus};
 use crate::game::console::Console;
+use crate::game::gui::character::ingame_menu::{InGameMenu, InGameMenuOption};
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
 use crate::game::gui::death_dialog::DeathDialog;
@@ -93,6 +94,7 @@ pub(crate) struct GameSceneState {
     quest_complete_dialog: DialogWrapper<QuestCompleteDialog>,
     death_dialog: DialogWrapper<DeathDialog>,
     help_dialog: DialogWrapper<HelpDialog>,
+    ingame_menu: InGameMenu,
     cursor_pos: Coord2,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
@@ -141,6 +143,7 @@ impl GameSceneState {
             quest_complete_dialog: DialogWrapper::new().hide_close_button(),
             death_dialog: DialogWrapper::new().hide_close_button(),
             help_dialog: DialogWrapper::new(),
+            ingame_menu: InGameMenu::new(),
             cursor_pos: Coord2::xy(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
@@ -317,13 +320,6 @@ impl Scene for GameSceneState {
     type Input = ();
 
     fn init(&mut self, ctx: &mut GameContext) {
-
-        // TODO:
-        let load_save_manager = LoadSaveManager::new();
-        // TODO(ROO4JcDl): Unwrap
-        load_save_manager.save_game_state(&self.state).unwrap();
-        load_save_manager.save_chunk(&self.state.chunk).unwrap();
-
         self.save_creature_appearances();
         self.state.turn_controller.roll_initiative(self.state.actors.len());
         self.hotbar.init(&self.state.player(), ctx);
@@ -358,7 +354,7 @@ impl Scene for GameSceneState {
             };
             if action.area != ActionArea::Target {
                 for point in action.area.points(self.cursor_pos) {
-                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], color.0);
+                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], &color.0);
                 }
             }
             let image = assets().image("gui/cursor.png");
@@ -414,6 +410,7 @@ impl Scene for GameSceneState {
         self.quest_complete_dialog.render(&mut self.world, ctx, game_ctx);
         self.death_dialog.render(&mut (), ctx, game_ctx);
         self.help_dialog.render(&mut (), ctx, game_ctx);
+        self.ingame_menu.render(&mut (), ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
@@ -429,6 +426,13 @@ impl Scene for GameSceneState {
         if let Some(map) = &mut self.map_modal {
             return map.update(update, ctx);
         }
+
+        // Pauses the game while the menu is open
+        if self.ingame_menu.is_visible() {
+            return;
+        }
+
+        // TODO: Should not be done in update. Input doesn't have "mouse pos"
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
         // Camera lerp
@@ -583,9 +587,6 @@ impl Scene for GameSceneState {
             return ControlFlow::Continue(());
         }
 
-        self.hotbar.input(&mut self.state.player, &evt, ctx)?;
-        self.hud.input(self.state.player(), &evt, ctx);
-
         if self.character_dialog.input(self.state.player_mut(), &evt, ctx).is_break() {
             self.hotbar.equip(&self.state.player(), ctx);
             return ControlFlow::Break(());
@@ -595,6 +596,24 @@ impl Scene for GameSceneState {
         self.chat_dialog.input(&mut self.world, &evt, ctx)?;
         self.quest_complete_dialog.input(&mut self.world, &evt, ctx)?;
         self.help_dialog.input(&mut (), &evt, ctx)?;
+        
+        match self.ingame_menu.input(&mut (), &evt, ctx) {
+            ControlFlow::Break(InGameMenuOption::None) => return ControlFlow::Break(()),
+            ControlFlow::Break(InGameMenuOption::SaveGame) => {
+
+                // TODO: async?
+                // TODO: Why not bus?
+                let load_save_manager = LoadSaveManager::new();
+                load_save_manager.save_game_state(&self.state).unwrap();
+                load_save_manager.save_chunk(&self.state.chunk).unwrap();
+            
+                return ControlFlow::Break(())
+            },
+            ControlFlow::Continue(()) => (),
+        }
+
+        self.hotbar.input(&mut self.state.player, &evt, ctx)?;
+        self.hud.input(self.state.player(), &evt, ctx);
 
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
@@ -670,7 +689,9 @@ impl Scene for GameSceneState {
 
         match evt {
             InputEvent::Key { key: Key::Escape } => {
+                // TODO: Duplicate
                 self.hotbar.clear_selected();
+                self.ingame_menu.show();
             },
             InputEvent::Key { key: Key::Space } => {
                 if let TurnMode::TurnBased = self.turn_mode {

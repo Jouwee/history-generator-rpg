@@ -48,14 +48,14 @@ impl UINode for ContextMenu {
     fn render(&mut self, state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let copy = ctx.layout_rect;
         let full_rect = self.layout.compute_layout_rect(ctx.layout_rect);
-        ctx.rectangle_fill(full_rect, Color::from_hex("090714"));
+        ctx.rectangle_fill(full_rect, &Color::from_hex("090714"));
         ctx.layout_rect = self.layout.compute_inner_layout_rect(ctx.layout_rect);
-        ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("24232a"));
+        ctx.rectangle_fill(ctx.layout_rect, &Color::from_hex("24232a"));
         let hover_i = self.hover_index.unwrap_or(9999);
         let mut y = 0;
         for (i, (_id, item)) in state.items.iter().enumerate() {
             if hover_i == i {
-                ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1] + y as f64, ctx.layout_rect[2], ROW_HEIGHT], Color::from_hex("35394a"));
+                ctx.rectangle_fill([ctx.layout_rect[0], ctx.layout_rect[1] + y as f64, ctx.layout_rect[2], ROW_HEIGHT], &Color::from_hex("35394a"));
             }
             ctx.text_shadow(item, assets().font_standard(), [ctx.layout_rect[0] as i32 + 4, ctx.layout_rect[1] as i32 + y + 9], &COLOR_WHITE);
             y += ROW_HEIGHT as i32;

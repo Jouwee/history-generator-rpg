@@ -76,7 +76,7 @@ impl UINode for CharacterDialog {
             158.,
             300.,
         ];
-        ctx.rectangle_fill(ctx.layout_rect, Color::from_hex("3a3c45"));
+        ctx.rectangle_fill(ctx.layout_rect, &Color::from_hex("3a3c45"));
         
         let stats = actor.stats();
 

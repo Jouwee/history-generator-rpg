@@ -1,9 +1,6 @@
 use std::{hash::{DefaultHasher, Hash, Hasher}, ops::ControlFlow};
 
-use graphics::{image, Transformed};
-use ::image::ImageReader;
-
-use crate::{commons::damage_model::DamageRoll, engine::{assets::{assets, Font}, gui::{layout_component::LayoutComponent, UINode}, input::InputEvent, render::RenderContext, scene::Update, spritesheet::Spritesheet, Color, COLOR_WHITE}, GameContext};
+use crate::{commons::damage_model::DamageRoll, engine::{assets::{assets, Font}, geometry::Size2D, gui::{layout_component::LayoutComponent, UINode}, input::InputEvent, render::RenderContext, scene::Update, Color, COLOR_WHITE}, GameContext};
 
 pub(crate) struct TooltipOverlay {
     layout: LayoutComponent
@@ -58,31 +55,9 @@ impl UINode for TooltipOverlay {
             position[0] -= size[0] * 0.5;
             position[1] -= size[1];
 
-            let spritesheet = ImageReader::open("./assets/sprites/gui/tooltip/tooltip.png").unwrap().decode().unwrap();
-            let sprite = Spritesheet::new(spritesheet, (8, 8));
-
-            // Corners
-            let transform = ctx.context.transform.trans(position[0], position[1]);
-            image(sprite.sprite(0, 0), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0], position[1] + size[1] - 8.);
-            image(sprite.sprite(0, 2), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1]);
-            image(sprite.sprite(2, 0), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + size[1] - 8.);
-            image(sprite.sprite(2, 2), transform, ctx.gl);
-            // Borders
-            let transform = ctx.context.transform.trans(position[0] + 8., position[1]).scale((size[0]-16.) / 8., 1.);
-            image(sprite.sprite(1, 0), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + 8., position[1] + size[1] - 8.).scale((size[0]-16.) / 8., 1.);
-            image(sprite.sprite(1, 2), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0], position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-            image(sprite.sprite(0, 1), transform, ctx.gl);
-            let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-            image(sprite.sprite(2, 1), transform, ctx.gl);
-            // Body
-            let transform = ctx.context.transform.trans(position[0] + 8., position[1] + 8.).scale((size[0]-16.) / 8., (size[1]-16.) / 8.);
-            image(sprite.sprite(1, 1), transform, ctx.gl);
-
+            let rect = [position[0], position[1], size[0], size[1]];
+            let sheet = assets().image_sheet("gui/tooltip/tooltip.png", Size2D(8, 8));
+            sheet.draw_as_scalable(rect, ctx);
 
             let mut pos = [position[0] as i32 + 6, position[1] as i32 + 12];
             for line in tooltip.lines.iter() {
