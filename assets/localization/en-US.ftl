@@ -1,7 +1,9 @@
 ## Main menu
 main-menu-new-game = New game
-main-menu-continue-game = Continue
+main-menu-load-game = Load game
 main-menu-quit = Quit
+
+main-menu-load-back = Back
 
 ## In-game menu
 ingame-menu-title-paused = Paused

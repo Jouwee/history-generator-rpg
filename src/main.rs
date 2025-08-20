@@ -16,7 +16,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::LoadSaveManager, resources::resources::resources_mut, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::SaveFile, resources::resources::resources_mut, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
@@ -156,9 +156,10 @@ impl App {
                             st_village_population: 10,
                         }, &self.context.resources));
                     },
-                    ControlFlow::Break(MainMenuOption::LoadGame) => {
-                        let load_save_manager = LoadSaveManager::new();
+                    ControlFlow::Break(MainMenuOption::LoadGame(save_file)) => {
                         // TODO(ROO4JcDl): Unwrap
+                        let load_save_manager = SaveFile::new(String::from(save_file));
+                        let save = load_save_manager.load_metadata().unwrap();
                         let world = load_save_manager.load_world().unwrap();
 
                         let mut state = load_save_manager.load_game_state().unwrap();
@@ -166,7 +167,7 @@ impl App {
                         let chunk = load_save_manager.load_chunk(&self.context.resources).unwrap();
                         state.chunk = chunk;
 
-                        let mut scene = GameSceneState::new(world, state);
+                        let mut scene = GameSceneState::new(world, save.save_file_name, state);
                         scene.init(&mut self.context);
                         self.scene = SceneEnum::Game(scene);
                     }
@@ -310,9 +311,10 @@ fn main() {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let mut world = scene.into_world();
 
-                        let load_save_manager = LoadSaveManager::new();
                         // TODO(ROO4JcDl): Unwrap
+                        let load_save_manager = SaveFile::create_new_save_file().unwrap();
                         load_save_manager.save_world(&world).unwrap();
+                        let save = load_save_manager.load_metadata().unwrap();
 
                         let (creature_id, pos) = world.create_scenario().expect("No playable scenario found");
                         world.dump_events("lore.log", &app.context.resources);
@@ -328,7 +330,7 @@ fn main() {
                         player.inventory.auto_equip(&app.context.resources);
 
                         let chunk = GameState::from_world_tile(&world, &app.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
-                        let mut scene = GameSceneState::new(world, chunk);
+                        let mut scene = GameSceneState::new(world, save.save_file_name, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
 
@@ -339,7 +341,7 @@ fn main() {
                 if let Button::Keyboard(Key::F4) = k.button {
                     if let SceneEnum::Game(scene) = app.scene {
                         let chunk = GameState::playground(&app.context.resources, scene.state.player().clone(), &scene.world);
-                        let mut scene = GameSceneState::new(scene.world, chunk);
+                        let mut scene = GameSceneState::new(scene.world, "playground".to_string(), chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
                         continue

@@ -1,5 +1,6 @@
 use std::{fs::File, io::Read, sync::{LazyLock, Mutex, MutexGuard}};
 
+use chrono::{DateTime, Local};
 use unic_langid::LanguageIdentifier;
 
 use fluent::{concurrent::FluentBundle, FluentResource};
@@ -26,6 +27,10 @@ impl Localization {
 
     pub(crate) fn localize(&self, message: &str) -> String {
         return self.try_localize(message).unwrap_or(message.to_string());
+    }
+
+    pub(crate) fn localize_date(&self, date: &DateTime<Local>) -> String {
+        return date.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
     pub(crate) fn try_localize(&self, message: &str) -> Option<String> {
@@ -65,3 +70,11 @@ macro_rules! loc {
         &crate::localization::localization().localize($($arg)*)
     }};
 }
+
+#[macro_export]
+macro_rules! loc_date {
+    ($($arg:tt)*) => {{
+        &crate::localization::localization().localize_date($($arg)*)
+    }};
+}
+

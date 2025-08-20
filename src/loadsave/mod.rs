@@ -1,17 +1,61 @@
-use std::{fmt::Display, fs::File, path::{Path, PathBuf}, time::Instant};
+use std::{fmt::Display, fs::{self, File}, path::{Path, PathBuf}, time::Instant};
 
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::{game::{chunk::{Chunk, ChunkSerialized}, state::GameState}, info, resources::resources::Resources, world::world::World};
+use crate::{game::{chunk::{Chunk, ChunkSerialized}, state::GameState}, info, resources::resources::Resources, warn, world::world::World};
 
-pub(crate) struct LoadSaveManager {
+fn save_files_path() -> Result<PathBuf, LoadSaveError> {
+    #[cfg(unix)]
+    let app_data = std::env::var("HOME").expect("No HOME directory");
+    #[cfg(windows)]
+    let app_data = std::env::var("APP_DATA").expect("No APP_DATA directory");
+
+    let directory = Path::new(&app_data).join(Path::new("Tales of Kathay"));
+    if !directory.exists() {
+        std::fs::create_dir(&directory)?;
+    }
+    
+    Ok(directory)
 }
 
-impl LoadSaveManager {
+pub(crate) struct SaveFile {
+    save_file_name: String    
+}
 
-    pub(crate) fn new() -> Self {
-        Self {}
+impl SaveFile {
+
+    pub(crate) fn new(save_file_name: String) -> Self {
+        Self {
+            save_file_name,
+        }
+    }
+
+    pub(crate) fn enumerate_saves() -> Result<Vec<SaveMetadata>, LoadSaveError> {
+        let paths = fs::read_dir(save_files_path()?)?;
+        let mut saves = Vec::new();
+        for path in paths {
+            let file_name = path?.file_name().into_string();
+            match file_name {
+                Ok(file_name) => {
+                    let save = Self::new(file_name);
+                    saves.push(save.load_metadata()?);
+                },
+                Err(_) => warn!("Can't enumerate save file"),
+            }
+        }
+        return Ok(saves);
+    }
+
+    pub(crate) fn create_new_save_file() -> Result<SaveFile, LoadSaveError> {
+        let mut last_save = 1;
+        for save in Self::enumerate_saves()? {
+            let number: i32 = save.save_file_name.split("_").last().unwrap().parse().unwrap();
+            if number >= last_save {
+                last_save = number + 1;
+            }
+        }
+        return Ok(Self::new(format!("save_{last_save}")));
     }
 
     pub(crate) fn save_world(&self, world: &World) -> Result<(), LoadSaveError> {
@@ -100,6 +144,8 @@ impl LoadSaveManager {
     fn load_or_create_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
         if !Path::new(&self.path("savefile")?).exists() {
             self.save_metadata(&SaveMetadata {
+                save_name: self.save_file_name.clone(),
+                save_file_name: self.save_file_name.clone(),
                 save_version: String::from(env!("CARGO_PKG_VERSION")),
                 created: Local::now(),
                 last_played: Local::now(),
@@ -109,7 +155,7 @@ impl LoadSaveManager {
         self.load_metadata()
     }
 
-    fn load_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
+    pub(crate) fn load_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
         let buffer = File::open(self.path("savefile")?)?;
         // TODO(ROO4JcDl): Check: If you want to deserialize faster at the cost of more memory, consider using from_reader_with_buffer with a larger buffer, for example 64KB.
         let metadata = ciborium::from_reader(buffer)?;
@@ -123,17 +169,17 @@ impl LoadSaveManager {
     }
 
     fn path(&self, suffix: &str) -> Result<PathBuf, LoadSaveError> {
-        #[cfg(unix)]
-        let app_data = std::env::var("HOME").expect("No HOME directory");
-        #[cfg(windows)]
-        let app_data = std::env::var("APP_DATA").expect("No APP_DATA directory");
-
-        let directory = Path::new(&app_data).join(Path::new("Tales of Kathay"));
-        if !directory.exists() {
-            std::fs::create_dir(&directory)?;
+        let root_dir = save_files_path()?;
+        if !root_dir.exists() {
+            std::fs::create_dir(&root_dir)?;
         }
-        
-        Ok(directory.join(Path::new(suffix)))
+
+        let save_dir = root_dir.join(Path::new(&self.save_file_name));
+        if !save_dir.exists() {
+            std::fs::create_dir(&save_dir)?;
+        }
+
+        Ok(save_dir.join(Path::new(suffix)))
     }
 
 }
@@ -142,6 +188,8 @@ impl LoadSaveManager {
 /// Avoid changing this struct, as it's not easily versionable.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct SaveMetadata {
+    pub(crate) save_name: String,
+    pub(crate) save_file_name: String,
     pub(crate) save_version: String,
     pub(crate) created: DateTime<Local>,
     pub(crate) last_played: DateTime<Local>,

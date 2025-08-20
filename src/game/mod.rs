@@ -37,7 +37,7 @@ use crate::game::gui::help_dialog::HelpDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::game::state::{AiGroups, GameState, PLAYER_IDX};
-use crate::loadsave::LoadSaveManager;
+use crate::loadsave::SaveFile;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::warn;
 use crate::world::unit::UnitId;
@@ -75,6 +75,7 @@ pub(crate) enum TurnMode {
 }
 
 pub(crate) struct GameSceneState {
+    current_save_file: String,
     pub(crate) world: World,
     turn_mode: TurnMode,
     pub(crate) state: GameState,
@@ -109,7 +110,7 @@ pub(crate) struct GameSceneState {
 }
 
 impl GameSceneState {
-    pub(crate) fn new(world: World, chunk: GameState) -> GameSceneState {
+    pub(crate) fn new(world: World, save_file: String, state: GameState) -> GameSceneState {
         let mut button_map = Button::text("Map").tooltip(Tooltip::new("Show map (M)"));
         button_map.layout_component().anchor_bottom_center(-162.0, -1.0);
         let mut button_inventory = Button::text("Chr").tooltip(Tooltip::new("Character and inventory"));
@@ -124,9 +125,10 @@ impl GameSceneState {
         button_toggle_turn_based.layout_component().anchor_bottom_center(182.0, -1.0);
 
         GameSceneState {
+            current_save_file: save_file,
             world,
             turn_mode: TurnMode::RealTime,
-            state: chunk,
+            state,
             player_turn_timer: 0.,
             hotbar: Hotbar::new(),
             hud: HeadsUpDisplay::new(),
@@ -601,9 +603,10 @@ impl Scene for GameSceneState {
             ControlFlow::Break(InGameMenuOption::None) => return ControlFlow::Break(()),
             ControlFlow::Break(InGameMenuOption::SaveGame) => {
 
-                // TODO: async?
-                // TODO: Why not bus?
-                let load_save_manager = LoadSaveManager::new();
+                // TODO(ROO4JcDl): async?
+                // TODO(ROO4JcDl): Why not bus?
+                // TODO(ROO4JcDl): Unwrap
+                let load_save_manager = SaveFile::new(self.current_save_file.clone());
                 load_save_manager.save_game_state(&self.state).unwrap();
                 load_save_manager.save_chunk(&self.state.chunk).unwrap();
             

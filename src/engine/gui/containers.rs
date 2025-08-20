@@ -1,12 +1,13 @@
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 
-use crate::{engine::{gui::{layout_component::LayoutComponent, UIEvent, UINode}, input::InputEvent}, GameContext, RenderContext};
+use crate::{engine::{assets::ImageSheet, gui::{layout_component::LayoutComponent, UIEvent, UINode}, input::InputEvent}, GameContext, RenderContext};
 
 
-/// A simple, layout-less container
+/// A container
 pub(crate) struct SimpleContainer {
     layout: LayoutComponent,
     auto_layout: Box<dyn AutoLayout>,
+    background: Option<Arc<ImageSheet>>,
     max_scroll: f64,
     scroll: f64,
     children: Vec<Box<dyn UINode<State = (), Input = UIEvent>>>
@@ -21,10 +22,16 @@ impl SimpleContainer {
         Self {
             layout,
             auto_layout: Box::new(VerticalAutoLayout::new()),
+            background: None,
             scroll: 0.,
             max_scroll: 0.,
             children: Vec::new()
         }
+    }
+
+    pub(crate) fn background(mut self, background: Arc<ImageSheet>) -> Self {
+        self.background = Some(background);
+        return self;
     }
 
     pub(crate) fn clear(&mut self) {
@@ -47,6 +54,12 @@ impl UINode for SimpleContainer {
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
         let copy = ctx.layout_rect;
+
+        if let Some(background) = &self.background {
+            let layout = self.layout.compute_layout_rect(ctx.layout_rect);
+            background.draw_as_scalable(layout, ctx);
+        }
+
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         // SMELL: *2 because this is screen space, doesn't share the context
