@@ -3,13 +3,14 @@ use std::collections::HashMap;
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{object_tile::ObjectTileId, resources::Resources, tile::TileId}, world::{creature::CreatureId, item::Item}};
+use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{object_tile::ObjectTileId, resources::Resources, species::SpeciesId, tile::TileId}, world::{creature::CreatureId, item::Item}};
 
 pub(crate) struct Chunk {
     pub(crate) coord: ChunkCoord,
     pub(crate) size: Size2D,
     pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
+    spawn_points: Vec<(Coord2, Spawner)>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
     pub(crate) object_layer: TileMap,
 }
@@ -23,6 +24,7 @@ impl Default for Chunk {
             size: Size2D(1, 1),
             tiles_metadata: HashMap::new(),
             items_on_ground: Vec::new(),
+            spawn_points: Vec::new(),
             ground_layer: LayeredDualgridTilemap::new(LayeredDualgridTileset::new(), 1, 1, 1, 1),
             object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1)
         }
@@ -48,12 +50,13 @@ impl Chunk {
             size,
             ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
             object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
+            spawn_points: Vec::new(),
             items_on_ground: Vec::new(),
             tiles_metadata: HashMap::new(),
         }
     }
 
-    pub(crate) fn blocks_movement(&self, pos: Coord2) -> bool {
+    pub(crate) fn blocks_movement(&self, pos: &Coord2) -> bool {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
             return false
         }
@@ -74,7 +77,7 @@ impl Chunk {
         let mut last = pos.clone();
         while step < dist {
             if pos != last {               
-                if self.blocks_movement(pos) {
+                if self.blocks_movement(&pos) {
                     return false;
                 }
                 last = pos.clone();
@@ -126,6 +129,26 @@ impl Chunk {
         None
     }
 
+    pub(crate) fn add_spawn_point(&mut self, coord: Coord2, spawner: Spawner) {
+        let pos = self.spawn_points.binary_search_by(|(c, _)| c.cmp(&coord));
+        match pos {
+            Ok(_) => (),
+            Err(pos) => self.spawn_points.insert(pos, (coord, spawner)),
+        }
+    }
+
+    pub(crate) fn get_spawner_at(&mut self, coord: &Coord2) -> Option<&Spawner> {
+        let pos = self.spawn_points.binary_search_by(|(c, _)| c.cmp(coord));
+        match pos {
+            Ok(pos) => Some(&self.spawn_points[pos].1),
+            Err(_) => None
+        }
+    }
+
+    pub(crate) fn spawn_points(&self) -> impl Iterator<Item = &(Coord2, Spawner)> {
+        return self.spawn_points.iter();
+    }
+
 }
 
 /// Serializable version of a chunk
@@ -135,6 +158,7 @@ pub(crate) struct ChunkSerialized {
     pub(crate) size: Size2D,
     pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item)>,
+    pub(crate) spawn_points: Vec<(Coord2, Spawner)>,
     pub(crate) ground_layer: Vec<Option<TileId>>,
     pub(crate) object_layer: Vec<Option<ObjectTileId>>,
 }
@@ -145,6 +169,7 @@ impl ChunkSerialized {
             coord: chunk.coord,
             size: chunk.size,
             tiles_metadata: chunk.tiles_metadata.clone(),
+            spawn_points: chunk.spawn_points.clone(),
             items_on_ground: chunk.items_on_ground.iter().map(|i| (i.0, i.1.clone())).collect(),
             ground_layer: chunk.ground_layer.tiles().iter().map(|i| i.and_then(|i| Some(TileId::new(i)))).collect(),
             object_layer: chunk.object_layer.tiles().iter().map(|(i, _)| match i {
@@ -159,6 +184,7 @@ impl ChunkSerialized {
         let mut chunk = Chunk::new(self.coord, self.size, resources);
 
         chunk.tiles_metadata = self.tiles_metadata.clone();
+        chunk.spawn_points = self.spawn_points.clone();
         chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0, i.1.clone(), i.1.make_texture(resources))).collect();
 
         for x in 0..self.size.x() {
@@ -191,7 +217,7 @@ impl ChunkCoord {
 
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum ChunkLayer {
     Surface,
     Underground
@@ -200,4 +226,11 @@ pub(crate) enum ChunkLayer {
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) enum TileMetadata {
     BurialPlace(CreatureId)
+}
+
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) enum Spawner {
+    CreatureId(CreatureId),
+    Species(SpeciesId)
 }

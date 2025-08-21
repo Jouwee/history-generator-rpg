@@ -112,7 +112,7 @@ impl Console {
         return ControlFlow::Continue(())
     }
 
-    fn run_command(&mut self, world: &mut World, chunk: &mut GameState, ctx: &mut GameContext) -> Result<String, String> {
+    fn run_command(&mut self, world: &mut World, state: &mut GameState, ctx: &mut GameContext) -> Result<String, String> {
         let mut parts = self.command.split(' ');
         let command = parts.next();
         match command {
@@ -122,8 +122,8 @@ impl Console {
 
                 let rng = Rng::seeded(123456);
 
-                let pos = chunk.player().xy.clone();
-                let mut generator = ChunkGenerator::new(chunk, rng.clone());
+                let pos = state.player().xy.clone();
+                let mut generator = ChunkGenerator::new(&mut state.chunk, rng.clone());
 
                 let mut solver = generator.get_jigsaw_solver();
                 let structure = solver.solve_structure(structure, pos, &mut rng.clone(), Vec::new())?;
@@ -140,11 +140,11 @@ impl Console {
 
                 //let position = parts.next().ok_or("Param 2 should be the position")?;
 
-                let xy = chunk.player().xy.clone() + Coord2::xy(8, 0);
+                let xy = state.player().xy.clone() + Coord2::xy(8, 0);
 
-                let actor = Actor::from_species(xy, &species_id, &species, chunk.ai_groups.next_group());
+                let actor = Actor::from_species(xy, &species_id, &species, state.ai_groups.next_group());
 
-                chunk.spawn(actor);
+                state.spawn(actor);
 
                 return Result::Ok(format!("Spawned"));
             },
@@ -152,16 +152,16 @@ impl Console {
                 let coords = parts.next().ok_or("Param 1 should be the coords")?;
                 let coords = parse_coords(coords)?;
 
-                chunk.player_mut().xy = coords;
+                state.player_mut().xy = coords;
 
                 return Result::Ok(format!("Spawned"));
             },
             Some("/fill") => {
 
-                chunk.player_mut().ap.action_points = chunk.player_mut().ap.max_action_points as i32;
-                chunk.player_mut().stamina.stamina = chunk.player_mut().stamina.max_stamina;
-                chunk.player_mut().cooldowns.clear();
-                chunk.player_mut().hp.recover_full();
+                state.player_mut().ap.action_points = state.player_mut().ap.max_action_points as i32;
+                state.player_mut().stamina.stamina = state.player_mut().stamina.max_stamina;
+                state.player_mut().cooldowns.clear();
+                state.player_mut().hp.recover_full();
 
                 return Result::Ok(format!("Cheater"));
             },
@@ -173,7 +173,7 @@ impl Console {
 
                 let item = blueprint.make(vec!(), &ctx.resources);
 
-                let _ = chunk.player_mut().inventory.add(item);
+                let _ = state.player_mut().inventory.add(item);
 
                 return Result::Ok(format!("Item given"));
             },

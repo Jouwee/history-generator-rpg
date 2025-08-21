@@ -164,7 +164,7 @@ impl App {
 
                         let mut state = load_save_manager.load_game_state().unwrap();
 
-                        let chunk = load_save_manager.load_chunk(&self.context.resources).unwrap();
+                        let chunk = load_save_manager.load_chunk(&state.coord, &self.context.resources).unwrap();
                         state.chunk = chunk;
 
                         let mut scene = GameSceneState::new(world, save.save_file_name, state);
@@ -329,7 +329,7 @@ fn main() {
 
                         player.inventory.auto_equip(&app.context.resources);
 
-                        let chunk = GameState::from_world_tile(&world, &app.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
+                        let chunk = GameState::from_world_tile(&world, &load_save_manager, &app.context.resources, ChunkCoord::new(pos, ChunkLayer::Surface), player);
                         let mut scene = GameSceneState::new(world, save.save_file_name, chunk);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);

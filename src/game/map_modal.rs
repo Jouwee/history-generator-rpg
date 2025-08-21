@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, Color, COLOR_WHITE}, game::map_component::MapComponent, world::world::World, GameContext};
+use crate::{engine::{assets::assets, geometry::{Coord2, Size2D, Vec2}, gui::{button::Button, UINode}, input::InputEvent, render::RenderContext, scene::Update, Color, COLOR_WHITE}, game::map_component::MapComponent, loc, world::world::World, GameContext};
 use piston::{Key, MouseButton};
 
 pub(crate) struct MapModal {
@@ -68,9 +68,9 @@ impl MapModal {
         let font = l_assets.font_standard();
         for (coord, name, major) in self.map.names.iter() {
             if self.mouse_over == *coord {
-                let text = "Click to fast-travel";
+                let text = loc!("map-modal-click-fast-travel");
                 let width = font.width(text);
-                ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16 - 4], &COLOR_WHITE);
+                ctx.text_shadow(text, font, [coord.x * 16 - (width / 2.) as i32 + 8, coord.y * 16 - 8], &COLOR_WHITE);
 
                 if !major {
                     let text = name;

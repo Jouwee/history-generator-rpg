@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 use graphics::{image, Transformed};
 use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::{ChunkGenParams, ChunkGenerator}, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, resources::resources::Resources, world::{item::ItemId, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer, Spawner}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, unit::UnitType, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
@@ -145,17 +145,116 @@ impl GameState {
         self.turn_controller.remove(i);
     }
 
-    pub(crate) fn from_world_tile(world: &World, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
+    pub(crate) fn from_world_tile(world: &World, save_file: &SaveFile, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
         let mut rng = Rng::seeded(coord.xy);
         rng.next();
         // TODO: Size from params
-        let mut chunk = GameState::new(coord, Size2D(80, 80), player, resources);
-        let mut generator = ChunkGenerator::new(&mut chunk, rng);
-        let params = ChunkGenParams {
-            layer: coord.layer
+        let mut state = GameState::new(coord, Size2D(80, 80), player, resources);
+        state.load_or_generate_chunk(state.coord, save_file, world);
+        // TODO(ROO4JcDl): Unwrap
+        save_file.save_game_state(&state).unwrap();
+        return state;
+    }
+
+    pub(crate) fn switch_chunk(&mut self, coord: ChunkCoord, save_file: &SaveFile, world: &World) {
+        let offset = coord.xy - self.coord.xy;
+        let change_layer = coord.layer != self.coord.layer;
+        // Saves the chunk
+        // TODO(ROO4JcDl): Unwrap
+        save_file.save_chunk(&self.chunk).unwrap();
+        // TODO(ROO4JcDl): Offload actors
+        // Resets the state
+        self.coord = coord;
+        self.actors.clear();
+        self.ai_groups = AiGroups::new();
+        self.turn_controller = TurnController::new();
+
+        self.load_or_generate_chunk(coord, save_file, world);
+
+        // Reposition player
+        if offset.x < 0 {
+            self.player_mut().xy.x = self.chunk.size.x() as i32 - 3;
+        }
+        if offset.x > 0 {
+            self.player_mut().xy.x = 2;
+        }
+        if offset.y < 0 {
+            self.player_mut().xy.y = self.chunk.size.y() as i32 - 3;
+        }
+        if offset.y > 0 {
+            self.player_mut().xy.y = 2;
+        }
+
+        if change_layer && self.coord.layer == ChunkLayer::Underground {
+            // Finds the exit
+            'outer: for x in 0..self.chunk.size.x() {
+                for y in 0..self.chunk.size.y() {
+                    let pos = Coord2::xy(x as i32, y as i32);
+                    if self.chunk.get_object_idx(pos) == 17 {
+                        self.player_mut().xy = pos + Coord2::xy(0, -1);
+                        break 'outer;
+                    }
+                }
+            }
+        }
+
+        // TODO(ROO4JcDl): Unwrap
+        save_file.save_game_state(&self).unwrap();
+    }
+
+    fn load_or_generate_chunk(&mut self, coord: ChunkCoord, save_file: &SaveFile, world: &World) {
+        let resources = resources();
+        // Load or generate new chunk
+        let chunk = save_file.load_chunk(&coord, &resources);
+        let chunk = match chunk {
+            Ok(chunk) => chunk,
+            Err(_) => {
+                // TODO: Dupped code
+                let mut rng = Rng::seeded(coord.xy);
+                rng.next();
+
+                // TODO: Size from params
+                let mut chunk = Chunk::new(coord, Size2D(80, 80), &resources);
+                let mut generator = ChunkGenerator::new(&mut chunk, rng);
+                generator.generate(world, &resources);
+                
+                chunk
+            }
         };
-        generator.generate(&params, world, coord.xy, resources);
-        return chunk;
+        self.chunk = chunk;
+
+        // Spawn actors
+        let ai_group = self.ai_groups.next_group();
+        let unit = world.get_unit_at(&self.coord.xy);
+        if let Some(unit) = unit {
+            let unit = world.units.get(&unit);
+            match unit.unit_type {
+                UnitType::BanditCamp | UnitType::VarningrLair | UnitType::WolfPack => {
+                    self.ai_groups.make_hostile(AiGroups::player(), ai_group);
+                },
+                UnitType::Village => ()
+            };
+        }
+
+        for (pos, spawner) in self.chunk.spawn_points() {
+            let actor = match spawner {
+                Spawner::CreatureId(creature_id) => {
+                    let creature = world.creatures.get(creature_id);
+                    if creature.death.is_some() {
+                        continue;
+                    }
+                    let species = resources.species.get(&creature.species);
+                    Actor::from_creature(*pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources)
+                },
+                Spawner::Species(species_id) => {
+                    let species = resources.species.get(species_id);
+                    Actor::from_species(*pos, &species_id, &species, ai_group)
+                },
+            };
+            self.actors.push(actor);
+        }
+
+        self.turn_controller.roll_initiative(self.actors.len());
     }
 
     pub(crate) fn astar_movement_cost(&self, xy: Coord2) -> MovementCost {
@@ -167,7 +266,7 @@ impl GameState {
     }
 
     pub(crate) fn can_occupy(&self, coord: &Coord2) -> bool {
-        if self.chunk.blocks_movement(*coord) {
+        if self.chunk.blocks_movement(coord) {
             return false;
         }
         return !self.actors_iter().any(|actor| actor.xy == *coord)

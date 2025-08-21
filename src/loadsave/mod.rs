@@ -3,7 +3,7 @@ use std::{fmt::Display, fs::{self, File}, path::{Path, PathBuf}, time::Instant};
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::{game::{chunk::{Chunk, ChunkSerialized}, state::GameState}, info, resources::resources::Resources, warn, world::world::World};
+use crate::{game::{chunk::{Chunk, ChunkCoord, ChunkLayer, ChunkSerialized}, state::GameState}, info, resources::resources::Resources, warn, world::world::World};
 
 fn save_files_path() -> Result<PathBuf, LoadSaveError> {
     #[cfg(unix)]
@@ -120,8 +120,8 @@ impl SaveFile {
         // TODO(ROO4JcDl): Playtime
         self.save_metadata(&metadata)?;
 
+        let buffer = File::create(self.chunk_path(&chunk.coord)?)?;
         let chunk = ChunkSerialized::from_chunk(chunk);
-        let buffer = File::create(self.path("chunk")?)?;
         ciborium::into_writer(&chunk, buffer)?;
 
         info!("save_chunk took {:.2?}", timing.elapsed());
@@ -129,10 +129,10 @@ impl SaveFile {
         return Ok(())
     }
 
-    pub(crate) fn load_chunk(&self, resources: &Resources) -> Result<Chunk, LoadSaveError> {
+    pub(crate) fn load_chunk(&self, coord: &ChunkCoord, resources: &Resources) -> Result<Chunk, LoadSaveError> {
         let timing = Instant::now();
 
-        let buffer = File::open(self.path("chunk")?)?;
+        let buffer = File::open(self.chunk_path(coord)?)?;
         let chunk: ChunkSerialized = ciborium::from_reader(buffer)?;
         let chunk = chunk.to_chunk(resources);
 
@@ -140,6 +140,20 @@ impl SaveFile {
 
         return Ok(chunk);
     }
+
+    fn chunk_path(&self, coord: &ChunkCoord) -> Result<PathBuf, LoadSaveError> {
+        let layer = match coord.layer {
+            ChunkLayer::Surface => "surface",
+            ChunkLayer::Underground => "underground",
+        };
+        
+        let folder = self.path("chunks")?;
+        if !folder.exists() {
+            std::fs::create_dir(&folder)?;
+        }
+
+        Ok(folder.join(&format!("{}.{}.{}", coord.xy.x, coord.xy.y, layer)))
+    } 
 
     fn load_or_create_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
         if !Path::new(&self.path("savefile")?).exists() {

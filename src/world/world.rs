@@ -148,6 +148,16 @@ impl World {
         return self.played_creature.as_ref();
     }
 
+    pub(crate) fn get_unit_at(&self, coord: &Coord2) -> Option<UnitId> {
+        for unit_id in self.units.iter_ids::<UnitId>() {
+            let unit = self.units.get(&unit_id);
+            if unit.xy.eq(coord) {
+                return Some(unit_id)
+            }
+        }
+        return None
+    }
+
 }
 
 #[cfg(test)]

@@ -242,49 +242,6 @@ impl GameSceneState {
         return true
     }
 
-    fn move_to_chunk(&mut self, world_pos: Coord2, ctx: &mut GameContext) {
-        // Move player to opposite side
-        let mut player = self.state.player().clone();
-        let offset = world_pos - self.state.coord.xy;
-        if offset.x < 0 {
-            player.xy.x = self.state.chunk.size.x() as i32 - 3;
-        }
-        if offset.x > 0 {
-            player.xy.x = 2;
-        }
-        if offset.y < 0 {
-            player.xy.y = self.state.chunk.size.y() as i32 - 3;
-        }
-        if offset.y > 0 {
-            player.xy.y = 2;
-        }
-        // Creates the new chunk
-        let coord = ChunkCoord::new(world_pos, ChunkLayer::Surface);
-        let chunk = GameState::from_world_tile(&self.world, &ctx.resources, coord, player);
-        self.state = chunk;
-        // Re-init
-        self.init(ctx);
-    }
-
-    fn move_to_layer(&mut self, layer: ChunkLayer, ctx: &mut GameContext) {
-        // Creates the new chunk
-        let mut chunk = GameState::from_world_tile(&self.world, &ctx.resources, ChunkCoord::new(self.state.coord.xy, layer), self.state.player().clone());
-        // Finds the exit
-        'outer: for x in 0..chunk.chunk.size.x() {
-            for y in 0..chunk.chunk.size.y() {
-                let pos = Coord2::xy(x as i32, y as i32);
-                if chunk.chunk.get_object_idx(pos) == 17 {
-                    chunk.player_mut().xy = pos + Coord2::xy(0, -1);
-                    break 'outer;
-                }
-            }
-        }
-        // Switcheroo
-        self.state = chunk;
-        // Re-init
-        self.init(ctx);
-    }
-
     fn set_turn_mode(&mut self, turn_mode: TurnMode, ctx: &mut GameContext) {
         if turn_mode != self.turn_mode {
             match turn_mode {
@@ -459,29 +416,31 @@ impl Scene for GameSceneState {
             ctx.audio.switch_music(TrackMood::Regular);
         }
 
+        let save_file = SaveFile::new(self.current_save_file.clone());
+
         // Check movement between chunks
         if self.state.player().xy.x <= 1 {
-            self.move_to_chunk(self.state.coord.xy + Coord2::xy(-1, 0), ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(-1, 0), self.state.coord.layer), &save_file, &self.world);
             return
         }
         if self.state.player().xy.y <= 1 {
-            self.move_to_chunk(self.state.coord.xy + Coord2::xy(0, -1), ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(0, -1), self.state.coord.layer), &save_file, &self.world);
             return
         }
         if self.state.player().xy.x >= self.state.chunk.size.x() as i32 - 2 {
-            self.move_to_chunk(self.state.coord.xy + Coord2::xy(1, 0), ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(1, 0), self.state.coord.layer), &save_file, &self.world);
             return
         }
         if self.state.player().xy.y >= self.state.chunk.size.y() as i32 - 2 {
-            self.move_to_chunk(self.state.coord.xy + Coord2::xy(0, 1), ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(0, 1), self.state.coord.layer), &save_file, &self.world);
             return
         }
         // TODO: Resources
         if self.state.chunk.get_object_idx(self.state.player().xy) == 16 {
-            self.move_to_layer(ChunkLayer::Underground, ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Underground), &save_file, &self.world);
         }
         if self.state.chunk.get_object_idx(self.state.player().xy) == 17 {
-            self.move_to_layer(ChunkLayer::Surface, ctx);
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Surface), &save_file, &self.world);
         }
 
         self.action_runner.update(update, &mut self.state, &mut self.world, &mut self.effect_layer, &mut self.game_log, ctx);
@@ -567,7 +526,8 @@ impl Scene for GameSceneState {
             match map.input(&evt, ctx) {
                 ControlFlow::Break(MapModalEvent::Close) => self.map_modal = None,
                 ControlFlow::Break(MapModalEvent::InstaTravelTo(coord)) => {
-                    self.move_to_chunk(coord, ctx);
+                    let save_file = SaveFile::new(self.current_save_file.clone());
+                    self.state.switch_chunk(ChunkCoord::new(coord, ChunkLayer::Surface), &save_file, &self.world);
                     self.map_modal = None;
                 },
                 _ => ()
@@ -593,6 +553,7 @@ impl Scene for GameSceneState {
                 // TODO(ROO4JcDl): Why not bus?
                 // TODO(ROO4JcDl): Unwrap
                 let load_save_manager = SaveFile::new(self.current_save_file.clone());
+                load_save_manager.save_world(&self.world).unwrap();
                 load_save_manager.save_game_state(&self.state).unwrap();
                 load_save_manager.save_chunk(&self.state.chunk).unwrap();
             

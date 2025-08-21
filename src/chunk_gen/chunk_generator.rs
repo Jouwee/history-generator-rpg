@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::BTreeSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::{chunk::{ChunkLayer, TileMetadata}, state::AiGroups}, info, warn, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Actor, Coord2, GameState, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner, TileMetadata}, info, warn, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -14,20 +14,16 @@ struct ChunkFeaturePools {
     artifacts_pool: Option<String>,
 }
 
-pub(crate) struct ChunkGenParams {
-    pub(crate) layer: ChunkLayer
-}
-
 pub(crate) struct ChunkGenerator<'a> {
     rng: Rng,
-    chunk: &'a mut GameState,
+    chunk: &'a mut Chunk,
     path_endpoints: Vec<Coord2>,
     statue_spots: Vec<Coord2>
 }
 
 impl<'a> ChunkGenerator<'a> {
 
-    pub(crate) fn new(chunk: &'a mut GameState, rng: Rng) -> ChunkGenerator<'a> {
+    pub(crate) fn new(chunk: &'a mut Chunk, rng: Rng) -> ChunkGenerator<'a> {
         ChunkGenerator {
             rng,
             chunk,
@@ -36,9 +32,9 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    pub(crate) fn generate(&mut self, params: &ChunkGenParams, world: &World, xy: Coord2, resources: &Resources) {
+    pub(crate) fn generate(&mut self, world: &World, resources: &Resources) {
         let now = Instant::now();
-        self.generate_fixed_terrain_features(params);
+        self.generate_fixed_terrain_features();
         info!("[Chunk gen] Terrain: {:.2?}", now.elapsed());
 
         let mut solver = self.get_jigsaw_solver();
@@ -47,11 +43,11 @@ impl<'a> ChunkGenerator<'a> {
         let mut found_unit = None;
         for unit in world.units.iter() {
             let unit = unit.borrow();
-            if unit.xy == xy {
+            if unit.xy == self.chunk.coord.xy {
                 found_unit = Some(unit)
             }
         }
-        info!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", xy, found_unit.is_some(), now.elapsed());
+        info!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_unit.is_some(), now.elapsed());
 
         if let Some(unit) = found_unit {
 
@@ -87,15 +83,14 @@ impl<'a> ChunkGenerator<'a> {
                 },
                 UnitType::VarningrLair => {
                     let now = Instant::now();
-                    match params.layer {
+                    match self.chunk.coord.layer {
                         ChunkLayer::Surface => self.generate_lair_entrance(&mut solver, resources),
-                        ChunkLayer::Underground => self.generate_lair(&unit, &mut solver, &world, resources),
+                        ChunkLayer::Underground => self.generate_lair(&unit, &mut solver, resources),
                     };
-                    // self.generate_lair(&unit, &mut solver, &world, resources);
                     info!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
                 },
                 UnitType::WolfPack => {
-                    self.generate_wolf_pack(&unit, &world, resources);
+                    self.generate_wolf_pack(&unit);
                 }
             }
         }      
@@ -134,32 +129,32 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    fn generate_fixed_terrain_features(&mut self, params: &ChunkGenParams) {
-        match params.layer {
+    fn generate_fixed_terrain_features(&mut self) {
+        match self.chunk.coord.layer {
             ChunkLayer::Surface => {
                 // TODO: Based on region
                 let noise = Perlin::new(self.rng.derive("grass").seed());
                 
-                for x in 0..self.chunk.chunk.size.x() {
-                    for y in 0..self.chunk.chunk.size.y() {
+                for x in 0..self.chunk.size.x() {
+                    for y in 0..self.chunk.size.y() {
                         let n = noise.get([x as f64 / 15.0, y as f64 / 15.0]);
                         if n > 0. {
                             if n > 0.9 {
-                                self.chunk.chunk.ground_layer.set_tile(x, y, 7);
+                                self.chunk.ground_layer.set_tile(x, y, 7);
                             } else {
-                                self.chunk.chunk.ground_layer.set_tile(x, y, 1);
+                                self.chunk.ground_layer.set_tile(x, y, 1);
                             }
                         } else {
-                            self.chunk.chunk.ground_layer.set_tile(x, y, 6);
+                            self.chunk.ground_layer.set_tile(x, y, 6);
                         }
                     }
                 }
             },
             ChunkLayer::Underground => {
-                for x in 0..self.chunk.chunk.size.x() {
-                    for y in 0..self.chunk.chunk.size.y() {
-                        self.chunk.chunk.ground_layer.set_tile(x, y, 6);
-                        self.chunk.chunk.object_layer.set_tile(x, y, 15);
+                for x in 0..self.chunk.size.x() {
+                    for y in 0..self.chunk.size.y() {
+                        self.chunk.ground_layer.set_tile(x, y, 6);
+                        self.chunk.object_layer.set_tile(x, y, 15);
                     }
                 }
             }
@@ -170,11 +165,11 @@ impl<'a> ChunkGenerator<'a> {
         let mut building_seed_cloud = BTreeSet::new();
         for _ in 0..50 {
             building_seed_cloud.insert(Coord2::xy(
-                self.rng.randu_range(0, self.chunk.chunk.size.x()) as i32,
-                self.rng.randu_range(0, self.chunk.chunk.size.y()) as i32
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
             ));
         }
-        let center = Coord2::xy(self.chunk.chunk.size.x() as i32 / 2, self.chunk.chunk.size.y() as i32 / 2);
+        let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
         let mut building_seed_cloud: Vec<Coord2> = building_seed_cloud.into_iter().collect();
         building_seed_cloud.sort_by(|a, b| {
             let a = a.dist_squared(&center);
@@ -254,8 +249,8 @@ impl<'a> ChunkGenerator<'a> {
                 }
 
                 for creature in slice.iter() {
-                    self.chunk.chunk.object_layer.set_tile(x as usize, y as usize, 6);
-                    self.chunk.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
+                    self.chunk.object_layer.set_tile(x as usize, y as usize, 6);
+                    self.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
 
 
                     x = x + 2;
@@ -270,21 +265,16 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_buildings(&mut self, unit: &Unit, solver: &mut JigsawSolver, pools: &ChunkFeaturePools, world: &World, resources: &Resources) {
-        let ai_group = self.chunk.ai_groups.next_group();
-        if unit.unit_type == UnitType::BanditCamp {
-            self.chunk.ai_groups.make_hostile(AiGroups::player(), ai_group);
-        }
-
         let mut homeless = unit.creatures.clone();
 
         let mut building_seed_cloud = BTreeSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
-                self.rng.randu_range(0, self.chunk.chunk.size.x()) as i32,
-                self.rng.randu_range(0, self.chunk.chunk.size.y()) as i32
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
             ));
         }
-        let center = Coord2::xy(self.chunk.chunk.size.x() as i32 / 2, self.chunk.chunk.size.y() as i32 / 2);
+        let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
         let mut building_seed_cloud: Vec<Coord2> = building_seed_cloud.into_iter().collect();
         building_seed_cloud.sort_by(|a, b| {
             let a = a.dist_squared(&center);
@@ -351,10 +341,7 @@ impl<'a> ChunkGenerator<'a> {
                         if let Some((pos, piece)) = iter.next() {
                             self.place_template(*pos, &piece, resources);
                             for creature_id in family.iter() {
-                                let creature = world.creatures.get(creature_id);
-                                let species = resources.species.get(&creature.species);
-                                let actor = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
-                                self.spawn(actor, *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 2);
+                                self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 2);
                             }
                         }
                         
@@ -380,11 +367,11 @@ impl<'a> ChunkGenerator<'a> {
         let mut building_seed_cloud = BTreeSet::new();
         for _ in 0..1000 {
             building_seed_cloud.insert(Coord2::xy(
-                self.rng.randu_range(0, self.chunk.chunk.size.x()) as i32,
-                self.rng.randu_range(0, self.chunk.chunk.size.y()) as i32
+                self.rng.randu_range(0, self.chunk.size.x()) as i32,
+                self.rng.randu_range(0, self.chunk.size.y()) as i32
             ));
         }
-        let center = Coord2::xy(self.chunk.chunk.size.x() as i32 / 2, self.chunk.chunk.size.y() as i32 / 2);
+        let center = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.y() as i32 / 2);
         let mut building_seed_cloud: Vec<Coord2> = building_seed_cloud.into_iter().collect();
         building_seed_cloud.sort_by(|a, b| {
             let a = a.dist_squared(&center);
@@ -449,9 +436,9 @@ impl<'a> ChunkGenerator<'a> {
                 }
             }
             
-            let mut astar = AStar::new(self.chunk.chunk.size, start);
+            let mut astar = AStar::new(self.chunk.size, start);
             astar.find_path(*closest, |xy| {
-                if !self.chunk.chunk.size.in_bounds(xy) || self.chunk.chunk.blocks_movement(xy) || solver.is_occupied(xy) {
+                if !self.chunk.size.in_bounds(xy) || self.chunk.blocks_movement(&xy) || solver.is_occupied(xy) {
                     return MovementCost::Impossible;
                 } else {
                     return MovementCost::Cost(1.);
@@ -459,7 +446,7 @@ impl<'a> ChunkGenerator<'a> {
             });
             let path = astar.get_path(*closest);
             for step in path {
-                self.chunk.chunk.ground_layer.set_tile(step.x as usize, step.y as usize, 5);
+                self.chunk.ground_layer.set_tile(step.x as usize, step.y as usize, 5);
             }
 
 
@@ -467,47 +454,36 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_lair_entrance(&mut self, solver: &mut JigsawSolver, resources: &Resources) {
-        let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.chunk.size.0 as i32 / 2, self.chunk.chunk.size.1 as i32 / 2), &mut self.rng, Vec::new());
+        let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng, Vec::new());
         if let Ok(structure) = structure {
             for (pos, piece) in structure.vec.iter() {
                 self.place_template(*pos, &piece, resources);
                 if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
-                    let ai_group = self.chunk.ai_groups.next_group();
                     let wolf_id = resources.species.id_of("species:wolf");
-                    let wolf = resources.species.get(&wolf_id);
                     // Minion wolves
                     for _ in 0..self.rng.randi_range(1, 4) {
-                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
-                        self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 7);
+                        self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 7);
                     }
                 }
             }
         }
     }
 
-    fn generate_wolf_pack(&mut self, unit: &Unit, world: &World, resources: &Resources) {
-        let ai_group = self.chunk.ai_groups.next_group();
-        self.chunk.ai_groups.make_hostile(AiGroups::player(), ai_group);
-        let pos = Coord2::xy(self.chunk.chunk.size.x() as i32 / 2, self.chunk.chunk.size.x() as i32 / 2);
+    fn generate_wolf_pack(&mut self, unit: &Unit) {
+        let pos = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2);
         for creature_id in unit.creatures.iter() {
-            let creature = world.creatures.get(creature_id);
-            let species = resources.species.get(&creature.species);
-            let boss = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
-            self.spawn(boss, pos, 7);
+            self.spawn(Spawner::CreatureId(*creature_id), pos, 7);
         }
     }
 
-    fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, world: &World, resources: &Resources) {
+    fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, resources: &Resources) {
         let requirements = vec!(
             JigsawPieceRequirement::Exactly("varningr_lair".to_string(), 1),
             JigsawPieceRequirement::Exactly("varningr_entrance".to_string(), 1)
         );
-        let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.chunk.size.0 as i32 / 2, self.chunk.chunk.size.1 as i32 / 2), &mut self.rng, requirements);
-        let ai_group = self.chunk.ai_groups.next_group();
-        self.chunk.ai_groups.make_hostile(ai_group, AiGroups::player());
+        let structure = solver.solve_structure("varningr_lair", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng, requirements);
         if let Ok(structure) = structure {
             let wolf_id = resources.species.id_of("species:wolf");
-            let wolf = resources.species.get(&wolf_id);
             let mut iter = structure.vec.iter();
 
             // First piece
@@ -516,15 +492,11 @@ impl<'a> ChunkGenerator<'a> {
 
                 // Spawn varningr(s)
                 for creature_id in unit.creatures.iter() {
-                    let creature = world.creatures.get(creature_id);
-                    let species = resources.species.get(&creature.species);
-                    let boss = Actor::from_creature(Coord2::xy(0, 0), ai_group, *creature_id, &creature, &creature.species, &species, world, resources);
-                    self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                    self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                 }
                 // Minion wolves
                 for _ in 0..3 {
-                    let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
-                    self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                    self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                 }
             }
             for (pos, piece) in iter {
@@ -532,20 +504,18 @@ impl<'a> ChunkGenerator<'a> {
                 if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
                     // Minion wolves
                     for _ in 0..self.rng.randi_range(1, 4) {
-                        let boss = Actor::from_species(Coord2::xy(0, 0), &wolf_id, &wolf, ai_group);
-                        self.spawn(boss, *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                        self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                     }
                 }
             }
         }
     }
 
-    fn spawn(&mut self, mut actor: Actor, close_to: Coord2, r: i32) {
+    fn spawn(&mut self, spawner: Spawner, close_to: Coord2, r: i32) {
         for _ in 0..100 {
             let xy = close_to + Coord2::xy(self.rng.randi_range(-r, r), self.rng.randi_range(-r, r));
-            if self.chunk.can_occupy(&xy) {
-                actor.xy = xy;
-                self.chunk.actors.push(actor);
+            if !self.chunk.blocks_movement(&xy) && self.chunk.get_spawner_at(&xy).is_none() {
+                self.chunk.add_spawn_point(xy, spawner);
                 return;
             }
         }
@@ -564,14 +534,14 @@ impl<'a> ChunkGenerator<'a> {
                 Some(spot) => {
                     let item = world.artifacts.get(item);
                     let texture = item.make_texture(&resources);
-                    self.chunk.chunk.items_on_ground.push((spot, item.clone(), texture));
+                    self.chunk.items_on_ground.push((spot, item.clone(), texture));
                 }
             }
         }
     }
 
     pub(crate) fn get_jigsaw_solver(&self) -> JigsawSolver {
-        let mut solver = JigsawSolver::new(self.chunk.chunk.size.clone(), self.rng.clone());
+        let mut solver = JigsawSolver::new(self.chunk.size.clone(), self.rng.clone());
         
         let parser = JigsawParser::new();
         if let Ok(pools) = parser.parse_file("assets/structures/village.toml") {
@@ -598,27 +568,27 @@ impl<'a> ChunkGenerator<'a> {
     fn collapse_decor(&mut self, resources: &Resources) {
         let tree_noise = Perlin::new(self.rng.derive("trees").seed());
         let flower_noise = Perlin::new(self.rng.derive("flower").seed());
-        for x in 1..self.chunk.chunk.size.x()-1 {
-            for y in 1..self.chunk.chunk.size.y()-1 {
-                if let Some(ground) = self.chunk.chunk.ground_layer.tile(x, y) {
-                    if let Tile::Empty = self.chunk.chunk.object_layer.get_tile(x, y) {
+        for x in 1..self.chunk.size.x()-1 {
+            for y in 1..self.chunk.size.y()-1 {
+                if let Some(ground) = self.chunk.ground_layer.tile(x, y) {
+                    if let Tile::Empty = self.chunk.object_layer.get_tile(x, y) {
                         if ground == 1 || ground == 6 || ground == 7 {
                             if tree_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                                 if self.rng.rand_chance(0.1) {
-                                    self.chunk.chunk.set_object_key(Coord2::xy(x as i32, y as i32), "obj:tree", resources);
+                                    self.chunk.set_object_key(Coord2::xy(x as i32, y as i32), "obj:tree", resources);
                                     continue;
                                 }
                             }
                             if self.rng.rand_chance(0.02) {
-                                self.chunk.chunk.object_layer.set_tile(x as usize, y as usize, 11);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, 11);
                                 continue;
                             }
                             if flower_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0.6 && self.rng.rand_chance(0.3) {
-                                self.chunk.chunk.object_layer.set_tile(x as usize, y as usize, 12);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, 12);
                                 continue;
                             }
                             if self.rng.rand_chance(0.2) {
-                                self.chunk.chunk.object_layer.set_tile(x as usize, y as usize, 9);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, 9);
                             }
                         }
                     }
@@ -647,9 +617,9 @@ impl<'a> ChunkGenerator<'a> {
                 JigsawPieceTile::Empty => (),
                 JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
                 JigsawPieceTile::Fixed { ground, object, statue_spot, connection: _ } => {
-                    self.chunk.chunk.ground_layer.set_tile(x, y, ground);
+                    self.chunk.ground_layer.set_tile(x, y, ground);
                     if let Some(object) = object {
-                        self.chunk.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), object, resources);
+                        self.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), object, resources);
                     }
                     if statue_spot {
                         self.statue_spots.push(Coord2::xy(x as i32, y as i32))
