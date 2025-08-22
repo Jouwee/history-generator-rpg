@@ -207,10 +207,10 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    let window = GlutinWindow::new(
-        &WindowSettings::new("Tales of Kathay", [1024, 768]).graphics_api(opengl)
-    );
-    let window = match window {
+    let window_settings = WindowSettings::new("Tales of Kathay", [1024, 768])
+        .graphics_api(opengl)
+        .vsync(true);
+    let window = match GlutinWindow::new(&window_settings) {
         Err(err) => {
             fatal!("{err}");
             panic!("Failed to create Window. Check logs.");

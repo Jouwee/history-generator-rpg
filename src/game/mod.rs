@@ -638,8 +638,6 @@ impl Scene for GameSceneState {
 
         match evt {
             InputEvent::Key { key: Key::Escape } => {
-                // TODO: Duplicate
-                self.hotbar.clear_selected();
                 self.ingame_menu.show();
             },
             InputEvent::Key { key: Key::Space } => {

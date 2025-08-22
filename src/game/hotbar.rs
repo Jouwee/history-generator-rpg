@@ -1,6 +1,8 @@
 use std::{collections::HashSet, ops::ControlFlow};
 
-use crate::{engine::{assets::assets, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, render::RenderContext, COLOR_WHITE}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId, Affliction}, GameContext};
+use piston::Key;
+
+use crate::{engine::{assets::assets, gui::{button::Button, layout_component::LayoutComponent, tooltip::{Tooltip, TooltipLine}, UINode}, input::InputEvent, render::RenderContext, COLOR_WHITE}, game::{actor::actor::Actor, inventory::inventory::EquipmentType}, resources::action::{Action, ActionEffect, ActionId, Affliction}, GameContext};
 
 pub(crate) struct Hotbar {
     layout: LayoutComponent,
@@ -121,6 +123,15 @@ impl UINode for Hotbar {
 
     fn input(&mut self, _state: &mut Self::State, evt: &crate::InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
         let mut selected = None;
+        match evt {
+            InputEvent::Key { key: Key::Escape } => {
+                if self.selected_action.is_some() {
+                    self.clear_selected();
+                    return ControlFlow::Break(());
+                }
+            },
+            _ => ()
+        }
         for (action_id, button) in self.buttons.iter_mut() {
             if let ControlFlow::Break(_) = button.input(&mut (), evt, ctx) {
                 if self.selected_action.is_some_and(|id| &id == action_id) {
