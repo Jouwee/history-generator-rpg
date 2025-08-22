@@ -1,18 +1,18 @@
 [symbols]
-'#' = { ground= 4, object= 1 }
-'_' = { ground= 4 }
-'+' = { ground= 5 }
-'*' = { ground= 5, statue_spot= true }
-'b' = { ground= 4, object= 3 }
-'c' = { ground= 4, object= 5 }
-'t' = { ground= 4, object= 4 }
-'r' = { ground= 1, object= 8 }
-'d' = { ground= 4, object= 8 }
-'-' = { ground= 9 }
-'$' = { ground= 4, object=18 }
+'#' = { ground= "tile:floor", object= "obj:wall" }
+'_' = { ground= "tile:floor" }
+'+' = { ground= "tile:cobblestone" }
+'*' = { ground= "tile:cobblestone", statue_spot= true }
+'b' = { ground= "tile:floor", object= "obj:bed" }
+'c' = { ground= "tile:floor", object= "obj:stool" }
+'t' = { ground= "tile:floor", object= "obj:table" }
+'r' = { ground= "tile:grass", object= "obj:barrel" }
+'d' = { ground= "tile:floor", object= "obj:barrel" }
+'-' = { ground= "tile:carpet_red" }
+'$' = { ground= "tile:floor", object= "obj:chair" }
 '&' = { path_endpoint = true }
-'A' = { ground= 4, connect = "village_house_start" }
-'B' = { ground= 4, connect = "village_house_room" }
+'A' = { ground= "tile:floor", connect = "village_house_start" }
+'B' = { ground= "tile:floor", connect = "village_house_room" }
 
 
 [village_house_start]

@@ -16,6 +16,12 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         ResourceMap { vector: vec!(), map: HashMap::new() }
     }
 
+    #[cfg(test)]
+    pub(crate) fn clear(&mut self) {
+        self.map.clear();
+        self.vector.clear();
+    }
+
     pub(crate) fn add(&mut self, key: &str, value: V) -> I {
         let id = I::new(self.vector.len());
         self.vector.push(value);

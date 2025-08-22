@@ -1,12 +1,12 @@
 [symbols]
-'-' = { ground= 8, object= 0 }
-'b' = { ground= 8, object= 13 }
-'#' = { ground= 8, object= 15 }
-'u' = { ground= 8, object= 17 }
-'d' = { ground= 1, object= 16 }
-'M' = { ground= 8, object= 0, connect = "varningr_lair" }
-'R' = { ground= 8, object= 0, connect = "varningr_room" }
-'E' = { ground= 8, object= 0, connect = "varningr_entrance" }
+'-' = { ground= "tile:cave_floor" }
+'b' = { ground= "tile:cave_floor", object= "obj:small_game_carcass" }
+'#' = { ground= "tile:cave_floor", object= "obj:cave_wall" }
+'u' = { ground= "tile:cave_floor", object= "obj:ladder_up" }
+'d' = { ground= "tile:grass", object= "obj:ladder_down" }
+'M' = { ground= "tile:cave_floor", connect = "varningr_lair" }
+'R' = { ground= "tile:cave_floor", connect = "varningr_room" }
+'E' = { ground= "tile:cave_floor", connect = "varningr_entrance" }
 
 [varningr_surface]
 [varningr_surface.a]

@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::BTreeSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner, TileMetadata}, info, warn, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Coord2, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner, TileMetadata}, info, resources::resources::resources, warn, world::{creature::Profession, unit::{Unit, UnitType}, world::World}, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -130,31 +130,38 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_fixed_terrain_features(&mut self) {
+        let resources = resources();
         match self.chunk.coord.layer {
             ChunkLayer::Surface => {
-                // TODO: Based on region
-                let noise = Perlin::new(self.rng.derive("grass").seed());
-                
+                let patchy_grass = resources.tiles.id_of("tile:grass_patchy").as_usize();
+                let grass = resources.tiles.id_of("tile:grass").as_usize();
+                let dark_grass = resources.tiles.id_of("tile:grass_dark").as_usize();
+
+                let noise = Perlin::new(self.rng.derive("grass").seed());                
                 for x in 0..self.chunk.size.x() {
                     for y in 0..self.chunk.size.y() {
                         let n = noise.get([x as f64 / 15.0, y as f64 / 15.0]);
                         if n > 0. {
                             if n > 0.9 {
-                                self.chunk.ground_layer.set_tile(x, y, 7);
+                                self.chunk.ground_layer.set_tile(x, y, patchy_grass);
                             } else {
-                                self.chunk.ground_layer.set_tile(x, y, 1);
+                                self.chunk.ground_layer.set_tile(x, y, grass);
                             }
                         } else {
-                            self.chunk.ground_layer.set_tile(x, y, 6);
+                            self.chunk.ground_layer.set_tile(x, y, dark_grass);
                         }
                     }
                 }
             },
             ChunkLayer::Underground => {
+                let cave_floor = resources.tiles.id_of("tile:cave_floor").as_usize();
+                // SMELL: See smells in chunk
+                let cave_wall = resources.object_tiles.id_of("obj:cave_wall").as_usize() + 1;
+
                 for x in 0..self.chunk.size.x() {
                     for y in 0..self.chunk.size.y() {
-                        self.chunk.ground_layer.set_tile(x, y, 6);
-                        self.chunk.object_layer.set_tile(x, y, 15);
+                        self.chunk.ground_layer.set_tile(x, y, cave_floor);
+                        self.chunk.object_layer.set_tile(x, y, cave_wall);
                     }
                 }
             }
@@ -215,6 +222,7 @@ impl<'a> ChunkGenerator<'a> {
         if unit.cemetery.len() > 0 {
             if let Some(cemetery_pool) = &pools.cemetery_pool {
                 let mut collapsed_pos = None;
+                let grave_stone = resources.object_tiles.id_of("obj:tombstone").as_usize() + 1;
 
                 while building_seed_cloud.len() > 0 {
 
@@ -249,7 +257,7 @@ impl<'a> ChunkGenerator<'a> {
                 }
 
                 for creature in slice.iter() {
-                    self.chunk.object_layer.set_tile(x as usize, y as usize, 6);
+                    self.chunk.object_layer.set_tile(x as usize, y as usize, grave_stone);
                     self.chunk.tiles_metadata.insert(Coord2::xy(x, y), TileMetadata::BurialPlace(*creature));
 
 
@@ -423,6 +431,8 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn generate_paths(&mut self, solver: &mut JigsawSolver) {
+        let resources = resources();
+        let path_tile = resources.tiles.id_of("tile:cobblestone").as_usize();
         while self.path_endpoints.len() > 1 {
             let start = self.path_endpoints.pop().unwrap();
 
@@ -446,7 +456,7 @@ impl<'a> ChunkGenerator<'a> {
             });
             let path = astar.get_path(*closest);
             for step in path {
-                self.chunk.ground_layer.set_tile(step.x as usize, step.y as usize, 5);
+                self.chunk.ground_layer.set_tile(step.x as usize, step.y as usize, path_tile);
             }
 
 
@@ -568,6 +578,12 @@ impl<'a> ChunkGenerator<'a> {
     fn collapse_decor(&mut self, resources: &Resources) {
         let tree_noise = Perlin::new(self.rng.derive("trees").seed());
         let flower_noise = Perlin::new(self.rng.derive("flower").seed());
+
+        let pebles = resources.object_tiles.id_of("obj:pebbles").as_usize() + 1;
+        let flowers = resources.object_tiles.id_of("obj:flowers").as_usize() + 1;
+        let grass = resources.object_tiles.id_of("obj:grass_decal").as_usize() + 1;
+        let tree = resources.object_tiles.id_of("obj:tree").as_usize() + 1;
+
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
                 if let Some(ground) = self.chunk.ground_layer.tile(x, y) {
@@ -575,20 +591,20 @@ impl<'a> ChunkGenerator<'a> {
                         if ground == 1 || ground == 6 || ground == 7 {
                             if tree_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0. {
                                 if self.rng.rand_chance(0.1) {
-                                    self.chunk.set_object_key(Coord2::xy(x as i32, y as i32), "obj:tree", resources);
+                                    self.chunk.object_layer.set_tile(x as usize, y as usize, tree);
                                     continue;
                                 }
                             }
                             if self.rng.rand_chance(0.02) {
-                                self.chunk.object_layer.set_tile(x as usize, y as usize, 11);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, pebles);
                                 continue;
                             }
                             if flower_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0.6 && self.rng.rand_chance(0.3) {
-                                self.chunk.object_layer.set_tile(x as usize, y as usize, 12);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, flowers);
                                 continue;
                             }
                             if self.rng.rand_chance(0.2) {
-                                self.chunk.object_layer.set_tile(x as usize, y as usize, 9);
+                                self.chunk.object_layer.set_tile(x as usize, y as usize, grass);
                             }
                         }
                     }

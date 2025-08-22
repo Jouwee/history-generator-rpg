@@ -1,9 +1,9 @@
 [symbols]
-'b' = { ground= 7, object= 10 }
-'r' = { ground= 7, object= 8 }
-'c' = { ground= 7, object= 5 }
-'t' = { ground= 7, object= 4 }
-'+' = { ground= 7 }
+'b' = { ground= "tile:grass_patchy", object= "obj:tent" }
+'r' = { ground= "tile:grass_patchy", object= "obj:barrel" }
+'c' = { ground= "tile:grass_patchy", object= "obj:stool" }
+'t' = { ground= "tile:grass_patchy", object= "obj:table" }
+'+' = { ground= "tile:grass_patchy" }
 
 [camp_start]
 

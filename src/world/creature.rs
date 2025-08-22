@@ -297,7 +297,7 @@ mod tests_relationship {
     }
 
     #[test]
-    fn test_add_opiinion() {
+    fn test_add_opinion() {
         let world = WorldFixture::new();
         let mut relationship = Relationship::new(&world.creature_a1, &world.creature_a1(), world.creature_a2, &world.creature_a2());
 

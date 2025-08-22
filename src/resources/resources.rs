@@ -56,6 +56,14 @@ impl Resources {
         info!("Loading resources took {:.2?}", now.elapsed())
     }
 
+    #[cfg(test)]
+    pub(crate) fn load_test(&mut self) {
+        self.tiles.clear();
+        self.object_tiles.clear();
+        self.load_tiles();
+        self.load_object_tiles();
+    }
+
     fn load_materials(&mut self) {
         let mut steel = Material::new_metal("steel");
         steel.color_pallete = [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")];

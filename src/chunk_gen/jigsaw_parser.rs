@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs};
 
 use toml::{Table, Value};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, engine::geometry::Size2D, warn};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceTile, commons::id_vec::Id, engine::geometry::Size2D, resources::resources::resources, warn};
 
 use super::jigsaw_structure_generator::{JigsawPiece, JigsawPiecePool};
 
@@ -73,9 +73,6 @@ impl JigsawParser {
                                                     let mut tiles = Vec::new();
                                                     for char in template.chars() {
                                                         match char {
-                                                            // TODO:
-                                                            // '#' => tiles.push(JigsawPieceTile::Fixed(1)),
-                                                            // '_' => tiles.push(JigsawPieceTile::Air),
                                                             '.' => tiles.push(JigsawPieceTile::Empty),
                                                             c => {
                                                                 if let Some(tile) = symbols.get(&c) {
@@ -135,14 +132,20 @@ impl JigsawParser {
     }
 
     fn parse_symbols(table: &Table) -> HashMap<char, JigsawPieceTile> {
+        let resources = resources();
         let mut map = HashMap::new();
         for (symbol, tile) in table.iter() {
             let symbol = symbol.chars().next().unwrap();
             match tile {
                 Value::Table(tile_table) => {
-                    if let Some(Value::Integer(ground)) = tile_table.get("ground") {
+                    if let Some(Value::String(ground)) = tile_table.get("ground") {
+                        let ground = resources.tiles.id_of(ground).as_usize();
                         let object = match tile_table.get("object") {
-                            Some(Value::Integer(object)) => Some(*object as usize),
+                            Some(Value::String(object)) => {
+                                // SMELL: See others in chunk.rs
+                                let object = resources.object_tiles.id_of(object).as_usize() + 1;
+                                Some(object)
+                            },
                             _ => None
                         };
                         let statue_spot = match tile_table.get("statue_spot") {
@@ -153,7 +156,7 @@ impl JigsawParser {
                             Some(Value::String(connection)) => Some(connection.clone()),
                             _ => None
                         };
-                        map.insert(symbol, JigsawPieceTile::Fixed { ground: *ground as usize, object, statue_spot, connection });
+                        map.insert(symbol, JigsawPieceTile::Fixed { ground, object, statue_spot, connection });
                         continue;
                     }
                     if let Some(Value::Boolean(true)) = tile_table.get("path_endpoint") {
@@ -216,16 +219,21 @@ fn transpose_piece(piece: &JigsawPiece) -> JigsawPiece {
 
 #[cfg(test)]
 mod tests_jigsaw_parses {
+    use crate::resources::resources::resources_mut;
+
     use super::*;
 
     #[test]
     fn test_simplest_template() {
+        let mut resources = resources_mut();
+        resources.load_test();
+        drop(resources);
 
         let parser = JigsawParser::new();
 
         let result = parser.parse_string("
 [symbols]
-'a' = { ground= 1, object= 1 }
+'a' = { ground= \"tile:grass\", object= \"obj:wall\" }
 
 [template]
 [template.var_a]
@@ -253,14 +261,17 @@ a
 
     #[test]
     fn test_flip() {
+        let mut resources = resources_mut();
+        resources.load_test();
+        drop(resources);
 
         let parser = JigsawParser::new();
 
         // Horizontal flip
         let result = parser.parse_string("
 [symbols]
-'a' = { ground= 1, object= 1 }
-'b' = { ground= 2 }
+'a' = { ground= \"tile:grass\", object= \"obj:wall\" }
+'b' = { ground= \"tile:sand\" }
 
 [template]
 [template.var_a]
@@ -298,8 +309,8 @@ b.a
         // Vertical flip
         let result = parser.parse_string("
 [symbols]
-'a' = { ground= 1, object= 1 }
-'b' = { ground= 2 }
+'a' = { ground= \"tile:grass\", object= \"obj:wall\" }
+'b' = { ground= \"tile:sand\" }
 
 [template]
 [template.var_a]
@@ -338,13 +349,17 @@ b.a
 
     #[test]
     fn test_rotate() {
+        let mut resources = resources_mut();
+        resources.load_test();
+        drop(resources);
+
         let parser = JigsawParser::new();
 
         // Horizontal flip
         let result = parser.parse_string("
 [symbols]
-'a' = { ground= 1 }
-'b' = { ground= 2 }
+'a' = { ground= \"tile:grass\" }
+'b' = { ground= \"tile:sand\" }
 
 [template]
 [template.var_a]
