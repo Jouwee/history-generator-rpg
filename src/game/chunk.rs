@@ -26,7 +26,7 @@ impl Default for Chunk {
             items_on_ground: Vec::new(),
             spawn_points: Vec::new(),
             ground_layer: LayeredDualgridTilemap::new(LayeredDualgridTileset::new(), 1, 1, 1, 1),
-            object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1)
+            object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1).draw_shadows()
         }
     }
 
@@ -49,7 +49,7 @@ impl Chunk {
             coord,
             size,
             ground_layer: LayeredDualgridTilemap::new(dual_tileset, size.x(), size.y(), 24, 24),
-            object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24),
+            object_layer: TileMap::new(tileset, size.x(), size.y(), 24, 24).draw_shadows(),
             spawn_points: Vec::new(),
             items_on_ground: Vec::new(),
             tiles_metadata: HashMap::new(),

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use graphics::{Image, Transformed};
 
-use crate::{commons::rng::Rng, engine::assets::{assets, ImageSheetAsset}, globals::perf::perf, GameContext};
+use crate::{commons::rng::Rng, engine::assets::{assets, ImageSheetAsset}, globals::perf::perf, resources::resources::resources, GameContext};
 
 use super::{render::RenderContext};
 
@@ -13,7 +13,8 @@ pub(crate) struct TileMap {
     width: usize,
     height: usize,
     cell_width: usize,
-    cell_height: usize
+    cell_height: usize,
+    draw_shadows: bool,
 }
 
 impl TileMap {
@@ -25,8 +26,14 @@ impl TileMap {
             width,
             height,
             cell_width,
-            cell_height 
+            cell_height,
+            draw_shadows: false,
         }
+    }
+
+    pub(crate) fn draw_shadows(mut self) -> Self {
+        self.draw_shadows = true;
+        self
     }
 
     pub(crate) fn tiles(&self) -> &Vec<(usize, bool)> {
@@ -38,7 +45,15 @@ impl TileMap {
     }
 
     pub(crate) fn set_tile(&mut self, x: usize, y: usize, tile: usize) {
-        self.tiles[(y*self.width) + x].0 = tile;
+        // SMELL
+        let shadow;
+        if tile > 0 {
+            let resources = resources();
+            shadow = resources.object_tiles.try_get(tile - 1).unwrap().casts_shadow;
+        } else {
+            shadow = false;
+        }
+        self.tiles[(y*self.width) + x] = (tile, shadow);
     }
 
     pub(crate) fn set_shadow(&mut self, x: usize, y: usize, shadow: bool) {
@@ -66,17 +81,22 @@ impl TileMap {
             1 + cull_start[0] + ctx.camera_rect[2] as usize / self.cell_width,
             1 + cull_start[1] + ctx.camera_rect[3] as usize / self.cell_height
         ];
-        let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
-        let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
-        for y in y_range.clone() {
-            for x in x_range.clone() {
-                let idx = (y * self.width) + x;
-                let tile_i = self.tiles[idx];
-                if tile_i.1 {
-                    self.pass(idx, x, y, tile_i.0, ctx, true);
+        if self.draw_shadows {
+            // Draws a few extra rows/cols to avoid shadows popping in
+            let x_range = (cull_start[0] - 1).max(0)..(self.width.min(cull_limit[0] + 2));
+            let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 5));
+            for y in y_range.clone() {
+                for x in x_range.clone() {
+                    let idx = (y * self.width) + x;
+                    let tile_i = self.tiles[idx];
+                    if tile_i.1 {
+                        self.pass(idx, x, y, tile_i.0, ctx, true);
+                    }
                 }
             }
         }
+        let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
+        let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 2));
         for y in y_range {
             for x in x_range.clone() {
                 let idx = (y * self.width) + x;
