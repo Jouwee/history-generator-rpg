@@ -131,14 +131,16 @@ impl CodexDialog {
             self.info_container.add(death);
 
             if codex.know_father() {
-                let name = creature.name(&creature.father, world, &ctx.resources);
+                let father = world.creatures.get(&creature.father);
+                let name = father.name(&creature.father, world, &ctx.resources);
 
                 let father = Label::text(&format!("Father: {}", name));
                 self.info_container.add(father);
             };
 
             if codex.know_mother() {
-                let name = creature.name(&creature.mother, world, &ctx.resources);
+                let mother = world.creatures.get(&creature.mother);
+                let name = mother.name(&creature.mother, world, &ctx.resources);
 
                 let mother = Label::text(&format!("Mother: {}", name));
                 self.info_container.add(mother);
