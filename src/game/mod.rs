@@ -285,7 +285,12 @@ impl Scene for GameSceneState {
         ctx.pixel_art(2);
         ctx.push();
 
-        // Game
+        // Camera lerp
+        let center = self.state.player().xy;
+        self.camera_offset = [
+            lerp(self.camera_offset[0], center.x as f64 * 24., ctx.render_delta / 0.2),
+            lerp(self.camera_offset[1], center.y as f64 * 24., ctx.render_delta / 0.2),
+        ];
         ctx.center_camera_on(self.camera_offset);
 
         self.state.render(ctx, game_ctx);
@@ -380,13 +385,6 @@ impl Scene for GameSceneState {
 
         // TODO: Should not be done in update. Input doesn't have "mouse pos"
         self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
-
-        // Camera lerp
-        let center = self.state.player().xy;
-        self.camera_offset = [
-            lerp(self.camera_offset[0], center.x as f64 * 24., 0.2),
-            lerp(self.camera_offset[1], center.y as f64 * 24., 0.2),
-        ];
 
         if self.turn_mode == TurnMode::TurnBased {
             self.hud.preview_action_points(self.state.player(), self.player_pathing.get_preview_ap_cost());

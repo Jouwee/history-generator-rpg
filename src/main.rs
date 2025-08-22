@@ -73,6 +73,8 @@ impl App {
         // Clear the screen.
         clear(Color::from_hex("090714").f32_arr(), &mut self.gl);
         let mut context = RenderContext {
+            pixel_scale: 2.,
+            render_delta: args.ext_dt,
             context: c,
             layout_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],
             camera_rect: [0., 0., args.viewport().window_size[0], args.viewport().window_size[1]],

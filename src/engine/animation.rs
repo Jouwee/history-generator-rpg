@@ -1,6 +1,6 @@
 #[derive(Clone)]
 pub(crate) struct AnimationTransform {
-    pub(crate) translate: [f64; 2],
+    pub(crate) translate: [f64; 3],
     current_animation: Option<Animation>,
     animation_progress: f64
 }
@@ -9,7 +9,7 @@ impl AnimationTransform {
 
     pub(crate) fn new() -> AnimationTransform {
         AnimationTransform {
-            translate: [0.; 2],
+            translate: [0.; 3],
             current_animation: None,
             animation_progress: 0.
         }
@@ -25,6 +25,15 @@ impl AnimationTransform {
     pub(crate) fn play(&mut self, animation: &Animation) {
         self.current_animation = Some(animation.clone());
         self.animation_progress = 0.;
+        self.translate = animation.get_translate(self.animation_progress);
+    }
+
+    pub(crate) fn translate_no_z(&self) -> [f64; 2] {
+        return [ self.translate[0], self.translate[1] ]
+    }
+
+    pub(crate) fn translate_z_only(&self) -> [f64; 2] {
+        return [ 0., -self.translate[2] ]
     }
 
 }
@@ -48,9 +57,24 @@ impl Animation {
         }
     }
 
-    pub(crate) fn translate(mut self, duration: f64, to: [f64; 2], smoothing: Smoothing) -> Animation {
+    pub(crate) fn translate(mut self, duration: f64, from: [f64; 3], to: [f64; 3], smoothing: Smoothing) -> Animation {
         let mut start = 0.;
-        let mut from = [0.; 2];
+        if let Some(last) = self.translate_keyframes.last() {
+            start = last.end;
+        }
+        self.translate_keyframes.push(KeyFrame {
+            start,
+            end: start + duration,
+            from,
+            to,
+            smoothing
+        });
+        return self
+    }
+
+    pub(crate) fn translate_last(mut self, duration: f64, to: [f64; 3], smoothing: Smoothing) -> Animation {
+        let mut start = 0.;
+        let mut from = [0.; 3];
         if let Some(last) = self.translate_keyframes.last() {
             start = last.end;
             from = last.to;
@@ -65,16 +89,17 @@ impl Animation {
         return self
     }
 
-    pub(crate) fn get_translate(&self, progress: f64) -> [f64; 2] {
+    pub(crate) fn get_translate(&self, progress: f64) -> [f64; 3] {
         for kf in self.translate_keyframes.iter() {
             if progress >= kf.start && progress <= kf.end {
                 return [
                     kf.smoothing.interpolate(progress, [kf.start, kf.end], [kf.from[0], kf.to[0]]),
-                    kf.smoothing.interpolate(progress, [kf.start, kf.end], [kf.from[1], kf.to[1]])
+                    kf.smoothing.interpolate(progress, [kf.start, kf.end], [kf.from[1], kf.to[1]]),
+                    kf.smoothing.interpolate(progress, [kf.start, kf.end], [kf.from[2], kf.to[2]]),
                 ]
             }
         }
-        return [0., 0.];
+        return [0., 0., 0.];
     }
 
 }
@@ -83,8 +108,8 @@ impl Animation {
 struct KeyFrame {
     start: f64,
     end: f64,
-    from: [f64; 2],
-    to: [f64; 2],
+    from: [f64; 3],
+    to: [f64; 3],
     smoothing: Smoothing
 }
 

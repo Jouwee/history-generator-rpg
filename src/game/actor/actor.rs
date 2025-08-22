@@ -281,14 +281,17 @@ impl Renderable for Actor {
         let pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
 
         ctx.push();
-        ctx.context.transform = ctx.context.transform.trans(pos[0], pos[1]);
+        ctx.context.transform = ctx.context.transform.trans(pos[0], pos[1]).trans_pos(self.animation.translate_no_z());
+
         if self.sprite_flipped {
             ctx.context.transform = ctx.context.transform.trans(48., 0.).scale(-1., 1.)
         }
 
         ctx.image("species/shadow.png", [11, 42]);
-        // Applies the animation to the rendering
-        self.render_layers(self.animation.translate, ctx, game_ctx);
+
+        ctx.context.transform = ctx.context.transform.trans_pos(self.animation.translate_z_only());
+
+        self.render_layers([0., 0.], ctx, game_ctx);
 
         for affliction in self.afflictions.iter() {
             match affliction.affliction {

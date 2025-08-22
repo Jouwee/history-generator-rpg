@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -114,9 +114,10 @@ impl ActionTarget {
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
-                    let object_tile = chunk.chunk.get_object_idx(*cursor) - 1;
+                    let object_tile = chunk.chunk.get_object_idx(*cursor);
                     let resources = resources();
-                    if object_tile != resources.object_tiles.id_of("obj:bed").as_usize() {
+                    // SMELL:
+                    if object_tile > 0 && object_tile - 1 != resources.object_tiles.id_of("obj:bed").as_usize() {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
@@ -519,8 +520,9 @@ impl ActionRunner {
                                     },
                                     ActionEffect::Walk => {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
+                                        let from = actor.xy.clone();
                                         actor.xy = action.center;
-                                        actor.animation.play(&Self::build_walk_anim());
+                                        actor.animation.play(&Self::build_walk_anim(&from, &action.center));
                                         if let Some(sound) = chunk.chunk.get_step_sound(action.center, &ctx.resources) {
                                             ctx.audio.play_once(sound);
                                         }
@@ -637,25 +639,32 @@ impl ActionRunner {
         }
     }
 
-    fn build_walk_anim() -> Animation {
+    fn build_walk_anim(from: &Coord2, to: &Coord2) -> Animation {
+        let start_offset = *from - *to;
+        let start_offset = [start_offset.x as f64 * 24., start_offset.y as f64 * 24., 0.];
+        let mid_point = [
+            lerp(start_offset[0], 0., 0.5),
+            lerp(start_offset[1], 0., 0.5),
+            6.,
+        ];
         Animation::new()
-            .translate(0.08, [0., -6.], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate(0.08, start_offset, mid_point, crate::engine::animation::Smoothing::EaseInOut)
+            .translate_last(0.08, [0., 0., 0.], crate::engine::animation::Smoothing::EaseInOut)
 
     }
 
     fn build_hurt_anim(direction: Coord2) -> Animation {
         let direction = direction.to_vec2().normalize(12.);
         Animation::new()
-            .translate(0.02, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.2, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate_last(0.02, [direction.x as f64, direction.y as f64, 0.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate_last(0.2, [0., 0., 0.], crate::engine::animation::Smoothing::EaseInOut)
     }
 
     fn build_attack_anim(direction: Coord2) -> Animation {
         let direction = direction.to_vec2().normalize(24.);
         Animation::new()
-            .translate(0.08, [direction.x as f64, direction.y as f64], crate::engine::animation::Smoothing::EaseInOut)
-            .translate(0.08, [0., 0.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate_last(0.08, [direction.x as f64, direction.y as f64, 0.], crate::engine::animation::Smoothing::EaseInOut)
+            .translate_last(0.08, [0., 0., 0.], crate::engine::animation::Smoothing::EaseInOut)
     }
 }
 

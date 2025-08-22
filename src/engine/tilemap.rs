@@ -74,7 +74,7 @@ impl TileMap {
     pub(crate) fn render<F>(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext, mut z_order_render: F) where F: FnMut(&mut RenderContext, &mut GameContext, usize, usize) -> () {
         perf().start("tilemap");
         let cull_start = [
-            (ctx.camera_rect[0] / self.cell_width as f64 - 1.).max(0.) as usize,
+            (ctx.camera_rect[0] / self.cell_width as f64 - 2.).max(0.) as usize,
             (ctx.camera_rect[1] / self.cell_height as f64 - 1.).max(0.) as usize
         ];
         let cull_limit = [
@@ -83,7 +83,7 @@ impl TileMap {
         ];
         if self.draw_shadows {
             // Draws a few extra rows/cols to avoid shadows popping in
-            let x_range = (cull_start[0] - 1).max(0)..(self.width.min(cull_limit[0] + 2));
+            let x_range = (cull_start[0])..(self.width.min(cull_limit[0] + 2));
             let y_range = (cull_start[1])..(self.height.min(cull_limit[1] + 5));
             for y in y_range.clone() {
                 for x in x_range.clone() {

@@ -6,6 +6,9 @@ use crate::engine::assets::{assets, Font};
 use super::{Color};
 
 pub(crate) struct RenderContext<'a> {
+    /// Time, in seconds, since the last render. Useful for smooth movement
+    pub(crate) render_delta: f64,
+    pub(crate) pixel_scale: f64,
     pub(crate) context: Context,
     pub(crate) gl: &'a mut GlGraphics,
     pub(crate) layout_rect: [f64; 4],
@@ -18,6 +21,7 @@ pub(crate) struct RenderContext<'a> {
 impl<'a> RenderContext<'a> {
 
     pub(crate) fn pixel_art(&mut self, s: u8) {
+        self.pixel_scale = s as f64;
         self.scale(s as f64);
     }
 
@@ -31,8 +35,11 @@ impl<'a> RenderContext<'a> {
     }
 
     pub(crate) fn center_camera_on(&mut self, pos: [f64; 2]) {
-        self.camera_rect[0] = (pos[0] - self.camera_rect[2] / 2.).round();
-        self.camera_rect[1] = (pos[1] - self.camera_rect[3] / 2.).round();
+        self.camera_rect[0] = pos[0] - self.camera_rect[2] / 2.;
+        self.camera_rect[1] = pos[1] - self.camera_rect[3] / 2.;
+        // Makes sure it is rounded to the nearest "subpixel"
+        self.camera_rect[0] = (self.camera_rect[0] * self.pixel_scale).round() / self.pixel_scale;
+        self.camera_rect[1] = (self.camera_rect[1] * self.pixel_scale).round() / self.pixel_scale;
         self.context.transform = self.context.transform.trans(-self.camera_rect[0], -self.camera_rect[1]);
     }
 
