@@ -39,6 +39,7 @@ use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::game::state::{AiGroups, GameState, PLAYER_IDX};
 use crate::loadsave::SaveFile;
 use crate::resources::action::{ActionRunner, ActionArea};
+use crate::resources::resources::resources;
 use crate::warn;
 use crate::world::unit::UnitId;
 use crate::world::world::World;
@@ -435,11 +436,11 @@ impl Scene for GameSceneState {
             self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(0, 1), self.state.coord.layer), &save_file, &self.world);
             return
         }
-        // TODO: Resources
-        if self.state.chunk.get_object_idx(self.state.player().xy) == 16 {
+        let resources = resources();
+        if self.state.chunk.get_object_id(self.state.player().xy).map(|id| id == resources.object_tiles.id_of("obj:ladder_down")).unwrap_or(false) {
             self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Underground), &save_file, &self.world);
         }
-        if self.state.chunk.get_object_idx(self.state.player().xy) == 17 {
+        if self.state.chunk.get_object_id(self.state.player().xy).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
             self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Surface), &save_file, &self.world);
         }
 

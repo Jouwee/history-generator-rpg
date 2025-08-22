@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, resources::{object_tile::ObjectTileId, resources::Resources, species::SpeciesId, tile::TileId}, world::{creature::CreatureId, item::Item}};
+use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, error, resources::{object_tile::ObjectTileId, resources::{resources, Resources}, species::SpeciesId, tile::TileId}, world::{creature::CreatureId, item::Item}};
 
 pub(crate) struct Chunk {
     pub(crate) coord: ChunkCoord,
@@ -60,12 +60,18 @@ impl Chunk {
         if let crate::engine::tilemap::Tile::Empty = self.object_layer.get_tile(pos.x as usize, pos.y as usize) {
             return false
         }
-        // TODO: Resources
         let i = self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize);
-        if i == 9 || i == 11 || i == 12 || i == 16 || i == 17 {
-            return false
+        if i == 0 {
+            return false;
         }
-        return true
+        let resources = resources();
+        // SMELL: See others on this file
+        let tile = resources.object_tiles.try_get(i - 1);
+        if let Some(tile) = tile {
+            return tile.blocks_movement;
+        }
+        error!("Can't get object tile {i}");
+        return false;
     }
 
     pub(crate) fn check_line_of_sight(&self, from: &Coord2, to: &Coord2) -> bool {
@@ -113,6 +119,17 @@ impl Chunk {
 
     pub(crate) fn get_object_idx(&self, pos: Coord2) -> usize {
         return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
+    }
+
+    pub(crate) fn get_object_id(&self, pos: Coord2) -> Option<ObjectTileId> {
+        let i = self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize);
+        if i == 0 {
+            return None;
+        } else {
+            let resources = resources();
+            // SMELL: Same as others
+            return resources.object_tiles.validate_id(i - 1);
+        }
     }
     
     pub(crate) fn remove_object(&mut self, pos: Coord2) {

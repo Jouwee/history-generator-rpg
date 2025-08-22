@@ -186,11 +186,12 @@ impl GameState {
         }
 
         if change_layer && self.coord.layer == ChunkLayer::Underground {
+            let resources = resources();
             // Finds the exit
             'outer: for x in 0..self.chunk.size.x() {
                 for y in 0..self.chunk.size.y() {
                     let pos = Coord2::xy(x as i32, y as i32);
-                    if self.chunk.get_object_idx(pos) == 17 {
+                    if self.chunk.get_object_id(pos).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
                         self.player_mut().xy = pos + Coord2::xy(0, -1);
                         break 'outer;
                     }

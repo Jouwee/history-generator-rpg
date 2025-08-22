@@ -38,7 +38,7 @@ impl PlayerPathing {
                         ctx.image("gui/path.png", [tile.x * 24, tile.y * 24]);
                         // ctx.rectangle_fill([tile.x as f64 * 24. + 8., tile.y as f64 * 24. + 8., 8., 8.], COLOR_WHITE30"));
                     }
-                    // TODO (OLaU4Dth): 
+                    // TODO(OLaU4Dth): 
                     remaining_ap -= 20;
                 }
             }

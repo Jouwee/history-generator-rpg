@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::object_tile::ObjectTileId, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -114,9 +114,9 @@ impl ActionTarget {
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
-                    // TODO: Bed
-                    let object_tile = chunk.chunk.get_object_idx(*cursor);
-                    if object_tile != 3 {
+                    let object_tile = chunk.chunk.get_object_idx(*cursor) - 1;
+                    let resources = resources();
+                    if object_tile != resources.object_tiles.id_of("obj:bed").as_usize() {
                         return Err(ActionFailReason::NoValidTarget);
                     }
                 }
