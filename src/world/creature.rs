@@ -138,6 +138,14 @@ impl CreatureGender {
         }
     }
 
+    pub(crate) fn random_det(rng: &mut Rng) -> Self {
+        if rng.rand_chance(0.5) {
+            return Self::Male;
+        } else {
+            return Self::Female;
+        }
+    }
+
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

@@ -4,7 +4,7 @@ use graphics::Transformed;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, input::InputEvent, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::map_component::MapComponent, resources::resources::Resources, world::unit::UnitType, GameContext};
+use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, input::InputEvent, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::map_component::MapComponent, resources::resources::Resources, world::{date::Duration, unit::UnitType}, GameContext};
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 
@@ -28,14 +28,14 @@ impl WorldGenScene {
         return scene
     }
 
-    pub(crate) fn continue_simulation(mut world: World, resources: &Resources) -> WorldGenScene {
+    pub(crate) fn continue_simulation(mut world: World) -> WorldGenScene {
         world.generation_parameters.history_length = world.generation_parameters.history_length + 50;
 
         let spritesheet = ImageReader::open("assets/sprites/banner.png").unwrap().decode().unwrap();
         let settings = TextureSettings::new().filter(Filter::Nearest);
 
         let mut scene = WorldGenScene {
-            generator: WorldHistoryGenerator::simulator(world, resources),
+            generator: WorldHistoryGenerator::simulator(world),
             map: MapComponent::new(),
             banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
         };
@@ -72,7 +72,7 @@ impl Scene for WorldGenScene {
         let mut assets = assets();
         let font= assets.font_standard();
         ctx.texture(&self.banner_texture, ctx.at(center - 64., 0.));
-        let text = format!("Year {}", &self.generator.world.date.year().to_string());
+        let text = self.generator.world.date_desc(&self.generator.world.date);
         let text_width = font.width(&text);
         ctx.text(&text, font, [(center - text_width / 2.).round() as i32, 16], &COLOR_WHITE);
         let text = "Press <enter> to start playing";
@@ -86,7 +86,9 @@ impl Scene for WorldGenScene {
         }
         let start = Instant::now();
         loop {
-            self.generator.simulate_year();
+            // TODO(CF3fkX3): Too small and everything dies
+            
+            self.generator.simulate_step(Duration::months(3));
             // Simulate years until reach the max time per iteration, otherwise it takes longer than it needs
             if start.elapsed().as_secs_f64() >= _update.max_update_time {
                 break;

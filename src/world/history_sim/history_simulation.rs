@@ -1,40 +1,37 @@
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::Resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::WorldDate, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::{Duration, WorldDate}, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
 pub(crate) struct HistorySimulation {
-    generation_params: WorldGenerationParameters,
     pub(crate) rng: Rng,
-    pub(crate) resources: Resources,
     storyteller: Storyteller,
 }
 
 impl HistorySimulation {
-    pub(crate) fn new(rng: Rng, resources: Resources, generation_params: WorldGenerationParameters) -> Self {
+    pub(crate) fn new(rng: Rng, generation_params: WorldGenerationParameters) -> Self {
         HistorySimulation {
-            generation_params: generation_params.clone(),
             rng,
-            resources,
             storyteller: Storyteller::new(generation_params)
         }
     }
 
     pub(crate) fn seed(&mut self, world: &mut World) {
-        for _ in 0..self.generation_params.number_of_seed_cities {
-            let _err = world_ops::spawn_random_village(world, &mut self.rng, &self.resources, self.generation_params.seed_cities_population as u32);
+        for _ in 0..world.generation_parameters.number_of_seed_cities {
+            let _err = world_ops::spawn_random_village(world, &mut self.rng, &resources(), world.generation_parameters.seed_cities_population as u32);
         }
     }
 
-    pub(crate) fn simulate_step(&mut self, step: WorldDate, world: &mut World) -> bool {
+    pub(crate) fn simulate_step(&mut self, step: Duration, world: &mut World) -> bool {
+        let resources = resources();
         world.date = world.date + step;
 
-        let chances = self.storyteller.global_chances(&mut self.rng, &world);
+        let chances = self.storyteller.global_chances(&mut self.rng, &world, &step);
 
         if self.rng.rand_chance(chances.spawn_varningr) {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
-                let species = self.resources.species.id_of("species:varningr");
+                let species = resources.species.id_of("species:varningr");
                 let mut factory = CreatureFactory::new(self.rng.derive("creature"));
                 let creature = factory.make_single(species, 3, SIM_FLAG_GREAT_BEAST, world);
                 let unit = Unit {
@@ -55,7 +52,7 @@ impl HistorySimulation {
             let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
-                let species = self.resources.species.id_of("species:wolf");
+                let species = resources.species.id_of("species:wolf");
                 let mut factory = CreatureFactory::new(self.rng.derive("creature"));
                 let creatures = vec!(
                     factory.make_single(species, 1, 0, world),
@@ -77,7 +74,7 @@ impl HistorySimulation {
             }
         }
         if self.rng.rand_chance(chances.spawn_village) {
-            let _err = world_ops::spawn_random_village(world, &mut self.rng, &self.resources, self.generation_params.st_village_population as u32);
+            let _err = world_ops::spawn_random_village(world, &mut self.rng, &resources, world.generation_parameters.st_village_population as u32);
         }
 
         // Check plot completion
@@ -99,9 +96,9 @@ impl HistorySimulation {
         return creatures > 0;
     }
 
-    fn simulate_step_unit(&mut self, world: &mut World, step: &WorldDate, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) {
+    fn simulate_step_unit(&mut self, world: &mut World, step: &Duration, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) {
 
-        let chances = self.storyteller.story_teller_unit_chances(unit_id, &world);
+        let chances = self.storyteller.story_teller_unit_chances(unit_id, &world, &step);
 
         let mut unit = world.units.get_mut(unit_id);
         let mut side_effects = Vec::new();
@@ -181,7 +178,7 @@ impl HistorySimulation {
                 CreatureSideEffect::LookForNewJob => {
                     change_job_pool.push(creature_id);
                 },
-                CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng, &mut self.resources),
+                CreatureSideEffect::MakeArtifact => Self::make_artifact(&creature_id, None, unit_id, world, &mut rng),
                 CreatureSideEffect::BecomeBandit => {
                     // Removes creature from unit
                     let unit = world.units.get(unit_id);
@@ -320,7 +317,7 @@ impl HistorySimulation {
         }
     }
 
-    fn make_artifact(artisan_id: &CreatureId, comissioneer_id: Option<&CreatureId>, unit_id: &UnitId, world: &mut World, rng: &mut Rng, resources: &mut Resources) {
+    fn make_artifact(artisan_id: &CreatureId, comissioneer_id: Option<&CreatureId>, unit_id: &UnitId, world: &mut World, rng: &mut Rng) {
         let mut artisan = world.creatures.get_mut(artisan_id);
         let mut unit = world.units.get_mut(unit_id);
         let item = match artisan.profession {
@@ -339,7 +336,7 @@ impl HistorySimulation {
                     quality = ItemQuality::Legendary
                 }
 
-                let item = ItemFactory::weapon(rng, resources)
+                let item = ItemFactory::weapon(rng, &resources())
                     .quality(quality)
                     .material_pool(unit.settlement.as_mut().and_then(|sett| Some(&mut sett.material_stock)))
                     .named()
@@ -348,7 +345,7 @@ impl HistorySimulation {
             },
             Profession::Sculptor => {
                 if let Some(comissioneer_id) = comissioneer_id {
-                    Some(ArtifactFactory::create_statue(rng, resources, *comissioneer_id, &world))
+                    Some(ArtifactFactory::create_statue(rng, &resources(), *comissioneer_id, &world))
                 } else {
                     None
                 }

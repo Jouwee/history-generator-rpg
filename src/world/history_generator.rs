@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::WorldDate, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
+use crate::{commons::rng::Rng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::Duration, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
 
 use super::world::World;
 
@@ -58,7 +58,7 @@ impl WorldHistoryGenerator {
 
         let mut world = World::new(world_map, parameters.clone());
 
-        let mut history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters.clone());
+        let mut history_sim = HistorySimulation::new(rng.derive("history"), parameters.clone());
         history_sim.seed(&mut world);
 
 
@@ -72,12 +72,12 @@ impl WorldHistoryGenerator {
         return generator;
     }
 
-    pub(crate) fn simulator(world: World, resources: &Resources) -> WorldHistoryGenerator {
+    pub(crate) fn simulator(world: World) -> WorldHistoryGenerator {
         let parameters = world.generation_parameters.clone();
 
         let rng = Rng::seeded(parameters.seed);
 
-        let history_sim = HistorySimulation::new(rng.derive("history"), resources.clone(), parameters.clone());
+        let history_sim = HistorySimulation::new(rng.derive("history"), parameters.clone());
 
         let generator = WorldHistoryGenerator {
             parameters,
@@ -89,8 +89,8 @@ impl WorldHistoryGenerator {
         return generator;
     }
 
-    pub(crate) fn simulate_year(&mut self) {
-        self.stop = !self.history_sim.simulate_step(WorldDate::new(1, 0, 0), &mut self.world);
+    pub(crate) fn simulate_step(&mut self, step: Duration) {
+        self.stop = !self.history_sim.simulate_step(step, &mut self.world);
     }
 
 }

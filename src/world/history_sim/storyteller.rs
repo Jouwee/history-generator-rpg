@@ -1,4 +1,4 @@
-use crate::{commons::{interpolate::lerp, rng::Rng}, world::{history_generator::WorldGenerationParameters, unit::{UnitId, UnitType}, world::World}};
+use crate::{commons::{interpolate::lerp, rng::Rng}, world::{date::Duration, history_generator::WorldGenerationParameters, unit::{UnitId, UnitType}, world::World}};
 
 pub(crate) struct Storyteller {
     params: WorldGenerationParameters,
@@ -14,7 +14,7 @@ impl Storyteller {
         }
     }
 
-    pub(crate) fn global_chances(&mut self, rng: &mut Rng, world: &World) -> GlobalChances {
+    pub(crate) fn global_chances(&mut self, rng: &mut Rng, world: &World, delta_time: &Duration) -> GlobalChances {
         let mut chances = BASE_GLOBAL_CHANCES.clone();
 
         // Check city count, village count, and maybe promote village to city
@@ -42,10 +42,11 @@ impl Storyteller {
             chances.spawn_village *= 2.;
         }
 
-        return lerp_global_chances(&BASE_GLOBAL_CHANCES, &chances, self.params.st_strength)
+        let factor = delta_time.percentage_of_year();
+        return lerp_global_chances(&BASE_GLOBAL_CHANCES, &chances, self.params.st_strength).scale(factor)
     }
 
-    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, world: &World) -> UnitChances {
+    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, world: &World, delta_time: &Duration) -> UnitChances {
         let mut chances = BASE_UNIT_CHANCES.clone();
         
         let unit = world.units.get(unit_id);
@@ -85,29 +86,75 @@ impl Storyteller {
             }
         }
 
-        return lerp_unit_chances(&BASE_UNIT_CHANCES, &chances, self.params.st_strength)
+        let factor = delta_time.percentage_of_year();
+        return lerp_unit_chances(&BASE_UNIT_CHANCES, &chances, self.params.st_strength).scale(factor)
     }
 
 }
 
 #[derive(Clone)]
 pub(crate) struct UnitChances {
+    /// Just a base multiplier to be used in more complex rules
+    pub(crate) base_multiplier: f32,
     pub(crate) disease_death: f32,
     pub(crate) leave_for_bandits: f32,
-    pub(crate) have_child: f32
+    pub(crate) have_child: f32,
+    /// Look for a marriage candidate
+    pub(crate) marry: f32,
+    /// Look for a new job
+    pub(crate) change_job: f32,
+    /// Be inspired and make an artifac
+    pub(crate) make_inspired_artifact: f32,
+    /// Chance that a creature with a plottable goal will start a plot
+    pub(crate) start_plot: f32,
+    /// Chance that a creature will work on an active plot
+    pub(crate) work_on_plot: f32,
+    /// Chance that a great beast will attack a nearby settlement
+    pub(crate) great_beast_hunt: f32,
+}
+
+impl UnitChances {
+    fn scale(&self, factor: f32) -> Self {
+        Self {
+            base_multiplier: self.base_multiplier * factor,
+            disease_death: self.disease_death * factor,
+            leave_for_bandits: self.leave_for_bandits * factor,
+            have_child: self.have_child * factor,
+            marry: self.marry * factor,
+            change_job: self.change_job * factor,
+            make_inspired_artifact: self.make_inspired_artifact * factor,
+            start_plot: self.start_plot * factor,
+            work_on_plot: self.work_on_plot * factor,
+            great_beast_hunt: self.great_beast_hunt * factor,
+        }
+    }
 }
 
 const BASE_UNIT_CHANCES: UnitChances = UnitChances {
+    base_multiplier: 1.,
     disease_death: 0.0015,
     have_child: 0.6,
-    leave_for_bandits: 0.001
+    marry: 0.8,
+    leave_for_bandits: 0.001,
+    change_job: 0.005,
+    make_inspired_artifact: 0.005,
+    start_plot: 0.3,
+    work_on_plot: 0.9,
+    great_beast_hunt: 0.01
 };
 
 fn lerp_unit_chances(a: &UnitChances, b: &UnitChances, strength: f32) -> UnitChances {
     UnitChances {
+        base_multiplier: lerp(a.base_multiplier as f64, b.base_multiplier as f64, strength as f64) as f32,
         disease_death: lerp(a.disease_death as f64, b.disease_death as f64, strength as f64) as f32,
         have_child: lerp(a.have_child as f64, b.have_child as f64, strength as f64) as f32,
+        marry: lerp(a.marry as f64, b.marry as f64, strength as f64) as f32,
+        change_job: lerp(a.change_job as f64, b.change_job as f64, strength as f64) as f32,
+        make_inspired_artifact: lerp(a.make_inspired_artifact as f64, b.make_inspired_artifact as f64, strength as f64) as f32,
         leave_for_bandits: lerp(a.leave_for_bandits as f64, b.leave_for_bandits as f64, strength as f64) as f32,
+        start_plot: lerp(a.start_plot as f64, b.start_plot as f64, strength as f64) as f32,
+        work_on_plot: lerp(a.work_on_plot as f64, b.work_on_plot as f64, strength as f64) as f32,
+        great_beast_hunt: lerp(a.great_beast_hunt as f64, b.great_beast_hunt as f64, strength as f64) as f32,
     }
 }
 
@@ -117,6 +164,16 @@ pub(crate) struct GlobalChances {
     pub(crate) spawn_varningr: f32,
     pub(crate) spawn_wolf_pack: f32,
     pub(crate) spawn_village: f32,
+}
+
+impl GlobalChances {
+    fn scale(&self, factor: f32) -> Self {
+        Self {
+            spawn_varningr: self.spawn_varningr * factor,
+            spawn_wolf_pack: self.spawn_wolf_pack * factor,
+            spawn_village: self.spawn_village * factor
+        }
+    }
 }
 
 const BASE_GLOBAL_CHANCES: GlobalChances = GlobalChances {

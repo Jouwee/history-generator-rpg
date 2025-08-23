@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, state::GameState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::world::World, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, state::GameState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, history_sim::history_simulation::{HistorySimulation}, world::World}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -184,6 +184,20 @@ impl Console {
                     }
                 }
                 return Result::Ok(format!("All in-progress quests completed"));
+            },
+            Some("/skip") => {
+
+                let days = parts.next().ok_or("Param 1 should be the the number of days")?;
+                let days: i32 = days.parse().or(Err("Param 1 should be a number"))?;
+
+                // TODO(WCF3fkX3): Store in the world?
+                let rng = Rng::rand();
+
+                let mut history_simulation = HistorySimulation::new(rng, world.generation_parameters.clone());
+                let step = Duration::days(days);
+                history_simulation.simulate_step(step, world);
+
+                return Result::Ok(format!("Days simulated"));
             },
             
             Some(cmd) => return Result::Err(format!("Command {} not found", cmd))

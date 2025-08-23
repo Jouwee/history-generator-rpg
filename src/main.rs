@@ -370,7 +370,7 @@ fn main() {
                 },
                 BusEvent::CreateNewCharacter => {
                     if let SceneEnum::Game(state) = app.scene {
-                        app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.world, &app.context.resources));
+                        app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.world));
                     }
                 },
                 _ => ()

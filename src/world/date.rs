@@ -32,10 +32,10 @@ impl WorldDate {
 
 }
 
-impl Add for WorldDate {
+impl Add<Duration> for WorldDate {
     type Output = WorldDate;
     
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: Duration) -> Self::Output {
         return WorldDate {
             timestamp: self.timestamp + rhs.timestamp
         }
@@ -54,6 +54,27 @@ impl Sub for WorldDate {
 
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub(crate) struct Duration {
+    /// Timestamp - Number of days
+    timestamp: i32,
+}
+
+impl Duration {
+    pub(crate) fn days(days: i32) -> Self {
+        return Self { timestamp: days }
+    }
+
+    pub(crate) fn months(months: i32) -> Self {
+        return Self { timestamp: months * DAYS_IN_MONTH }
+    }
+
+    pub(crate) fn percentage_of_year(&self) -> f32 {
+        return self.timestamp as f32 / DAYS_IN_YEAR as f32
+    }
+
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,10 +89,16 @@ mod tests {
 
     #[test]
     pub(crate) fn add() {
-        let date = WorldDate::new(200, 3, 17) + WorldDate::new(1, 2, 21);
-        assert_eq!(date.year(), 201);
-        assert_eq!(date.month(), 6);
-        assert_eq!(date.day(), 10);
+        let date = WorldDate::new(200, 3, 17) + Duration::days(3);
+        assert_eq!(date.year(), 200);
+        assert_eq!(date.month(), 3);
+        assert_eq!(date.day(), 20);
+
+        let date = WorldDate::new(9, 12, 28) + Duration::days(1);
+        assert_eq!(date.year(), 10);
+        assert_eq!(date.month(), 1);
+        assert_eq!(date.day(), 1);
+
     }
 
 }

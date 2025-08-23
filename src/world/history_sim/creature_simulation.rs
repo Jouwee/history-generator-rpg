@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::WorldDate, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
+use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -19,14 +19,10 @@ pub(crate) enum CreatureSideEffect {
     ExecutePlot,
 }
 
-const YEARLY_CHANCE_MARRY: f32 = 0.8;
-const CHANCE_NEW_JOB: f32 = 0.005;
-const CHANCE_MAKE_INSPIRED_ARTIFACT: f32 = 0.005;
-
 impl CreatureSimulation {
 
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &WorldDate, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
@@ -34,7 +30,7 @@ impl CreatureSimulation {
         }
 
         if creature.sim_flag_is_great_beast() {
-            if rng.rand_chance(YEARLY_CHANCE_BEAST_HUNT) {
+            if rng.rand_chance(chances.great_beast_hunt) {
                 return CreatureSideEffect::AttackNearbyUnits;
             }
         }
@@ -47,18 +43,19 @@ impl CreatureSimulation {
                     for goal in creature.goals.iter() {
                         let plot = goal.as_plot_goal();
                         if let Some(plot) = plot {
-                            // TODO(IhlgIYVA): Magic number
-                            if rng.rand_chance(0.3) {
+                            if rng.rand_chance(chances.start_plot) {
                                 return CreatureSideEffect::StartPlot(plot);
                             }
                         }
                     }
                 },
                 Some(plot) => {
-                    if rng.rand_chance(1. - plot.success_chance()) {
-                        return CreatureSideEffect::FindSupportersForPlot;
-                    } else {
-                        return CreatureSideEffect::ExecutePlot;
+                    if rng.rand_chance(chances.work_on_plot) {
+                        if rng.rand_chance(1. - plot.success_chance()) {
+                            return CreatureSideEffect::FindSupportersForPlot;
+                        } else {
+                            return CreatureSideEffect::ExecutePlot;
+                        }
                     }
                     
                 }
@@ -76,17 +73,17 @@ impl CreatureSimulation {
                 }
                 // Find a spouse
                 if creature.spouse.is_none() {
-                    if rng.rand_chance(YEARLY_CHANCE_MARRY) {
+                    if rng.rand_chance(chances.marry) {
                         return CreatureSideEffect::LookForMarriage;
                     }
                 }
 
                 // Look for new job
                 if !creature.profession.is_for_life() {
-                    if rng.rand_chance(CHANCE_NEW_JOB) {
+                    if rng.rand_chance(chances.change_job) {
                         return CreatureSideEffect::LookForNewJob;
                     }
-                    if rng.rand_chance(chances.disease_death) {
+                    if rng.rand_chance(chances.leave_for_bandits) {
                         return CreatureSideEffect::BecomeBandit;
                     }
                 }
@@ -96,14 +93,14 @@ impl CreatureSimulation {
 
         if age >= 40 {
             // Death of old age
-            if rng.rand_chance(Self::chance_of_death_by_old_age(age as f32)) {
+            if rng.rand_chance(chances.base_multiplier * Self::chance_of_death_by_old_age(age as f32)) {
                 return CreatureSideEffect::Death(CauseOfDeath::OldAge);
             }
         }
 
         match creature.profession {
             Profession::Blacksmith | Profession::Sculptor => {
-                if rng.rand_chance(CHANCE_MAKE_INSPIRED_ARTIFACT) {
+                if rng.rand_chance(chances.make_inspired_artifact) {
                     return CreatureSideEffect::MakeArtifact;
                 }
             },
@@ -128,10 +125,7 @@ impl CreatureSimulation {
         if let Some(father_id) = father_id {
             let father = world.creatures.get(&father_id);
             let lineage = father.lineage.clone();
-            let mut gender = CreatureGender::Male;
-            if rng.rand_chance(0.5) {
-                gender = CreatureGender::Female;
-            }
+            let gender = CreatureGender::random_det(rng);
             let child = Creature {
                 birth: now.clone(),
                 death: None,
@@ -159,7 +153,6 @@ impl CreatureSimulation {
 
 // Legendary beasts
 
-const YEARLY_CHANCE_BEAST_HUNT: f32 = 0.01;
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
 pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {

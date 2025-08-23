@@ -340,6 +340,11 @@ impl Scene for GameSceneState {
         image(&vignette.texture, ctx.context.transform.scale(ctx.camera_rect[2] / vignette.size.0 as f64, ctx.camera_rect[3] / vignette.size.1 as f64), ctx.gl);
 
         // UI
+
+        // TODO(WCF3fkX3): Make better UI
+        let date = self.world.date_desc(&self.world.date);
+        ctx.text_shadow(&date, assets().font_standard(), [ctx.layout_rect[2] as i32 - 100, 16], &COLOR_WHITE);
+
         self.hotbar.render(&self.state.player, ctx, game_ctx);
         self.hud.render(self.state.player(), ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
