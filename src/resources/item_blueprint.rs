@@ -111,7 +111,7 @@ impl QualityBlueprintComponent {
         if let Some(quality) = selected_quality {
             return QualityComponent { quality }
         } else {
-            panic!("No primary material specified")
+            panic!("No quality specified")
         }
     }
 
@@ -206,7 +206,7 @@ impl ArtworkSceneBlueprintComponent {
         if let Some(scene) = selected_scene {
             return ArtworkSceneComponent { scene }
         } else {
-            panic!("No primary material specified")
+            panic!("No artwork specified")
         }
     }
 

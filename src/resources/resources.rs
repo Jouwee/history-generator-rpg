@@ -864,6 +864,29 @@ impl Resources {
         };
         self.item_blueprints.add("itb:crown", shirt_blueprint);
 
+        let image = ImageReader::open("./assets/sprites/species/human/kettlehat_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/species/human/kettlehat.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("kettle hat"),
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { slot: EquipmentType::Head }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: None,
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(4, 4, 4), coverage: vec!(BodyPart::Head) }),
+            artwork_scene: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:kettlehat", shirt_blueprint);
+
         let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/species/human/spell_tome_firebolt.png").unwrap().decode().unwrap();
