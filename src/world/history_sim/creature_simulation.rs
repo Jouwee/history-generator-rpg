@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
+use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -17,12 +17,13 @@ pub(crate) enum CreatureSideEffect {
     StartPlot(PlotGoal),
     FindSupportersForPlot,
     ExecutePlot,
+    MoveOutToNewHouse,
 }
 
 impl CreatureSimulation {
 
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
@@ -65,6 +66,16 @@ impl CreatureSimulation {
                 return CreatureSideEffect::LookForNewJob;
             }
             if age >= 18 {
+
+                // TODO: Not leader
+                // TODO: Slow
+                let home = unit.structure_occupied_by(creature_id);
+                if let Some(home) = home {
+                    if home.occupant_count() > 5 {
+                        return CreatureSideEffect::MoveOutToNewHouse;
+                    }
+                }
+
                 // Have child
                 if creature.gender.is_female() && creature.spouse.is_some()  {
                     if rng.rand_chance(Self::chance_of_child(now, creature, chances)) {
@@ -83,7 +94,7 @@ impl CreatureSimulation {
                     if rng.rand_chance(chances.change_job) {
                         return CreatureSideEffect::LookForNewJob;
                     }
-                    if rng.rand_chance(chances.leave_for_bandits) {
+                    if creature.spouse.is_none() && rng.rand_chance(chances.leave_for_bandits) {
                         return CreatureSideEffect::BecomeBandit;
                     }
                 }
@@ -120,39 +131,9 @@ impl CreatureSimulation {
         return ((age - 40.) / 60.).clamp(0., 1.)
     }
 
-    pub(crate) fn have_child_with_spouse(now: &WorldDate, world: &World, rng: &mut Rng, creature_id: &CreatureId, creature: &mut Creature) -> Option<Creature> {
-        let father_id = creature.spouse;
-        if let Some(father_id) = father_id {
-            let father = world.creatures.get(&father_id);
-            let lineage = father.lineage.clone();
-            let gender = CreatureGender::random_det(rng);
-            let child = Creature {
-                birth: now.clone(),
-                death: None,
-                profession: Profession::None,
-                lineage,
-                mother: *creature_id,
-                father: father_id,
-                gender,
-                offspring: Vec::new(),
-                species: creature.species,
-                spouse: None,
-                details: None,
-                experience: 0,
-                sim_flags: father.sim_flags,
-                relationships: vec!(),
-                goals: vec!(),
-                supports_plot: None,
-            };
-            return Some(child)
-        }
-        return None
-    }
-
 }
 
 // Legendary beasts
-
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
 pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {

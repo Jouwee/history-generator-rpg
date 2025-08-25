@@ -20,17 +20,25 @@ pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: 
         }),
         artifacts: Vec::new(),
         population_peak: (0, 0),
-        unit_type: UnitType::Village
+        unit_type: UnitType::Village,
+        structures: Vec::new()
     };
+
+    unit.structures.push(Structure::new(StructureType::TownHall));
 
     while unit.creatures.len() < population as usize {
         
         let mut factory = CreatureFactory::new(rng.clone());
         let date = world.date.clone();
         let family = factory.make_family_or_single(&date, resources.species.id_of("species:human"), world, &resources);
+        let mut structure = Structure::new(StructureType::House);
         for creature_id in family {
             unit.creatures.push(creature_id);
+            structure.add_ocuppant(creature_id);
         }
+
+        unit.structures.push(structure);
+
         rng.next();
 
     }

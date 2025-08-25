@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, unit::{UnitId, UnitType}}, Event, Resources};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, unit::{Structure, StructureStatus, StructureType, UnitId, UnitType}}, Event, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
 
@@ -294,7 +294,8 @@ pub(crate) mod fixture {
                 resources: UnitResources { food: 0. },
                 settlement: None,
                 unit_type: crate::world::unit::UnitType::Village,
-                xy: Coord2::xy(1, 1)
+                xy: Coord2::xy(1, 1),
+                structures: Vec::new()
             });
 
             return WorldFixture {
@@ -338,6 +339,91 @@ pub(crate) mod fixture {
 
 impl World {
 
+    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, unit_id: &UnitId, rng: &mut Rng) -> Result<(), &'static str> {
+        let mother = self.creatures.get_mut(&mother_id);
+
+        let father_id = mother.spouse.ok_or("Woman with no spouse trying to have a child")?;
+        let father = self.creatures.get(&father_id);
+        let lineage = father.lineage.clone();
+        let gender = CreatureGender::random_det(rng);
+        let child = Creature {
+            birth: self.date.clone(),
+            death: None,
+            profession: Profession::None,
+            lineage,
+            mother: mother_id,
+            father: father_id,
+            gender,
+            offspring: Vec::new(),
+            species: mother.species,
+            spouse: None,
+            details: None,
+            experience: 0,
+            sim_flags: father.sim_flags,
+            relationships: vec!(),
+            goals: vec!(),
+            supports_plot: None,
+        };
+
+        drop(mother);
+        drop(father);
+        let child_id = self.creatures.add(child);
+        let mut unit = self.units.get_mut(unit_id);
+        unit.creatures.push(child_id);
+
+        let structure = unit.structure_occupied_by_mut(&mother_id).ok_or("Mother had child without a house")?;
+        structure.add_ocuppant(child_id);
+
+        drop(unit);
+        self.record_event(Event::CreatureBirth { date: self.date.clone(), creature_id: child_id });
+        {
+            let mut father = self.creatures.get_mut(&father_id);
+            father.offspring.push(child_id);
+        }
+        {
+            let mut mother = self.creatures.get_mut(&mother_id);
+            mother.offspring.push(child_id);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn creature_start_new_home_same_unit(&mut self, creature_id: CreatureId, unit_id: &UnitId) -> Result<(), &'static str> {
+        let mut unit = self.units.get_mut(unit_id);
+        let creature = self.creatures.get(unit_id);
+        let current_home = unit.structure_occupied_by_mut(&creature_id).ok_or("Homeless creature trying to start new home")?;
+
+        // Spouse and children
+        let family = current_home.occupants_drain(|id| {
+            if id == &creature_id {
+                return true;
+            }
+            if let Some(spouse) = creature.spouse {
+                if id == &spouse {
+                    return true;
+                }
+            }
+            return creature.offspring.contains(id);
+        });
+
+        // Moves into existing house
+        for structure in unit.structures.iter_mut() {
+            if structure.get_type() == &StructureType::House && structure.get_status() == &StructureStatus::Abandoned {
+                for id in family {
+                    structure.add_ocuppant(id);
+                }
+                return Ok(());
+            }
+        }
+
+        // Start new house
+        let mut structure = Structure::new(StructureType::House);
+        for creature_id in family {
+            structure.add_ocuppant(creature_id);
+        }
+        unit.structures.push(structure);
+        return Ok(())
+    }
+
     pub(crate) fn creature_kill_creature(&mut self, killed_id: CreatureId, killed_unit: UnitId, killer_id: CreatureId, killed_with: Option<ItemId>, death_unit: UnitId) {
         self.kill_creature(killed_id, killed_unit, death_unit, CauseOfDeath::KilledInBattle(killer_id, killed_with));
     }
@@ -357,8 +443,7 @@ impl World {
                 spouse.spouse = None;
             }
             let mut unit = self.units.get_mut(&unit_from_id);
-            let i = unit.creatures.iter().position(|id| *id == creature_id).unwrap();
-            let id = unit.creatures.remove(i);
+            unit.remove_creature(&creature_id);
 
             if let Some(plot_id) = creature.supports_plot {
                 let mut plot = self.plots.get_mut(&plot_id);
@@ -367,7 +452,7 @@ impl World {
 
             // Else, the body is lost
             if died_home {
-                unit.cemetery.push(id);
+                unit.cemetery.push(creature_id);
             } else {
                 let mut death_unit = self.units.get_mut(&unit_death_id);
                 if let Some(settlement) = &mut death_unit.settlement {
@@ -469,7 +554,7 @@ impl World {
         }
         drop(current);
 
-        history_trace!("transfer_inventory {:?}", current_id, new_owner_id);
+        history_trace!("transfer_inventory {:?} {:?}", current_id, new_owner_id);
 
         for item in inventory.iter() {
             self.record_event(Event::InheritedArtifact { date: self.date.clone(), creature_id: new_owner_id, from: current_id, item: *item });
@@ -489,6 +574,39 @@ impl World {
         }
 
         // TODO(NJ5nTVIV): Add to death unit
+    }
+
+    // Units
+
+    pub(crate) fn unit_change_leader(&mut self, unit_id: &UnitId, new_leader: CreatureId) -> Result<(), &'static str> {
+        {
+            let mut leader = self.creatures.get_mut(&new_leader);
+            leader.profession = Profession::Ruler;
+        }
+        {
+            let mut unit = self.units.get_mut(unit_id);
+            unit.settlement.as_mut().ok_or("No election should be held with no settlement")?.leader = Some(new_leader);
+
+            // Swaps the house to the townhall
+            let move_into_townhall = unit.structure_occupied_by(&new_leader).ok_or("Homeless leader")?.get_type() == &StructureType::House;
+            if move_into_townhall {
+                let townhall = unit.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
+                let townhall_occupants = townhall.occupants_take();
+
+                let house = unit.structure_occupied_by_mut(&new_leader).ok_or("Homeless leader")?;
+                let house_occupants = house.occupants_take();
+                for id in townhall_occupants {
+                    house.add_ocuppant(id);
+                }
+
+                let townhall = unit.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
+                for id in house_occupants {
+                    townhall.add_ocuppant(id);
+                }
+            }
+        }
+        self.record_event(Event::NewLeaderElected { date: self.date.clone(), unit_id: *unit_id, creature_id: new_leader });
+        return Ok(())
     }
 
     // Events

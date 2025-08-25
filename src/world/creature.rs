@@ -301,7 +301,6 @@ mod tests_relationship {
         let relationship = Relationship::new(&world.creature_a3, &world.creature_a3(), world.creature_a4, &world.creature_a4());
         assert_eq!(relationship.opinion, 50);
 
-
     }
 
     #[test]

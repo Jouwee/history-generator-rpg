@@ -44,6 +44,9 @@ impl<'a> ChunkGenerator<'a> {
         for unit in world.units.iter() {
             let unit = unit.borrow();
             if unit.xy == self.chunk.coord.xy {
+
+                dbg!(&unit.structures);
+
                 found_unit = Some(unit)
             }
         }
