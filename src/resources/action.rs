@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::ImageSheetAsset, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext, SPRITE_FPS};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ pub(crate) struct Action {
     pub(crate) cast_sprite: Option<(ImageSheetAsset, f32)>,
     pub(crate) cast_sfx: Option<SoundEffect>,
     pub(crate) projectile: Option<ActionProjectile>,
-    pub(crate) impact_sprite: Option<(ImageSheetAsset, f32, ImpactPosition, bool)>,
+    pub(crate) impact_sprite: Option<(ImageSheetAsset, ImpactPosition, bool)>,
     pub(crate) impact_sfx: Option<SoundEffect>,
     pub(crate) damage_sfx: Option<SoundEffect>,
 }
@@ -342,8 +342,8 @@ impl ActionRunner {
 
         if let Some(cast) = &action.cast_sprite {
             steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
-            // TODO(BkWAJozA): Compute wait. Can't do because of borrow issues
-            steps.push_back(RunningActionStep::Wait(0.2))
+            let sheet = assets().image_sheet(&cast.0.path, cast.0.tile_size.clone());
+            steps.push_back(RunningActionStep::Wait(sheet.len() as f64 * SPRITE_FPS))
         }
 
         let impact_points = |position| {
@@ -388,13 +388,13 @@ impl ActionRunner {
         }
         if let Some(impact) = &action.impact_sprite {
 
-            for point in impact_points(impact.2.clone()) {
+            for point in impact_points(impact.1.clone()) {
                 steps.push_back(RunningActionStep::Sprite(impact.0.clone(), point))
             }
 
-            if impact.3 {
-                // TODO(BkWAJozA): Compute wait. Can't do because of borrow issues
-                steps.push_back(RunningActionStep::Wait(impact.1 as f64));
+            if impact.2 {
+                let sheet = assets().image_sheet(&impact.0.path, impact.0.tile_size.clone());
+                steps.push_back(RunningActionStep::Wait(sheet.len() as f64 * SPRITE_FPS))
             }
         }
 

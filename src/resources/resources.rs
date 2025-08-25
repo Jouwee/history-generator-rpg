@@ -231,7 +231,7 @@ impl Resources {
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), 0.5, ImpactPosition::EachTarget, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), ImpactPosition::EachTarget, false)),
             impact_sfx: None,
             damage_sfx: Some(SoundEffect::new(vec!("sfx/damage_flesh_1.mp3", "sfx/damage_flesh_2.mp3", "sfx/damage_flesh_3.mp3"))),
         });
@@ -251,7 +251,7 @@ impl Resources {
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), 0.5, ImpactPosition::EachTarget, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/bite.png", Size2D(24, 24)), ImpactPosition::EachTarget, false)),
             impact_sfx: None,
             damage_sfx: Some(SoundEffect::new(vec!("sfx/damage_flesh_1.mp3", "sfx/damage_flesh_2.mp3", "sfx/damage_flesh_3.mp3"))),
         });
@@ -272,7 +272,7 @@ impl Resources {
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/shockwave.png", Size2D(72, 72)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/shockwave.png", Size2D(72, 72)), ImpactPosition::Cursor, false)),
             impact_sfx: None,
             damage_sfx: None
         });
@@ -294,7 +294,7 @@ impl Resources {
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::EachTarget, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
-            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), 0.5, ImpactPosition::EachTarget, false)),
+            impact_sprite: Some((ImageSheetAsset::new("projectiles/explosion.png", Size2D(64, 64)), ImpactPosition::EachTarget, false)),
             impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav"))),
             damage_sfx: None
         });
@@ -315,7 +315,7 @@ impl Resources {
             ),
             cast_sprite: Some((ImageSheetAsset::new("projectiles/cast_fire.png", Size2D(16, 16)), 0.1)),
             projectile: Some(ActionProjectile { wait: true, position: ImpactPosition::Cursor, projectile_type: SpellProjectileType::Projectile { sprite: ImageSheetAsset::new("projectiles/firebolt.png", Size2D(16, 8)), speed: 20. } }),
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/explosion_big.png", Size2D(128, 128)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/explosion_big.png", Size2D(128, 128)), ImpactPosition::Cursor, false)),
             impact_sfx: Some(SoundEffect::new(vec!("sfx/fire_explosion.wav"))),
             damage_sfx: None
         });
@@ -336,7 +336,7 @@ impl Resources {
             ),
             cast_sprite: None,
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/rock_pillar_spawn.png", Size2D(24, 32)), 0.5, ImpactPosition::EachTile, true)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/rock_pillar_spawn.png", Size2D(24, 32)), ImpactPosition::EachTile, true)),
             impact_sfx: None,
             damage_sfx: None
         });
@@ -357,7 +357,7 @@ impl Resources {
             ),
             cast_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_source.png", Size2D(24, 48)), 0.1)),
             projectile: None,
-            impact_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), 0.5, ImpactPosition::Cursor, false)),
+            impact_sprite: Some((ImageSheetAsset::new("visual_effects/teleport_dest.png", Size2D(24, 48)), ImpactPosition::Cursor, false)),
             impact_sfx: None,
             damage_sfx: None
         });
