@@ -1,4 +1,6 @@
-use crate::{commons::strings::Strings, game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
+use text::capitalize;
+
+use crate::{game::{actor::actor::Actor, codex::{Quest, QuestObjective}}, resources::resources::Resources, world::{creature::{CauseOfDeath, CreatureGender, CreatureId, Profession}, date::WorldDate, item::{ArtworkScene, Item}, world::World}};
 
 pub(crate) struct Writer<'a> {
     world: &'a World,
@@ -34,13 +36,13 @@ impl<'a> Writer<'a> {
         };
         let health_pct = actor.hp.health_points() / actor.hp.max_health_points();
         if health_pct > 0.9 {
-            self.add_text(&Strings::capitalize(&format!("{pronoun} seems perfectly healthy.")));
+            self.add_text(&capitalize(&format!("{pronoun} seems perfectly healthy.")));
         } else if health_pct > 0.5 {
-            self.add_text(&Strings::capitalize(&format!("{pronoun} seems slightly hurt.")));
+            self.add_text(&capitalize(&format!("{pronoun} seems slightly hurt.")));
         } else if health_pct > 0.2 {
-            self.add_text(&Strings::capitalize(&format!("{pronoun} seems very hurt.")));
+            self.add_text(&capitalize(&format!("{pronoun} seems very hurt.")));
         } else {
-            self.add_text(&Strings::capitalize(&format!("{pronoun} seems close to death.")));
+            self.add_text(&capitalize(&format!("{pronoun} seems close to death.")));
         }
     }
 

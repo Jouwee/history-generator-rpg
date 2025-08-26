@@ -1,8 +1,9 @@
 use std::usize;
 
 use serde::{Deserialize, Serialize};
+use text::capitalize;
 
-use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, world::plot::{PlotGoal, PlotId}, Resources};
+use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng}, resources::species::SpeciesId, world::plot::{PlotGoal, PlotId}, Resources};
 
 use super::{date::WorldDate, item::ItemId, lineage::LineageId, site::SiteResources, world::World};
 
@@ -71,7 +72,7 @@ impl Creature {
                 CreatureGender::Female => &culture.first_name_female_model,
             };
             let name = name_model.generate(&Rng::seeded(id.as_usize()), 5, 13);
-            return format!("{} {}", Strings::capitalize(&name), Strings::capitalize(&lineage.name));
+            return format!("{} {}", capitalize(&name), capitalize(&lineage.name));
         }
 
         let species = resources.species.get(&self.species);

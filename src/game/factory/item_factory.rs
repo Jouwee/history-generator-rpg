@@ -1,4 +1,6 @@
-use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::{ItemMaker, NameBlueprintComponent}, material::MaterialId, resources::resources}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
+use text::capitalize;
+
+use crate::{commons::{bitmask::bitmask_get, rng::Rng}, resources::{item_blueprint::{ItemMaker, NameBlueprintComponent}, material::MaterialId, resources::resources}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
 
 pub(crate) struct ItemFactory {}
 
@@ -268,7 +270,7 @@ impl<'a> WeaponFactory<'a> {
         ];
         let prefix = preffixes[self.rng.randu_range(0, preffixes.len())];
         let suffix = self.rng.item(&blueprint.suffixes).expect("Namable items should have suffixes");
-        return Strings::capitalize(format!("{prefix}{suffix}").as_str());
+        return capitalize(format!("{prefix}{suffix}").as_str());
     }
 
 }

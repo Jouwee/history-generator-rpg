@@ -1,10 +1,12 @@
-use crate::{commons::{rng::Rng, strings::Strings}, engine::geometry::Coord2, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, site::*, world::World}};
+use text::capitalize;
+
+use crate::{commons::{rng::Rng}, engine::geometry::Coord2, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, site::*, world::World}};
 
 pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: &Resources, population: u32) -> Result<SiteId, ()> {
     let pos = search_new_site_pos(world, rng)?;
 
     let name = resources.cultures.get(&resources.cultures.random()).city_name_model.generate(rng, 3, 10);
-    let name = Strings::capitalize(&name);
+    let name = capitalize(&name);
     let mut site = Site {
         xy: pos,
         creatures: Vec::new(),

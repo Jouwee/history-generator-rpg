@@ -1,3 +1,6 @@
+[workspace]
+members = ["lib/text"]
+
 [package]
 name = "tales_of_kathay"
 version = "0.1.2"
@@ -19,6 +22,7 @@ serde_json = "1.0.142"
 ciborium = "0.2.2"
 fluent = "0.17.0"
 unic-langid = "0.9.6"
+text = { path = "lib/text" }
 
 [profile.release]
 # Stip symbols

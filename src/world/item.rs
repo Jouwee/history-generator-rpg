@@ -3,8 +3,9 @@ use std::{cell::RefCell, collections::HashMap};
 use image::{DynamicImage, RgbaImage};
 use opengl_graphics::{Filter, Texture, TextureSettings};
 use serde::{Deserialize, Serialize};
+use text::capitalize;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec, strings::Strings}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -58,7 +59,7 @@ impl Item {
     }
 
     pub(crate) fn make_tooltip(&self, materials: &Materials) -> Tooltip {
-        let mut tooltip = Tooltip::new(&Strings::capitalize(&self.name(materials)));
+        let mut tooltip = Tooltip::new(&capitalize(&self.name(materials)));
         if let Some(_) = self.mellee_damage {
             tooltip.add_line(TooltipLine::DamageRoll(self.total_damage(materials)));
         }
