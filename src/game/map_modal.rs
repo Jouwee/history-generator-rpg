@@ -31,7 +31,7 @@ impl MapModal {
     pub(crate) fn init(&mut self, world: &World, player_pos: &Coord2) {
         self.map.set_topology(&world.map);
         // TODO:
-        self.map.update_visible_units(world, |id, _unit| world.codex.unit(id).is_some());
+        self.map.update_visible_sites(world, |id, _site| world.codex.site(id).is_some());
 
         self.offset = Vec2::xy(player_pos.x as f32 * 16., player_pos.y as f32 * 16.);
         self.player_pos = player_pos.clone();

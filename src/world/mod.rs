@@ -8,7 +8,7 @@ pub(crate) mod lineage;
 pub(crate) mod main_menu;
 pub(crate) mod plot;
 pub(crate) mod topology;
-pub(crate) mod unit;
+pub(crate) mod site;
 pub(crate) mod world;
 pub(crate) mod worldgen;
 pub(crate) mod history_sim;

@@ -145,10 +145,10 @@ impl<'a> Writer<'a> {
                 let species = self.resources.species.get(&creature.species);
                 self.quote_actor(&format!("A {} has been terrorising us. I want you to go to it's lair and kill it. Here, I marked it on your map.", species.name), actor);
             },
-            QuestObjective::KillBandits(_unit_id) => {
+            QuestObjective::KillBandits(_site_id) => {
                 self.quote_actor(&format!("A group of bandits has been robbing us. I want you to go to their camp and kill them. Here, I marked it on your map."), actor);
             },
-            QuestObjective::KillWolves(_unit_id) => {
+            QuestObjective::KillWolves(_site_id) => {
                 self.quote_actor(&format!("A group of wolves has been harassing our hunters. I want you to go to their den and kill them. Here, I marked it on your map."), actor);
             },
         }

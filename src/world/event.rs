@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{resources::resources::Resources, world::world::World};
 
-use super::{creature::{CauseOfDeath, CreatureId, Profession}, date::WorldDate, item::ItemId, unit::UnitId};
+use super::{creature::{CauseOfDeath, CreatureId, Profession}, date::WorldDate, item::ItemId, site::SiteId};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum Event {
@@ -10,13 +10,13 @@ pub(crate) enum Event {
     CreatureBirth { date: WorldDate, creature_id: CreatureId },
     CreatureMarriage { date: WorldDate, creature_id: CreatureId, spouse_id: CreatureId },
     CreatureProfessionChange { date: WorldDate, creature_id: CreatureId, new_profession: Profession },
-    ArtifactCreated { date: WorldDate, artifact: ItemId, creator: CreatureId, unit_id: UnitId },
+    ArtifactCreated { date: WorldDate, artifact: ItemId, creator: CreatureId, site_id: SiteId },
     InheritedArtifact { date: WorldDate, creature_id: CreatureId, from: CreatureId, item: ItemId },
     BurriedWithPosessions { date: WorldDate, creature_id: CreatureId, items_ids: Vec<ItemId> },
     ArtifactComission { date: WorldDate, creature_id: CreatureId, creator_id: CreatureId, item_id: ItemId },
-    NewLeaderElected { date: WorldDate, unit_id: UnitId, creature_id: CreatureId },
-    JoinBanditCamp { date: WorldDate, creature_id: CreatureId, unit_id: UnitId, new_unit_id: UnitId },
-    CreateBanditCamp { date: WorldDate, creature_id: CreatureId, unit_id: UnitId, new_unit_id: UnitId },
+    NewLeaderElected { date: WorldDate, site_id: SiteId, creature_id: CreatureId },
+    JoinBanditCamp { date: WorldDate, creature_id: CreatureId, site_id: SiteId, new_site_id: SiteId },
+    CreateBanditCamp { date: WorldDate, creature_id: CreatureId, site_id: SiteId, new_site_id: SiteId },
 }
 
 impl Event {
@@ -34,13 +34,13 @@ impl Event {
             Self::CreatureBirth { date: _, creature_id } => vec!(*creature_id),
             Self::CreatureMarriage { date: _, creature_id, spouse_id } => vec!(*creature_id, *spouse_id),
             Self::CreatureProfessionChange { date: _, creature_id, new_profession: _ } => vec!(*creature_id),
-            Self::ArtifactCreated { date: _, artifact: _, creator, unit_id: _ } => vec!(*creator),
+            Self::ArtifactCreated { date: _, artifact: _, creator, site_id: _ } => vec!(*creator),
             Self::InheritedArtifact { date: _, creature_id, from, item: _ } => vec!(*creature_id, *from),
             Self::BurriedWithPosessions { date: _, creature_id, items_ids: _ } => vec!(*creature_id),
             Self::ArtifactComission { date: _, creature_id, creator_id, item_id: _ } => vec!(*creature_id, *creator_id),
-            Self::NewLeaderElected { date: _, unit_id: _, creature_id } => vec!(*creature_id),
-            Self::JoinBanditCamp { date: _, creature_id, unit_id: _, new_unit_id: _ } => vec!(*creature_id),
-            Self::CreateBanditCamp { date: _, creature_id, unit_id: _, new_unit_id: _ } => vec!(*creature_id),
+            Self::NewLeaderElected { date: _, site_id: _, creature_id } => vec!(*creature_id),
+            Self::JoinBanditCamp { date: _, creature_id, site_id: _, new_site_id: _ } => vec!(*creature_id),
+            Self::CreateBanditCamp { date: _, creature_id, site_id: _, new_site_id: _ } => vec!(*creature_id),
         }
     }
 
@@ -59,13 +59,13 @@ impl Event {
             Self::CreatureBirth { date: _, creature_id: _ } => vec!(),
             Self::CreatureMarriage { date: _, creature_id: _, spouse_id: _ } => vec!(),
             Self::CreatureProfessionChange { date: _, creature_id: _, new_profession: _ } => vec!(),
-            Self::ArtifactCreated { date: _, artifact, creator: _, unit_id: _ } => vec!(*artifact),
+            Self::ArtifactCreated { date: _, artifact, creator: _, site_id: _ } => vec!(*artifact),
             Self::InheritedArtifact { date: _, creature_id: _, from: _, item } => vec!(*item),
             Self::BurriedWithPosessions { date: _, creature_id: _, items_ids } => items_ids.clone(),
             Self::ArtifactComission { date: _, creature_id: _, creator_id: _, item_id } => vec!(*item_id),
-            Self::NewLeaderElected { date: _, unit_id: _, creature_id: _ } => vec!(),
-            Self::JoinBanditCamp { date: _, creature_id: _, unit_id: _, new_unit_id: _ } => vec!(),
-            Self::CreateBanditCamp { date: _, creature_id: _, unit_id: _, new_unit_id: _ } => vec!(),
+            Self::NewLeaderElected { date: _, site_id: _, creature_id: _ } => vec!(),
+            Self::JoinBanditCamp { date: _, creature_id: _, site_id: _, new_site_id: _ } => vec!(),
+            Self::CreateBanditCamp { date: _, creature_id: _, site_id: _, new_site_id: _ } => vec!(),
         }
     }
 
@@ -91,10 +91,10 @@ impl Event {
                 let name = world.creature_desc(creature_id, resources);
                 return format!("> {}, {} became a {:?}", world.date_desc(date), name, new_profession);
             },
-            Event::ArtifactCreated { date, artifact, creator, unit_id } => {
+            Event::ArtifactCreated { date, artifact, creator, site_id } => {
                 let name = world.creature_desc(creator, resources);
                 let artifact = world.artifacts.get(artifact);
-                return format!("> {}, {} created {:?} in {:?}", world.date_desc(date), name, artifact.name(&resources.materials), unit_id);
+                return format!("> {}, {} created {:?} in {:?}", world.date_desc(date), name, artifact.name(&resources.materials), site_id);
             },
             Event::BurriedWithPosessions { date, creature_id, items_ids: _ } => {
                 let name = world.creature_desc(creature_id, resources);
@@ -114,17 +114,17 @@ impl Event {
                 let age = (*date - creature.birth).year();
                 return format!("> {}, {} commissioned {} from {} for his {}th birthday", world.date_desc(date), name, artifact.name(&resources.materials), name_b, age);
             },
-            Event::NewLeaderElected { date, unit_id, creature_id } => {
+            Event::NewLeaderElected { date, site_id, creature_id } => {
                 let name = world.creature_desc(creature_id, resources);
-                return format!("> {}, {} was elected new leader of {:?}", world.date_desc(date), name, *unit_id);
+                return format!("> {}, {} was elected new leader of {:?}", world.date_desc(date), name, *site_id);
             },
-            Event::JoinBanditCamp { date, creature_id, unit_id, new_unit_id } => {
+            Event::JoinBanditCamp { date, creature_id, site_id, new_site_id } => {
                 let name = world.creature_desc(creature_id, resources);
-                return format!("> {}, {} left {:?} and joined the bandits at {:?}", world.date_desc(date), name, *unit_id, *new_unit_id);
+                return format!("> {}, {} left {:?} and joined the bandits at {:?}", world.date_desc(date), name, *site_id, *new_site_id);
             },
-            Event::CreateBanditCamp { date, creature_id, unit_id, new_unit_id } => {
+            Event::CreateBanditCamp { date, creature_id, site_id, new_site_id } => {
                 let name = world.creature_desc(creature_id, resources);
-                return format!("> {}, {} left {:?} and started a bandit camp at {:?}", world.date_desc(date), name, *unit_id, *new_unit_id);
+                return format!("> {}, {} left {:?} and started a bandit camp at {:?}", world.date_desc(date), name, *site_id, *new_site_id);
             },
         }
             

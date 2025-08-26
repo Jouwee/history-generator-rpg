@@ -2,13 +2,13 @@ use std::{collections::HashMap, slice::Iter};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId, unit::UnitId}};
+use crate::{commons::bitmask::{bitmask_get, bitmask_set}, world::{creature::CreatureId, item::ItemId, site::SiteId}};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Codex {
     creatures: HashMap<CreatureId, CreatureCodex>,
     artifacts: HashMap<ItemId, ArtifactCodex>,
-    units: HashMap<UnitId, UnitCodex>,
+    sites: HashMap<SiteId, SiteCodex>,
     quests: Vec<Quest>,
 }
 
@@ -18,7 +18,7 @@ impl Codex {
         Codex {
             creatures: HashMap::new(),
             artifacts: HashMap::new(),
-            units: HashMap::new(),
+            sites: HashMap::new(),
             quests: Vec::new()
         }
     }
@@ -53,19 +53,19 @@ impl Codex {
         return self.artifacts.get_mut(artifact_id).expect("Just inserted");
     }
 
-    pub(crate) fn units(&self) -> std::collections::hash_map::Keys<'_, UnitId, UnitCodex> {
-        return self.units.keys();
+    pub(crate) fn sites(&self) -> std::collections::hash_map::Keys<'_, SiteId, SiteCodex> {
+        return self.sites.keys();
     }
 
-    pub(crate) fn unit(&self, unit_id: &UnitId) -> Option<&UnitCodex> {
-        return self.units.get(unit_id);
+    pub(crate) fn site(&self, site_id: &SiteId) -> Option<&SiteCodex> {
+        return self.sites.get(site_id);
     }
 
-    pub(crate) fn unit_mut(&mut self, unit_id: &UnitId) -> &mut UnitCodex {
-        if !self.units.contains_key(unit_id) {
-            self.units.insert(*unit_id, UnitCodex { });    
+    pub(crate) fn site_mut(&mut self, site_id: &SiteId) -> &mut SiteCodex {
+        if !self.sites.contains_key(site_id) {
+            self.sites.insert(*site_id, SiteCodex { });    
         }
-        return self.units.get_mut(unit_id).expect("Just inserted");
+        return self.sites.get_mut(site_id).expect("Just inserted");
     }
 
     pub(crate) fn add_quest(&mut self, quest: Quest) {
@@ -202,9 +202,9 @@ pub(crate) enum QuestObjective {
     /// Kill a varningr
     KillVarningr(CreatureId),
     /// Kill wolves
-    KillWolves(UnitId),
+    KillWolves(SiteId),
     /// Kill bandits
-    KillBandits(UnitId),
+    KillBandits(SiteId),
 }
 
 
@@ -216,5 +216,5 @@ pub(crate) enum QuestStatus {
 }
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct UnitCodex {
+pub(crate) struct SiteCodex {
 }

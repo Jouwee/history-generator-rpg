@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::xp_table::xp_to_level, world::{creature::{Creature, CreatureId, Profession}, unit::{Unit, UnitId}, world::World}, Rng};
+use crate::{commons::xp_table::xp_to_level, world::{creature::{Creature, CreatureId, Profession}, site::{Site, SiteId}, world::World}, Rng};
 
 pub(crate) struct BattleSimulator {
 }
@@ -9,7 +9,7 @@ const CIVILIAN_FIGHT_CHANCE: f32 = 0.1;
 
 impl BattleSimulator {
 
-    pub(crate) fn simulate_attack(attacker_id: UnitId, attacker: &Unit, defender_id: UnitId, defender: &Unit, rng: &mut Rng, world: &World) -> Battle {
+    pub(crate) fn simulate_attack(attacker_id: SiteId, attacker: &Site, defender_id: SiteId, defender: &Site, rng: &mut Rng, world: &World) -> Battle {
         let mut battle = Battle {
             log: Vec::new(),
             deaths: Vec::new(),
@@ -20,7 +20,7 @@ impl BattleSimulator {
 
         for id in attacker.creatures.iter() {
             let creature = world.creatures.get(id);
-            creatures.push(BattleCreature { id: *id, unit_id: attacker_id, creature, hp: 100., team: 0, tactic: Tactic::Fight })
+            creatures.push(BattleCreature { id: *id, site_id: attacker_id, creature, hp: 100., team: 0, tactic: Tactic::Fight })
         }
 
         for id in defender.creatures.iter() {
@@ -36,7 +36,7 @@ impl BattleSimulator {
                     }
                 },
             };
-            creatures.push(BattleCreature { id: *id, unit_id: defender_id, creature, hp: 100., team: 1, tactic })
+            creatures.push(BattleCreature { id: *id, site_id: defender_id, creature, hp: 100., team: 1, tactic })
         }
 
         let max_turns = rng.randu_range(5, 15) * creatures.len();
@@ -75,7 +75,7 @@ impl BattleSimulator {
                 let creature = creatures.get(turn_index).expect("Is from range");
 
                 let adversary_creature = creatures.get(adversary).expect("Is from range");
-                battle.deaths.push((adversary_creature.id, adversary_creature.unit_id, creature.id));
+                battle.deaths.push((adversary_creature.id, adversary_creature.site_id, creature.id));
                 battle.xp_add.push((creature.id, 50 * xp_to_level(adversary_creature.creature.experience) as u32));
 
                 creatures.remove(adversary);
@@ -109,7 +109,7 @@ impl BattleSimulator {
 
 struct BattleCreature<'a> {
     id: CreatureId,
-    unit_id: UnitId,
+    site_id: SiteId,
     creature: Ref<'a, Creature>,
     tactic: Tactic,
     hp: f32,
@@ -123,6 +123,6 @@ enum Tactic {
 
 pub(crate) struct Battle {
     pub(crate) log: Vec<String>,
-    pub(crate) deaths: Vec<(CreatureId, UnitId, CreatureId)>,
+    pub(crate) deaths: Vec<(CreatureId, SiteId, CreatureId)>,
     pub(crate) xp_add: Vec<(CreatureId, u32)>,
 }

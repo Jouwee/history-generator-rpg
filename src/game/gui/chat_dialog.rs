@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::ShowChatDialogData}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::Profession, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}, scene::ShowChatDialogData}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::Profession, site::{SiteId, SiteType}, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct ChatDialog {
     layout: LayoutComponent,
@@ -90,26 +90,26 @@ impl ChatDialog {
             return;
         }
 
-        let mut quest: Option<(QuestObjective, UnitId, f32)> = None;
+        let mut quest: Option<(QuestObjective, SiteId, f32)> = None;
 
         const MAX_DST: f32 = 15.;
 
-        for unit_id in world.units.iter_ids::<UnitId>() {
-            let unit = world.units.get(&unit_id);
-            if unit.creatures.len() == 0 {
+        for sites_id in world.sites.iter_ids::<SiteId>() {
+            let site = world.sites.get(&sites_id);
+            if site.creatures.len() == 0 {
                 continue;
             }
 
-            let dst = unit.xy.dist(&self.data.world_coord);
+            let dst = site.xy.dist(&self.data.world_coord);
             
             if dst > MAX_DST {
                 continue;
             }
 
-            let quest_objective = match unit.unit_type {
-                UnitType::VarningrLair => Some(QuestObjective::KillVarningr(unit.creatures.first().unwrap().clone())),
-                UnitType::BanditCamp => Some(QuestObjective::KillBandits(unit_id)),
-                UnitType::WolfPack => Some(QuestObjective::KillWolves(unit_id)),
+            let quest_objective = match site.site_type {
+                SiteType::VarningrLair => Some(QuestObjective::KillVarningr(site.creatures.first().unwrap().clone())),
+                SiteType::BanditCamp => Some(QuestObjective::KillBandits(sites_id)),
+                SiteType::WolfPack => Some(QuestObjective::KillWolves(sites_id)),
                 _ => None,
             };
 
@@ -123,12 +123,12 @@ impl ChatDialog {
 
                 let current_score = quest.as_ref().map(|q| q.2).unwrap_or(0.);
                 if score > current_score {
-                    quest = Some((quest_objective, unit_id, score));
+                    quest = Some((quest_objective, sites_id, score));
                 }
             }
         }
 
-        if let Some((objective, unit_id, _)) = quest {
+        if let Some((objective, site_id, _)) = quest {
             let quest = Quest::new(self.data.actor.creature_id.unwrap().clone(), objective);
             writer.chat_explain_quest(&quest, &self.data.actor);
             
@@ -139,7 +139,7 @@ impl ChatDialog {
             }
 
             world.codex.add_quest(quest);
-            world.codex.unit_mut(&unit_id);
+            world.codex.site_mut(&site_id);
             return;
         }
 

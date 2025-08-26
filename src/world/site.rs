@@ -7,43 +7,43 @@ use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2, resour
 use super::{creature::{CreatureId, Profession}, item::ItemId};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
-pub(crate) struct UnitId(usize);
-impl crate::commons::id_vec::Id for UnitId {
+pub(crate) struct SiteId(usize);
+impl crate::commons::id_vec::Id for SiteId {
     fn new(id: usize) -> Self {
-        UnitId(id)
+        SiteId(id)
     }
     fn as_usize(&self) -> usize {
         self.0
     }
 }
 
-pub(crate) type Units = IdVec<Unit>;
+pub(crate) type Sites = IdVec<Site>;
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Unit {
+pub(crate) struct Site {
     pub(crate) xy: Coord2,
     pub(crate) name: Option<String>,
     pub(crate) creatures: Vec<CreatureId>,
     pub(crate) cemetery: Vec<CreatureId>,
-    pub(crate) resources: UnitResources,
+    pub(crate) resources: SiteResources,
     pub(crate) settlement: Option<SettlementComponent>,
     pub(crate) artifacts: Vec<ItemId>,
     pub(crate) population_peak: (i32, u32),
-    pub(crate) unit_type: UnitType,
+    pub(crate) site_type: SiteType,
     pub(crate) structures: Vec<Structure>,
 }
 
-impl Unit {
+impl Site {
 
     pub(crate) fn name(&self) -> &str {
         if let Some(name) = &self.name {
             return name.as_str();
         }
-        match &self.unit_type {
-            UnitType::BanditCamp => "Bandit camp",
-            UnitType::VarningrLair => "Varningr lair",
-            UnitType::WolfPack => "Wolf den",
-            UnitType::Village => "Village",
+        match &self.site_type {
+            SiteType::BanditCamp => "Bandit camp",
+            SiteType::VarningrLair => "Varningr lair",
+            SiteType::WolfPack => "Wolf den",
+            SiteType::Village => "Village",
         }
     }
 
@@ -57,9 +57,9 @@ impl Unit {
     }
 
     pub(crate) fn select_new_profession(&self, rng: &mut Rng) -> Profession {
-        match self.unit_type {
-            UnitType::BanditCamp => Profession::Bandit,
-            UnitType::Village => {
+        match self.site_type {
+            SiteType::BanditCamp => Profession::Bandit,
+            SiteType::Village => {
                 // Ideally this would look at what the city needs
                 let rand_job = rng.randf();
                 if rand_job < 0.8 {
@@ -74,8 +74,8 @@ impl Unit {
                     return Profession::Guard;
                 }
             },
-            UnitType::VarningrLair => Profession::Beast,
-            UnitType::WolfPack => Profession::Beast,
+            SiteType::VarningrLair => Profession::Beast,
+            SiteType::WolfPack => Profession::Beast,
         }
     }
 
@@ -109,36 +109,36 @@ impl SettlementComponent {
 }
 
 #[cfg(test)]
-mod tests_unit {
+mod tests_site {
     use crate::commons::id_vec::Id;
     use super::*;
 
     #[test]
     fn test_remove_creature() {
-        let mut unit = Unit {
+        let mut site = Site {
             xy: Coord2::xy(0, 0),
             creatures: Vec::new(),
             cemetery: Vec::new(),
-            resources: UnitResources {
+            resources: SiteResources {
                 food: 0.
             },
             name: None,
             settlement: None,
             artifacts: Vec::new(),
             population_peak: (0, 0),
-            unit_type: UnitType::Village,
+            site_type: SiteType::Village,
             structures: Vec::new()
         };
-        unit.creatures.push(CreatureId::mock(0));
-        unit.creatures.push(CreatureId::mock(1));
-        unit.remove_creature(&CreatureId::mock(0));
-        assert_eq!(unit.creatures.len(), 1);
-        assert_eq!(unit.creatures[0].as_usize(), 1);
+        site.creatures.push(CreatureId::mock(0));
+        site.creatures.push(CreatureId::mock(1));
+        site.remove_creature(&CreatureId::mock(0));
+        assert_eq!(site.creatures.len(), 1);
+        assert_eq!(site.creatures[0].as_usize(), 1);
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum UnitType {
+pub(crate) enum SiteType {
     Village,
     BanditCamp,
     WolfPack,
@@ -146,16 +146,16 @@ pub(crate) enum UnitType {
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub(crate) struct UnitResources {
+pub(crate) struct SiteResources {
     // 1 unit = enough food for 1 adult for 1 year
     pub(crate) food: f32,
 }
 
-impl Add for UnitResources {
-    type Output = UnitResources;
+impl Add for SiteResources {
+    type Output = SiteResources;
 
-    fn add(self, other: UnitResources) -> UnitResources {
-        return UnitResources {
+    fn add(self, other: SiteResources) -> SiteResources {
+        return SiteResources {
             food: self.food + other.food
         }
     }

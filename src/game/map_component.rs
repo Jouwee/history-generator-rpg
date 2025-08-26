@@ -1,4 +1,4 @@
-use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D}, gui::{button::Button, layout_component::LayoutComponent, UIEvent, UINode}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{topology::WorldTopology, unit::{Unit, UnitId, UnitType}, world::World}, GameContext};
+use crate::{engine::{assets::{assets, ImageSheetAsset}, geometry::{Coord2, Size2D}, gui::{button::Button, layout_component::LayoutComponent, UIEvent, UINode}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, render::RenderContext, tilemap::{Tile16Subset, TileMap, TileSet, TileSingle}, COLOR_WHITE}, world::{topology::WorldTopology, site::{Site, SiteId, SiteType}, world::World}, GameContext};
 
 pub(crate) struct MapComponent {
     layout: LayoutComponent,
@@ -50,39 +50,39 @@ impl MapComponent {
         }
     }
 
-    pub(crate) fn update_visible_units<F>(&mut self, world: &World, predicate: F) where F: Fn(&UnitId, &Unit) -> bool {
+    pub(crate) fn update_visible_sites<F>(&mut self, world: &World, predicate: F) where F: Fn(&SiteId, &Site) -> bool {
         self.names.clear();
         self.objects.reset();
-        for unit_id in world.units.iter_ids::<UnitId>() {
-            let unit = world.units.get(&unit_id);
-            if !predicate(&unit_id, &unit) {
+        for site_id in world.sites.iter_ids::<SiteId>() {
+            let site = world.sites.get(&site_id);
+            if !predicate(&site_id, &site) {
                 continue;
             }
             let mut major_name = false;
-            let tile = match unit.unit_type {
-                UnitType::Village => {
+            let tile = match site.site_type {
+                SiteType::Village => {
                     major_name = true;
-                    if unit.creatures.len() > 20 {
+                    if site.creatures.len() > 20 {
                         5
-                    } else if unit.creatures.len() > 5 {
+                    } else if site.creatures.len() > 5 {
                         1
-                    } else if unit.creatures.len() > 0 {
+                    } else if site.creatures.len() > 0 {
                         6
                     } else {
                         major_name = false;
                         4
                     }
                 },
-                UnitType::VarningrLair | UnitType::BanditCamp | UnitType::WolfPack => {
-                    if unit.creatures.len() > 0 {
+                SiteType::VarningrLair | SiteType::BanditCamp | SiteType::WolfPack => {
+                    if site.creatures.len() > 0 {
                         3
                     } else {
                         continue;
                     }
                 },
             };
-            self.objects.set_tile(unit.xy.x as usize, unit.xy.y as usize, tile);
-            self.names.push((unit.xy, unit.name().to_string(), major_name));
+            self.objects.set_tile(site.xy.x as usize, site.xy.y as usize, tile);
+            self.names.push((site.xy, site.name().to_string(), major_name));
         }
     }
 

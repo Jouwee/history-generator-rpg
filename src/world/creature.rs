@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{commons::{bitmask::bitmask_get, id_vec::{Id, IdVec}, rng::Rng, strings::Strings}, resources::species::SpeciesId, world::plot::{PlotGoal, PlotId}, Resources};
 
-use super::{date::WorldDate, item::ItemId, lineage::LineageId, unit::UnitResources, world::World};
+use super::{date::WorldDate, item::ItemId, lineage::LineageId, site::SiteResources, world::World};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Ord, Serialize, Deserialize)]
@@ -178,17 +178,17 @@ pub(crate) enum Profession {
 
 impl Profession {
 
-    pub(crate) fn base_resource_production(&self) -> UnitResources {
+    pub(crate) fn base_resource_production(&self) -> SiteResources {
         match self {
-            Profession::None => UnitResources { food: 0. },
-            Profession::Peasant => UnitResources { food: 1.5 },
-            Profession::Farmer => UnitResources { food: 3.0 },
-            Profession::Bandit => UnitResources { food: 0.8 },
-            Profession::Guard => UnitResources { food: 0. },
-            Profession::Blacksmith => UnitResources { food: 0. },
-            Profession::Sculptor => UnitResources { food: 0. },
-            Profession::Ruler => UnitResources { food: 0. },
-            Profession::Beast => UnitResources { food: 1.5 },
+            Profession::None => SiteResources { food: 0. },
+            Profession::Peasant => SiteResources { food: 1.5 },
+            Profession::Farmer => SiteResources { food: 3.0 },
+            Profession::Bandit => SiteResources { food: 0.8 },
+            Profession::Guard => SiteResources { food: 0. },
+            Profession::Blacksmith => SiteResources { food: 0. },
+            Profession::Sculptor => SiteResources { food: 0. },
+            Profession::Ruler => SiteResources { food: 0. },
+            Profession::Beast => SiteResources { food: 1.5 },
         }
     }
 

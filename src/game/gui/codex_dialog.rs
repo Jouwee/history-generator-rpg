@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use graphics::Transformed;
 
-use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, unit::{UnitId, UnitType}, world::World, writer::Writer}, GameContext, RenderContext};
+use crate::{engine::{assets::{assets, Assets}, gui::{button::Button, containers::SimpleContainer, label::Label, layout_component::LayoutComponent, UIEvent, UINode}}, game::codex::{Quest, QuestObjective, QuestStatus}, globals::perf::perf, world::{creature::CreatureId, item::ItemId, site::{SiteId, SiteType}, world::World, writer::Writer}, GameContext, RenderContext};
 
 pub(crate) struct CodexDialog {
     layout: LayoutComponent,
@@ -72,14 +72,14 @@ impl CodexDialog {
         }
     }
 
-    fn build_units(&mut self, state: &World, _game_ctx: &mut GameContext) {
+    fn build_sites(&mut self, state: &World, _game_ctx: &mut GameContext) {
         let mut y = 40.;
         self.buttons.clear();
-        for id in state.codex.units() {
-            let unit = state.units.get(id);
-            let mut button = Button::text(unit.name());
+        for id in state.codex.sites() {
+            let site = state.sites.get(id);
+            let mut button = Button::text(site.name());
             button.layout_component().anchor_top_left(0., y).size([114., 16.]);
-            self.buttons.push((Selection::Unit(*id), button));
+            self.buttons.push((Selection::Site(*id), button));
             y += 16.;
         }
     }
@@ -207,17 +207,17 @@ impl CodexDialog {
 
         }
 
-        if let Selection::Unit(unit_id) = &self.selected {
-            let unit = world.units.get(unit_id);
+        if let Selection::Site(site_id) = &self.selected {
+            let site = world.sites.get(site_id);
 
-            let name = Label::text(&unit.name()).font(Assets::font_heading_asset());
+            let name = Label::text(&site.name()).font(Assets::font_heading_asset());
             self.info_container.add(name);
 
-            let text = match &unit.unit_type {
-                UnitType::Village => String::from("A village."),
-                UnitType::BanditCamp => String::from("A camp of bandits."),
-                UnitType::VarningrLair => String::from("A lair of a Varningr."),
-                UnitType::WolfPack => String::from("A den of wolves."),
+            let text = match &site.site_type {
+                SiteType::Village => String::from("A village."),
+                SiteType::BanditCamp => String::from("A camp of bandits."),
+                SiteType::VarningrLair => String::from("A lair of a Varningr."),
+                SiteType::WolfPack => String::from("A den of wolves."),
             };
 
             let description = Label::text(&text);
@@ -299,7 +299,7 @@ impl UINode for CodexDialog {
 
         }
         if self.sites_button.input(&mut (), evt, ctx).is_break() {
-            self.build_units(state, ctx);
+            self.build_sites(state, ctx);
             self.creatures_button.set_selected(false);
             self.artifacts_button.set_selected(false);
             self.sites_button.set_selected(true);
@@ -335,7 +335,7 @@ enum Selection {
     None,
     Creature(CreatureId),
     Artifact(ItemId),
-    Unit(UnitId),
+    Site(SiteId),
     Quest(Quest)
 }
 

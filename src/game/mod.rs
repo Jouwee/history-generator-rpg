@@ -40,7 +40,7 @@ use crate::loadsave::SaveFile;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::resources::resources::resources;
 use crate::warn;
-use crate::world::unit::UnitId;
+use crate::world::site::SiteId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
@@ -698,15 +698,15 @@ impl Scene for GameSceneState {
             },
             BusEvent::CreatureKilled(creature_id) => {
                 // TODO: Full remove logic
-                for unit_id in self.world.units.iter_ids::<UnitId>() {
+                for site_id in self.world.sites.iter_ids::<SiteId>() {
 
-                    let unit = self.world.units.get_mut(&unit_id);
-                    let creature_lives_here = unit.creatures.contains(creature_id);
-                    drop(unit);
+                    let site = self.world.sites.get_mut(&site_id);
+                    let creature_lives_here = site.creatures.contains(creature_id);
+                    drop(site);
                     if creature_lives_here { 
                         // TODO: Item
                         // TODO: Maybe not player?
-                        self.world.creature_kill_creature(*creature_id, unit_id, self.state.player().creature_id.unwrap(), None, unit_id);
+                        self.world.creature_kill_creature(*creature_id, site_id, self.state.player().creature_id.unwrap(), None, site_id);
                         break;
                     }
                 }
@@ -717,9 +717,9 @@ impl Scene for GameSceneState {
                     }
                     let completed = match &quest.objective {
                         QuestObjective::KillVarningr(kill_id) => kill_id == creature_id,
-                        QuestObjective::KillBandits(unit_id) | QuestObjective::KillWolves(unit_id) => {
-                            let unit = self.world.units.get(unit_id);
-                            unit.creatures.len() == 0
+                        QuestObjective::KillBandits(site_id) | QuestObjective::KillWolves(site_id) => {
+                            let site = self.world.sites.get(site_id);
+                            site.creatures.len() == 0
                         }
                     };
                     if completed {

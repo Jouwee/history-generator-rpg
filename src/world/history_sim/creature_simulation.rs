@@ -1,6 +1,6 @@
 use std::cell::Ref;
 
-use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::UnitChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, unit::{Unit, UnitId, UnitType}, world::World}};
+use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::SiteChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, site::{Site, SiteId, SiteType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -13,7 +13,7 @@ pub(crate) enum CreatureSideEffect {
     LookForNewJob,
     MakeArtifact,
     BecomeBandit,
-    AttackNearbyUnits,
+    AttackNearbySites,
     StartPlot(PlotGoal),
     FindSupportersForPlot,
     ExecutePlot,
@@ -23,7 +23,7 @@ pub(crate) enum CreatureSideEffect {
 impl CreatureSimulation {
 
     // TODO: Smaller steps
-    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, unit: &Unit, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &UnitChances) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, site: &Site, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &SiteChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
@@ -32,12 +32,12 @@ impl CreatureSimulation {
 
         if creature.sim_flag_is_great_beast() {
             if rng.rand_chance(chances.great_beast_hunt) {
-                return CreatureSideEffect::AttackNearbyUnits;
+                return CreatureSideEffect::AttackNearbySites;
             }
         }
 
         // Get a profession
-        if creature.sim_flag_is_inteligent() && unit.unit_type == UnitType::Village {
+        if creature.sim_flag_is_inteligent() && site.site_type == SiteType::Village {
 
             match supported_plot {
                 None => {
@@ -69,7 +69,7 @@ impl CreatureSimulation {
 
                 // TODO: Not leader
                 // TODO: Slow
-                let home = unit.structure_occupied_by(creature_id);
+                let home = site.structure_occupied_by(creature_id);
                 if let Some(home) = home {
                     if home.occupant_count() > 5 {
                         return CreatureSideEffect::MoveOutToNewHouse;
@@ -120,7 +120,7 @@ impl CreatureSimulation {
         return CreatureSideEffect::None
     }
 
-    fn chance_of_child(now: &WorldDate, creature: &Creature, chances: &UnitChances) -> f32 {
+    fn chance_of_child(now: &WorldDate, creature: &Creature, chances: &SiteChances) -> f32 {
         let age = (*now - creature.birth).year() as f32;        
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
@@ -136,14 +136,14 @@ impl CreatureSimulation {
 // Legendary beasts
 const HUNT_RADIUS_SQRD: f32 = 5.*5.;
 
-pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: UnitId) {
+pub(crate) fn attack_nearby_site(world: &mut World, rng: &mut Rng, site_id: SiteId) {
     let mut candidates = Vec::new();
     {
-        let source_unit = world.units.get(&unit_id);
-        for (id, unit) in world.units.iter_id_val::<UnitId>() {
-            if id != unit_id {
-                let unit = unit.borrow();
-                if unit.creatures.len() > 0 && unit.xy.dist_squared(&source_unit.xy) < HUNT_RADIUS_SQRD {
+        let source_site = world.sites.get(&site_id);
+        for (id, site) in world.sites.iter_id_val::<SiteId>() {
+            if id != site_id {
+                let site = site.borrow();
+                if site.creatures.len() > 0 && site.xy.dist_squared(&source_site.xy) < HUNT_RADIUS_SQRD {
                     candidates.push(id);
                     break;
                 }
@@ -154,12 +154,12 @@ pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: Unit
     if let Some(target) = rng.item(&candidates) {
         let battle;
         {
-            let unit = world.units.get(&unit_id);
-            let target_unit = world.units.get(target);
-            battle = BattleSimulator::simulate_attack(unit_id, &unit, *target, &target_unit, rng, world);
+            let site = world.sites.get(&site_id);
+            let target_site = world.sites.get(target);
+            battle = BattleSimulator::simulate_attack(site_id, &site, *target, &target_site, rng, world);
         }
 
-        for (id, unit_id, killer_id) in battle.deaths {
+        for (id, site_id, killer_id) in battle.deaths {
             let killer = world.creatures.get(&killer_id);
             let item_used = match &killer.details {
                 Some(details) => details.inventory.first().and_then(|id| Some(*id)),
@@ -167,7 +167,7 @@ pub(crate) fn attack_nearby_unit(world: &mut World, rng: &mut Rng, unit_id: Unit
             };
             let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
             drop(killer);
-            world.kill_creature(id, unit_id, *target, cause_of_death);
+            world.kill_creature(id, site_id, *target, cause_of_death);
         }
 
         for (id, xp) in battle.xp_add {
@@ -235,7 +235,7 @@ pub(crate) fn find_supporters_for_plot(world: &mut World, creature_id: CreatureI
 
 }
 
-pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: CreatureId, rng: &mut Rng) {
+pub(crate) fn execute_plot(world: &mut World, site_id: SiteId, creature_id: CreatureId, rng: &mut Rng) {
     let creature = world.creatures.get(&creature_id);
     let plot_id_o = creature.supports_plot;
     // TODO(IhlgIYVA): Kind of a smell
@@ -261,22 +261,22 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
             }
             drop(creature);
 
-            // TODO(IhlgIYVA): Performance for Unit
-            let ret = world.units.iter_id_val::<UnitId>().find(|(_id, unit)| unit.borrow().creatures.contains(&target_id));
+            // TODO(IhlgIYVA): Performance for Site
+            let ret = world.sites.iter_id_val::<SiteId>().find(|(_id, site)| site.borrow().creatures.contains(&target_id));
             if let Some((target_id, _)) = ret {
 
                 // TODO(IhlgIYVA): Dupped code
-                // TODO(IhlgIYVA): Separate plotters from unit
-                // TODO(IhlgIYVA): Die outside of unit
+                // TODO(IhlgIYVA): Separate plotters from site
+                // TODO(IhlgIYVA): Die outside of site
 
                 let battle;
                 {
-                    let unit = world.units.get(&unit_id);
-                    let target_unit = world.units.get(&target_id);
-                    battle = BattleSimulator::simulate_attack(unit_id, &unit, target_id, &target_unit, rng, world);
+                    let site = world.sites.get(&site_id);
+                    let target_site = world.sites.get(&target_id);
+                    battle = BattleSimulator::simulate_attack(site_id, &site, target_id, &target_site, rng, world);
                 }
         
-                for (id, unit_id, killer_id) in battle.deaths {
+                for (id, site_id, killer_id) in battle.deaths {
                     let killer = world.creatures.get(&killer_id);
                     let item_used = match &killer.details {
                         Some(details) => details.inventory.first().and_then(|id| Some(*id)),
@@ -284,7 +284,7 @@ pub(crate) fn execute_plot(world: &mut World, unit_id: UnitId, creature_id: Crea
                     };
                     let cause_of_death = CauseOfDeath::KilledInBattle(killer_id, item_used);
                     drop(killer);
-                    world.kill_creature(id, unit_id, target_id, cause_of_death);
+                    world.kill_creature(id, site_id, target_id, cause_of_death);
                 }
         
                 for (id, xp) in battle.xp_add {

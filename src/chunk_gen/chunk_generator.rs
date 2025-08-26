@@ -2,7 +2,7 @@ use std::{collections::BTreeSet, time::Instant};
 
 use noise::{NoiseFn, Perlin};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{unit::{Structure, StructureGeneratedData, StructureStatus, StructureType, Unit, UnitType}, world::World}, Coord2, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -37,22 +37,22 @@ impl<'a> ChunkGenerator<'a> {
         let mut solver = self.get_jigsaw_solver();
 
         let now = Instant::now();
-        let mut found_unit = None;
-        for unit in world.units.iter() {
-            let unit = unit.borrow_mut();
-            if unit.xy == self.chunk.coord.xy {
-                found_unit = Some(unit)
+        let mut found_site = None;
+        for site in world.sites.iter() {
+            let site = site.borrow_mut();
+            if site.xy == self.chunk.coord.xy {
+                found_site = Some(site)
             }
         }
-        info!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_unit.is_some(), now.elapsed());
+        info!("[Chunk gen] Site search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_site.is_some(), now.elapsed());
 
         // TODO(WCF3fkX3): Bandit camps
         // detached_housing_pool: Some(String::from("camp_start")),
 
-        if let Some(mut unit) = found_unit {
+        if let Some(mut site) = found_site {
 
-            dbg!(&unit.structures);
-            for structure in unit.structures.iter_mut() {
+            dbg!(&site.structures);
+            for structure in site.structures.iter_mut() {
                 if structure.generated_data.is_none() {
                     match self.generate_structure(structure, &mut solver) {
                         Ok(data) => structure.generated_data = Some(data),
@@ -61,8 +61,8 @@ impl<'a> ChunkGenerator<'a> {
                 }
             }
 
-            match &unit.unit_type {
-                UnitType::BanditCamp | UnitType::Village => {
+            match &site.site_type {
+                SiteType::BanditCamp | SiteType::Village => {
 
                     
 
@@ -73,16 +73,16 @@ impl<'a> ChunkGenerator<'a> {
                     }
 
                 },
-                UnitType::VarningrLair => {
+                SiteType::VarningrLair => {
                     let now = Instant::now();
                     match self.chunk.coord.layer {
                         ChunkLayer::Surface => self.generate_lair_entrance(&mut solver, resources),
-                        ChunkLayer::Underground => self.generate_lair(&unit, &mut solver, resources),
+                        ChunkLayer::Underground => self.generate_lair(&site, &mut solver, resources),
                     };
                     info!("[Chunk gen] Large structs: {:.2?}", now.elapsed());
                 },
-                UnitType::WolfPack => {
-                    self.generate_wolf_pack(&unit);
+                SiteType::WolfPack => {
+                    self.generate_wolf_pack(&site);
                 }
             }
         }      
@@ -99,18 +99,18 @@ impl<'a> ChunkGenerator<'a> {
         let mut solver = self.get_jigsaw_solver();
 
         let now = Instant::now();
-        let mut found_unit = None;
-        for unit in world.units.iter() {
-            let unit = unit.borrow_mut();
-            if unit.xy == self.chunk.coord.xy {
-                found_unit = Some(unit)
+        let mut found_site = None;
+        for site in world.sites.iter() {
+            let site = site.borrow_mut();
+            if site.xy == self.chunk.coord.xy {
+                found_site = Some(site)
             }
         }
-        info!("[Chunk gen] Unit search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_unit.is_some(), now.elapsed());
+        info!("[Chunk gen] Site search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_site.is_some(), now.elapsed());
 
-        if let Some(mut unit) = found_unit {
+        if let Some(mut site) = found_site {
 
-            for structure in unit.structures.iter_mut() {
+            for structure in site.structures.iter_mut() {
                 if structure.generated_data.is_none() {
                     dbg!(&structure);
                     match self.generate_structure(structure, &mut solver) {
@@ -276,14 +276,14 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    fn generate_wolf_pack(&mut self, unit: &Unit) {
+    fn generate_wolf_pack(&mut self, site: &Site) {
         let pos = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2);
-        for creature_id in unit.creatures.iter() {
+        for creature_id in site.creatures.iter() {
             self.spawn(Spawner::CreatureId(*creature_id), pos, 7);
         }
     }
 
-    fn generate_lair(&mut self, unit: &Unit, solver: &mut JigsawSolver, resources: &Resources) {
+    fn generate_lair(&mut self, site: &Site, solver: &mut JigsawSolver, resources: &Resources) {
         let requirements = vec!(
             JigsawPieceRequirement::Exactly("varningr_lair".to_string(), 1),
             JigsawPieceRequirement::Exactly("varningr_entrance".to_string(), 1)
@@ -298,7 +298,7 @@ impl<'a> ChunkGenerator<'a> {
                 self.place_template(*pos, &piece);
 
                 // Spawn varningr(s)
-                for creature_id in unit.creatures.iter() {
+                for creature_id in site.creatures.iter() {
                     self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
                 }
                 // Minion wolves

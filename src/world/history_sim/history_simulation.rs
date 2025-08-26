@@ -1,4 +1,4 @@
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::{Duration, WorldDate}, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_unit, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, unit::{SettlementComponent, Unit, UnitId, UnitResources, UnitType}, world::World}, Event};
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::{Duration, WorldDate}, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_site, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, site::{SettlementComponent, Site, SiteId, SiteResources, SiteType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -28,29 +28,29 @@ impl HistorySimulation {
         let chances = self.storyteller.global_chances(&mut self.rng, &world, &step);
 
         if self.rng.rand_chance(chances.spawn_varningr) {
-            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
+            let pos = self.find_site_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
                 let species = resources.species.id_of("species:varningr");
                 let mut factory = CreatureFactory::new(self.rng.derive("creature"));
                 let creature = factory.make_single(species, 3, SIM_FLAG_GREAT_BEAST, world);
-                let unit = Unit {
+                let site = Site {
                     artifacts: Vec::new(),
                     cemetery: Vec::new(),
                     name: None,
                     creatures: vec!(creature),
                     settlement: None,
                     population_peak: (0, 0),
-                    resources: UnitResources { food: 2. },
-                    unit_type: UnitType::VarningrLair,
+                    resources: SiteResources { food: 2. },
+                    site_type: SiteType::VarningrLair,
                     xy: pos,
                     structures: Vec::new()
                 };
-                world.units.add::<UnitId>(unit);
+                world.sites.add::<SiteId>(site);
             }
         }
         if self.rng.rand_chance(chances.spawn_wolf_pack) {
-            let pos = self.find_unit_suitable_pos(&mut self.rng.clone(), world);
+            let pos = self.find_site_suitable_pos(&mut self.rng.clone(), world);
 
             if let Some(pos) = pos {
                 let species = resources.species.id_of("species:wolf");
@@ -60,19 +60,19 @@ impl HistorySimulation {
                     factory.make_single(species, 1, 0, world),
                     factory.make_single(species, 1, 0, world),
                 );
-                let unit = Unit {
+                let site = Site {
                     creatures,
                     artifacts: Vec::new(),
                     cemetery: Vec::new(),
                     settlement: None,
                     name: None,
                     population_peak: (0, 0),
-                    resources: UnitResources { food: 2. },
-                    unit_type: UnitType::WolfPack,
+                    resources: SiteResources { food: 2. },
+                    site_type: SiteType::WolfPack,
                     xy: pos,
                     structures: Vec::new()
                 };
-                world.units.add::<UnitId>(unit);
+                world.sites.add::<SiteId>(site);
             }
         }
         if self.rng.rand_chance(chances.spawn_village) {
@@ -86,13 +86,13 @@ impl HistorySimulation {
 
         let mut creatures = 0;
 
-        for id in world.units.iter_ids::<UnitId>() {
+        for id in world.sites.iter_ids::<SiteId>() {
 
-            let unit = world.units.get(&id);
-            creatures += unit.creatures.len();
-            drop(unit);
+            let site = world.sites.get(&id);
+            creatures += site.creatures.len();
+            drop(site);
 
-            let result = self.simulate_step_unit(world, &step, &world.date.clone(), self.rng.clone(), &id);
+            let result = self.simulate_step_site(world, &step, &world.date.clone(), self.rng.clone(), &id);
             if let Err(msg) = result {
                 warn!("{msg}");
             }
@@ -102,23 +102,23 @@ impl HistorySimulation {
         return creatures > 0;
     }
 
-    fn simulate_step_unit(&mut self, world: &mut World, step: &Duration, now: &WorldDate, mut rng: Rng, unit_id: &UnitId) -> Result<(), String> {
+    fn simulate_step_site(&mut self, world: &mut World, step: &Duration, now: &WorldDate, mut rng: Rng, site_id: &SiteId) -> Result<(), String> {
 
-        let chances = self.storyteller.story_teller_unit_chances(unit_id, &world, &step);
+        let chances = self.storyteller.story_teller_site_chances(site_id, &world, &step);
 
-        let unit = world.units.get_mut(unit_id);
+        let site = world.sites.get_mut(site_id);
 
-        let mut resources = unit.resources.clone();
+        let mut resources = site.resources.clone();
 
-        let unit_tile = world.map.tile(unit.xy.x as usize, unit.xy.y as usize);
+        let site_tile = world.map.tile(site.xy.x as usize, site.xy.y as usize);
         
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
-        let creatures = unit.creatures.clone();
-        drop(unit);
+        let creatures = site.creatures.clone();
+        drop(site);
 
         for creature_id in creatures.iter() {
-            let unit = world.units.get_mut(unit_id);
+            let site = world.sites.get_mut(site_id);
             let mut creature = world.creatures.get_mut(creature_id);
 
             // SMELL: Doing things outside of the method because of borrow issues
@@ -127,27 +127,27 @@ impl HistorySimulation {
                 !goal.check_completed(world)
             });
 
-            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &unit, &creature_id, &creature, plot, &chances);
+            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &site, &creature_id, &creature, plot, &chances);
 
             // Production and consumption
             let mut production = creature.profession.base_resource_production();
-            production.food = production.food * unit_tile.soil_fertility;
+            production.food = production.food * site_tile.soil_fertility;
             resources = production + resources;
             resources.food -= 1.0;
             
             drop(creature);
-            drop(unit);
+            drop(site);
 
             history_trace!("creature_action creature_id:{:?} action:{:?}", creature_id, side_effect);
 
             let result  = match side_effect {
                 CreatureSideEffect::None => Ok(()),
                 CreatureSideEffect::Death(cause_of_death) => {
-                    world.kill_creature(*creature_id, *unit_id, *unit_id, cause_of_death);
+                    world.kill_creature(*creature_id, *site_id, *site_id, cause_of_death);
                     Ok(())
                 },
-                CreatureSideEffect::HaveChild => world.creature_couple_have_child(*creature_id, unit_id, &mut rng),
-                CreatureSideEffect::MoveOutToNewHouse => world.creature_start_new_home_same_unit(*creature_id, unit_id),
+                CreatureSideEffect::HaveChild => world.creature_couple_have_child(*creature_id, site_id, &mut rng),
+                CreatureSideEffect::MoveOutToNewHouse => world.creature_start_new_home_same_site(*creature_id, site_id),
                 CreatureSideEffect::LookForMarriage => {
                     let creature = world.creatures.get_mut(creature_id);
                     marriage_pool.push((*creature_id, creature.gender));
@@ -158,31 +158,31 @@ impl HistorySimulation {
                     Ok(())
                 },
                 CreatureSideEffect::MakeArtifact => {
-                    Self::make_artifact(&creature_id, None, unit_id, world, &mut rng);
+                    Self::make_artifact(&creature_id, None, site_id, world, &mut rng);
                     Ok(())
                 },
                 CreatureSideEffect::BecomeBandit => {
-                    let unit = world.units.get(unit_id);
-                    let unit_xy = unit.xy.clone();
-                    drop(unit);
+                    let site = world.sites.get(site_id);
+                    let site_xy = site.xy.clone();
+                    drop(site);
                     // Looks for a camp nearby
-                    let existing_camp = world.units.iter_id_val().find(|(_unit_id, unit)| {
-                        let unit = unit.borrow();
-                        unit.unit_type == UnitType::BanditCamp
-                          && unit.xy.dist_squared(&unit_xy) < 15.*15.
-                          && unit.creatures.len() > 0
+                    let existing_camp = world.sites.iter_id_val().find(|(_site_id, site)| {
+                        let site = site.borrow();
+                        site.site_type == SiteType::BanditCamp
+                          && site.xy.dist_squared(&site_xy) < 15.*15.
+                          && site.creatures.len() > 0
                     });
                     // If there's a camp nearby
                     if let Some((camp_id, existing_camp)) = existing_camp {
                         let mut existing_camp = existing_camp.borrow_mut();
                         existing_camp.creatures.push(*creature_id);
-                        world.events.push(Event::JoinBanditCamp { date: *now, creature_id: *creature_id, unit_id: *unit_id, new_unit_id: camp_id });
+                        world.events.push(Event::JoinBanditCamp { date: *now, creature_id: *creature_id, site_id: *site_id, new_site_id: camp_id });
                     } else {
                         // Creates new camp
-                        let pos = self.find_unit_suitable_position_closeby(unit_xy, 15, &mut rng, world);
+                        let pos = self.find_site_suitable_position_closeby(site_xy, 15, &mut rng, world);
                         match pos {
                             Some(pos) => {
-                                let new_camp_id = world.units.add(Unit {
+                                let new_camp_id = world.sites.add(Site {
                                     xy: pos,
                                     artifacts: Vec::new(),
                                     cemetery: Vec::new(),
@@ -193,13 +193,13 @@ impl HistorySimulation {
                                     }),
                                     name: None,
                                     population_peak: (0, 0),
-                                    unit_type: UnitType::BanditCamp,
-                                    resources: UnitResources {
+                                    site_type: SiteType::BanditCamp,
+                                    resources: SiteResources {
                                         food: 1.
                                     },
                                     structures: Vec::new()
                                 });
-                                world.events.push(Event::CreateBanditCamp { date: *now, creature_id: *creature_id, unit_id: *unit_id, new_unit_id: new_camp_id });
+                                world.events.push(Event::CreateBanditCamp { date: *now, creature_id: *creature_id, site_id: *site_id, new_site_id: new_camp_id });
                             },
                             None => {
                                 warn!("No position found for new bandit camp");
@@ -207,17 +207,17 @@ impl HistorySimulation {
                             }
                         }
                     }
-                    // Removes creature from unit
-                    let mut unit = world.units.get_mut(unit_id);
-                    unit.remove_creature(&creature_id);
-                    unit.resources.food -= 1.;
+                    // Removes creature from site
+                    let mut site = world.sites.get_mut(site_id);
+                    site.remove_creature(&creature_id);
+                    site.resources.food -= 1.;
                     // Chances profession
                     let mut creature = world.creatures.get_mut(creature_id);
                     creature.profession = Profession::Bandit;
                     Ok(())
                 },
-                CreatureSideEffect::AttackNearbyUnits => {
-                    attack_nearby_unit(world, &mut rng, *unit_id);
+                CreatureSideEffect::AttackNearbySites => {
+                    attack_nearby_site(world, &mut rng, *site_id);
                     Ok(())
                 }
                 CreatureSideEffect::StartPlot(goal) => {
@@ -229,7 +229,7 @@ impl HistorySimulation {
                     Ok(())
                 }
                 CreatureSideEffect::ExecutePlot => {
-                    execute_plot(world, *unit_id, *creature_id, &mut rng);
+                    execute_plot(world, *site_id, *creature_id, &mut rng);
                     Ok(())
                 }
             };
@@ -241,15 +241,15 @@ impl HistorySimulation {
         }
 
         {
-            let mut unit = world.units.get_mut(unit_id);
-            unit.resources = resources;
-            self.check_population_peak(now, &mut unit);
+            let mut site = world.sites.get_mut(site_id);
+            site.resources = resources;
+            self.check_population_peak(now, &mut site);
         }
 
         {
-            let unit = world.units.get(unit_id);
+            let site = world.sites.get(site_id);
 
-            let need_election = match &unit.settlement {
+            let need_election = match &site.settlement {
                 None => false,
                 Some(settlement) => {
                     match settlement.leader {
@@ -260,12 +260,12 @@ impl HistorySimulation {
                         }
                     }
                 }
-            } && unit.creatures.len() > 0;
-            drop(unit);
+            } && site.creatures.len() > 0;
+            drop(site);
             if need_election {
-                let unit = world.units.get(unit_id);
+                let site = world.sites.get(site_id);
                 let mut candidates_pool = Vec::new();
-                for creature_id in unit.creatures.iter() {
+                for creature_id in site.creatures.iter() {
                     let creature = world.creatures.get(creature_id);
                     let age = (*now - creature.birth).year();
                     if age > 18 {
@@ -273,11 +273,11 @@ impl HistorySimulation {
                     }
                 }
                 let new_leader = match candidates_pool.len() {
-                    0 => unit.creatures[rng.randu_range(0, unit.creatures.len())],
+                    0 => site.creatures[rng.randu_range(0, site.creatures.len())],
                     _ => *candidates_pool[rng.randu_range(0, candidates_pool.len())],
                 };     
-                drop(unit);
-                world.unit_change_leader(unit_id, new_leader)?;
+                drop(site);
+                world.site_change_leader(site_id, new_leader)?;
             }
             
         }
@@ -304,19 +304,19 @@ impl HistorySimulation {
 
         for creature_id in change_job_pool {
             let mut creature = world.creatures.get_mut(&creature_id);
-            let unit = world.units.get(unit_id);
-            let profession = unit.select_new_profession(&mut rng);
+            let site = world.sites.get(site_id);
+            let profession = site.select_new_profession(&mut rng);
             creature.profession = profession;
             drop(creature);
-            drop(unit);
+            drop(site);
             world.events.push(Event::CreatureProfessionChange { date: now.clone(), creature_id: creature_id, new_profession: profession });
         }
         Ok(())
     }
 
-    fn make_artifact(artisan_id: &CreatureId, comissioneer_id: Option<&CreatureId>, unit_id: &UnitId, world: &mut World, rng: &mut Rng) {
+    fn make_artifact(artisan_id: &CreatureId, comissioneer_id: Option<&CreatureId>, site_id: &SiteId, world: &mut World, rng: &mut Rng) {
         let mut artisan = world.creatures.get_mut(artisan_id);
-        let mut unit = world.units.get_mut(unit_id);
+        let mut site = world.sites.get_mut(site_id);
         let item = match artisan.profession {
             Profession::Blacksmith => {
                 let f_quality = rng.randf() + (xp_to_level(artisan.experience) as f32 * 0.01);
@@ -335,7 +335,7 @@ impl HistorySimulation {
 
                 let item = ItemFactory::weapon(rng, &resources())
                     .quality(quality)
-                    .material_pool(unit.settlement.as_mut().and_then(|sett| Some(&mut sett.material_stock)))
+                    .material_pool(site.settlement.as_mut().and_then(|sett| Some(&mut sett.material_stock)))
                     .named()
                     .make();
                 Some(item)
@@ -365,7 +365,7 @@ impl HistorySimulation {
                 let mut creature = world.creatures.get_mut(who_gets_item);
                 match &item.artwork_scene {
                     Some(_) => {
-                        unit.artifacts.push(id);
+                        site.artifacts.push(id);
                     },
                     None => {
                         let mut item = world.artifacts.get_mut(&id);
@@ -376,31 +376,31 @@ impl HistorySimulation {
             if let Some(comissioneer_id) = comissioneer_id {
                 world.events.push(Event::ArtifactComission { date: world.date.clone(), creature_id: *comissioneer_id, creator_id: *artisan_id, item_id: id });
             } else {
-                world.events.push(Event::ArtifactCreated { date: world.date.clone(), artifact: id, creator: *artisan_id, unit_id: *unit_id });
+                world.events.push(Event::ArtifactCreated { date: world.date.clone(), artifact: id, creator: *artisan_id, site_id: *site_id });
             }
         }
     }
 
-    fn check_population_peak(&self, now: &WorldDate, unit: &mut Unit) {
-        if unit.creatures.len() >= unit.population_peak.1 as usize {
-            unit.population_peak = (now.year(), unit.creatures.len() as u32)
+    fn check_population_peak(&self, now: &WorldDate, site: &mut Site) {
+        if site.creatures.len() >= site.population_peak.1 as usize {
+            site.population_peak = (now.year(), site.creatures.len() as u32)
         }
     }
 
-    fn find_unit_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
+    fn find_site_suitable_pos(&self, rng: &mut Rng, world: &World) -> Option<Coord2> {
         for _ in 0..100 {
             let x = rng.randu_range(3, world.map.size.x() - 3);
             let y = rng.randu_range(3, world.map.size.y() - 3);
             let candidate = Coord2::xy(x as i32, y as i32);
-            let too_close = world.units.iter().any(|unit| {
-                let unit = unit.borrow();
-                if unit.creatures.len() == 0 {
-                    if unit.xy == candidate {
+            let too_close = world.sites.iter().any(|site| {
+                let site = site.borrow();
+                if site.creatures.len() == 0 {
+                    if site.xy == candidate {
                         return true;
                     }
                     return false;
                 }
-                return unit.xy.dist_squared(&candidate) < 3. * 3.
+                return site.xy.dist_squared(&candidate) < 3. * 3.
             });
             if too_close {
                 continue;
@@ -410,7 +410,7 @@ impl HistorySimulation {
         return None;
     }
 
-    fn find_unit_suitable_position_closeby(&self, center: Coord2, max_radius: i32, rng: &mut Rng, world: &World) -> Option<Coord2> {
+    fn find_site_suitable_position_closeby(&self, center: Coord2, max_radius: i32, rng: &mut Rng, world: &World) -> Option<Coord2> {
         let x_limit = [
             (center.x - max_radius).max(3),
             (center.x + max_radius).min(world.map.size.x() as i32 - 3)
@@ -423,15 +423,15 @@ impl HistorySimulation {
             let x = rng.randi_range(x_limit[0], x_limit[1]) as usize;
             let y = rng.randi_range(y_limit[0], y_limit[1]) as usize;
             let candidate = Coord2::xy(x as i32, y as i32);
-            let too_close = world.units.iter().any(|unit| {
-                let unit = unit.borrow();
-                if unit.creatures.len() == 0 {
-                    if unit.xy == candidate {
+            let too_close = world.sites.iter().any(|site| {
+                let site = site.borrow();
+                if site.creatures.len() == 0 {
+                    if site.xy == candidate {
                         return true;
                     }
                     return false;
                 }
-                return unit.xy.dist_squared(&candidate) < 3. * 3.
+                return site.xy.dist_squared(&candidate) < 3. * 3.
             });
             if too_close {
                 continue;

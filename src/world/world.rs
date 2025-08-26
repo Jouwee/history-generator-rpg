@@ -2,9 +2,9 @@ use std::{fs::File, io::Write};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, unit::{Structure, StructureStatus, StructureType, UnitId, UnitType}}, Event, Resources};
+use crate::{commons::rng::Rng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Structure, StructureStatus, StructureType, SiteId, SiteType}}, Event, Resources};
 
-use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, unit::Units};
+use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, site::Sites};
 
 use crate::commons::id_vec::IdVec;
 
@@ -13,7 +13,7 @@ pub(crate) struct World {
     pub(crate) date: WorldDate,
     pub(crate) generation_parameters: WorldGenerationParameters,
     pub(crate) map: WorldTopology,
-    pub(crate) units: Units,
+    pub(crate) sites: Sites,
     pub(crate) lineages: Lineages,
     pub(crate) creatures: Creatures,
     pub(crate) plots: Plots,
@@ -30,7 +30,7 @@ impl World {
             date: WorldDate::new(1, 1, 1),
             generation_parameters,
             map,
-            units: Units::new(),
+            sites: Sites::new(),
             creatures: Creatures::new(),
             lineages: Lineages::new(),
             plots: Plots::new(),
@@ -43,14 +43,14 @@ impl World {
 
     pub(crate) fn create_scenario(&mut self) -> Result<(CreatureId, Coord2), ()> {
         let mut candidate = None;
-        'outer: for unit_id in self.units.iter_ids::<UnitId>() {
-            let unit = self.units.get(&unit_id);
-            if unit.unit_type == UnitType::Village {
-                for creature_id in unit.creatures.iter() {
+        'outer: for site_id in self.sites.iter_ids::<SiteId>() {
+            let site = self.sites.get(&site_id);
+            if site.site_type == SiteType::Village {
+                for creature_id in site.creatures.iter() {
                     let creature = self.creatures.get(creature_id);
                     let age = (self.date - creature.birth).year();
                     if age > 20 && age < 40 && creature.spouse.is_none() && creature.profession == Profession::Peasant {
-                        candidate = Some((creature_id.clone(), unit.xy.clone()));
+                        candidate = Some((creature_id.clone(), site.xy.clone()));
                         break 'outer;
                     }
                 }
@@ -61,10 +61,10 @@ impl World {
             self.codex = Codex::new();
 
             // Major sites
-            for unit_id in self.units.iter_ids::<UnitId>() {
-                let unit = self.units.get(&unit_id);
-                if unit.creatures.len() > 0 && unit.unit_type == UnitType::Village {
-                    self.codex.unit_mut(&unit_id);
+            for site_id in self.sites.iter_ids::<SiteId>() {
+                let site = self.sites.get(&site_id);
+                if site.creatures.len() > 0 && site.site_type == SiteType::Village {
+                    self.codex.site_mut(&site_id);
                 }
             }
 
@@ -148,11 +148,11 @@ impl World {
         return self.played_creature.as_ref();
     }
 
-    pub(crate) fn get_unit_at(&self, coord: &Coord2) -> Option<UnitId> {
-        for unit_id in self.units.iter_ids::<UnitId>() {
-            let unit = self.units.get(&unit_id);
-            if unit.xy.eq(coord) {
-                return Some(unit_id)
+    pub(crate) fn get_site_at(&self, coord: &Coord2) -> Option<SiteId> {
+        for site_id in self.sites.iter_ids::<SiteId>() {
+            let site = self.sites.get(&site_id);
+            if site.xy.eq(coord) {
+                return Some(site_id)
             }
         }
         return None
@@ -164,7 +164,7 @@ impl World {
 pub(crate) mod fixture {
     use std::cell::{Ref, RefMut};
 
-    use crate::{engine::geometry::{Coord2, Size2D}, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, unit::{Unit, UnitId, UnitResources}}};
+    use crate::{engine::geometry::{Coord2, Size2D}, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, site::{Site, SiteId, SiteResources}}};
 
     use super::*;
 
@@ -285,15 +285,15 @@ pub(crate) mod fixture {
                 supports_plot: None,
             });
 
-            let _: UnitId = world.units.add(Unit {
+            let _: SiteId = world.sites.add(Site {
                 artifacts: Vec::new(),
                 cemetery: Vec::new(),
                 name: None,
                 creatures: vec!(creature_a1, creature_a2, creature_a3, creature_a4),
                 population_peak: (2, 1),
-                resources: UnitResources { food: 0. },
+                resources: SiteResources { food: 0. },
                 settlement: None,
-                unit_type: crate::world::unit::UnitType::Village,
+                site_type: crate::world::site::SiteType::Village,
                 xy: Coord2::xy(1, 1),
                 structures: Vec::new()
             });
@@ -339,7 +339,7 @@ pub(crate) mod fixture {
 
 impl World {
 
-    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, unit_id: &UnitId, rng: &mut Rng) -> Result<(), &'static str> {
+    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, site_id: &SiteId, rng: &mut Rng) -> Result<(), &'static str> {
         let mother = self.creatures.get_mut(&mother_id);
 
         let father_id = mother.spouse.ok_or("Woman with no spouse trying to have a child")?;
@@ -368,13 +368,13 @@ impl World {
         drop(mother);
         drop(father);
         let child_id = self.creatures.add(child);
-        let mut unit = self.units.get_mut(unit_id);
-        unit.creatures.push(child_id);
+        let mut site = self.sites.get_mut(site_id);
+        site.creatures.push(child_id);
 
-        let structure = unit.structure_occupied_by_mut(&mother_id).ok_or("Mother had child without a house")?;
+        let structure = site.structure_occupied_by_mut(&mother_id).ok_or("Mother had child without a house")?;
         structure.add_ocuppant(child_id);
 
-        drop(unit);
+        drop(site);
         self.record_event(Event::CreatureBirth { date: self.date.clone(), creature_id: child_id });
         {
             let mut father = self.creatures.get_mut(&father_id);
@@ -387,10 +387,10 @@ impl World {
         Ok(())
     }
 
-    pub(crate) fn creature_start_new_home_same_unit(&mut self, creature_id: CreatureId, unit_id: &UnitId) -> Result<(), &'static str> {
-        let mut unit = self.units.get_mut(unit_id);
-        let creature = self.creatures.get(unit_id);
-        let current_home = unit.structure_occupied_by_mut(&creature_id).ok_or("Homeless creature trying to start new home")?;
+    pub(crate) fn creature_start_new_home_same_site(&mut self, creature_id: CreatureId, site_id: &SiteId) -> Result<(), &'static str> {
+        let mut site = self.sites.get_mut(site_id);
+        let creature = self.creatures.get(site_id);
+        let current_home = site.structure_occupied_by_mut(&creature_id).ok_or("Homeless creature trying to start new home")?;
 
         // Spouse and children
         let family = current_home.occupants_drain(|id| {
@@ -406,7 +406,7 @@ impl World {
         });
 
         // Moves into existing house
-        for structure in unit.structures.iter_mut() {
+        for structure in site.structures.iter_mut() {
             if structure.get_type() == &StructureType::House && structure.get_status() == &StructureStatus::Abandoned {
                 for id in family {
                     structure.add_ocuppant(id);
@@ -420,17 +420,17 @@ impl World {
         for creature_id in family {
             structure.add_ocuppant(creature_id);
         }
-        unit.structures.push(structure);
+        site.structures.push(structure);
         return Ok(())
     }
 
-    pub(crate) fn creature_kill_creature(&mut self, killed_id: CreatureId, killed_unit: UnitId, killer_id: CreatureId, killed_with: Option<ItemId>, death_unit: UnitId) {
-        self.kill_creature(killed_id, killed_unit, death_unit, CauseOfDeath::KilledInBattle(killer_id, killed_with));
+    pub(crate) fn creature_kill_creature(&mut self, killed_id: CreatureId, killed_site: SiteId, killer_id: CreatureId, killed_with: Option<ItemId>, death_site: SiteId) {
+        self.kill_creature(killed_id, killed_site, death_site, CauseOfDeath::KilledInBattle(killer_id, killed_with));
     }
 
-    pub(crate) fn kill_creature(&mut self, creature_id: CreatureId, unit_from_id: UnitId, unit_death_id: UnitId, cause_of_death: CauseOfDeath) {
+    pub(crate) fn kill_creature(&mut self, creature_id: CreatureId, site_from_id: SiteId, site_death_id: SiteId, cause_of_death: CauseOfDeath) {
         let now = self.date.clone();
-        let died_home = unit_from_id == unit_death_id;
+        let died_home = site_from_id == site_death_id;
         {
             let mut creature = self.creatures.get_mut(&creature_id);
             if creature.death.is_some() {
@@ -442,8 +442,8 @@ impl World {
                 let mut spouse = self.creatures.get_mut(&spouse_id);
                 spouse.spouse = None;
             }
-            let mut unit = self.units.get_mut(&unit_from_id);
-            unit.remove_creature(&creature_id);
+            let mut site = self.sites.get_mut(&site_from_id);
+            site.remove_creature(&creature_id);
 
             if let Some(plot_id) = creature.supports_plot {
                 let mut plot = self.plots.get_mut(&plot_id);
@@ -452,10 +452,10 @@ impl World {
 
             // Else, the body is lost
             if died_home {
-                unit.cemetery.push(creature_id);
+                site.cemetery.push(creature_id);
             } else {
-                let mut death_unit = self.units.get_mut(&unit_death_id);
-                if let Some(settlement) = &mut death_unit.settlement {
+                let mut death_site = self.sites.get_mut(&site_death_id);
+                if let Some(settlement) = &mut death_site.settlement {
                     let resources = resources();
                     let species = resources.species.get(&creature.species);
                     for drop in species.drops.iter() {
@@ -464,7 +464,7 @@ impl World {
                 }
             }    
 
-            drop(unit);
+            drop(site);
 
             let mut inheritor = None;
             let mut has_possession = false;
@@ -573,39 +573,39 @@ impl World {
             item.owner = None;
         }
 
-        // TODO(NJ5nTVIV): Add to death unit
+        // TODO(NJ5nTVIV): Add to death site
     }
 
-    // Units
+    // Sites
 
-    pub(crate) fn unit_change_leader(&mut self, unit_id: &UnitId, new_leader: CreatureId) -> Result<(), &'static str> {
+    pub(crate) fn site_change_leader(&mut self, site_id: &SiteId, new_leader: CreatureId) -> Result<(), &'static str> {
         {
             let mut leader = self.creatures.get_mut(&new_leader);
             leader.profession = Profession::Ruler;
         }
         {
-            let mut unit = self.units.get_mut(unit_id);
-            unit.settlement.as_mut().ok_or("No election should be held with no settlement")?.leader = Some(new_leader);
+            let mut site = self.sites.get_mut(site_id);
+            site.settlement.as_mut().ok_or("No election should be held with no settlement")?.leader = Some(new_leader);
 
             // Swaps the house to the townhall
-            let move_into_townhall = unit.structure_occupied_by(&new_leader).ok_or("Homeless leader")?.get_type() == &StructureType::House;
+            let move_into_townhall = site.structure_occupied_by(&new_leader).ok_or("Homeless leader")?.get_type() == &StructureType::House;
             if move_into_townhall {
-                let townhall = unit.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
+                let townhall = site.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
                 let townhall_occupants = townhall.occupants_take();
 
-                let house = unit.structure_occupied_by_mut(&new_leader).ok_or("Homeless leader")?;
+                let house = site.structure_occupied_by_mut(&new_leader).ok_or("Homeless leader")?;
                 let house_occupants = house.occupants_take();
                 for id in townhall_occupants {
                     house.add_ocuppant(id);
                 }
 
-                let townhall = unit.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
+                let townhall = site.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
                 for id in house_occupants {
                     townhall.add_ocuppant(id);
                 }
             }
         }
-        self.record_event(Event::NewLeaderElected { date: self.date.clone(), unit_id: *unit_id, creature_id: new_leader });
+        self.record_event(Event::NewLeaderElected { date: self.date.clone(), site_id: *site_id, creature_id: new_leader });
         return Ok(())
     }
 

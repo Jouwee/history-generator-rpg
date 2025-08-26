@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 use graphics::{image, Transformed};
 use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, unit::UnitType, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, site::SiteType, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
@@ -235,19 +235,19 @@ impl GameState {
 
         // Spawn actors
         let ai_group = self.ai_groups.next_group();
-        let unit = world.get_unit_at(&self.coord.xy);
-        if let Some(unit) = unit {
-            let unit = world.units.get(&unit);
-            match unit.unit_type {
-                UnitType::BanditCamp | UnitType::VarningrLair | UnitType::WolfPack => {
+        let site = world.get_site_at(&self.coord.xy);
+        if let Some(site) = site {
+            let site = world.sites.get(&site);
+            match site.site_type {
+                SiteType::BanditCamp | SiteType::VarningrLair | SiteType::WolfPack => {
                     self.ai_groups.make_hostile(AiGroups::player(), ai_group);
                 },
-                UnitType::Village => ()
+                SiteType::Village => ()
             };
 
             // TODO(WCF3fkX3): Review species spawning
 
-            for structure in unit.structures.iter() {
+            for structure in site.structures.iter() {
                 let data = structure.generated_data.as_ref().unwrap();
                 let mut spawnpoint_i = 0;
                 for creature_id in structure.occupants() {

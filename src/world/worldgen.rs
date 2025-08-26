@@ -4,7 +4,7 @@ use graphics::Transformed;
 use image::ImageReader;
 use opengl_graphics::{Filter, Texture, TextureSettings};
 
-use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, input::InputEvent, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::map_component::MapComponent, resources::resources::Resources, world::{date::Duration, unit::UnitType}, GameContext};
+use crate::{engine::{assets::assets, audio::TrackMood, gui::UINode, input::InputEvent, render::RenderContext, scene::{Scene, Update}, COLOR_WHITE}, game::map_component::MapComponent, resources::resources::Resources, world::{date::Duration, site::SiteType}, GameContext};
 
 use super::{history_generator::{WorldGenerationParameters, WorldHistoryGenerator}, world::World};
 
@@ -97,7 +97,7 @@ impl Scene for WorldGenScene {
                 break;
             }
         }
-        self.map.update_visible_units(&self.generator.world, |_id, unit| unit.unit_type == UnitType::Village);
+        self.map.update_visible_sites(&self.generator.world, |_id, site| site.site_type == SiteType::Village);
     }
 
     fn input(&mut self, _evt: &InputEvent, _ctx: &mut GameContext) -> ControlFlow<()> {

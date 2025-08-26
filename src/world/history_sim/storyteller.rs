@@ -1,8 +1,8 @@
-use crate::{commons::{interpolate::lerp, rng::Rng}, world::{date::Duration, history_generator::WorldGenerationParameters, unit::{UnitId, UnitType}, world::World}};
+use crate::{commons::{interpolate::lerp, rng::Rng}, world::{date::Duration, history_generator::WorldGenerationParameters, site::{SiteId, SiteType}, world::World}};
 
 pub(crate) struct Storyteller {
     params: WorldGenerationParameters,
-    selected_for_cities: Vec<UnitId>
+    selected_for_cities: Vec<SiteId>
 }
 
 impl Storyteller {
@@ -19,15 +19,15 @@ impl Storyteller {
 
         // Check city count, village count, and maybe promote village to city
         let mut villages = 0;
-        for unit_id in world.units.iter_ids::<UnitId>() {
-            let unit = world.units.get(&unit_id);
-            if let UnitType::Village = unit.unit_type {
-                if unit.creatures.len() == 0 {
-                    self.selected_for_cities.retain(|id| id != &unit_id);
+        for site_id in world.sites.iter_ids::<SiteId>() {
+            let site = world.sites.get(&site_id);
+            if let SiteType::Village = site.site_type {
+                if site.creatures.len() == 0 {
+                    self.selected_for_cities.retain(|id| id != &site_id);
                     continue;
                 }
-                if self.selected_for_cities.len() < self.params.st_city_count as usize && !self.selected_for_cities.contains(&unit_id) && rng.rand_chance(0.3) {
-                    self.selected_for_cities.push(unit_id);
+                if self.selected_for_cities.len() < self.params.st_city_count as usize && !self.selected_for_cities.contains(&site_id) && rng.rand_chance(0.3) {
+                    self.selected_for_cities.push(site_id);
                 } else {
                     villages += 1;
                 }
@@ -46,24 +46,24 @@ impl Storyteller {
         return lerp_global_chances(&BASE_GLOBAL_CHANCES, &chances, self.params.st_strength).scale(factor)
     }
 
-    pub(crate) fn story_teller_unit_chances(&self, unit_id: &UnitId, world: &World, delta_time: &Duration) -> UnitChances {
-        let mut chances = BASE_UNIT_CHANCES.clone();
+    pub(crate) fn story_teller_site_chances(&self, site_id: &SiteId, world: &World, delta_time: &Duration) -> SiteChances {
+        let mut chances = BASE_SITE_CHANCES.clone();
         
-        let unit = world.units.get(unit_id);
+        let site = world.sites.get(site_id);
 
-        if unit.unit_type == UnitType::Village {
+        if site.site_type == SiteType::Village {
 
-            let pop_goal = match self.selected_for_cities.contains(unit_id) {
+            let pop_goal = match self.selected_for_cities.contains(site_id) {
                 true => self.params.st_city_population,
                 false => self.params.st_village_population,
             };
-            let adults = unit.creatures.iter().filter(|id| {
+            let adults = site.creatures.iter().filter(|id| {
                 let creature = world.creatures.get(*id);
                 (world.date - creature.birth).year() > 18
             }).count();
 
-            // Balances unit population
-            let population_divergence = unit.creatures.len() as f32 / pop_goal as f32;
+            // Balances site population
+            let population_divergence = site.creatures.len() as f32 / pop_goal as f32;
             if population_divergence < 0.8 {
                 chances.have_child = chances.have_child * 1.5;
             } else if population_divergence > 1.5 {
@@ -72,7 +72,7 @@ impl Storyteller {
                 chances.have_child = chances.have_child * 0.5;
             }
 
-            // Balances unit population
+            // Balances site population
             let population_divergence = adults as f32 / pop_goal as f32;
             if population_divergence < 0.8 {
                 chances.disease_death = chances.disease_death * 0.;
@@ -87,13 +87,13 @@ impl Storyteller {
         }
 
         let factor = delta_time.percentage_of_year();
-        return lerp_unit_chances(&BASE_UNIT_CHANCES, &chances, self.params.st_strength).scale(factor)
+        return lerp_site_chances(&BASE_SITE_CHANCES, &chances, self.params.st_strength).scale(factor)
     }
 
 }
 
 #[derive(Clone)]
-pub(crate) struct UnitChances {
+pub(crate) struct SiteChances {
     /// Just a base multiplier to be used in more complex rules
     pub(crate) base_multiplier: f32,
     pub(crate) disease_death: f32,
@@ -113,7 +113,7 @@ pub(crate) struct UnitChances {
     pub(crate) great_beast_hunt: f32,
 }
 
-impl UnitChances {
+impl SiteChances {
     fn scale(&self, factor: f32) -> Self {
         Self {
             base_multiplier: self.base_multiplier * factor,
@@ -130,7 +130,7 @@ impl UnitChances {
     }
 }
 
-const BASE_UNIT_CHANCES: UnitChances = UnitChances {
+const BASE_SITE_CHANCES: SiteChances = SiteChances {
     base_multiplier: 1.,
     disease_death: 0.0015,
     have_child: 0.6,
@@ -143,8 +143,8 @@ const BASE_UNIT_CHANCES: UnitChances = UnitChances {
     great_beast_hunt: 0.01
 };
 
-fn lerp_unit_chances(a: &UnitChances, b: &UnitChances, strength: f32) -> UnitChances {
-    UnitChances {
+fn lerp_site_chances(a: &SiteChances, b: &SiteChances, strength: f32) -> SiteChances {
+    SiteChances {
         base_multiplier: lerp(a.base_multiplier as f64, b.base_multiplier as f64, strength as f64) as f32,
         disease_death: lerp(a.disease_death as f64, b.disease_death as f64, strength as f64) as f32,
         have_child: lerp(a.have_child as f64, b.have_child as f64, strength as f64) as f32,
