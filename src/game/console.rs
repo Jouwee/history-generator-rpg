@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, state::GameState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, history_sim::history_simulation::{HistorySimulation}, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, loadsave::SaveFile, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, history_sim::history_simulation::HistorySimulation}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -32,7 +32,7 @@ impl Console {
         ctx.text(&format!("  {}", self.output), assets().font_standard(), [8, 24], &COLOR_WHITE);
     }
 
-    pub(crate) fn input(&mut self, world: &mut World, chunk: &mut GameState, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
+    pub(crate) fn input(&mut self, scene: &mut GameSceneState, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<()> {
         if let InputEvent::Key { key: Key::Quote } = evt {
             self.visible = !self.visible;
             self.command = String::new();
@@ -97,7 +97,7 @@ impl Console {
                     }
                 },
                 Key::Return => {
-                    match self.run_command(world, chunk, ctx) {
+                    match self.run_command(scene, ctx) {
                         Ok(str) => self.output = str,
                         Err(str) => self.output = str,
                     }
@@ -112,7 +112,7 @@ impl Console {
         return ControlFlow::Continue(())
     }
 
-    fn run_command(&mut self, world: &mut World, state: &mut GameState, ctx: &mut GameContext) -> Result<String, String> {
+    fn run_command(&mut self, scene: &mut GameSceneState, ctx: &mut GameContext) -> Result<String, String> {
         let mut parts = self.command.split(' ');
         let command = parts.next();
         match command {
@@ -122,13 +122,13 @@ impl Console {
 
                 let rng = Rng::seeded(123456);
 
-                let pos = state.player().xy.clone();
-                let mut generator = ChunkGenerator::new(&mut state.chunk, rng.clone());
+                let pos = scene.state.player().xy.clone();
+                let mut generator = ChunkGenerator::new(&mut scene.state.chunk, rng.clone());
 
                 let mut solver = generator.get_jigsaw_solver();
                 let structure = solver.solve_structure(structure, pos, &mut rng.clone(), Vec::new())?;
                 for (pos, piece) in structure.vec.iter() {
-                    generator.place_template(*pos, &piece, &ctx.resources);
+                    generator.place_template(*pos, &piece);
                 }
                 return Result::Ok(format!("Generated"));
                 
@@ -140,11 +140,11 @@ impl Console {
 
                 //let position = parts.next().ok_or("Param 2 should be the position")?;
 
-                let xy = state.player().xy.clone() + Coord2::xy(8, 0);
+                let xy = scene.state.player().xy.clone() + Coord2::xy(8, 0);
 
-                let actor = Actor::from_species(xy, &species_id, &species, state.ai_groups.next_group());
+                let actor = Actor::from_species(xy, &species_id, &species, scene.state.ai_groups.next_group());
 
-                state.spawn(actor);
+                scene.state.spawn(actor);
 
                 return Result::Ok(format!("Spawned"));
             },
@@ -152,16 +152,16 @@ impl Console {
                 let coords = parts.next().ok_or("Param 1 should be the coords")?;
                 let coords = parse_coords(coords)?;
 
-                state.player_mut().xy = coords;
+                scene.state.player_mut().xy = coords;
 
                 return Result::Ok(format!("Spawned"));
             },
             Some("/fill") => {
 
-                state.player_mut().ap.action_points = state.player_mut().ap.max_action_points as i32;
-                state.player_mut().stamina.stamina = state.player_mut().stamina.max_stamina;
-                state.player_mut().cooldowns.clear();
-                state.player_mut().hp.recover_full();
+                scene.state.player_mut().ap.action_points = scene.state.player_mut().ap.max_action_points as i32;
+                scene.state.player_mut().stamina.stamina = scene.state.player_mut().stamina.max_stamina;
+                scene.state.player_mut().cooldowns.clear();
+                scene.state.player_mut().hp.recover_full();
 
                 return Result::Ok(format!("Cheater"));
             },
@@ -173,12 +173,12 @@ impl Console {
 
                 let item = blueprint.make(vec!(), &ctx.resources);
 
-                let _ = state.player_mut().inventory.add(item);
+                let _ = scene.state.player_mut().inventory.add(item);
 
                 return Result::Ok(format!("Item given"));
             },
             Some("/quest") => {
-                for quest in world.codex.quests_mut() {
+                for quest in scene.world.codex.quests_mut() {
                     if quest.status == QuestStatus::InProgress {
                         quest.status = QuestStatus::RewardPending;
                     }
@@ -193,9 +193,12 @@ impl Console {
                 // TODO(WCF3fkX3): Store in the world?
                 let rng = Rng::rand();
 
-                let mut history_simulation = HistorySimulation::new(rng, world.generation_parameters.clone());
+                let mut history_simulation = HistorySimulation::new(rng.clone(), scene.world.generation_parameters.clone());
                 let step = Duration::days(days);
-                history_simulation.simulate_step(step, world);
+                history_simulation.simulate_step(step, &mut scene.world);
+
+                let save_file = SaveFile::new(scene.current_save_file.clone());
+                scene.state.switch_chunk(scene.state.coord.clone(), &save_file, &scene.world);
 
                 return Result::Ok(format!("Days simulated"));
             },

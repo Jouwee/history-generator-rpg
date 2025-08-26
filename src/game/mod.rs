@@ -28,7 +28,6 @@ use crate::engine::{Color, COLOR_WHITE};
 use crate::game::ai::AiState;
 use crate::game::chunk::{ChunkCoord, ChunkLayer};
 use crate::game::codex::{QuestObjective, QuestStatus};
-use crate::game::console::Console;
 use crate::game::gui::character::ingame_menu::{InGameMenu, InGameMenuOption};
 use crate::game::gui::chat_dialog::ChatDialog;
 use crate::game::gui::codex_dialog::CodexDialog;
@@ -104,7 +103,6 @@ pub(crate) struct GameSceneState {
     map_modal: Option<MapModal>,
     game_log: GameLog,
     player_pathing: PlayerPathing,
-    console: Console,
     action_runner: ActionRunner,
     camera_offset: [f64; 2],
     shown_help: bool,
@@ -154,7 +152,6 @@ impl GameSceneState {
             map_modal: None,
             game_log: GameLog::new(),
             player_pathing: PlayerPathing::new(),
-            console: Console::new(),
             action_runner: ActionRunner::new(),
             camera_offset: [0.; 2],
             shown_help: false,
@@ -374,8 +371,6 @@ impl Scene for GameSceneState {
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
-
-        self.console.render(ctx);
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
@@ -520,10 +515,6 @@ impl Scene for GameSceneState {
             self.death_dialog.input(&mut (), &evt, ctx)?;
             // Returns to avoid any other component receiving events
             return ControlFlow::Continue(());
-        }
-
-        if self.console.input(&mut self.world, &mut self.state, &evt, ctx).is_break() {
-            return ControlFlow::Break(());
         }
 
         if let Some(map) = &mut self.map_modal {

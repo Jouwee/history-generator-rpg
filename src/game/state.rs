@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 use graphics::{image, Transformed};
 use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer, Spawner}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, unit::UnitType, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, unit::UnitType, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
@@ -208,7 +208,16 @@ impl GameState {
         // Load or generate new chunk
         let chunk = save_file.load_chunk(&coord, &resources);
         let chunk = match chunk {
-            Ok(chunk) => chunk,
+            Ok(mut chunk) => {
+                // TODO: Dupped code
+                let mut rng = Rng::seeded(coord.xy);
+                rng.next();
+
+                let mut generator = ChunkGenerator::new(&mut chunk, rng);
+                generator.regenerate(world);
+
+                chunk
+            }
             Err(_) => {
                 // TODO: Dupped code
                 let mut rng = Rng::seeded(coord.xy);
@@ -235,24 +244,23 @@ impl GameState {
                 },
                 UnitType::Village => ()
             };
-        }
 
-        for (pos, spawner) in self.chunk.spawn_points() {
-            let actor = match spawner {
-                Spawner::CreatureId(creature_id) => {
+            // TODO(WCF3fkX3): Review species spawning
+
+            for structure in unit.structures.iter() {
+                let data = structure.generated_data.as_ref().unwrap();
+                let mut spawnpoint_i = 0;
+                for creature_id in structure.occupants() {
+                    let pos = data.spawn_points[spawnpoint_i % data.spawn_points.len()];
                     let creature = world.creatures.get(creature_id);
-                    if creature.death.is_some() {
-                        continue;
-                    }
                     let species = resources.species.get(&creature.species);
-                    Actor::from_creature(*pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources)
-                },
-                Spawner::Species(species_id) => {
-                    let species = resources.species.get(species_id);
-                    Actor::from_species(*pos, &species_id, &species, ai_group)
-                },
-            };
-            self.actors.push(actor);
+                    let actor = Actor::from_creature(pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources);
+                    self.actors.push(actor);
+                    spawnpoint_i += 1;
+                }
+
+            }
+
         }
 
         self.turn_controller.roll_initiative(self.actors.len());

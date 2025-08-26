@@ -16,7 +16,7 @@ use piston::ButtonEvent;
 use piston::MouseCursorEvent;
 use piston::window::{Window, WindowSettings};
 
-use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, state::{AiGroups, GameState}}, loadsave::SaveFile, resources::resources::resources_mut, world::main_menu::{MainMenuOption, MainMenuScene}};
+use crate::{engine::{geometry::Size2D, scene::BusEvent}, game::{chunk::{ChunkCoord, ChunkLayer}, console::Console, state::{AiGroups, GameState}}, loadsave::SaveFile, resources::resources::resources_mut, world::main_menu::{MainMenuOption, MainMenuScene}};
 
 pub(crate) mod commons;
 pub(crate) mod chunk_gen;
@@ -42,6 +42,7 @@ pub(crate) struct App {
     sprite_c: f64,
     context: GameContext,
     scene: SceneEnum,
+    console: Console,
     debug_overlay: DebugOverlay,
     display_context: DisplayContext
 }
@@ -95,6 +96,7 @@ impl App {
                 game_state.render(&mut context, &mut self.context);
             },
         }
+        self.console.render(&mut context);
         self.debug_overlay.render(&mut context);
         // TODO: This is really disconnected
         self.display_context.camera_rect = context.camera_rect;
@@ -181,6 +183,7 @@ impl App {
                 let _ = game_state.input(args, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
+                let _ = self.console.input(game_state, &args, &mut self.context).is_break();
                 let _ = game_state.input(args, &mut self.context);
             },
         }
@@ -247,6 +250,7 @@ fn main() {
         sprite_i: 0,
         sprite_c: 0.,
         scene: SceneEnum::None,
+        console: Console::new(),
         debug_overlay: DebugOverlay::new(),
         display_context: DisplayContext {
             scale: 2.,

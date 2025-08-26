@@ -97,11 +97,11 @@ impl Chunk {
         return true;
     }
 
-    pub(crate) fn set_object_idx(&mut self, pos: Coord2, id: usize, resources: &Resources) {
+    pub(crate) fn set_object_idx(&mut self, pos: Coord2, id: usize) {
         // SMELL
         let shadow;
         if id > 0 {
-            shadow = resources.object_tiles.try_get(id - 1).unwrap().casts_shadow;
+            shadow = resources().object_tiles.try_get(id - 1).unwrap().casts_shadow;
         } else {
             shadow = false;
         }
@@ -204,7 +204,7 @@ impl ChunkSerialized {
                 }
                 if let Some(tile) = self.object_layer[i] {
                     // SMELL: See other smells in this file
-                    chunk.set_object_idx(Coord2::xy(x as i32, y as i32), tile.as_usize() + 1, resources);
+                    chunk.set_object_idx(Coord2::xy(x as i32, y as i32), tile.as_usize() + 1);
                 }
             }
         }

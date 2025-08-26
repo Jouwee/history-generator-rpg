@@ -167,7 +167,7 @@ pub(crate) struct Structure {
     status: StructureStatus,
     /// Occupants of this structure, ordered
     occupants: Vec<CreatureId>,
-    generated_data: Option<StructureGeneratedData>,
+    pub(crate) generated_data: Option<StructureGeneratedData>,
 }
 
 impl Structure {
@@ -187,6 +187,10 @@ impl Structure {
 
     pub(crate) fn get_type(&self) -> &StructureType {
         return &self.structure_type;
+    }
+
+    pub(crate) fn occupants(&self) -> impl Iterator<Item = &CreatureId> {
+        return self.occupants.iter();
     }
 
     pub(crate) fn occupants_drain<F>(&mut self, predicate: F) -> Vec<CreatureId> where F: Fn(&CreatureId) -> bool {
@@ -233,7 +237,23 @@ impl Structure {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct StructureGeneratedData {
-    bounding_boxes: Vec<[u8; 4]>
+    bounding_boxes: Vec<[u8; 4]>,
+    pub(crate) spawn_points: Vec<Coord2>
+}
+
+impl StructureGeneratedData {
+
+    pub(crate) fn new() -> Self {
+        Self {
+            bounding_boxes: Vec::new(),
+            spawn_points: Vec::new()
+        }
+    }
+
+    pub(crate) fn add_rect(&mut self, rect: [u8; 4]) {
+        self.bounding_boxes.push(rect);
+    }
+
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
