@@ -1,8 +1,11 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{assets::assets, gui::{layout_component::LayoutComponent, UIEvent, UINode}, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
+use crate::{engine::{assets::assets, gui::{context_menu::{ContextMenu, ContextMenuModel}, layout_component::LayoutComponent, UIEvent, UINode}, scene::BusEvent, COLOR_WHITE}, game::actor::health_component::BodyPart, globals::perf::perf, loc, resources::resources::resources, world::item::Item, Actor, Color, EquipmentType, GameContext, InputEvent, RenderContext};
 
 use super::{equipment_slot::EquipmentSlot, inventory_slot::InventorySlot};
+
+const MENU_DROP: i32 = 0;
+const MENU_CONSUME: i32 = 1;
 
 pub(crate) struct CharacterDialog {
     layout: LayoutComponent,
@@ -15,7 +18,8 @@ pub(crate) struct CharacterDialog {
     equipment_slot_trinket_1: EquipmentSlot,
     equipment_slot_trinket_2: EquipmentSlot,
     slots: Vec<InventorySlot>,
-    cursor_pos: [i32; 2]
+    cursor_pos: [i32; 2],
+    context_menu: Option<(ContextMenu, ContextMenuModel, usize)>
 }
 
 impl CharacterDialog {
@@ -34,8 +38,31 @@ impl CharacterDialog {
             equipment_slot_trinket_1: EquipmentSlot::new(EquipmentType::Trinket, 0),
             equipment_slot_trinket_2: EquipmentSlot::new(EquipmentType::Trinket, 1),
             slots: Vec::new(),
-            cursor_pos: [0; 2]
+            cursor_pos: [0; 2],
+            context_menu: None,
         }
+    }
+
+    fn show_context_menu(&mut self, i: usize, item: &Option<Item>, pos: [f64; 2], ctx: &mut GameContext) {
+        self.context_menu = item.as_ref().and_then(|item| {
+            let mut menu = ContextMenu::new();
+            let mut model = ContextMenuModel {
+                items: vec!(
+                    (MENU_DROP, loc!("item-ctx-menu-drop").clone()),
+                )
+            };
+
+            let resources = resources();
+            let blueprint = resources.item_blueprints.get(&item.blueprint_id);
+
+            if blueprint.consumable.is_some() {
+                model.items.push((MENU_CONSUME, loc!("item-ctx-menu-consume").clone()));
+            }
+
+            menu.layout_component().anchor_top_left(pos[0], pos[1]);
+            menu.init(&model, ctx);
+            Some((menu, model, i))
+        });
     }
 
 }
@@ -200,6 +227,9 @@ impl UINode for CharacterDialog {
 
         ctx.layout_rect = copy;
 
+        if let Some((menu, model, _)) = &mut self.context_menu {
+            menu.render(&model, ctx, game_ctx);
+        }
 
         if let Some(item) = &game_ctx.drag_item {
             let texture = item.make_texture(&game_ctx.resources);
@@ -210,10 +240,18 @@ impl UINode for CharacterDialog {
     }
 
     fn input(&mut self, state: &mut Self::State, evt: &InputEvent, ctx: &mut GameContext) -> ControlFlow<Self::Input> {
-        match evt {
-            InputEvent::MouseMove { pos } => self.cursor_pos = [pos[0] as i32, pos[1] as i32],
-            _ => ()
+
+        if let Some((menu, model, i)) = &mut self.context_menu {
+            if let ControlFlow::Break((idu, _)) = menu.input(model, evt, ctx) {
+                match idu {
+                    MENU_DROP => (),
+                    MENU_CONSUME => ctx.event_bus.push(BusEvent::ConsumeInventoryItem(*i)),
+                    _ => (),
+                }
+                self.context_menu = None;
+            }
         }
+
         self.equipment_slot_hand.input(&mut state.inventory, evt, ctx)?;
         self.equipment_slot_garment.input(&mut state.inventory, evt, ctx)?;
         self.equipment_slot_inner_armor.input(&mut state.inventory, evt, ctx)?;
@@ -223,7 +261,17 @@ impl UINode for CharacterDialog {
         self.equipment_slot_trinket_1.input(&mut state.inventory, evt, ctx)?;
         self.equipment_slot_trinket_2.input(&mut state.inventory, evt, ctx)?;
         for (i, slot) in self.slots.iter_mut().enumerate() {
-            slot.input(&mut state.inventory.item_mut(i), evt, ctx)?;
+            match slot.input(&mut state.inventory.item_mut(i), evt, ctx) {
+                ControlFlow::Break(UIEvent::ShowContextMenu(pos)) => {
+                    self.show_context_menu(i, &state.inventory.item(i), pos, ctx);
+                    return ControlFlow::Break(UIEvent::None);
+                }
+                other => other?
+            }
+        }
+        match evt {
+            InputEvent::Click { button: _, pos: _ } => self.context_menu = None,
+            _ => ()
         }
         return ControlFlow::Continue(())
     }

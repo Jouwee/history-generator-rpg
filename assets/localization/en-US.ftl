@@ -13,3 +13,7 @@ ingame-menu-quit-to-menu = Quit
 
 ## Map modal
 map-modal-click-fast-travel = Click to fast-travel
+
+## Character modal
+item-ctx-menu-drop = Drop
+item-ctx-menu-consume = Consume

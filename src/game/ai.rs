@@ -212,6 +212,7 @@ impl AiSolver {
                                     Affliction::OnFire { duration } => 5. * *duration as f64,
                                     Affliction::Stunned { duration } => 4. * *duration as f64,
                                     Affliction::Poisoned { duration } => 5. * *duration as f64,
+                                    Affliction::MagicalHealing { duration: _ } => 0. // TODO:,
                                 };
                                 if chunk.ai_groups.is_hostile(ctx.ai_group, actor.ai_group) {
                                     ctx.hostile_damage += score;

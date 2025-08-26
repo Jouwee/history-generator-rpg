@@ -736,6 +736,19 @@ impl Scene for GameSceneState {
                 self.death_dialog.show(DeathDialog::new(), &(), ctx);
                 return ControlFlow::Break(());
             },
+            BusEvent::ConsumeInventoryItem(item) => {
+                let actor = self.state.player_mut();
+                let item = actor.inventory.take(*item).ok_or("Consumed missing item").unwrap();
+                let resources = resources();
+                let blueprint = resources.item_blueprints.get(&item.blueprint_id);
+                let consumable = blueprint.consumable.as_ref().ok_or("Consumed non-consumable item").unwrap();
+                
+                for affliction in consumable.effects.iter() {
+                    actor.add_affliction(&affliction);
+                }
+                
+                return ControlFlow::Break(());
+            },
             _ => ControlFlow::Continue(()),
         }
     }

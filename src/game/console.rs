@@ -222,7 +222,7 @@ fn parse_item(string: &str, blueprints: &ItemBlueprints) -> Result<ItemBlueprint
     if !string.starts_with("itb:") {
         string = String::from("itb:") + &string;
     }
-    Ok(blueprints.id_of(&string))
+    Ok(blueprints.try_id_of(&string).ok_or(String::from("Item not found"))?)
 }
 
 fn parse_coords(string: &str) -> Result<Coord2, String> {

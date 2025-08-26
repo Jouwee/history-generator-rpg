@@ -2,7 +2,7 @@ use std::{sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard}, time::Ins
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, ConsumableComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 static RESOURCES: LazyLock<RwLock<Resources>> = LazyLock::new(|| RwLock::new(Resources::new()));
@@ -653,6 +653,7 @@ impl Resources {
             armor: None,
             artwork_scene: Some(ArtworkSceneBlueprintComponent { }),
             name_blueprint: None,
+            consumable: None,
         };
         self.item_blueprints.add("itb:statue", statue);
 
@@ -675,6 +676,7 @@ impl Resources {
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(15.) }),
             armor: None,
             artwork_scene: None,
+            consumable: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
                 String::from("sword"),
                 String::from("blade"),
@@ -708,6 +710,7 @@ impl Resources {
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::slashing(20.) }),
             armor: None,
             artwork_scene: None,
+            consumable: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(
                 String::from("faller"),
                 String::from("blade"),
@@ -741,6 +744,7 @@ impl Resources {
             mellee_damage: Some(MelleeDamageBlueprintComponent { base_damage: DamageRoll::bludgeoning(15.) }),
             armor: None,
             artwork_scene: None,
+            consumable: None,
             name_blueprint: Some(NameBlueprintComponent { suffixes: vec!(String::from("breaker"), String::from("kiss"), String::from("fist"), String::from("touch")) })
         };
         self.item_blueprints.add("itb:mace", mace_blueprint);
@@ -761,6 +765,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:shirt", shirt_blueprint);
@@ -780,6 +785,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 0, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:pants", shirt_blueprint);
@@ -799,6 +805,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 1), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:boots", shirt_blueprint);
@@ -818,6 +825,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:brigandine", shirt_blueprint);
@@ -841,6 +849,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(10, 10, 10), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:cuirass", shirt_blueprint);
@@ -860,6 +869,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Head) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:crown", shirt_blueprint);
@@ -883,6 +893,7 @@ impl Resources {
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(4, 4, 4), coverage: vec!(BodyPart::Head) }),
             artwork_scene: None,
+            consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:kettlehat", shirt_blueprint);
@@ -903,6 +914,7 @@ impl Resources {
             armor: None,
             artwork_scene: None,
             name_blueprint: None,
+            consumable: None,
         };
         self.item_blueprints.add("itb:tome_firebolt", mace_blueprint);
 
@@ -922,6 +934,7 @@ impl Resources {
             armor: None,
             artwork_scene: None,
             name_blueprint: None,
+            consumable: None,
         };
         self.item_blueprints.add("itb:tome_fireball", mace_blueprint);
 
@@ -941,6 +954,7 @@ impl Resources {
             armor: None,
             artwork_scene: None,
             name_blueprint: None,
+            consumable: None,
         };
         self.item_blueprints.add("itb:tome_teleport", mace_blueprint);
 
@@ -960,8 +974,31 @@ impl Resources {
             armor: None,
             artwork_scene: None,
             name_blueprint: None,
+            consumable: None,
         };
         self.item_blueprints.add("itb:tome_rockpillar", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/items/health_potion.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("health potion"),
+            placed_sprite: placed_sprite.clone(),
+            inventory_sprite: placed_sprite.clone(), 
+            action_provider: None,
+            equippable: None,
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+            consumable: Some(ConsumableComponent {
+                effects: vec!(
+                    Affliction::MagicalHealing { duration: 10 }
+                ),
+            }),
+        };
+        self.item_blueprints.add("itb:health_potion", mace_blueprint);
 
     }
 

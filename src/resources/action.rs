@@ -229,7 +229,7 @@ impl ActionArea {
     
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) enum ActionEffect {
     /// Damages the target
     Damage { add_weapon: bool, damage: DamageRoll },
@@ -253,12 +253,13 @@ pub(crate) enum ActionEffect {
     PickUp,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) enum Affliction {
     Bleeding { duration: usize },
     Poisoned { duration: usize },
     OnFire { duration: usize },
-    Stunned { duration: usize }
+    Stunned { duration: usize },
+    MagicalHealing { duration: usize },
 }
 
 impl Affliction {
@@ -268,6 +269,7 @@ impl Affliction {
             Affliction::Poisoned { duration: _ } => ("Poisoned", Palette::Green),
             Affliction::OnFire { duration: _ } => ("On Fire", Palette::Red),
             Affliction::Stunned { duration: _ } => ("Stunned", Palette::Gray),
+            Affliction::MagicalHealing { duration: _ } => ("Magical healing", Palette::Red),
         }
     }
 }

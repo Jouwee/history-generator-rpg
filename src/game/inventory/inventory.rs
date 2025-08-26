@@ -44,6 +44,10 @@ impl Inventory {
         return self.container.item_mut(index);
     }
 
+    pub(crate) fn take(&mut self, index: usize) -> Option<Item> {
+        return self.container.take(index);
+    }
+
     pub(crate) fn take_all(&mut self) -> Vec<Item> {
         let mut items = self.container.take_all();
         for (_, item) in self.slots.iter_mut() {

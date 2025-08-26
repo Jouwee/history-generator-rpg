@@ -24,6 +24,7 @@ pub(crate) enum BusEvent {
     ShowChatDialog(ShowChatDialogData),
     CreatureKilled(CreatureId),
     AddItemToPlayer(Item),
+    ConsumeInventoryItem(usize),
     PlayerDied,
     QuitToMenu,
     CreateNewCharacter,

@@ -73,6 +73,7 @@ impl Hotbar {
                         Affliction::OnFire { duration } => format!("Target is on fire for {duration} turns"),
                         Affliction::Poisoned { duration } => format!("Target is poisoned for {duration} turns"),
                         Affliction::Stunned { duration } => format!("Target is stunned for {duration} turns"),
+                        Affliction::MagicalHealing { duration } => format!("Target recovers health quickly for {duration} turns"),
                     };
                     tooltip.add_line(TooltipLine::Body(text));
                 }

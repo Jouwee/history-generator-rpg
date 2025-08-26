@@ -54,6 +54,11 @@ impl UINode for InventorySlot {
                     return ControlFlow::Break(UIEvent::None);
                 }
             },
+            InputEvent::Click { button: MouseButton::Right, pos } => {
+                if self.layout.hitbox(pos) {
+                    return ControlFlow::Break(UIEvent::ShowContextMenu(*pos));
+                }
+            },
             InputEvent::MouseMove { pos } => {
                 if self.layout.hitbox(pos) {
                     if let Some(item) = state {

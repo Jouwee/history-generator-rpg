@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::action::Affliction, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 // TODO(ROO4JcDl): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -31,6 +31,7 @@ pub(crate) struct ItemBlueprint {
     pub(crate) armor: Option<ArmorBlueprintComponent>,
     pub(crate) artwork_scene: Option<ArtworkSceneBlueprintComponent>,
     pub(crate) name_blueprint: Option<NameBlueprintComponent>,
+    pub(crate) consumable: Option<ConsumableComponent>,
 }
 
 pub(crate) trait ItemMaker {
@@ -210,4 +211,9 @@ impl ArtworkSceneBlueprintComponent {
         }
     }
 
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ConsumableComponent {
+    pub(crate) effects: Vec<Affliction>,
 }
