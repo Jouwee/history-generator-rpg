@@ -39,7 +39,11 @@ impl SaveFile {
             match file_name {
                 Ok(file_name) => {
                     let save = Self::new(file_name);
-                    saves.push(save.load_metadata()?);
+                    let meta = save.load_metadata();
+                    if meta.is_err() {
+                        continue;
+                    }
+                    saves.push(meta?);
                 },
                 Err(_) => warn!("Can't enumerate save file"),
             }

@@ -1,4 +1,4 @@
-use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::{ItemMaker, NameBlueprintComponent}, material::MaterialId}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
+use crate::{commons::{bitmask::bitmask_get, rng::Rng, strings::Strings}, resources::{item_blueprint::{ItemMaker, NameBlueprintComponent}, material::MaterialId, resources::resources}, world::item::{ArtworkScene, ItemMakeArguments, ItemQuality}, Item, Resources};
 
 pub(crate) struct ItemFactory {}
 
@@ -31,9 +31,10 @@ impl ItemFactory {
         let offset = rng.randu_range(0, 3);
         let mut rewards = Vec::new();
         for i in 0..rewards_count {
-            match (i + offset) % 3 {
+            match (i + offset) % 4 {
                 0 => rewards.push(Self::inner_armor(&mut rng, resources)),
                 1 => rewards.push(Self::spell_tome(&mut rng, resources)),
+                2 => rewards.push(Self::head_armor(&mut rng, resources)),
                 _ => rewards.push(Self::weapon(&mut rng, resources).make()),
             }
         }
@@ -79,15 +80,20 @@ impl ItemFactory {
             return item;
         } else {
             let blueprint = resources.item_blueprints.find("itb:cuirass");
-            let material_id = match rng.randu_range(0, 4) {
-                0 => resources.materials.id_of("mat:steel"),
-                1 => resources.materials.id_of("mat:iron"),
-                2 => resources.materials.id_of("mat:copper"),
-                _ => resources.materials.id_of("mat:bronze")
-            };
+            let material_id = random_metal(rng);
             let item = blueprint.make(vec!(ItemMakeArguments::PrimaryMaterial(material_id)), &resources);
             return item;
         }
+    }
+
+    pub(crate) fn head_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:kettlehat");
+        let material_id = random_metal(rng);
+        let item = blueprint.make(vec!(
+            ItemMakeArguments::PrimaryMaterial(material_id),
+            ItemMakeArguments::Quality(random_quality(rng))
+        ), &resources);
+        return item;
     }
 
     pub(crate) fn pants<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
@@ -103,12 +109,7 @@ impl ItemFactory {
     }
 
     pub(crate) fn statue(rng: &mut Rng, resources: &Resources, scene: ArtworkScene) -> Item {
-        let material_id = match rng.randu_range(0, 4) {
-            0 => resources.materials.id_of("mat:steel"),
-            1 => resources.materials.id_of("mat:iron"),
-            2 => resources.materials.id_of("mat:copper"),
-            _ => resources.materials.id_of("mat:bronze")
-        };
+        let material_id = random_metal(rng);
 
         let blueprint = resources.item_blueprints.find("itb:statue");
 
@@ -270,4 +271,26 @@ impl<'a> WeaponFactory<'a> {
         return Strings::capitalize(format!("{prefix}{suffix}").as_str());
     }
 
+}
+
+fn random_quality(rng: &mut Rng) -> ItemQuality {
+    let f_quality = rng.randf();
+    if f_quality < 0.5 {
+        ItemQuality::Poor
+    } else if f_quality < 0.9 {
+        ItemQuality::Normal
+    } else if f_quality < 0.99 {
+        ItemQuality::Good
+    } else {
+        ItemQuality::Excelent
+    }
+}
+
+fn random_metal(rng: &mut Rng) -> MaterialId {
+    return match rng.randu_range(0, 4) {
+        0 => resources().materials.id_of("mat:steel"),
+        1 => resources().materials.id_of("mat:iron"),
+        2 => resources().materials.id_of("mat:copper"),
+        _ => resources().materials.id_of("mat:bronze")
+    };
 }
