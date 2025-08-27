@@ -1,5 +1,6 @@
 use std::{f64::consts::PI, ops::{Add, Sub}};
 
+use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
 
@@ -110,6 +111,16 @@ impl Coord2 {
         return Vec2::xy(self.x as f32, self.y as f32)
     }
 
+    pub(crate) fn to_vec2i(&self) -> Vec2i {
+        return Vec2i(self.x, self.y)
+    }
+
+}
+
+impl From<Vec2i> for Coord2 {
+    fn from(value: Vec2i) -> Self {
+        return Coord2::xy(value.0, value.1)
+    }
 }
 
 impl Add for Coord2 {

@@ -162,7 +162,7 @@ impl<'a> ChunkGenerator<'a> {
                         
                         let xy = center + Coord2::xy(i % 2, i / 2);
                         if !self.chunk.blocks_movement(&xy) {
-                            generated_data.spawn_points.push(xy);
+                            generated_data.spawn_points.push(xy.to_vec2i());
                         }
 
                     }
@@ -196,7 +196,7 @@ impl<'a> ChunkGenerator<'a> {
                 
                 let xy = center + Coord2::xy(i % 2, i / 2);
                 if !self.chunk.blocks_movement(&xy) {
-                    new_generated_data.spawn_points.push(xy);
+                    new_generated_data.spawn_points.push(xy.to_vec2i());
                 }
 
             }

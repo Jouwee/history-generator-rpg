@@ -254,7 +254,7 @@ impl GameState {
                     let pos = data.spawn_points[spawnpoint_i % data.spawn_points.len()];
                     let creature = world.creatures.get(creature_id);
                     let species = resources.species.get(&creature.species);
-                    let actor = Actor::from_creature(pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources);
+                    let actor = Actor::from_creature(pos.into(), ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources);
                     self.actors.push(actor);
                     spawnpoint_i += 1;
                 }

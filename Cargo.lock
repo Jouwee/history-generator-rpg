@@ -1191,6 +1191,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "math"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "maybe-rayon"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2279,6 +2286,7 @@ dependencies = [
  "common",
  "fluent",
  "image",
+ "math",
  "noise",
  "piston",
  "piston2d-graphics",

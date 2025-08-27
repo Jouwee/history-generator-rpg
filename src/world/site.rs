@@ -1,5 +1,6 @@
 use std::ops::Add;
 
+use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
 use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2, resources::material::MaterialId};
@@ -239,7 +240,7 @@ impl Structure {
 pub(crate) struct StructureGeneratedData {
     pieces: Vec<(String, [u8; 4])>,
     pub(crate) last_generated_status: StructureStatus,
-    pub(crate) spawn_points: Vec<Coord2>
+    pub(crate) spawn_points: Vec<Vec2i>
 }
 
 impl StructureGeneratedData {
