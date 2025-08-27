@@ -161,7 +161,6 @@ impl App {
                         }, &self.context.resources));
                     },
                     ControlFlow::Break(MainMenuOption::LoadGame(save_file)) => {
-                        // TODO(ROO4JcDl): Unwrap
                         let load_save_manager = SaveFile::new(String::from(save_file));
                         let save = load_save_manager.load_metadata().unwrap();
                         let world = load_save_manager.load_world().unwrap();
@@ -317,7 +316,6 @@ fn main() {
                     if let SceneEnum::WorldGen(scene) = app.scene {
                         let mut world = scene.into_world();
 
-                        // TODO(ROO4JcDl): Unwrap
                         let load_save_manager = SaveFile::create_new_save_file().unwrap();
                         load_save_manager.save_world(&world).unwrap();
                         let save = load_save_manager.load_metadata().unwrap();

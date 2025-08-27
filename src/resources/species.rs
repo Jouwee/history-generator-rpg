@@ -4,7 +4,7 @@ use crate::{commons::{resource_map::ResourceMap, rng::Rng}, engine::{assets::{as
 
 use super::action::ActionId;
 
-// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+// TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct SpeciesId(usize);
 impl crate::commons::id_vec::Id for SpeciesId {

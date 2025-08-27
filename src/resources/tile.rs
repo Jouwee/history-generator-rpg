@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D};
 
-// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+// TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct TileId(usize);
 impl crate::commons::id_vec::Id for TileId {

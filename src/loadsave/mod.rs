@@ -67,7 +67,6 @@ impl SaveFile {
 
         let mut metadata = self.load_or_create_metadata()?;
         metadata.last_played = Local::now();
-        // TODO(ROO4JcDl): Playtime
         self.save_metadata(&metadata)?;
 
         let buffer = File::create(self.path("world")?)?;
@@ -94,7 +93,6 @@ impl SaveFile {
 
         let mut metadata = self.load_or_create_metadata()?;
         metadata.last_played = Local::now();
-        // TODO(ROO4JcDl): Playtime
         self.save_metadata(&metadata)?;
 
         let buffer = File::create(self.path("state")?)?;
@@ -121,7 +119,6 @@ impl SaveFile {
 
         let mut metadata = self.load_or_create_metadata()?;
         metadata.last_played = Local::now();
-        // TODO(ROO4JcDl): Playtime
         self.save_metadata(&metadata)?;
 
         let buffer = File::create(self.chunk_path(&chunk.coord)?)?;
@@ -167,7 +164,6 @@ impl SaveFile {
                 save_version: String::from(env!("CARGO_PKG_VERSION")),
                 created: Local::now(),
                 last_played: Local::now(),
-                playtime: Local::now() - Local::now(),
             })?;
         }
         self.load_metadata()
@@ -175,7 +171,6 @@ impl SaveFile {
 
     pub(crate) fn load_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {
         let buffer = File::open(self.path("savefile")?)?;
-        // TODO(ROO4JcDl): Check: If you want to deserialize faster at the cost of more memory, consider using from_reader_with_buffer with a larger buffer, for example 64KB.
         let metadata = ciborium::from_reader(buffer)?;
         return Ok(metadata)
     }
@@ -211,9 +206,6 @@ pub(crate) struct SaveMetadata {
     pub(crate) save_version: String,
     pub(crate) created: DateTime<Local>,
     pub(crate) last_played: DateTime<Local>,
-    pub(crate) playtime: Duration,
-    // TODO(ROO4JcDl):
-    // Played creatures
 }
 
 #[derive(Debug)]

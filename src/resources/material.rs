@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{commons::{damage_model::{DamageRoll}, resource_map::ResourceMap}, engine::Color};
 
-// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+// TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct MaterialId(usize);
 impl crate::commons::id_vec::Id for MaterialId {

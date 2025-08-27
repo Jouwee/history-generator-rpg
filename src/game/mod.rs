@@ -577,10 +577,6 @@ impl Scene for GameSceneState {
         match self.ingame_menu.input(&mut (), &evt, ctx) {
             ControlFlow::Break(InGameMenuOption::None) => return ControlFlow::Break(()),
             ControlFlow::Break(InGameMenuOption::SaveGame) => {
-
-                // TODO(ROO4JcDl): async?
-                // TODO(ROO4JcDl): Why not bus?
-                // TODO(ROO4JcDl): Unwrap
                 let load_save_manager = SaveFile::new(self.current_save_file.clone());
                 load_save_manager.save_world(&self.world).unwrap();
                 load_save_manager.save_game_state(&self.state).unwrap();

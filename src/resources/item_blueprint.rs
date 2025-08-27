@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::action::Affliction, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
-// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+// TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct ItemBlueprintId(usize);
 impl crate::commons::id_vec::Id for ItemBlueprintId {

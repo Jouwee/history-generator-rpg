@@ -151,7 +151,6 @@ impl GameState {
         // TODO: Size from params
         let mut state = GameState::new(coord, Size2D(80, 80), player, resources);
         state.load_or_generate_chunk(state.coord, save_file, world);
-        // TODO(ROO4JcDl): Unwrap
         save_file.save_game_state(&state).unwrap();
         return state;
     }
@@ -160,9 +159,7 @@ impl GameState {
         let offset = coord.xy - self.coord.xy;
         let change_layer = coord.layer != self.coord.layer;
         // Saves the chunk
-        // TODO(ROO4JcDl): Unwrap
         save_file.save_chunk(&self.chunk).unwrap();
-        // TODO(ROO4JcDl): Offload actors
         // Resets the state
         self.coord = coord;
         self.actors.clear();
@@ -199,7 +196,6 @@ impl GameState {
             }
         }
 
-        // TODO(ROO4JcDl): Unwrap
         save_file.save_game_state(&self).unwrap();
     }
 

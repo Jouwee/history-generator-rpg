@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::world::World, Actor, GameContext, SPRITE_FPS};
 
-// TODO(ROO4JcDl): Should serialize the string id, not the internal id
+// TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
 pub(crate) struct ActionId(usize);
 impl crate::commons::id_vec::Id for ActionId {
