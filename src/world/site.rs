@@ -237,26 +237,32 @@ impl Structure {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct StructureGeneratedData {
-    bounding_boxes: Vec<[u8; 4]>,
+    pieces: Vec<(String, [u8; 4])>,
+    pub(crate) last_generated_status: StructureStatus,
     pub(crate) spawn_points: Vec<Coord2>
 }
 
 impl StructureGeneratedData {
 
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(status: StructureStatus) -> Self {
         Self {
-            bounding_boxes: Vec::new(),
+            pieces: Vec::new(),
+            last_generated_status: status,
             spawn_points: Vec::new()
         }
     }
 
-    pub(crate) fn add_rect(&mut self, rect: [u8; 4]) {
-        self.bounding_boxes.push(rect);
+    pub(crate) fn add_piece(&mut self, piece_name: String, rect: [u8; 4]) {
+        self.pieces.push((piece_name, rect));
+    }
+
+    pub(crate) fn pieces(&self) -> impl Iterator<Item = &(String, [u8; 4])> {
+        self.pieces.iter()
     }
 
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum StructureStatus {
     Occupied,
     // TODO(7gOA81VK): Abandoned since?

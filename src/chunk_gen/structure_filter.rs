@@ -1,10 +1,8 @@
-use crate::{commons::{id_vec::Id, rng::Rng}, resources::resources::resources, Coord2};
-
-use super::jigsaw_structure_generator::JigsawPieceTile;
+use crate::{commons::rng::Rng, resources::{object_tile::ObjectTileId, resources::resources, tile::TileId}, Coord2};
 
 pub(crate) trait StructureFilter {
 
-    fn filter(&mut self, position: Coord2, tile: &JigsawPieceTile) -> Option<JigsawPieceTile>;
+    fn filter(&mut self, position: Coord2, ground: &TileId, object: Option<ObjectTileId>) -> Option<TileId>;
 
 }
 
@@ -13,7 +11,7 @@ pub(crate) struct NoopFilter {}
 
 impl StructureFilter for NoopFilter {
 
-    fn filter(&mut self, _position: Coord2, _tile: &JigsawPieceTile) -> Option<JigsawPieceTile> {
+    fn filter(&mut self, _position: Coord2, _ground: &TileId, _object: Option<ObjectTileId>) -> Option<TileId> {
         return None;
     }
 
@@ -34,33 +32,30 @@ impl AbandonedStructureFilter {
 
 impl StructureFilter for AbandonedStructureFilter {
 
-    fn filter(&mut self, _position: Coord2, tile: &JigsawPieceTile) -> Option<JigsawPieceTile> {
+    fn filter(&mut self, _position: Coord2, ground: &TileId, object: Option<ObjectTileId>) -> Option<TileId> {
         let resources = resources();
-        match tile {
-            JigsawPieceTile::Fixed { ground, object, statue_spot: _, connection: _ } => {
-                // TODO: Bring decay chance from resources
+        let grass = resources.tiles.id_of("tile:grass");
+
+        // TODO: Bring decay chance from resources
                 
-                if let Some(object) = object {
-                    let object = object - 1;
-                    if object == resources.object_tiles.id_of("obj:wall").as_usize() {
-                        if self.rng.rand_chance((self.age as f32 / 150.).clamp(0.0, 0.9)) {
-                            return Some(JigsawPieceTile::Air)
-                        } else {
-                            return None;
-                        }
-                    }
-                    if object == resources.object_tiles.id_of("obj:bed").as_usize() || object == resources.object_tiles.id_of("obj:table").as_usize() || object == resources.object_tiles.id_of("obj:stool").as_usize() || object == resources.object_tiles.id_of("obj:barrel").as_usize() || object == resources.object_tiles.id_of("obj:chair").as_usize() || object == resources.object_tiles.id_of("obj:tent").as_usize() {
-                        return Some(JigsawPieceTile::Air)
-                    }
+        if let Some(object) = object {
+            if object == resources.object_tiles.id_of("obj:wall") {
+                if self.rng.rand_chance((self.age as f32 / 150.).clamp(0.0, 0.9)) {
+                    return Some(grass)
+                } else {
+                    return None;
                 }
-                let ground = *ground;
-                if ground == resources.tiles.id_of("tile:floor").as_usize() || ground == resources.tiles.id_of("tile:cobblestone").as_usize() || ground == resources.tiles.id_of("tile:carpet_red").as_usize() {
-                    if self.rng.rand_chance((self.age as f32 / 50.).clamp(0.0, 0.9)) {
-                        return Some(JigsawPieceTile::Air)
-                    }
-                }
-            },
-            _ => ()
+            }
+            if object == resources.object_tiles.id_of("obj:bed") || object == resources.object_tiles.id_of("obj:table") || object == resources.object_tiles.id_of("obj:stool") || object == resources.object_tiles.id_of("obj:barrel") || object == resources.object_tiles.id_of("obj:chair") || object == resources.object_tiles.id_of("obj:tent") {
+                return Some(grass)
+            }
+        }
+
+        let ground = *ground;
+        if ground == resources.tiles.id_of("tile:floor") || ground == resources.tiles.id_of("tile:cobblestone") || ground == resources.tiles.id_of("tile:carpet_red") {
+            if self.rng.rand_chance((self.age as f32 / 50.).clamp(0.0, 0.9)) {
+                return Some(grass)
+            }
         }
         None
     }

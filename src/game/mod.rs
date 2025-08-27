@@ -15,6 +15,7 @@ use player_pathing::PlayerPathing;
 use serde::{Deserialize, Serialize};
 use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
+use crate::commons::rng::Rng;
 use crate::engine::assets::assets;
 use crate::engine::audio::SoundEffect;
 use crate::engine::gui::button::Button;
@@ -40,6 +41,8 @@ use crate::loadsave::SaveFile;
 use crate::resources::action::{ActionRunner, ActionArea};
 use crate::resources::resources::resources;
 use crate::warn;
+use crate::world::date::Duration;
+use crate::world::history_sim::history_simulation::HistorySimulation;
 use crate::world::site::SiteId;
 use crate::world::world::World;
 use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
@@ -106,6 +109,10 @@ pub(crate) struct GameSceneState {
     action_runner: ActionRunner,
     camera_offset: [f64; 2],
     shown_help: bool,
+
+    // TODO(WCF3fkX3):
+    debug_gen: bool,
+    debug_timer: f64
 }
 
 impl GameSceneState {
@@ -155,6 +162,9 @@ impl GameSceneState {
             action_runner: ActionRunner::new(),
             camera_offset: [0.; 2],
             shown_help: false,
+
+            debug_gen: false,
+            debug_timer: 0.,
         }
     }
 
@@ -374,6 +384,27 @@ impl Scene for GameSceneState {
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
+
+        if self.debug_gen == true {
+
+            self.debug_timer += update.delta_time;
+
+            if self.debug_timer > 0.3 {
+
+                let rng = Rng::rand();
+
+                let mut history_simulation = HistorySimulation::new(rng.clone(), self.world.generation_parameters.clone());
+                let step = Duration::days(75);
+                history_simulation.simulate_step(step, &mut self.world);
+
+                let save_file = SaveFile::new(self.current_save_file.clone());
+                self.state.switch_chunk(self.state.coord.clone(), &save_file, &self.world);
+
+                self.debug_timer -= 0.3;
+            }
+            return;
+        }
+
         if let Some(map) = &mut self.map_modal {
             return map.update(update, ctx);
         }
@@ -633,6 +664,11 @@ impl Scene for GameSceneState {
         }
 
         match evt {
+
+            InputEvent::Key { key: Key::F8 } => {
+                self.debug_gen = !self.debug_gen;
+            },
+
             InputEvent::Key { key: Key::Escape } => {
                 self.ingame_menu.show();
             },

@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
+use common::error::Error;
+
 use crate::{commons::rng::Rng, engine::geometry::Size2D, Coord2};
 
 
@@ -23,6 +25,15 @@ impl JigsawSolver {
 
     pub(crate) fn add_pool(&mut self, name: &str, pool: JigsawPiecePool) {
         self.available_pools.insert(String::from(name), pool);
+    }
+
+    pub(crate) fn find_piece(&self, piece_path: &str) -> Result<&JigsawPiece, Error> {
+        let mut parts = piece_path.split(".");
+        let pool_name = parts.next().ok_or(format!("Invalid path: {piece_path}"))?;
+        let piece_name = parts.next().ok_or(format!("Invalid path: {piece_path}"))?;
+        let pool = self.available_pools.get(pool_name).ok_or(format!("Pool not found: {pool_name}"))?;
+        let piece = pool.pieces.get(piece_name).ok_or(format!("Piece not found: {piece_path}"))?;
+        return Ok(piece);
     }
 
     pub(crate) fn solve_structure(&mut self, starter_pool: &str, position: Coord2, rng: &mut Rng, requirements: Vec<JigsawPieceRequirement>) -> Result<&Structure, String> {
@@ -175,7 +186,7 @@ mod tests_jigsaw_solver {
     #[test]
     fn test_single_buildings() {
         let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
-        let mut pool = JigsawPiecePool::new();
+        let mut pool = JigsawPiecePool::new(String::from("a"));
         pool.add_piece("a.1", parse("a.1", Size2D(3, 3), "###|#_#|###"));
         solver.add_pool("A", pool);
 
@@ -203,11 +214,11 @@ mod tests_jigsaw_solver {
     fn test_unique_connections() {
         let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
 
-        let mut pool = JigsawPiecePool::new();
+        let mut pool = JigsawPiecePool::new(String::from("a"));
         pool.add_piece("a.1", parse("a.1", Size2D(3, 3), "###|#_B|###"));
         solver.add_pool("A", pool);
 
-        let mut pool = JigsawPiecePool::new();
+        let mut pool = JigsawPiecePool::new(String::from("b"));
         pool.add_piece("b.1", parse("b.1", Size2D(3, 3), "###|A_#|###"));
         solver.add_pool("B", pool);
 
@@ -229,7 +240,7 @@ mod tests_jigsaw_solver {
     fn test_requirements() {
         let mut solver = JigsawSolver::new(Size2D(64, 64), Rng::rand());
 
-        let mut pool = JigsawPiecePool::new();
+        let mut pool = JigsawPiecePool::new(String::from("a"));
         pool.add_piece("a.1", parse("a.1", Size2D(1, 2), ".A"));
         pool.add_piece("a.2", parse("a.2", Size2D(1, 2), "A."));
         pool.add_piece("c.1", parse("c.1", Size2D(1, 2), "AA"));
@@ -260,18 +271,21 @@ pub(crate) enum JigsawPieceRequirement {
 }
 
 pub(crate) struct JigsawPiecePool {
+    pub(crate) name: String,
     pub(crate) pieces: BTreeMap<String, JigsawPiece>
 }
 
 impl JigsawPiecePool {
 
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(name: String) -> Self {
         JigsawPiecePool {
+            name,
             pieces: BTreeMap::new()
         }
     }
 
-    pub(crate) fn add_piece(&mut self, name: &str, piece: JigsawPiece) {
+    pub(crate) fn add_piece(&mut self, name: &str, mut piece: JigsawPiece) {
+        piece.name = format!("{}.{name}", self.name);
         self.pieces.insert(String::from(name), piece);
     }
 

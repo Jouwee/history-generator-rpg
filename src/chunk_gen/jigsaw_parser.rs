@@ -36,7 +36,7 @@ impl JigsawParser {
                 if pool_name == "symbols" {
                     continue;
                 }
-                let mut pool = JigsawPiecePool::new();
+                let mut pool = JigsawPiecePool::new(pool_name.clone());
 
                 if let Value::Table(pool_toml) = pool_toml {
 
@@ -88,7 +88,7 @@ impl JigsawParser {
                                                     }
 
                                                     let piece = JigsawPiece {
-                                                        name: pool_name.clone() + piece_name,
+                                                        name: format!("{pool_name}.{piece_name}"),
                                                         size,
                                                         tiles
                                                     };

@@ -210,7 +210,7 @@ impl GameState {
         let chunk = match chunk {
             Ok(mut chunk) => {
                 // TODO: Dupped code
-                let mut rng = Rng::seeded(coord.xy);
+                let mut rng = Rng::rand();
                 rng.next();
 
                 let mut generator = ChunkGenerator::new(&mut chunk, rng);
@@ -220,7 +220,7 @@ impl GameState {
             }
             Err(_) => {
                 // TODO: Dupped code
-                let mut rng = Rng::seeded(coord.xy);
+                let mut rng = Rng::rand();
                 rng.next();
 
                 // TODO: Size from params

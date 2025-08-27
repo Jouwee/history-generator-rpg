@@ -23,6 +23,7 @@ ciborium = "0.2.2"
 fluent = "0.17.0"
 unic-langid = "0.9.6"
 text = { path = "lib/text" }
+common = { path = "lib/common" }
 
 [profile.release]
 # Stip symbols

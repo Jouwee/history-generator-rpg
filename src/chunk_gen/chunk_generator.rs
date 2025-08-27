@@ -1,5 +1,6 @@
 use std::{collections::BTreeSet, time::Instant};
 
+use common::error::Error;
 use noise::{NoiseFn, Perlin};
 
 use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
@@ -64,8 +65,6 @@ impl<'a> ChunkGenerator<'a> {
             match &site.site_type {
                 SiteType::BanditCamp | SiteType::Village => {
 
-                    
-
                     if self.path_endpoints.len() > 0 {
                         let now = Instant::now();
                         self.generate_paths(&mut solver);
@@ -98,37 +97,44 @@ impl<'a> ChunkGenerator<'a> {
 
         let mut solver = self.get_jigsaw_solver();
 
-        let now = Instant::now();
-        let mut found_site = None;
-        for site in world.sites.iter() {
-            let site = site.borrow_mut();
-            if site.xy == self.chunk.coord.xy {
-                found_site = Some(site)
-            }
-        }
-        info!("[Chunk gen] Site search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_site.is_some(), now.elapsed());
-
-        if let Some(mut site) = found_site {
-
+        if let Some(site) = world.get_site_at(&self.chunk.coord.xy) {
+            let mut site = world.sites.get_mut(&site);
             for structure in site.structures.iter_mut() {
-                if structure.generated_data.is_none() {
-                    dbg!(&structure);
-                    match self.generate_structure(structure, &mut solver) {
-                        Ok(data) => structure.generated_data = Some(data),
-                        Err(err) => warn!("{err}")
+                dbg!(&structure);
+                match &structure.generated_data {
+                    None => {
+                        match self.generate_structure(structure, &mut solver) {
+                            Ok(data) => structure.generated_data = Some(data),
+                            Err(err) => warn!("{err}")
+                        }
+                    },
+                    Some(generated_data) => {
+                        match &structure.get_status() {
+                            StructureStatus::Occupied => {
+                                match self.regenerate_structure(structure.get_status().clone(), generated_data, &mut solver) {
+                                    Ok(data) => structure.generated_data = Some(data),
+                                    Err(err) => warn!("{err}")
+                                }
+                            },
+                            StructureStatus::Abandoned => {
+                                if let Err(err) = self.age_structure(structure.get_status().clone(), generated_data, &mut solver) {
+                                    warn!("{err}")
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    fn generate_structure(&mut self, structure: &Structure, solver: &mut JigsawSolver) -> Result<StructureGeneratedData, &'static str> {
+    fn generate_structure(&mut self, structure: &Structure, solver: &mut JigsawSolver) -> Result<StructureGeneratedData, Error> {
         let pool =  match structure.get_type() {
             StructureType::House => "village_house_start",
             StructureType::TownHall => "village_house_ruler",
         };
 
-        let mut generated_data = StructureGeneratedData::new();
+        let mut generated_data = StructureGeneratedData::new(structure.get_status().clone());
 
         loop {
             let pos = self.structure_point_cloud.pop().ok_or("No more possible points for structure")?;
@@ -143,11 +149,10 @@ impl<'a> ChunkGenerator<'a> {
             if let Ok(built_structure) = built_structure {
 
                 for (pos, piece) in built_structure.vec.iter() {
-
                     self.place_template_filtered(*pos, &piece, &mut filter);
                     
                     let rect = [pos.x as u8, pos.y as u8, piece.size.0 as u8, piece.size.1 as u8];
-                    generated_data.add_rect(rect);
+                    generated_data.add_piece(piece.name.clone(), rect);
 
                     let center = *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1);
 
@@ -168,6 +173,61 @@ impl<'a> ChunkGenerator<'a> {
             }
         }
 
+    }
+
+    fn regenerate_structure(&mut self, structure_status: StructureStatus, generated_data: &StructureGeneratedData, solver: &mut JigsawSolver) -> Result<StructureGeneratedData, Error> {
+        let mut new_generated_data = StructureGeneratedData::new(structure_status);
+
+        for (piece_name, rect) in generated_data.pieces() {
+
+            let piece = solver.find_piece(&piece_name)?;
+            let pos = Coord2::xy(rect[0] as i32, rect[1] as i32);
+
+            self.place_template_filtered(pos, &piece, &mut Box::new(NoopFilter {}));
+                    
+            let rect = [pos.x as u8, pos.y as u8, piece.size.0 as u8, piece.size.1 as u8];
+            new_generated_data.add_piece(piece.name.clone(), rect);
+
+            let center = pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1);
+
+            // TODO(WCF3fkX3): Review
+            for i in 0..4 {
+                // self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 3);
+                
+                let xy = center + Coord2::xy(i % 2, i / 2);
+                if !self.chunk.blocks_movement(&xy) {
+                    new_generated_data.spawn_points.push(xy);
+                }
+
+            }
+        }
+
+        Ok(new_generated_data)
+    }
+
+    fn age_structure(&mut self, structure_status: StructureStatus, generated_data: &StructureGeneratedData, solver: &mut JigsawSolver) -> Result<(), Error> {
+        let resources = resources();
+
+        // TODO(WCF3fkX3): Compute
+        let age = 1;
+
+        let mut filter = AbandonedStructureFilter::new(self.rng.clone(), age);
+
+        for (_piece_name, rect) in generated_data.pieces() {
+            for x in rect[0]..(rect[0] + rect[2]) {
+                for y in rect[1]..(rect[1] + rect[3]) {
+                    let position = Coord2::xy(x as i32, y as i32);
+                    let ground = self.chunk.ground_layer.tile(x as usize, y as usize).and_then(|t| resources.tiles.validate_id(t)).ok_or("Invalid tile")?;
+                    let object = self.chunk.get_object_id(position);
+                    let new_tile = filter.filter(position, &ground, object);
+                    if let Some(tile) = new_tile {
+                        self.chunk.ground_layer.set_tile(x as usize, y as usize, tile.as_usize());
+                        self.chunk.set_object_idx(position, 0);
+                    }
+                }
+            }
+        }
+        return Ok(())
     }
 
     fn generate_fixed_terrain_features(&mut self) {
@@ -396,27 +456,30 @@ impl<'a> ChunkGenerator<'a> {
     }
 
     fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, filter: &mut Box<F>) where F: StructureFilter + ?Sized {
+        let resources = resources();
         for i in 0..template.size.area() {
             let x = origin.x as usize + i % template.size.x();
             let y = origin.y as usize + i / template.size.x();
-            let mut tile = template.tiles.get(i).unwrap().clone();
-
-            let filtered = filter.filter(Coord2::xy(x as i32, y as i32), &tile);
-            if let Some(filtered) = filtered {
-                tile = filtered;
-            }
+            let tile = template.tiles.get(i).unwrap().clone();
 
             match tile {
                 JigsawPieceTile::Air => (),
                 JigsawPieceTile::Empty => (),
                 JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
                 JigsawPieceTile::Fixed { ground, object, statue_spot, connection: _ } => {
-                    self.chunk.ground_layer.set_tile(x, y, ground);
-                    if let Some(object) = object {
-                        self.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), object);
-                    }
-                    if statue_spot {
-                        self.statue_spots.push(Coord2::xy(x as i32, y as i32))
+                    let ground_id = resources.tiles.validate_id(ground).unwrap();
+                    let object_id = object.and_then(|object| resources.object_tiles.validate_id(object - 1));
+                    let filtered = filter.filter(Coord2::xy(x as i32, y as i32), &ground_id, object_id);
+                    if let Some(filtered) = filtered {
+                        self.chunk.ground_layer.set_tile(x, y, filtered.as_usize());
+                    } else {
+                        self.chunk.ground_layer.set_tile(x, y, ground);
+                        if let Some(object) = object {
+                            self.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), object);
+                        }
+                        if statue_spot {
+                            self.statue_spots.push(Coord2::xy(x as i32, y as i32))
+                        }
                     }
                 },
             }
