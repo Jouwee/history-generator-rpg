@@ -243,6 +243,10 @@ impl ImageSheetSprite {
         GlImage::new().src_rect(self.rect).draw(&self.image.texture, &DrawState::default(), transform, gl);
     }
 
+    pub(crate) fn draw_colored(&self, transform: [[f64; 3]; 2], color: [f32; 4], gl: &mut GlGraphics) {
+        GlImage::new().color(color).src_rect(self.rect).draw(&self.image.texture, &DrawState::default(), transform, gl);
+    }
+
 }
 
 

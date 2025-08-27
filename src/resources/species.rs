@@ -130,17 +130,22 @@ pub(crate) enum CreatureAppearance {
 
 impl CreatureAppearance {
 
-    pub(crate) fn textures(&self) -> Vec<ImageSheetSprite> {
+    pub(crate) fn textures(&self) -> Vec<(ImageSheetSprite, LayerType)> {
         let mut assets = assets();
         match self {
-            Self::Single(path, i) => vec!(assets.image_sheet(path, SPECIES_SPRITE_SIZE).sprite(*i).unwrap()),
+            Self::Single(path, i) => vec!((assets.image_sheet(path, SPECIES_SPRITE_SIZE).sprite(*i).unwrap(), LayerType::Skin)),
             Self::Composite { index, base, top } => {
                 vec!(
-                    assets.image_sheet(&base, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(),
-                    assets.image_sheet(&top, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(),
+                    (assets.image_sheet(&base, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(), LayerType::Skin),
+                    (assets.image_sheet(&top, SPECIES_SPRITE_SIZE).sprite(*index).unwrap(), LayerType::Hair),
                 )
             }
         }
     }
 
+}
+
+pub(crate) enum LayerType {
+    Skin,
+    Hair
 }

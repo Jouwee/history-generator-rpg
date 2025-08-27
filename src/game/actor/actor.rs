@@ -1,7 +1,7 @@
 use graphics::Transformed;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, LayerType, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -27,6 +27,7 @@ pub(crate) struct Actor {
     pub(crate) level: u32,
     pub(crate) inventory: Inventory,
     pub(crate) cooldowns: Vec<(ActionId, u16)>,
+    age: i32,
     just_entered_fight: bool,
     afflictions: Vec<RunningAffliction>,
 }
@@ -56,6 +57,7 @@ impl Actor {
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
             just_entered_fight: false,
+            age: 20
         }
     }
 
@@ -86,6 +88,7 @@ impl Actor {
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
             just_entered_fight: false,
+            age: (world.date - creature.birth).year()
         }
     }
 
@@ -250,8 +253,27 @@ impl Actor {
     }
 
     pub(crate) fn render_layers(&self, pos: [f64; 2], ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        for sprite in self.sprite.textures().iter() {
-            sprite.draw(ctx.at(pos[0], pos[1]), ctx.gl);
+        ctx.push();
+        if self.age < 16 {
+            let scale = lerp(0.5, 1.0, self.age as f64 / 16.);
+            ctx.context.transform = ctx.context.transform
+                .trans(24. * (1.-scale), 48. * (1.-scale))
+                .scale(scale, scale);
+        }
+        for (sprite, layer_type) in self.sprite.textures().iter() {
+            match layer_type {
+                LayerType::Skin => {
+                    sprite.draw(ctx.at(pos[0], pos[1]), ctx.gl);
+                },
+                LayerType::Hair => {
+                    if self.age > 30 {
+                        let whiteness = lerp(1., 2., (self.age - 30) as f64 / 20.).max(1.) as f32;
+                        sprite.draw_colored(ctx.at(pos[0], pos[1]), [whiteness * 0.8, whiteness * 0.9, whiteness, 1.], ctx.gl);
+                    } else {
+                        sprite.draw(ctx.at(pos[0], pos[1]), ctx.gl);
+                    } 
+                }
+            }
         }
         let mut textures = Vec::new();
         for (slot, item) in self.inventory.all_equipped() {
@@ -277,6 +299,7 @@ impl Actor {
         for (_z, image) in textures {
             ctx.texture_old(image, pos);
         }
+        ctx.try_pop();
     }
 }
 
