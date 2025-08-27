@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::{Arc, LazyLock, Mutex, MutexGuard}};
 
-use graphics::{CharacterCache, DrawState, Image as GlImage, Transformed};
+use graphics::{CharacterCache, DrawState, Image as GlImage, ImageSize, Transformed};
 use image::ImageReader;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, Texture, TextureSettings};
 
@@ -186,15 +186,29 @@ impl ImageSheet {
                 GlImage::new().src_rect(self.map[8]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
             },
             3 => {
-                // Top
-                let transform = ctx.context.transform.trans(rect[0], rect[1]);
-                GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
-                // Center
-                let transform = ctx.context.transform.trans(rect[0], rect[1] + h).scale(1., (rect[3] - h * 2.) / h);
-                GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
-                // Bottom
-                let transform = ctx.context.transform.trans(rect[0], rect[1] + rect[3] - h);
-                GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                let size = self.texture.get_size();
+                // Horizontal
+                if size.0 > self.tile_size.0 as u32 {
+                    // Left
+                    let transform = ctx.context.transform.trans(rect[0], rect[1]);
+                    GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    // Center
+                    let transform = ctx.context.transform.trans(rect[0] + w, rect[1]).scale((rect[2] - w * 2.) / w, 1.);
+                    GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    // Right
+                    let transform = ctx.context.transform.trans(rect[0] + rect[2] - w, rect[1]);
+                    GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                } else { // Vertical
+                    // Top
+                    let transform = ctx.context.transform.trans(rect[0], rect[1]);
+                    GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    // Center
+                    let transform = ctx.context.transform.trans(rect[0], rect[1] + h).scale(1., (rect[3] - h * 2.) / h);
+                    GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    // Bottom
+                    let transform = ctx.context.transform.trans(rect[0], rect[1] + rect[3] - h);
+                    GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                }
             },
             _ => warn!("Can't draw sprite as scalable with size {}", self.len())
         }

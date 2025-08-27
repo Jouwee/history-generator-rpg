@@ -28,6 +28,7 @@ impl Label {
 
     pub(crate) fn font(mut self, font: FontAsset) -> Self {
         self.font = font;
+        self.widths = compute_widths(&self.text, assets().font(&self.font));
         return self;
     }
 
@@ -35,6 +36,12 @@ impl Label {
         self.alignment = alignment;
         return self;
     }
+
+    pub(crate) fn set_text(&mut self, text: String) {
+        self.text = text;
+        self.widths = compute_widths(&self.text, assets().font(&self.font));
+    }
+        
 
     fn break_text(&self, max_width: f64) -> Vec<(&str, f64)> {
         let mut lines = Vec::new();        
@@ -72,7 +79,7 @@ impl UINode for Label {
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
-        let lines = self.break_text(ctx.layout_rect[2]);
+        let lines = self.break_text(layout[2]);
         let mut assets = assets();
         let font = assets.font(&self.font);
         let line_height = font.line_height();
@@ -81,7 +88,7 @@ impl UINode for Label {
         for (line, line_width) in lines {
             let x = match self.alignment {
                 HorizontalAlignment::Left => x,
-                HorizontalAlignment::Center => (x as f64 + (layout[3] / 2.) + (line_width / 2.)) as i32,
+                HorizontalAlignment::Center => (x as f64 + (layout[2] / 2.) - (line_width / 2.)) as i32,
             };
             ctx.text_shadow(&line, font, [x, y as i32], &COLOR_WHITE);   
             y += line_height + 2.;

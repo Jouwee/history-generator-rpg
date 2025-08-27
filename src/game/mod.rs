@@ -36,6 +36,7 @@ use crate::game::gui::death_dialog::DeathDialog;
 use crate::game::gui::help_dialog::HelpDialog;
 use crate::game::gui::inspect_dialog::InspectDialog;
 use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
+use crate::game::gui::time_widget::TimeWidget;
 use crate::game::state::{AiGroups, GameState, PLAYER_IDX};
 use crate::loadsave::SaveFile;
 use crate::resources::action::{ActionRunner, ActionArea};
@@ -91,6 +92,7 @@ pub(crate) struct GameSceneState {
     button_toggle_turn_based: Button,
     hotbar: Hotbar,
     hud: HeadsUpDisplay,
+    time: TimeWidget,
     character_dialog: DialogWrapper<CharacterDialog>,
     codex_dialog: DialogWrapper<CodexDialog>,
     inspect_dialog: DialogWrapper<InspectDialog>,
@@ -138,6 +140,7 @@ impl GameSceneState {
             player_turn_timer: 0.,
             hotbar: Hotbar::new(),
             hud: HeadsUpDisplay::new(),
+            time: TimeWidget::new(),
             button_map,
             button_inventory,
             button_codex,
@@ -277,6 +280,8 @@ impl Scene for GameSceneState {
         self.state.turn_controller.roll_initiative(self.state.actors.len());
         self.hotbar.init(&self.state.player(), ctx);
         self.game_context_menu.init(&(), ctx);
+        self.time.layout_component().anchor_top_right(16., 16.);
+
         if self.state.actors.iter().find(|actor| self.state.ai_groups.is_hostile(AiGroups::player(), actor.ai_group)).is_some() {
             ctx.audio.switch_music(TrackMood::Battle);
         } else {
@@ -347,13 +352,9 @@ impl Scene for GameSceneState {
         image(&vignette.texture, ctx.context.transform.scale(ctx.camera_rect[2] / vignette.size.0 as f64, ctx.camera_rect[3] / vignette.size.1 as f64), ctx.gl);
 
         // UI
-
-        // TODO(WCF3fkX3): Make better UI
-        let date = self.world.date_desc(&self.world.date);
-        ctx.text_shadow(&date, assets().font_standard(), [ctx.layout_rect[2] as i32 - 100, 16], &COLOR_WHITE);
-
         self.hotbar.render(&self.state.player, ctx, game_ctx);
         self.hud.render(self.state.player(), ctx, game_ctx);
+        self.time.render(&(), ctx, game_ctx);
         self.button_inventory.render(&(), ctx, game_ctx);
         self.button_codex.render(&(), ctx, game_ctx);
         self.button_map.render(&(), ctx, game_ctx);
@@ -402,6 +403,7 @@ impl Scene for GameSceneState {
 
                 self.debug_timer -= 0.3;
             }
+            self.time.set_time(&self.world.date);
             return;
         }
 
@@ -422,6 +424,7 @@ impl Scene for GameSceneState {
         }
 
         self.hud.update(self.state.player(), update, ctx);
+        self.time.set_time(&self.world.date);
         if self.can_change_turn_mode() {
             match self.turn_mode {
                 TurnMode::RealTime => self.button_toggle_turn_based.set_text("Trn"),

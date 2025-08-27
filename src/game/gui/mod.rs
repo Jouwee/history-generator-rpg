@@ -6,3 +6,4 @@ pub(crate) mod help_dialog;
 pub(crate) mod hud;
 pub(crate) mod inspect_dialog;
 pub(crate) mod quest_complete_dialog;
+pub(crate) mod time_widget;

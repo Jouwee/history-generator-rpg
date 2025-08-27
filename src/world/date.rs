@@ -30,6 +30,38 @@ impl WorldDate {
         return self.timestamp % DAYS_IN_MONTH;
     }
 
+    pub(crate) fn fmt_long(&self) -> String {
+        // TODO: Localize
+        let day = match self.day() {
+            1 => String::from("1st"),
+            2 => String::from("2nd"),
+            3 => String::from("3rd"),
+            21 => String::from("21st"),
+            22 => String::from("22nd"),
+            23 => String::from("23rd"),
+            n => format!("{n}th")
+        };
+
+        let month = match self.month() {
+            1 => String::from("Jan."),
+            2 => String::from("Feb."),
+            3 => String::from("Mar."),
+            4 => String::from("Apr."),
+            5 => String::from("May."),
+            6 => String::from("June"),
+            7 => String::from("July"),
+            8 => String::from("Aug."),
+            9 => String::from("Sep."),
+            10 => String::from("Oct."),
+            11 => String::from("Nov."),
+            _ => String::from("Dec."),
+        };
+
+        let year = self.year().to_string();
+
+        return format!("{day} of {month}, {year}");
+    }
+
 }
 
 impl Add<Duration> for WorldDate {
