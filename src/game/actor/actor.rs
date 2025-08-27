@@ -118,8 +118,11 @@ impl Actor {
                 Affliction::Stunned { duration: _ } => {
                     self.ap.consume(self.ap.max_action_points / 4);
                 },
-                Affliction::MagicalHealing { duration: _ } => {
-                    self.hp.heal(10.);
+                Affliction::Healing { duration: _, strength } => {
+                    self.hp.heal(strength);
+                },
+                Affliction::Recovery { duration: _, strength } => {
+                    self.hp.recover(strength);
                 },
             }
         }
@@ -129,7 +132,8 @@ impl Actor {
                 Affliction::OnFire { duration } => affliction.delta < duration,
                 Affliction::Poisoned { duration } => affliction.delta < duration,
                 Affliction::Stunned { duration } => affliction.delta < duration,
-                Affliction::MagicalHealing { duration } => affliction.delta < duration,
+                Affliction::Healing { duration, strength: _ } => affliction.delta < duration,
+                Affliction::Recovery { duration, strength: _ } => affliction.delta < duration,
             }
         });
 

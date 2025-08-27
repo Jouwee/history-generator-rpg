@@ -259,7 +259,8 @@ pub(crate) enum Affliction {
     Poisoned { duration: usize },
     OnFire { duration: usize },
     Stunned { duration: usize },
-    MagicalHealing { duration: usize },
+    Healing { duration: usize, strength: f32 },
+    Recovery { duration: usize, strength: f32 },
 }
 
 impl Affliction {
@@ -269,7 +270,8 @@ impl Affliction {
             Affliction::Poisoned { duration: _ } => ("Poisoned", Palette::Green),
             Affliction::OnFire { duration: _ } => ("On Fire", Palette::Red),
             Affliction::Stunned { duration: _ } => ("Stunned", Palette::Gray),
-            Affliction::MagicalHealing { duration: _ } => ("Magical healing", Palette::Red),
+            Affliction::Healing { duration: _, strength : _ } => ("Healing", Palette::Red),
+            Affliction::Recovery { duration: _, strength : _ } => ("Recovery", Palette::Red),
         }
     }
 }

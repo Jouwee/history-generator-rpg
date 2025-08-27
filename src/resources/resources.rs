@@ -994,11 +994,56 @@ impl Resources {
             name_blueprint: None,
             consumable: Some(ConsumableComponent {
                 effects: vec!(
-                    Affliction::MagicalHealing { duration: 10 }
+                    Affliction::Healing { duration: 10, strength: 10. },
+                    Affliction::Recovery { duration: 10, strength: 10. },
                 ),
             }),
         };
         self.item_blueprints.add("itb:health_potion", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/items/comfrey.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("comfrey"),
+            placed_sprite: placed_sprite.clone(),
+            inventory_sprite: placed_sprite.clone(), 
+            action_provider: None,
+            equippable: None,
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+            consumable: Some(ConsumableComponent {
+                effects: vec!(
+                    Affliction::Healing { duration: 50, strength: 0.1 }
+                ),
+            }),
+        };
+        self.item_blueprints.add("itb:comfrey", mace_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/items/echinacea.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let mace_blueprint = ItemBlueprint {
+            name: String::from("echinacea"),
+            placed_sprite: placed_sprite.clone(),
+            inventory_sprite: placed_sprite.clone(), 
+            action_provider: None,
+            equippable: None,
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: None,
+            artwork_scene: None,
+            name_blueprint: None,
+            consumable: Some(ConsumableComponent {
+                effects: vec!(
+                    Affliction::Recovery { duration: 50, strength: 0.1 }
+                ),
+            }),
+        };
+        self.item_blueprints.add("itb:echinacea", mace_blueprint);
 
     }
 

@@ -73,6 +73,9 @@ impl HealthComponent {
         for (_body_part, condition) in self.body_parts.iter_mut() {
             condition.health = (condition.health + health_points).min(condition.max_health);
         }
+    }
+    
+    pub(crate) fn recover(&mut self, health_points: f32) {
         self.current_hp = (self.current_hp + health_points).min(self.max_health_points());
     }
 
