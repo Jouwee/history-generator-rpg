@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{engine::{geometry::Coord2, input::InputEvent}, game::{actor::actor::Actor, chunk::TileMetadata}, world::{creature::CreatureId, item::Item}, GameContext};
+use crate::{engine::{geometry::Coord2, input::InputEvent}, game::{actor::actor::Actor, chunk::TileMetadata}, world::{creature::CreatureId, date::Duration, item::Item}, GameContext};
 use super::render::RenderContext;
 
 pub(crate) struct Update {
@@ -25,6 +25,7 @@ pub(crate) enum BusEvent {
     CreatureKilled(CreatureId),
     AddItemToPlayer(Item),
     ConsumeInventoryItem(usize),
+    SimulateTime(Duration),
     PlayerDied,
     QuitToMenu,
     CreateNewCharacter,

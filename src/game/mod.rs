@@ -272,6 +272,16 @@ impl GameSceneState {
         self.turn_mode = turn_mode;
     }
 
+    fn simulate_time(&mut self, step: Duration) {
+        let rng = self.world.rng().hash(self.world.date);
+
+        let mut history_simulation = HistorySimulation::new(rng.into(), self.world.generation_parameters.clone());
+        history_simulation.simulate_step(step, &mut self.world);
+
+        let save_file = SaveFile::new(self.current_save_file.clone());
+        self.state.switch_chunk(self.state.coord.clone(), &save_file, &self.world);
+    }
+
 }
 
 impl Scene for GameSceneState {
@@ -782,6 +792,10 @@ impl Scene for GameSceneState {
                     actor.add_affliction(&affliction);
                 }
                 
+                return ControlFlow::Break(());
+            },
+            BusEvent::SimulateTime(time) => {
+                self.simulate_time(*time);
                 return ControlFlow::Break(());
             },
             _ => ControlFlow::Continue(()),

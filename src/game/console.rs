@@ -3,7 +3,7 @@ use std::ops::ControlFlow;
 use math::Vec2i;
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, loadsave::SaveFile, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, history_sim::history_simulation::HistorySimulation}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -197,14 +197,8 @@ impl Console {
                 let days = parts.next().ok_or("Param 1 should be the the number of days")?;
                 let days: i32 = days.parse().or(Err("Param 1 should be a number"))?;
 
-                let rng = scene.world.rng().hash(scene.world.date);
-
-                let mut history_simulation = HistorySimulation::new(rng.into(), scene.world.generation_parameters.clone());
                 let step = Duration::days(days);
-                history_simulation.simulate_step(step, &mut scene.world);
-
-                let save_file = SaveFile::new(scene.current_save_file.clone());
-                scene.state.switch_chunk(scene.state.coord.clone(), &save_file, &scene.world);
+                scene.simulate_time(step);
 
                 return Result::Ok(format!("Days simulated"));
             },
