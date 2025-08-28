@@ -231,6 +231,7 @@ impl AiSolver {
                         ActionEffect::Talk => (),
                         ActionEffect::Dig => (),
                         ActionEffect::Sleep => (),
+                        ActionEffect::Harvest => (),
                         ActionEffect::PickUp => (),
                     }
                 }

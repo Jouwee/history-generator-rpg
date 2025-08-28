@@ -1,8 +1,9 @@
 use std::collections::VecDeque;
 
+use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{object_tile::ObjectTileId, resources::resources}, world::{date::Duration, world::World}, Actor, GameContext, SPRITE_FPS};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{item_blueprint::ItemMaker, object_tile::ObjectTileId, resources::resources}, world::{date::Duration, world::World}, Actor, GameContext, SPRITE_FPS};
 
 // TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -52,6 +53,7 @@ pub(crate) const FILTER_CAN_DIG: u8 = 0b0000_0100;
 pub(crate) const FILTER_CAN_SLEEP: u8 = 0b0000_1000;
 pub(crate) const FILTER_ITEM: u8 = 0b0001_0000;
 pub(crate) const FILTER_NOT_HOSTILE: u8 = 0b0010_0000;
+pub(crate) const FILTER_CAN_HARVEST: u8 = 0b0100_0000;
 
 #[derive(Clone)]
 pub(crate) enum ActionTarget {
@@ -114,13 +116,30 @@ impl ActionTarget {
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_SLEEP) {
-                    let object_tile = chunk.chunk.get_object_idx(*cursor);
+                    let object_tile = chunk.chunk.get_object_id(*cursor);
                     let resources = resources();
-                    // SMELL:
-                    if object_tile > 0 && object_tile - 1 != resources.object_tiles.id_of("obj:bed").as_usize() {
-                        return Err(ActionFailReason::NoValidTarget);
+                    if let Some(object_tile) = object_tile {
+                        if object_tile != resources.object_tiles.id_of("obj:bed") {
+                            return Err(ActionFailReason::NoValidTarget);
+                        }
+                    } else {
+                        return Err(ActionFailReason::NoValidTarget);   
                     }
                 }
+
+                if bitmask_get(*filter_mask, FILTER_CAN_HARVEST) {
+                    let resources = resources();
+                    let object_tile = chunk.chunk.get_object_id(*cursor);
+                    if let Some(object_tile) = object_tile {
+                        let object_tile = resources.object_tiles.get(&object_tile);
+                        if object_tile.harvestable.is_none() {
+                            return Err(ActionFailReason::NoValidTarget);
+                        }
+                    } else {
+                        return Err(ActionFailReason::NoValidTarget);   
+                    }
+                }
+
                 if bitmask_get(*filter_mask, FILTER_ITEM) {
                     let item_on_ground = chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| xy == cursor);
                     if item_on_ground.is_none() {
@@ -162,13 +181,13 @@ pub(crate) enum SpellProjectileType {
 
 impl ActionArea {
 
-    pub(crate) fn bounding_box(&self, center: Coord2) -> (Coord2, Coord2) {
+    pub(crate) fn bounding_box(&self, center: Vec2i) -> (Vec2i, Vec2i) {
         match self {
             ActionArea::Target => (center, center),
             ActionArea::Circle { radius } => {
                 let radius = *radius as i32;
-                let start = center - Coord2::xy(radius, radius);
-                let end = center + Coord2::xy(radius, radius);
+                let start = center - Vec2i(radius, radius);
+                let end = center + Vec2i(radius, radius);
                 (start, end)
             }
         }
@@ -176,9 +195,9 @@ impl ActionArea {
 
     pub(crate) fn points(&self, center: Coord2) -> Vec<Coord2> {
         let mut vec = Vec::new();
-        let (start, end) = self.bounding_box(center);
-        for x in start.x..end.x+1 {
-            for y in start.y..end.y+1 {
+        let (start, end) = self.bounding_box(center.to_vec2i());
+        for x in start.x()..end.x()+1 {
+            for y in start.y()..end.y()+1 {
                 let point = Coord2::xy(x, y);
                 if self.point_in_area(center, point) {
                     vec.push(point);
@@ -249,6 +268,8 @@ pub(crate) enum ActionEffect {
     Dig,
     /// Sleeps
     Sleep,
+    /// Harvest something from the object
+    Harvest,
     /// PickUp items
     PickUp,
 }
@@ -586,6 +607,26 @@ impl ActionRunner {
                                         actor.hp.recover_full();
                                         ctx.event_bus.push(BusEvent::SimulateTime(Duration::days(1)));
                                     },
+                                    ActionEffect::Harvest => {
+                                        let resources = resources();
+                                        for point in action.spell_area.points(action.center) {
+                                            // Gets the item
+                                            let object = chunk.chunk.get_object_id(point).expect("Should be checked");
+                                            let object = resources.object_tiles.get(&object);
+                                            let harvestable = object.harvestable.as_ref().expect("Should be checked");
+                                            let item_blueprint = resources.item_blueprints.get(&harvestable.drops);
+                                            let item = item_blueprint.make(vec!(), &resources);
+                                            // Adds to player inventory or drops on the ground
+                                            let actor = chunk.actor_mut(action.actor).unwrap();
+                                            let result = actor.inventory.add(item);
+                                            if let Err(item) = result {
+                                                let texture = item.make_texture(&resources);
+                                                chunk.chunk.items_on_ground.push((action.center.clone(), item, texture));
+                                            }
+                                            // Removes the object
+                                            chunk.chunk.object_layer.set_tile(point.x as usize, point.y as usize, 0);
+                                        }
+                                    }
                                     ActionEffect::PickUp => {
                                         let item_on_ground = match chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center) {
                                             None => None,

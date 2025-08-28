@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::engine::tilemap::Tile;
+use crate::{engine::tilemap::Tile, resources::item_blueprint::ItemBlueprintId};
 
 // TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -18,16 +18,32 @@ impl crate::commons::id_vec::Id for ObjectTileId {
 pub(crate) struct ObjectTile {
     pub(crate) tile: Tile,
     pub(crate) casts_shadow: bool,
-    pub(crate) blocks_movement: bool
+    pub(crate) blocks_movement: bool,
+    pub(crate) harvestable: Option<ObjectHarvestable>
 }
 
 impl ObjectTile {
     pub(crate) fn new(tile: Tile, blocks_movement: bool) -> Self {
-        Self { tile, blocks_movement, casts_shadow: false }
+        Self {
+            tile,
+            blocks_movement,
+            casts_shadow: false,
+            harvestable: None
+        }
     }
 
     pub(crate) fn with_shadow(mut self) -> Self {
         self.casts_shadow = true;
         return self
     }
+
+    pub(crate) fn harvestable(mut self, item: ItemBlueprintId) -> Self {
+        self.harvestable = Some(ObjectHarvestable { drops: item });
+        return self;
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct ObjectHarvestable {
+    pub(crate) drops: ItemBlueprintId
 }

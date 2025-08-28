@@ -2,7 +2,7 @@ use std::{sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard}, time::Ins
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, ConsumableComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_HARVEST, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, ConsumableComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 static RESOURCES: LazyLock<RwLock<Resources>> = LazyLock::new(|| RwLock::new(Resources::new()));
@@ -53,6 +53,8 @@ impl Resources {
         self.load_cultures();
         self.load_biomes();
         self.load_item_blueprints();
+        // SMELL: Circular dependency
+        self.load_object_tiles_late();
         info!("Loading resources took {:.2?}", now.elapsed())
     }
 
@@ -464,6 +466,27 @@ impl Resources {
             damage_sfx: None
         });
 
+        self.actions.add("act:harvest", Action {
+            name: String::from("Harvest"),
+            description: String::from("Harvest"),
+            icon: String::from("missing.png"),
+            log_use: true,
+            cast_sfx: None,
+            ap_cost: 50,
+            stamina_cost: 0.,
+            cooldown: 0,
+            target: ActionTarget::Tile { range: 1.5, filter_mask: FILTER_CAN_HARVEST },
+            area: ActionArea::Target,
+            effects: vec!(
+                ActionEffect::Harvest
+            ),
+            cast_sprite: None,
+            projectile: None,
+            impact_sprite: None,
+            impact_sfx: None,
+            damage_sfx: None
+        });
+
         self.actions.add("act:move", Action {
             name: String::from("Move"),
             description: String::from("Move"),
@@ -630,6 +653,16 @@ impl Resources {
         let image = String::from("chunk_tiles/chair.png");
         self.object_tiles.add("obj:chair", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
 
+    }
+
+    fn load_object_tiles_late(&mut self) {
+        let image = String::from("chunk_tiles/comfrey.png");
+        self.object_tiles.add("obj:comfrey", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true)
+            .harvestable(self.item_blueprints.id_of("itb:comfrey")));
+
+        let image = String::from("chunk_tiles/echinacea.png");
+        self.object_tiles.add("obj:echinacea", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true)
+            .harvestable(self.item_blueprints.id_of("itb:echinacea")));
     }
 
     fn load_item_blueprints(&mut self) {

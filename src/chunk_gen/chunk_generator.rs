@@ -389,11 +389,14 @@ impl<'a> ChunkGenerator<'a> {
     fn collapse_decor(&mut self, resources: &Resources) {
         let tree_noise = Perlin::new(self.rng.derive("trees").seed());
         let flower_noise = Perlin::new(self.rng.derive("flower").seed());
+        let flower_noise_type = Perlin::new(self.rng.derive("flower_type").seed());
 
         let pebles = resources.object_tiles.id_of("obj:pebbles").as_usize() + 1;
         let flowers = resources.object_tiles.id_of("obj:flowers").as_usize() + 1;
         let grass = resources.object_tiles.id_of("obj:grass_decal").as_usize() + 1;
         let tree = resources.object_tiles.id_of("obj:tree").as_usize() + 1;
+        let comfrey = resources.object_tiles.id_of("obj:comfrey").as_usize() + 1;
+        let echinacea = resources.object_tiles.id_of("obj:echinacea").as_usize() + 1;
 
         for x in 1..self.chunk.size.x()-1 {
             for y in 1..self.chunk.size.y()-1 {
@@ -410,10 +413,24 @@ impl<'a> ChunkGenerator<'a> {
                                 self.chunk.object_layer.set_tile(x as usize, y as usize, pebles);
                                 continue;
                             }
-                            if flower_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0.6 && self.rng.rand_chance(0.3) {
-                                self.chunk.object_layer.set_tile(x as usize, y as usize, flowers);
+                            if flower_noise.get([x as f64 / 15.0, y as f64 / 15.0]) > 0.6 {
+                                let f_type = flower_noise_type.get([x as f64 / 30.0, y as f64 / 30.0]);
+                                if f_type < -0.6 {
+                                    if self.rng.rand_chance(0.3) {
+                                        self.chunk.object_layer.set_tile(x as usize, y as usize, flowers);
+                                    }
+                                } else if f_type < 0.3 {
+                                    if self.rng.rand_chance(0.005) {
+                                        self.chunk.object_layer.set_tile(x as usize, y as usize, comfrey);
+                                    }
+                                } else {
+                                    if self.rng.rand_chance(0.005) {
+                                        self.chunk.object_layer.set_tile(x as usize, y as usize, echinacea);
+                                    }
+                                }
                                 continue;
                             }
+                            
                             if self.rng.rand_chance(0.2) {
                                 self.chunk.object_layer.set_tile(x as usize, y as usize, grass);
                             }
