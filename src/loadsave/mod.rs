@@ -153,7 +153,7 @@ impl SaveFile {
             std::fs::create_dir(&folder)?;
         }
 
-        Ok(folder.join(&format!("{}.{}.{}", coord.xy.x, coord.xy.y, layer)))
+        Ok(folder.join(&format!("{}.{}.{}", coord.xy.x(), coord.xy.y(), layer)))
     } 
 
     fn load_or_create_metadata(&self) -> Result<SaveMetadata, LoadSaveError> {

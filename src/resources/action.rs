@@ -80,7 +80,7 @@ impl ActionTarget {
                         return Err(ActionFailReason::CantSee);
                     }
                 }
-                let target = chunk.actors_iter().find(|npc| npc.xy == *cursor);
+                let target = chunk.actors_iter().find(|npc| npc.xy == cursor.to_vec2i());
                 let target = target.ok_or_else(|| ActionFailReason::NoValidTarget)?;
 
                 // SMELL: Maybe not the best way to check self?
@@ -108,7 +108,7 @@ impl ActionTarget {
                     }
                 }
                 if bitmask_get(*filter_mask, FILTER_CAN_DIG) {
-                    let tile_metadata = chunk.chunk.tiles_metadata.get(&cursor).and_then(|m| Some(m));
+                    let tile_metadata = chunk.chunk.tiles_metadata.get(&cursor.to_vec2i()).and_then(|m| Some(m));
                     if tile_metadata.is_none() {
                         return Err(ActionFailReason::NoValidTarget);
                     }
@@ -212,7 +212,7 @@ impl ActionArea {
                     if *idx == actor_index {
                         return false;
                     }
-                    return actor.borrow().xy == center
+                    return actor.borrow().xy == center.to_vec2i()
                 }));
             },
             ActionArea::Circle { radius } => {
@@ -221,7 +221,7 @@ impl ActionArea {
                     if *idx == actor_index {
                         return false;
                     }
-                    return actor.borrow().xy.dist_squared(&center) < radius
+                    return actor.borrow().xy.dist_squared(&center.to_vec2i()) < radius
                 }));
             }
         }
@@ -299,7 +299,7 @@ impl ActionRunner {
         if actor.cooldowns.iter().any(|cooldown| cooldown.0 == *action_id) {
             return Err(ActionFailReason::OnCooldown);
         }
-        return action.target.can_use(&actor.xy, chunk, &cursor);
+        return action.target.can_use(&actor.xy.into(), chunk, &cursor);
     }
 
     pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut GameState, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
@@ -325,13 +325,14 @@ impl ActionRunner {
         }
 
         let pos = match &action.target {
-            ActionTarget::Caster => actor.xy.clone(),
+            ActionTarget::Caster => actor.xy.clone().into(),
             ActionTarget::Actor { range: _, filter_mask: _ } => cursor,
             ActionTarget::Tile { range: _, filter_mask: _ } => cursor,
         };
 
         // Change facing accordingly
-        let angle_degrees = actor.xy.angle_between_deg(&pos);
+        let actor_xy: Coord2 = actor.xy.into();
+        let angle_degrees = actor_xy.angle_between_deg(&pos);
         if angle_degrees >= 135. && angle_degrees <= 225. { // Facing mostly left
             actor.sprite_flipped = true;
         } else if angle_degrees >= 315. || angle_degrees <= 45. { // Facing mostly right
@@ -345,7 +346,7 @@ impl ActionRunner {
         }
 
         if let Some(cast) = &action.cast_sprite {
-            steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.clone()));
+            steps.push_back(RunningActionStep::Sprite(cast.0.clone(), actor.xy.into()));
             let sheet = assets().image_sheet(&cast.0.path, cast.0.tile_size.clone());
             steps.push_back(RunningActionStep::Wait(sheet.len() as f64 * SPRITE_FPS))
         }
@@ -356,7 +357,7 @@ impl ActionRunner {
                 ImpactPosition::EachTarget => {
                     action.area.actors_indices(pos, actor_index, chunk.actors_iter()).iter().map(|i| {
                         let actor = chunk.actor(*i).unwrap();
-                        actor.xy.clone()
+                        actor.xy.into()
                     }).collect()
                 }
                 ImpactPosition::EachTile => action.area.points(pos)
@@ -373,7 +374,7 @@ impl ActionRunner {
 
             for point in impact_points(projectile.position.clone()) {
                 steps.push_back(RunningActionStep::Projectile(projectile.clone(), point));
-                longest_distance = longest_distance.max(from.dist(&point));
+                longest_distance = longest_distance.max(from.dist(&point.to_vec2i()));
             }
 
             if projectile.wait {
@@ -454,15 +455,15 @@ impl ActionRunner {
                 
                                             match damage {
                                                 DamageOutput::Dodged => {
-                                                    effect_layer.add_text_indicator(target.xy, "Dodged", Palette::Gray);
+                                                    effect_layer.add_text_indicator(target.xy.into(), "Dodged", Palette::Gray);
                                                 },
                                                 DamageOutput::Hit(damage) => {
                                                     target.hp.hit(target_body_part, damage);
-                                                    effect_layer.add_damage_number(target.xy, damage);
+                                                    effect_layer.add_damage_number(target.xy.into(), damage);
                                                 },
                                                 DamageOutput::CriticalHit(damage) => {
                                                     target.hp.critical_hit(target_body_part, damage);
-                                                    effect_layer.add_damage_number(target.xy, damage);
+                                                    effect_layer.add_damage_number(target.xy.into(), damage);
                                                 },
                                             }
                                             game_log.log(GameLogEntry::damage(target, target_is_player, &damage, &world, &ctx.resources));
@@ -472,7 +473,7 @@ impl ActionRunner {
                                             let xy = target.xy.clone();
 
                                             // Animations
-                                            let dir = xy - actor_xy;
+                                            let dir = (xy - actor_xy).into();
                                             target.animation.play(&Self::build_hurt_anim(dir));
 
                                             // Hit sound effect
@@ -509,7 +510,7 @@ impl ActionRunner {
                                                 GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), action.actor == PLAYER_IDX),
                                                 GameLogPart::Text(format!(" is {}", name))
                                             )));
-                                            effect_layer.add_text_indicator(target.xy, name, color);
+                                            effect_layer.add_text_indicator(target.xy.into(), name, color);
                                             target.add_affliction(&affliction)
                                         }
                                     },
@@ -520,13 +521,13 @@ impl ActionRunner {
                                     },
                                     ActionEffect::TeleportActor => {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
-                                        actor.xy = action.center
+                                        actor.xy = action.center.to_vec2i()
                                     },
                                     ActionEffect::Walk => {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
                                         let from = actor.xy.clone();
-                                        actor.xy = action.center;
-                                        actor.animation.play(&Self::build_walk_anim(&from, &action.center));
+                                        actor.xy = action.center.to_vec2i();
+                                        actor.animation.play(&Self::build_walk_anim(&from.into(), &action.center));
                                         if let Some(sound) = chunk.chunk.get_step_sound(action.center, &ctx.resources) {
                                             ctx.audio.play_once(sound);
                                         }
@@ -539,7 +540,7 @@ impl ActionRunner {
                                         let item = chunk.chunk.items_on_ground.iter().enumerate().find(|(_, (xy, _item, _tex))| *xy == action.center)
                                             .and_then(|(_, (_, item, _))| Some(item.clone()));
 
-                                        let tile_metadata = chunk.chunk.tiles_metadata.get(&action.center).cloned();
+                                        let tile_metadata = chunk.chunk.tiles_metadata.get(&action.center.to_vec2i()).cloned();
 
                                         ctx.event_bus.push(BusEvent::ShowInspectDialog(ShowInspectDialogData {
                                             actor,
@@ -553,20 +554,20 @@ impl ActionRunner {
                                             .and_then(|i| chunk.actor(*i).cloned());
                                         if let Some(actor) = actor {
                                             ctx.event_bus.push(BusEvent::ShowChatDialog(ShowChatDialogData {
-                                                world_coord: chunk.coord.xy,
+                                                world_coord: chunk.coord.xy.into(),
                                                 actor,
                                             }))
                                         }
                                     },
                                     ActionEffect::Dig => {
                                         for point in action.spell_area.points(action.center) {
-                                            let tile_metadata = chunk.chunk.tiles_metadata.get(&point).cloned();
+                                            let tile_metadata = chunk.chunk.tiles_metadata.get(&point.to_vec2i()).cloned();
                                             if let Some(meta) = &tile_metadata {
                                                 match meta {
                                                     TileMetadata::BurialPlace(creature_id) => {
 
                                                         chunk.chunk.remove_object(point.clone());
-                                                        chunk.chunk.tiles_metadata.remove(&point);
+                                                        chunk.chunk.tiles_metadata.remove(&point.to_vec2i());
 
                                                         let creature = world.creatures.get(creature_id);
                                                         if let Some(details) = &creature.details {
@@ -604,7 +605,7 @@ impl ActionRunner {
                             let actor = chunk.actor(action.actor).unwrap();
                             match &projectile.projectile_type {
                                 SpellProjectileType::Projectile { sprite, speed } => {
-                                    effect_layer.add_projectile(actor.xy, *to, *speed as f64, sprite.clone());
+                                    effect_layer.add_projectile(actor.xy.into(), *to, *speed as f64, sprite.clone());
                                 }
                             }
                         },

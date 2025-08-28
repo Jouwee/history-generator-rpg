@@ -3,7 +3,7 @@ use std::ops::Add;
 use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{id_vec::IdVec, rng::Rng}, engine::geometry::Coord2, resources::material::MaterialId};
+use crate::{commons::{id_vec::IdVec, rng::Rng}, resources::material::MaterialId};
 
 use super::{creature::{CreatureId, Profession}, item::ItemId};
 
@@ -22,7 +22,7 @@ pub(crate) type Sites = IdVec<Site>;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Site {
-    pub(crate) xy: Coord2,
+    pub(crate) xy: Vec2i,
     pub(crate) name: Option<String>,
     pub(crate) creatures: Vec<CreatureId>,
     pub(crate) cemetery: Vec<CreatureId>,
@@ -117,7 +117,7 @@ mod tests_site {
     #[test]
     fn test_remove_creature() {
         let mut site = Site {
-            xy: Coord2::xy(0, 0),
+            xy: Vec2i(0, 0),
             creatures: Vec::new(),
             cemetery: Vec::new(),
             resources: SiteResources {
@@ -273,5 +273,6 @@ pub(crate) enum StructureStatus {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum StructureType {
     House,
-    TownHall
+    TownHall,
+    BanditCamp
 }

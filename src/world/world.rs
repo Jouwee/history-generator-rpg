@@ -1,9 +1,10 @@
 use std::{fs::File, io::Write};
 
-use math::rng::Rng;
+use common::error::Error;
+use math::{rng::Rng, Vec2i};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Structure, StructureStatus, StructureType, SiteId, SiteType}}, Event, Resources};
+use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{SettlementComponent, Site, SiteId, SiteResources, SiteType, Structure, StructureStatus, StructureType}}, Event, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, site::Sites};
 
@@ -55,7 +56,7 @@ impl World {
                     let creature = self.creatures.get(creature_id);
                     let age = (self.date - creature.birth).year();
                     if age > 20 && age < 40 && creature.spouse.is_none() && creature.profession == Profession::Peasant {
-                        candidate = Some((creature_id.clone(), site.xy.clone()));
+                        candidate = Some((creature_id.clone(), site.xy.into()));
                         break 'outer;
                     }
                 }
@@ -156,7 +157,7 @@ impl World {
     pub(crate) fn get_site_at(&self, coord: &Coord2) -> Option<SiteId> {
         for site_id in self.sites.iter_ids::<SiteId>() {
             let site = self.sites.get(&site_id);
-            if site.xy.eq(coord) {
+            if site.xy.eq(&coord.to_vec2i()) {
                 return Some(site_id)
             }
         }
@@ -169,7 +170,7 @@ impl World {
 pub(crate) mod fixture {
     use std::cell::{Ref, RefMut};
 
-    use crate::{engine::geometry::{Coord2, Size2D}, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, site::{Site, SiteId, SiteResources}}};
+    use crate::{engine::geometry::Size2D, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, site::{Site, SiteId, SiteResources}}};
 
     use super::*;
 
@@ -299,7 +300,7 @@ pub(crate) mod fixture {
                 resources: SiteResources { food: 0. },
                 settlement: None,
                 site_type: crate::world::site::SiteType::Village,
-                xy: Coord2::xy(1, 1),
+                xy: Vec2i(1, 1),
                 structures: Vec::new()
             });
 
@@ -344,7 +345,7 @@ pub(crate) mod fixture {
 
 impl World {
 
-    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, site_id: &SiteId, rng: &mut OldRng) -> Result<(), &'static str> {
+    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, site_id: &SiteId, rng: &mut OldRng) -> Result<(), Error> {
         let mother = self.creatures.get_mut(&mother_id);
 
         let father_id = mother.spouse.ok_or("Woman with no spouse trying to have a child")?;
@@ -392,7 +393,7 @@ impl World {
         Ok(())
     }
 
-    pub(crate) fn creature_start_new_home_same_site(&mut self, creature_id: CreatureId, site_id: &SiteId) -> Result<(), &'static str> {
+    pub(crate) fn creature_start_new_home_same_site(&mut self, creature_id: CreatureId, site_id: &SiteId) -> Result<(), Error> {
         let mut site = self.sites.get_mut(site_id);
         let creature = self.creatures.get(site_id);
         let current_home = site.structure_occupied_by_mut(&creature_id).ok_or("Homeless creature trying to start new home")?;
@@ -427,6 +428,62 @@ impl World {
         }
         site.structures.push(structure);
         return Ok(())
+    }
+
+    pub(crate) fn creature_leave_for_bandit_camp(&mut self, creature_id: CreatureId, site_id: SiteId, rng: &mut Rng) -> Result<(), Error> {
+        let site = self.sites.get(&site_id);
+        let site_xy = site.xy.clone();
+        drop(site);
+        // Looks for a camp nearby
+        let existing_camp = self.sites.iter_id_val().find(|(_site_id, site)| {
+            let site = site.borrow();
+            site.site_type == SiteType::BanditCamp
+                && site.xy.dist_squared(&site_xy) < 15.*15.
+                && site.creatures.len() > 0
+        });
+
+
+        
+        // Structure
+
+
+        // If there's a camp nearby
+        if let Some((camp_id, existing_camp)) = existing_camp {
+            let mut existing_camp = existing_camp.borrow_mut();
+            existing_camp.creatures.push(creature_id);
+            // Bandit camps always have only 1 structure (see below)
+            existing_camp.structures.get_mut(0).unwrap().add_ocuppant(creature_id);
+            self.events.push(Event::JoinBanditCamp { date: self.date, creature_id: creature_id, site_id: site_id, new_site_id: camp_id });
+        } else {
+            // Creates new camp
+            let pos = self.site_search_new_pos_closeby(site_xy, 15, rng).ok_or("No position found for new bandit camp")?;
+            let new_camp_id = self.sites.add(Site {
+                xy: pos,
+                artifacts: Vec::new(),
+                cemetery: Vec::new(),
+                creatures: vec!(creature_id),
+                settlement: Some(SettlementComponent {
+                    leader: Some(creature_id),
+                    material_stock: Vec::new(),
+                }),
+                name: None,
+                population_peak: (0, 0),
+                site_type: SiteType::BanditCamp,
+                resources: SiteResources {
+                    food: 1.
+                },
+                structures: vec!(Structure::new(StructureType::BanditCamp))
+            });
+            self.events.push(Event::CreateBanditCamp { date: self.date, creature_id: creature_id, site_id: site_id, new_site_id: new_camp_id });
+        }
+        // Removes creature from site
+        let mut site = self.sites.get_mut(&site_id);
+        site.remove_creature(&creature_id);
+        site.resources.food -= 1.;
+        // Chances profession
+        let mut creature = self.creatures.get_mut(&creature_id);
+        creature.profession = Profession::Bandit;
+        Ok(())
     }
 
     pub(crate) fn creature_kill_creature(&mut self, killed_id: CreatureId, killed_site: SiteId, killer_id: CreatureId, killed_with: Option<ItemId>, death_site: SiteId) {
@@ -489,7 +546,6 @@ impl World {
                 }
             }
 
-            // TODO(IhlgIYVA): Extract
             if let CauseOfDeath::KilledInBattle(killer_id, _) = &cause_of_death {
                 for relationship in creature.relationships.iter() {
                     let relationship_creature_id = relationship.creature_id;
@@ -612,6 +668,37 @@ impl World {
         }
         self.record_event(Event::NewLeaderElected { date: self.date.clone(), site_id: *site_id, creature_id: new_leader });
         return Ok(())
+    }
+
+    fn site_search_new_pos_closeby(&self, center: Vec2i, max_radius: i32, rng: &mut Rng) -> Option<Vec2i> {
+        let x_limit = [
+            (center.x() - max_radius).max(3),
+            (center.x() + max_radius).min(self.map.size.x() as i32 - 3)
+        ];
+        let y_limit = [
+            (center.y() - max_radius).max(3),
+            (center.y() + max_radius).min(self.map.size.y() as i32 - 3)
+        ];
+        for _ in 0..100 {
+            let x = rng.usize_range(x_limit[0] as usize, x_limit[1] as usize);
+            let y = rng.usize_range(y_limit[0] as usize, y_limit[1] as usize);
+            let candidate = Vec2i(x as i32, y as i32);
+            let too_close = self.sites.iter().any(|site| {
+                let site = site.borrow();
+                if site.creatures.len() == 0 {
+                    if site.xy == candidate.into() {
+                        return true;
+                    }
+                    return false;
+                }
+                return site.xy.dist_squared(&candidate.into()) < 3. * 3.
+            });
+            if too_close {
+                continue;
+            }
+            return Some(candidate)
+        }
+        return None;
     }
 
     // Events

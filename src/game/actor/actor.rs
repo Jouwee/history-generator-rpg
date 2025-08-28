@@ -1,4 +1,5 @@
 use graphics::Transformed;
+use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
 use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, LayerType, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
@@ -7,7 +8,7 @@ use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, he
 
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Actor {
-    pub(crate) xy: Coord2,
+    pub(crate) xy: Vec2i,
     #[serde(skip)]
     pub(crate) animation: AnimationTransform,
     pub(crate) ap: ActionPointsComponent,
@@ -37,7 +38,7 @@ impl Actor {
     pub(crate) fn from_species(xy: Coord2, species_id: &SpeciesId, species: &Species, ai_group: u8) -> Actor {
         let gender = CreatureGender::random();
         Actor {
-            xy,
+            xy: xy.to_vec2i(),
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
@@ -68,7 +69,7 @@ impl Actor {
             false => Inventory::new()
         };
         Actor {
-            xy,
+            xy: xy.to_vec2i(),
             animation: AnimationTransform::new(),
             ap: ActionPointsComponent::new(),
             stamina: StaminaComponent::new(),
@@ -103,17 +104,17 @@ impl Actor {
                 Affliction::Bleeding { duration: _ } => {
                     let target_body_part = BodyPart::random(&mut Rng::rand());
                     self.hp.hit(target_body_part, 5.);
-                    effect_layer.add_damage_number(self.xy, 5.);
+                    effect_layer.add_damage_number(self.xy.into(), 5.);
                 },
                 Affliction::OnFire { duration: _ } => {
                     let target_body_part = BodyPart::random(&mut Rng::rand());
                     self.hp.hit(target_body_part, 5.);
-                    effect_layer.add_damage_number(self.xy, 5.);
+                    effect_layer.add_damage_number(self.xy.into(), 5.);
                 },
                 Affliction::Poisoned { duration: _ } => {
                     // TODO: Rethink
                     // self.hp.damage(1.);
-                    effect_layer.add_damage_number(self.xy, 1.);
+                    effect_layer.add_damage_number(self.xy.into(), 1.);
                 },
                 Affliction::Stunned { duration: _ } => {
                     self.ap.consume(self.ap.max_action_points / 4);
@@ -309,7 +310,7 @@ impl Actor {
 
 impl Renderable for Actor {
     fn render(&self, ctx: &mut RenderContext, game_ctx: &mut GameContext) {
-        let pos: [f64; 2] = [self.xy.x as f64 * 24.0 - 12., self.xy.y as f64 * 24.0 - 24.];
+        let pos: [f64; 2] = [self.xy.x() as f64 * 24.0 - 12., self.xy.y() as f64 * 24.0 - 24.];
 
         ctx.push();
         ctx.context.transform = ctx.context.transform.trans(pos[0], pos[1]).trans_pos(self.animation.translate_no_z());

@@ -94,6 +94,10 @@ impl Rng {
         return new;
     }
 
+    pub(crate) fn to_new(&self) -> NewRng {
+        return NewRng::new(self.seed as u64);
+    }
+
     fn xor_shift(&mut self, v: u32) -> u32 {
         let mut x: u32 = v;
         x ^= x << 13;

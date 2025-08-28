@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use math::Vec2i;
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +9,7 @@ use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2,
 pub(crate) struct Chunk {
     pub(crate) coord: ChunkCoord,
     pub(crate) size: Size2D,
-    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
+    pub(crate) tiles_metadata: HashMap<Vec2i, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
     spawn_points: Vec<(Coord2, Spawner)>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
@@ -20,7 +21,7 @@ impl Default for Chunk {
 
     fn default() -> Self {
         Self {
-            coord: ChunkCoord::new(Coord2::xy(1, 1), ChunkLayer::Surface),
+            coord: ChunkCoord::new(Vec2i(1, 1), ChunkLayer::Surface),
             size: Size2D(1, 1),
             tiles_metadata: HashMap::new(),
             items_on_ground: Vec::new(),
@@ -165,9 +166,9 @@ impl Chunk {
 pub(crate) struct ChunkSerialized {
     pub(crate) coord: ChunkCoord,
     pub(crate) size: Size2D,
-    pub(crate) tiles_metadata: HashMap<Coord2, TileMetadata>,
-    pub(crate) items_on_ground: Vec<(Coord2, Item)>,
-    pub(crate) spawn_points: Vec<(Coord2, Spawner)>,
+    pub(crate) tiles_metadata: HashMap<Vec2i, TileMetadata>,
+    pub(crate) items_on_ground: Vec<(Vec2i, Item)>,
+    pub(crate) spawn_points: Vec<(Vec2i, Spawner)>,
     pub(crate) ground_layer: Vec<Option<TileId>>,
     pub(crate) object_layer: Vec<Option<ObjectTileId>>,
 }
@@ -178,8 +179,8 @@ impl ChunkSerialized {
             coord: chunk.coord,
             size: chunk.size,
             tiles_metadata: chunk.tiles_metadata.clone(),
-            spawn_points: chunk.spawn_points.clone(),
-            items_on_ground: chunk.items_on_ground.iter().map(|i| (i.0, i.1.clone())).collect(),
+            spawn_points: chunk.spawn_points.iter().map(|(c, s)| (c.to_vec2i(), s.clone())).collect(),
+            items_on_ground: chunk.items_on_ground.iter().map(|i| (i.0.to_vec2i(), i.1.clone())).collect(),
             ground_layer: chunk.ground_layer.tiles().iter().map(|i| i.and_then(|i| Some(TileId::new(i)))).collect(),
             object_layer: chunk.object_layer.tiles().iter().map(|(i, _)| match i {
                 0 => None,
@@ -193,8 +194,8 @@ impl ChunkSerialized {
         let mut chunk = Chunk::new(self.coord, self.size, resources);
 
         chunk.tiles_metadata = self.tiles_metadata.clone();
-        chunk.spawn_points = self.spawn_points.clone();
-        chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0, i.1.clone(), i.1.make_texture(resources))).collect();
+        chunk.spawn_points = self.spawn_points.iter().map(|(c, s)| (c.clone().into(), s.clone())).collect();
+        chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0.into(), i.1.clone(), i.1.make_texture(resources))).collect();
 
         for x in 0..self.size.x() {
             for y in 0..self.size.y() {
@@ -214,13 +215,13 @@ impl ChunkSerialized {
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct ChunkCoord {
-    pub(crate) xy: Coord2,
+    pub(crate) xy: Vec2i,
     pub(crate) layer: ChunkLayer,    
 }
 
 impl ChunkCoord {
 
-    pub(crate) fn new(xy: Coord2, layer: ChunkLayer) -> Self {
+    pub(crate) fn new(xy: Vec2i, layer: ChunkLayer) -> Self {
         return ChunkCoord { xy, layer }
     }
 

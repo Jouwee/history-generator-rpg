@@ -10,6 +10,7 @@ use gui::character::character_dialog::CharacterDialog;
 use gui::hud::HeadsUpDisplay;
 use hotbar::Hotbar;
 use map_modal::{MapModal, MapModalEvent};
+use math::Vec2i;
 use piston::{Key, MouseButton};
 use player_pathing::PlayerPathing;
 use serde::{Deserialize, Serialize};
@@ -300,8 +301,8 @@ impl Scene for GameSceneState {
         // Camera lerp
         let center = self.state.player().xy;
         self.camera_offset = [
-            lerp(self.camera_offset[0], center.x as f64 * 24., ctx.render_delta / 0.2),
-            lerp(self.camera_offset[1], center.y as f64 * 24., ctx.render_delta / 0.2),
+            lerp(self.camera_offset[0], center.x() as f64 * 24., ctx.render_delta / 0.2),
+            lerp(self.camera_offset[1], center.y() as f64 * 24., ctx.render_delta / 0.2),
         ];
         ctx.center_camera_on(self.camera_offset);
 
@@ -452,27 +453,27 @@ impl Scene for GameSceneState {
         let save_file = SaveFile::new(self.current_save_file.clone());
 
         // Check movement between chunks
-        if self.state.player().xy.x <= 1 {
-            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(-1, 0), self.state.coord.layer), &save_file, &self.world);
+        if self.state.player().xy.x() <= 1 {
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Vec2i(-1, 0), self.state.coord.layer), &save_file, &self.world);
             return
         }
-        if self.state.player().xy.y <= 1 {
-            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(0, -1), self.state.coord.layer), &save_file, &self.world);
+        if self.state.player().xy.y() <= 1 {
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Vec2i(0, -1), self.state.coord.layer), &save_file, &self.world);
             return
         }
-        if self.state.player().xy.x >= self.state.chunk.size.x() as i32 - 2 {
-            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(1, 0), self.state.coord.layer), &save_file, &self.world);
+        if self.state.player().xy.x() >= self.state.chunk.size.x() as i32 - 2 {
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Vec2i(1, 0), self.state.coord.layer), &save_file, &self.world);
             return
         }
-        if self.state.player().xy.y >= self.state.chunk.size.y() as i32 - 2 {
-            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Coord2::xy(0, 1), self.state.coord.layer), &save_file, &self.world);
+        if self.state.player().xy.y() >= self.state.chunk.size.y() as i32 - 2 {
+            self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy + Vec2i(0, 1), self.state.coord.layer), &save_file, &self.world);
             return
         }
         let resources = resources();
-        if self.state.chunk.get_object_id(self.state.player().xy).map(|id| id == resources.object_tiles.id_of("obj:ladder_down")).unwrap_or(false) {
+        if self.state.chunk.get_object_id(self.state.player().xy.into()).map(|id| id == resources.object_tiles.id_of("obj:ladder_down")).unwrap_or(false) {
             self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Underground), &save_file, &self.world);
         }
-        if self.state.chunk.get_object_id(self.state.player().xy).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
+        if self.state.chunk.get_object_id(self.state.player().xy.into()).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
             self.state.switch_chunk(ChunkCoord::new(self.state.coord.xy, ChunkLayer::Surface), &save_file, &self.world);
         }
 
@@ -556,7 +557,7 @@ impl Scene for GameSceneState {
                 ControlFlow::Break(MapModalEvent::Close) => self.map_modal = None,
                 ControlFlow::Break(MapModalEvent::InstaTravelTo(coord)) => {
                     let save_file = SaveFile::new(self.current_save_file.clone());
-                    self.state.switch_chunk(ChunkCoord::new(coord, ChunkLayer::Surface), &save_file, &self.world);
+                    self.state.switch_chunk(ChunkCoord::new(coord.to_vec2i(), ChunkLayer::Surface), &save_file, &self.world);
                     self.map_modal = None;
                 },
                 _ => ()
@@ -625,7 +626,7 @@ impl Scene for GameSceneState {
 
         if self.button_map.input(&mut (), &evt, ctx).is_break() {
             let mut map = MapModal::new();
-            map.init(&self.world, &self.state.coord.xy);
+            map.init(&self.world, &self.state.coord.xy.into());
             self.map_modal = Some(map);
             return ControlFlow::Break(());
         }
@@ -657,7 +658,7 @@ impl Scene for GameSceneState {
         }
 
         if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
-            let mut player_pathfinding = AStar::new(self.state.chunk.size, self.state.player().xy);
+            let mut player_pathfinding = AStar::new(self.state.chunk.size, self.state.player().xy.into());
             player_pathfinding.find_path(self.cursor_pos, |xy| self.state.astar_movement_cost(xy));
             self.player_pathing.set_preview(self.cursor_pos, player_pathfinding.get_path(self.cursor_pos));
         }
@@ -678,7 +679,7 @@ impl Scene for GameSceneState {
             },
             InputEvent::Key { key: Key::M } => {
                 let mut map = MapModal::new();
-                map.init(&self.world, &self.state.coord.xy);
+                map.init(&self.world, &self.state.coord.xy.into());
                 self.map_modal = Some(map);
             },
             InputEvent::Click { button: MouseButton::Right, pos } => {

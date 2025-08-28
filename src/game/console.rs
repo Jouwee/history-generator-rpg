@@ -1,5 +1,6 @@
 use std::ops::ControlFlow;
 
+use math::Vec2i;
 use piston::Key;
 
 use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, loadsave::SaveFile, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, history_sim::history_simulation::HistorySimulation}, GameContext};
@@ -126,7 +127,7 @@ impl Console {
                 let mut generator = ChunkGenerator::new(&mut scene.state.chunk, rng.clone());
 
                 let mut solver = generator.get_jigsaw_solver();
-                let structure = solver.solve_structure(structure, pos, &mut rng.clone(), Vec::new())?;
+                let structure = solver.solve_structure(structure, pos.into(), &mut rng.clone(), Vec::new())?;
                 for (pos, piece) in structure.vec.iter() {
                     generator.place_template(*pos, &piece);
                 }
@@ -140,9 +141,9 @@ impl Console {
 
                 //let position = parts.next().ok_or("Param 2 should be the position")?;
 
-                let xy = scene.state.player().xy.clone() + Coord2::xy(8, 0);
+                let xy = scene.state.player().xy.clone() + Vec2i(8, 0);
 
-                let actor = Actor::from_species(xy, &species_id, &species, scene.state.ai_groups.next_group());
+                let actor = Actor::from_species(xy.into(), &species_id, &species, scene.state.ai_groups.next_group());
 
                 scene.state.spawn(actor);
 
@@ -152,7 +153,7 @@ impl Console {
                 let coords = parts.next().ok_or("Param 1 should be the coords")?;
                 let coords = parse_coords(coords)?;
 
-                scene.state.player_mut().xy = coords;
+                scene.state.player_mut().xy = coords.to_vec2i();
 
                 return Result::Ok(format!("Spawned"));
             },

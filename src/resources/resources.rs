@@ -622,10 +622,10 @@ impl Resources {
         self.object_tiles.add("obj:cave_wall", ObjectTile::new(crate::engine::tilemap::Tile::T16Subset(Tile16Subset::new(image)), true).with_shadow());
 
         let image = String::from("chunk_tiles/ladder_down.png");
-        self.object_tiles.add("obj:ladder_down", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        self.object_tiles.add("obj:ladder_down", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), false));
 
         let image = String::from("chunk_tiles/ladder_up.png");
-        self.object_tiles.add("obj:ladder_up", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));
+        self.object_tiles.add("obj:ladder_up", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), false));
 
         let image = String::from("chunk_tiles/chair.png");
         self.object_tiles.add("obj:chair", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true));

@@ -47,12 +47,8 @@ impl<'a> ChunkGenerator<'a> {
         }
         info!("[Chunk gen] Site search ({:?} = {}): {:.2?}", self.chunk.coord.xy, found_site.is_some(), now.elapsed());
 
-        // TODO(WCF3fkX3): Bandit camps
-        // detached_housing_pool: Some(String::from("camp_start")),
-
         if let Some(mut site) = found_site {
 
-            dbg!(&site.structures);
             for structure in site.structures.iter_mut() {
                 if structure.generated_data.is_none() {
                     match self.generate_structure(structure, &mut solver) {
@@ -97,10 +93,9 @@ impl<'a> ChunkGenerator<'a> {
 
         let mut solver = self.get_jigsaw_solver();
 
-        if let Some(site) = world.get_site_at(&self.chunk.coord.xy) {
+        if let Some(site) = world.get_site_at(&self.chunk.coord.xy.into()) {
             let mut site = world.sites.get_mut(&site);
             for structure in site.structures.iter_mut() {
-                dbg!(&structure);
                 match &structure.generated_data {
                     None => {
                         match self.generate_structure(structure, &mut solver) {
@@ -132,6 +127,7 @@ impl<'a> ChunkGenerator<'a> {
         let pool =  match structure.get_type() {
             StructureType::House => "village_house_start",
             StructureType::TownHall => "village_house_ruler",
+            StructureType::BanditCamp => "camp_start",
         };
 
         let mut generated_data = StructureGeneratedData::new(structure.get_status().clone());
@@ -476,6 +472,8 @@ impl<'a> ChunkGenerator<'a> {
                         self.chunk.ground_layer.set_tile(x, y, ground);
                         if let Some(object) = object {
                             self.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), object);
+                        } else {
+                            self.chunk.set_object_idx(Coord2::xy(x as i32, y as i32), 0);
                         }
                         if statue_spot {
                             self.statue_spots.push(Coord2::xy(x as i32, y as i32))

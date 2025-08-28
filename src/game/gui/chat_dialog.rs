@@ -100,7 +100,7 @@ impl ChatDialog {
                 continue;
             }
 
-            let dst = site.xy.dist(&self.data.world_coord);
+            let dst = site.xy.dist(&self.data.world_coord.to_vec2i());
             
             if dst > MAX_DST {
                 continue;

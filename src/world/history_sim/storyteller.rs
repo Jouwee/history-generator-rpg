@@ -135,7 +135,7 @@ const BASE_SITE_CHANCES: SiteChances = SiteChances {
     disease_death: 0.0015,
     have_child: 0.6,
     marry: 0.8,
-    leave_for_bandits: 0.001,
+    leave_for_bandits: 0.01,
     change_job: 0.005,
     make_inspired_artifact: 0.005,
     start_plot: 0.3,

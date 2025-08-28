@@ -1,9 +1,10 @@
 use std::{collections::HashMap, iter};
 
 use graphics::{image, Transformed};
+use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, site::SiteType, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{astar::MovementCost, id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer, Spawner}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, site::SiteType, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
@@ -85,7 +86,7 @@ impl GameState {
     }
 
     pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> GameState {
-        let mut chunk = Self::new(ChunkCoord::new(Coord2::xy(0,0), ChunkLayer::Surface), Size2D(128, 128), player, resources);
+        let mut chunk = Self::new(ChunkCoord::new(Vec2i(0,0), ChunkLayer::Surface), Size2D(128, 128), player, resources);
         for x in 0..chunk.chunk.size.x() {
             for y in 0..chunk.chunk.size.y() {
                 chunk.chunk.ground_layer.set_tile(x, y, 1);
@@ -100,7 +101,7 @@ impl GameState {
             }
         }
 
-        chunk.player_mut().xy = Coord2::xy(64, 64);
+        chunk.player_mut().xy = Vec2i(64, 64);
 
         let mut rng = Rng::seeded("items");
         for i in 0..60 {
@@ -134,7 +135,7 @@ impl GameState {
         let npc = self.actors.get_mut(i).unwrap();
         for item in npc.inventory.take_all() {
             let texture = item.make_texture(&ctx.resources);
-            self.chunk.items_on_ground.push((npc.xy, item, texture));
+            self.chunk.items_on_ground.push((npc.xy.into(), item, texture));
         }
 
         if let Some(creature_id) = npc.creature_id {
@@ -169,17 +170,17 @@ impl GameState {
         self.load_or_generate_chunk(coord, save_file, world);
 
         // Reposition player
-        if offset.x < 0 {
-            self.player_mut().xy.x = self.chunk.size.x() as i32 - 3;
+        if offset.x() < 0 {
+            self.player_mut().xy.0 = self.chunk.size.x() as i32 - 3;
         }
-        if offset.x > 0 {
-            self.player_mut().xy.x = 2;
+        if offset.x() > 0 {
+            self.player_mut().xy.0 = 2;
         }
-        if offset.y < 0 {
-            self.player_mut().xy.y = self.chunk.size.y() as i32 - 3;
+        if offset.y() < 0 {
+            self.player_mut().xy.1 = self.chunk.size.y() as i32 - 3;
         }
-        if offset.y > 0 {
-            self.player_mut().xy.y = 2;
+        if offset.y() > 0 {
+            self.player_mut().xy.1 = 2;
         }
 
         if change_layer && self.coord.layer == ChunkLayer::Underground {
@@ -187,9 +188,9 @@ impl GameState {
             // Finds the exit
             'outer: for x in 0..self.chunk.size.x() {
                 for y in 0..self.chunk.size.y() {
-                    let pos = Coord2::xy(x as i32, y as i32);
-                    if self.chunk.get_object_id(pos).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
-                        self.player_mut().xy = pos + Coord2::xy(0, -1);
+                    let pos = Vec2i(x as i32, y as i32);
+                    if self.chunk.get_object_id(pos.into()).map(|id| id == resources.object_tiles.id_of("obj:ladder_up")).unwrap_or(false) {
+                        self.player_mut().xy = pos + Vec2i(0, -1);
                         break 'outer;
                     }
                 }
@@ -231,7 +232,7 @@ impl GameState {
 
         // Spawn actors
         let ai_group = self.ai_groups.next_group();
-        let site = world.get_site_at(&self.coord.xy);
+        let site = world.get_site_at(&self.coord.xy.into());
         if let Some(site) = site {
             let site = world.sites.get(&site);
             match site.site_type {
@@ -240,8 +241,6 @@ impl GameState {
                 },
                 SiteType::Village => ()
             };
-
-            // TODO(WCF3fkX3): Review species spawning
 
             for structure in site.structures.iter() {
                 let data = structure.generated_data.as_ref().unwrap();
@@ -254,8 +253,25 @@ impl GameState {
                     self.actors.push(actor);
                     spawnpoint_i += 1;
                 }
-
             }
+
+            for (pos, spawner) in self.chunk.spawn_points() {
+            let actor = match spawner {
+                Spawner::CreatureId(creature_id) => {
+                    let creature = world.creatures.get(creature_id);
+                    if creature.death.is_some() {
+                        continue;
+                    }
+                    let species = resources.species.get(&creature.species);
+                    Actor::from_creature(*pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources)
+                },
+                Spawner::Species(species_id) => {
+                    let species = resources.species.get(species_id);
+                    Actor::from_species(*pos, &species_id, &species, ai_group)
+                },
+            };
+            self.actors.push(actor);
+        }
 
         }
 
@@ -274,7 +290,7 @@ impl GameState {
         if self.chunk.blocks_movement(coord) {
             return false;
         }
-        return !self.actors_iter().any(|actor| actor.xy == *coord)
+        return !self.actors_iter().any(|actor| actor.xy == coord.to_vec2i())
     }
 
 }
@@ -294,7 +310,7 @@ impl Renderable for GameState {
             1 + cull_start[1] + ctx.camera_rect[3] as i32 / 24
         ];
         for npc in self.actors.iter() {
-            if npc.xy.x < cull_start[0] || npc.xy.y < cull_start[1] || npc.xy.x > cull_limit[0] || npc.xy.y > cull_limit[1] {
+            if npc.xy.x() < cull_start[0] || npc.xy.y() < cull_start[1] || npc.xy.x() > cull_limit[0] || npc.xy.y() > cull_limit[1] {
                 continue
             }
             if !actors_by_position.contains_key(&npc.xy) {
@@ -304,7 +320,7 @@ impl Renderable for GameState {
         }
 
         self.chunk.object_layer.render(ctx, game_ctx, |ctx, game_ctx, x, y| {
-            if let Some(actors) = actors_by_position.get(&Coord2::xy(x as i32, y as i32)) {
+            if let Some(actors) = actors_by_position.get(&Vec2i(x as i32, y as i32)) {
                 for actor in actors {
                     actor.render(ctx, game_ctx);
                 }

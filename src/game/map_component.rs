@@ -81,8 +81,8 @@ impl MapComponent {
                     }
                 },
             };
-            self.objects.set_tile(site.xy.x as usize, site.xy.y as usize, tile);
-            self.names.push((site.xy, site.name().to_string(), major_name));
+            self.objects.set_tile(site.xy.x() as usize, site.xy.y() as usize, tile);
+            self.names.push((site.xy.into(), site.name().to_string(), major_name));
         }
     }
 

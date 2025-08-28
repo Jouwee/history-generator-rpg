@@ -22,6 +22,15 @@ impl Rng {
         self.next() as u32
     }
 
+    pub fn usize(&mut self) -> usize {
+        self.next() as usize
+    }
+
+    pub fn usize_range(&mut self, min: usize, max: usize) -> usize {
+        let next = self.usize();
+        (next % (max - min)) + min
+    }
+
     pub fn f64(&mut self) -> f64 {
         self.next() as f64 / (u64::MAX as f64)
     }

@@ -1,4 +1,6 @@
-use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::{Duration, WorldDate}, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_site, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, site::{SettlementComponent, Site, SiteId, SiteResources, SiteType}, world::World}, Event};
+use common::error::Error;
+
+use crate::{commons::{rng::Rng, xp_table::xp_to_level}, engine::geometry::Coord2, game::factory::item_factory::ItemFactory, history_trace, resources::resources::resources, warn, world::{creature::{CreatureId, Profession, SIM_FLAG_GREAT_BEAST}, date::{Duration, WorldDate}, history_generator::WorldGenerationParameters, history_sim::{creature_simulation::{add_item_to_inventory, attack_nearby_site, execute_plot, find_supporters_for_plot, start_plot}, storyteller::Storyteller, world_ops}, item::ItemQuality, site::{Site, SiteId, SiteResources, SiteType}, world::World}, Event};
 
 use super::{creature_simulation::{CreatureSideEffect, CreatureSimulation}, factories::{ArtifactFactory, CreatureFactory}};
 
@@ -43,7 +45,7 @@ impl HistorySimulation {
                     population_peak: (0, 0),
                     resources: SiteResources { food: 2. },
                     site_type: SiteType::VarningrLair,
-                    xy: pos,
+                    xy: pos.to_vec2i(),
                     structures: Vec::new()
                 };
                 world.sites.add::<SiteId>(site);
@@ -69,7 +71,7 @@ impl HistorySimulation {
                     population_peak: (0, 0),
                     resources: SiteResources { food: 2. },
                     site_type: SiteType::WolfPack,
-                    xy: pos,
+                    xy: pos.to_vec2i(),
                     structures: Vec::new()
                 };
                 world.sites.add::<SiteId>(site);
@@ -102,7 +104,7 @@ impl HistorySimulation {
         return creatures > 0;
     }
 
-    fn simulate_step_site(&mut self, world: &mut World, step: &Duration, now: &WorldDate, mut rng: Rng, site_id: &SiteId) -> Result<(), String> {
+    fn simulate_step_site(&mut self, world: &mut World, step: &Duration, now: &WorldDate, mut rng: Rng, site_id: &SiteId) -> Result<(), Error> {
 
         let chances = self.storyteller.story_teller_site_chances(site_id, &world, &step);
 
@@ -110,7 +112,7 @@ impl HistorySimulation {
 
         let mut resources = site.resources.clone();
 
-        let site_tile = world.map.tile(site.xy.x as usize, site.xy.y as usize);
+        let site_tile = world.map.tile(site.xy.x() as usize, site.xy.y() as usize);
         
         let mut marriage_pool = Vec::new();
         let mut change_job_pool = Vec::new();
@@ -161,61 +163,7 @@ impl HistorySimulation {
                     Self::make_artifact(&creature_id, None, site_id, world, &mut rng);
                     Ok(())
                 },
-                CreatureSideEffect::BecomeBandit => {
-                    let site = world.sites.get(site_id);
-                    let site_xy = site.xy.clone();
-                    drop(site);
-                    // Looks for a camp nearby
-                    let existing_camp = world.sites.iter_id_val().find(|(_site_id, site)| {
-                        let site = site.borrow();
-                        site.site_type == SiteType::BanditCamp
-                          && site.xy.dist_squared(&site_xy) < 15.*15.
-                          && site.creatures.len() > 0
-                    });
-                    // If there's a camp nearby
-                    if let Some((camp_id, existing_camp)) = existing_camp {
-                        let mut existing_camp = existing_camp.borrow_mut();
-                        existing_camp.creatures.push(*creature_id);
-                        world.events.push(Event::JoinBanditCamp { date: *now, creature_id: *creature_id, site_id: *site_id, new_site_id: camp_id });
-                    } else {
-                        // Creates new camp
-                        let pos = self.find_site_suitable_position_closeby(site_xy, 15, &mut rng, world);
-                        match pos {
-                            Some(pos) => {
-                                let new_camp_id = world.sites.add(Site {
-                                    xy: pos,
-                                    artifacts: Vec::new(),
-                                    cemetery: Vec::new(),
-                                    creatures: vec!(*creature_id),
-                                    settlement: Some(SettlementComponent {
-                                        leader: Some(*creature_id),
-                                        material_stock: Vec::new(),
-                                    }),
-                                    name: None,
-                                    population_peak: (0, 0),
-                                    site_type: SiteType::BanditCamp,
-                                    resources: SiteResources {
-                                        food: 1.
-                                    },
-                                    structures: Vec::new()
-                                });
-                                world.events.push(Event::CreateBanditCamp { date: *now, creature_id: *creature_id, site_id: *site_id, new_site_id: new_camp_id });
-                            },
-                            None => {
-                                warn!("No position found for new bandit camp");
-                                continue;
-                            }
-                        }
-                    }
-                    // Removes creature from site
-                    let mut site = world.sites.get_mut(site_id);
-                    site.remove_creature(&creature_id);
-                    site.resources.food -= 1.;
-                    // Chances profession
-                    let mut creature = world.creatures.get_mut(creature_id);
-                    creature.profession = Profession::Bandit;
-                    Ok(())
-                },
+                CreatureSideEffect::BecomeBandit => world.creature_leave_for_bandit_camp(*creature_id, *site_id, &mut rng.to_new()),
                 CreatureSideEffect::AttackNearbySites => {
                     attack_nearby_site(world, &mut rng, *site_id);
                     Ok(())
@@ -235,7 +183,7 @@ impl HistorySimulation {
             };
 
             if let Err(str) = result {
-                return Err(format!("{str} {:?}", creature_id));
+                return Err(Error::new(format!("{str} {:?}", creature_id)));
             }
 
         }
@@ -394,44 +342,14 @@ impl HistorySimulation {
             let candidate = Coord2::xy(x as i32, y as i32);
             let too_close = world.sites.iter().any(|site| {
                 let site = site.borrow();
+                let site_xy: Coord2 = site.xy.into();
                 if site.creatures.len() == 0 {
-                    if site.xy == candidate {
+                    if site_xy == candidate {
                         return true;
                     }
                     return false;
                 }
-                return site.xy.dist_squared(&candidate) < 3. * 3.
-            });
-            if too_close {
-                continue;
-            }
-            return Some(candidate)
-        }
-        return None;
-    }
-
-    fn find_site_suitable_position_closeby(&self, center: Coord2, max_radius: i32, rng: &mut Rng, world: &World) -> Option<Coord2> {
-        let x_limit = [
-            (center.x - max_radius).max(3),
-            (center.x + max_radius).min(world.map.size.x() as i32 - 3)
-        ];
-        let y_limit = [
-            (center.y - max_radius).max(3),
-            (center.y + max_radius).min(world.map.size.y() as i32 - 3)
-        ];
-        for _ in 0..100 {
-            let x = rng.randi_range(x_limit[0], x_limit[1]) as usize;
-            let y = rng.randi_range(y_limit[0], y_limit[1]) as usize;
-            let candidate = Coord2::xy(x as i32, y as i32);
-            let too_close = world.sites.iter().any(|site| {
-                let site = site.borrow();
-                if site.creatures.len() == 0 {
-                    if site.xy == candidate {
-                        return true;
-                    }
-                    return false;
-                }
-                return site.xy.dist_squared(&candidate) < 3. * 3.
+                return site_xy.dist_squared(&candidate) < 3. * 3.
             });
             if too_close {
                 continue;

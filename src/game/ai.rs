@@ -114,7 +114,7 @@ impl AiSolver {
             actor_idx,
             ai_group: actor.ai_group,
             actions: Vec::new(),
-            xy: actor.xy,
+            xy: actor.xy.into(),
             ap: actor.ap.action_points,
             stamina: actor.stamina.stamina,
             depth: 1,
@@ -124,7 +124,7 @@ impl AiSolver {
             team_damage: 0.,
         };
 
-        let mut astar = AStar::new(chunk.chunk.size, chunk.player().xy);
+        let mut astar = AStar::new(chunk.chunk.size, chunk.player().xy.into());
         
         astar.find_path(ctx.xy, |xy| {
             if !chunk.chunk.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
@@ -243,7 +243,7 @@ impl AiSolver {
     }
 
     fn compute_position_score(ctx: &SimContext, astar: &mut AStar, chunk: &GameState) -> f64 {
-        let dist = ctx.xy.dist(&chunk.player().xy) as f64;
+        let dist = ctx.xy.dist(&chunk.player().xy.into()) as f64;
         if dist <= 1.5 {
             return 1.;
         }        

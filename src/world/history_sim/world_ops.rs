@@ -1,6 +1,7 @@
+use math::Vec2i;
 use text::capitalize;
 
-use crate::{commons::{rng::Rng}, engine::geometry::Coord2, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, site::*, world::World}};
+use crate::{commons::{rng::Rng}, resources::resources::Resources, world::{history_sim::factories::CreatureFactory, site::*, world::World}};
 
 pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: &Resources, population: u32) -> Result<SiteId, ()> {
     let pos = search_new_site_pos(world, rng)?;
@@ -48,11 +49,11 @@ pub(crate) fn spawn_random_village(world: &mut World, rng: &mut Rng, resources: 
     return Ok(world.sites.add::<SiteId>(site));
 }
 
-fn search_new_site_pos(world: &World, rng: &mut Rng) -> Result<Coord2, ()> {
+fn search_new_site_pos(world: &World, rng: &mut Rng) -> Result<Vec2i, ()> {
     for _ in 0..100 {
         let x = rng.randu_range(3, world.map.size.x() - 3);
         let y = rng.randu_range(3, world.map.size.y() - 3);
-        let candidate = Coord2::xy(x as i32, y as i32);
+        let candidate = Vec2i(x as i32, y as i32);
         let too_close = world.sites.iter().any(|site| {
             let site = site.borrow();
             if site.creatures.len() == 0 {
