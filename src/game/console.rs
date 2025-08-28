@@ -129,7 +129,7 @@ impl Console {
                 let mut solver = generator.get_jigsaw_solver();
                 let structure = solver.solve_structure(structure, pos.into(), &mut rng.clone(), Vec::new())?;
                 for (pos, piece) in structure.vec.iter() {
-                    generator.place_template(*pos, &piece);
+                    generator.place_template(*pos, &piece, &mut Vec::new());
                 }
                 return Result::Ok(format!("Generated"));
                 

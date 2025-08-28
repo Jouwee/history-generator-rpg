@@ -441,12 +441,6 @@ impl World {
                 && site.xy.dist_squared(&site_xy) < 15.*15.
                 && site.creatures.len() > 0
         });
-
-
-        
-        // Structure
-
-
         // If there's a camp nearby
         if let Some((camp_id, existing_camp)) = existing_camp {
             let mut existing_camp = existing_camp.borrow_mut();

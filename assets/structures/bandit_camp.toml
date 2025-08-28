@@ -3,6 +3,7 @@
 'r' = { ground= "tile:grass_patchy", object= "obj:barrel" }
 'c' = { ground= "tile:grass_patchy", object= "obj:stool" }
 't' = { ground= "tile:grass_patchy", object= "obj:table" }
+'1' = { ground= "tile:grass", spawn_point = true }
 '+' = { ground= "tile:grass_patchy" }
 
 [camp_start]
@@ -11,29 +12,9 @@
 size = [7, 7]
 template = """
 .......
-...+...
+1..+.1.
 ..+r+..
 ..++b..
-...+...
-.......
-......."""
-
-[camp_start.b]
-size = [7, 7]
-template = """
-.......
-.......
-.......
-...b...
-...+tc.
-..+....
-......."""
-
-[camp_start.c]
-size = [4, 4]
-template = """
-....
-.b..
-.+..
-....
-"""
+...+1..
+.1.....
+.....1."""

@@ -4,6 +4,7 @@
 '#' = { ground= "tile:cave_floor", object= "obj:cave_wall" }
 'u' = { ground= "tile:cave_floor", object= "obj:ladder_up" }
 'd' = { ground= "tile:grass", object= "obj:ladder_down" }
+'1' = { ground= "tile:cave_floor", spawn_point = true }
 'M' = { ground= "tile:cave_floor", connect = "varningr_lair" }
 'R' = { ground= "tile:cave_floor", connect = "varningr_room" }
 'E' = { ground= "tile:cave_floor", connect = "varningr_entrance" }
@@ -28,10 +29,10 @@ template = """
 ..####b----###.
 .###--------##.
 ###---------##.
-##----------##.
+##-----1----##.
 ##-----b----##.
-##----------##.
-##----------##.
+##--1-------##.
+##-------1--##.
 ##----------##.
 ##-b--------##.
 .###-------##..
@@ -49,8 +50,8 @@ template = """
 ..#-M-##.
 .##----##
 ##------#
-##b-----#
-#-------#
+##b---1-#
+#-1-----#
 #------b#
 #------##
 ##-----##
@@ -77,8 +78,8 @@ template = """
 ..#-R-##.
 .##----##
 ##------#
-##--#---#
-#---#---#
+##--#--1#
+#-1-#---#
 #---#---#
 #---#--##
 ##-----##

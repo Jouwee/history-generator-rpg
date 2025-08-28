@@ -1,6 +1,7 @@
 use std::{collections::BTreeSet, time::Instant};
 
 use common::error::Error;
+use math::Vec2i;
 use noise::{NoiseFn, Perlin};
 
 use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
@@ -112,7 +113,7 @@ impl<'a> ChunkGenerator<'a> {
                                 }
                             },
                             StructureStatus::Abandoned => {
-                                if let Err(err) = self.age_structure(structure.get_status().clone(), generated_data, &mut solver) {
+                                if let Err(err) = self.age_structure(generated_data) {
                                     warn!("{err}")
                                 }
                             }
@@ -145,24 +146,10 @@ impl<'a> ChunkGenerator<'a> {
             if let Ok(built_structure) = built_structure {
 
                 for (pos, piece) in built_structure.vec.iter() {
-                    self.place_template_filtered(*pos, &piece, &mut filter);
+                    self.place_template_filtered(*pos, &piece, &mut generated_data.spawn_points, &mut filter);
                     
                     let rect = [pos.x as u8, pos.y as u8, piece.size.0 as u8, piece.size.1 as u8];
                     generated_data.add_piece(piece.name.clone(), rect);
-
-                    let center = *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1);
-
-                    // TODO(WCF3fkX3): Review
-                    for i in 0..4 {
-                        // self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 3);
-                        
-                        let xy = center + Coord2::xy(i % 2, i / 2);
-                        if !self.chunk.blocks_movement(&xy) {
-                            generated_data.spawn_points.push(xy.to_vec2i());
-                        }
-
-                    }
-
                 }
 
                 return Ok(generated_data)
@@ -179,29 +166,17 @@ impl<'a> ChunkGenerator<'a> {
             let piece = solver.find_piece(&piece_name)?;
             let pos = Coord2::xy(rect[0] as i32, rect[1] as i32);
 
-            self.place_template_filtered(pos, &piece, &mut Box::new(NoopFilter {}));
+            self.place_template_filtered(pos, &piece, &mut new_generated_data.spawn_points, &mut Box::new(NoopFilter {}));
                     
             let rect = [pos.x as u8, pos.y as u8, piece.size.0 as u8, piece.size.1 as u8];
             new_generated_data.add_piece(piece.name.clone(), rect);
 
-            let center = pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1);
-
-            // TODO(WCF3fkX3): Review
-            for i in 0..4 {
-                // self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2 - 1, piece.size.1 as i32 / 2 - 1), 3);
-                
-                let xy = center + Coord2::xy(i % 2, i / 2);
-                if !self.chunk.blocks_movement(&xy) {
-                    new_generated_data.spawn_points.push(xy.to_vec2i());
-                }
-
-            }
         }
 
         Ok(new_generated_data)
     }
 
-    fn age_structure(&mut self, structure_status: StructureStatus, generated_data: &StructureGeneratedData, solver: &mut JigsawSolver) -> Result<(), Error> {
+    fn age_structure(&mut self, generated_data: &StructureGeneratedData) -> Result<(), Error> {
         let resources = resources();
 
         // TODO(WCF3fkX3): Compute
@@ -320,12 +295,12 @@ impl<'a> ChunkGenerator<'a> {
         let structure = solver.solve_structure("varningr_surface", Coord2::xy(self.chunk.size.0 as i32 / 2, self.chunk.size.1 as i32 / 2), &mut self.rng, Vec::new());
         if let Ok(structure) = structure {
             for (pos, piece) in structure.vec.iter() {
-                self.place_template(*pos, &piece);
-                if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
-                    let wolf_id = resources.species.id_of("species:wolf");
-                    // Minion wolves
-                    for _ in 0..self.rng.randi_range(1, 4) {
-                        self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 7);
+                let mut spawns = Vec::new();
+                self.place_template(*pos, &piece, &mut spawns);
+                let wolf_id = resources.species.id_of("species:wolf");
+                for spawn in spawns {
+                    if self.rng.rand_chance(0.3) {
+                        self.spawn(Spawner::Species(wolf_id), spawn);
                     }
                 }
             }
@@ -335,7 +310,7 @@ impl<'a> ChunkGenerator<'a> {
     fn generate_wolf_pack(&mut self, site: &Site) {
         let pos = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2);
         for creature_id in site.creatures.iter() {
-            self.spawn(Spawner::CreatureId(*creature_id), pos, 7);
+            self.spawn(Spawner::CreatureId(*creature_id), pos.to_vec2i());
         }
     }
 
@@ -351,36 +326,38 @@ impl<'a> ChunkGenerator<'a> {
 
             // First piece
             if let Some((pos, piece)) = iter.next() {
-                self.place_template(*pos, &piece);
-
+                let mut spawns = Vec::new();
+                self.place_template(*pos, &piece, &mut spawns);
+                let mut spawns = spawns.iter();
                 // Spawn varningr(s)
                 for creature_id in site.creatures.iter() {
-                    self.spawn(Spawner::CreatureId(*creature_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                    let spawn = spawns.next().unwrap();
+                    self.spawn(Spawner::CreatureId(*creature_id), *spawn);
                 }
                 // Minion wolves
-                for _ in 0..3 {
-                    self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                for spawn in spawns {
+                    if self.rng.rand_chance(0.3) {
+                        self.spawn(Spawner::Species(wolf_id), *spawn);
+                    }
                 }
             }
             for (pos, piece) in iter {
-                self.place_template(*pos, &piece);
-                if piece.size.area() > 7*7 && self.rng.rand_chance(0.3) {
-                    // Minion wolves
-                    for _ in 0..self.rng.randi_range(1, 4) {
-                        self.spawn(Spawner::Species(wolf_id), *pos + Coord2::xy(piece.size.0 as i32 / 2, piece.size.1 as i32 / 2), 5);
+                let mut spawns = Vec::new();
+                self.place_template(*pos, &piece, &mut spawns);
+                for spawn in spawns {
+                    if self.rng.rand_chance(0.3) {
+                        self.spawn(Spawner::Species(wolf_id), spawn);
                     }
                 }
             }
         }
     }
 
-    fn spawn(&mut self, spawner: Spawner, close_to: Coord2, r: i32) {
-        for _ in 0..100 {
-            let xy = close_to + Coord2::xy(self.rng.randi_range(-r, r), self.rng.randi_range(-r, r));
-            if !self.chunk.blocks_movement(&xy) && self.chunk.get_spawner_at(&xy).is_none() {
-                self.chunk.add_spawn_point(xy, spawner);
-                return;
-            }
+    fn spawn(&mut self, spawner: Spawner, close_to: Vec2i) {
+        let xy: Coord2 = close_to.into();
+        if !self.chunk.blocks_movement(&xy) && self.chunk.get_spawner_at(&xy).is_none() {
+            self.chunk.add_spawn_point(xy, spawner);
+            return;
         }
     }
 
@@ -447,11 +424,11 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    pub(crate) fn place_template(&mut self, origin: Coord2, template: &JigsawPiece) {
-        self.place_template_filtered(origin, template, &mut Box::new(NoopFilter {}));
+    pub(crate) fn place_template(&mut self, origin: Coord2, template: &JigsawPiece, spawn_points: &mut Vec<Vec2i>) {
+        self.place_template_filtered(origin, template, spawn_points, &mut Box::new(NoopFilter {}));
     }
 
-    fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, filter: &mut Box<F>) where F: StructureFilter + ?Sized {
+    fn place_template_filtered<F>(&mut self, origin: Coord2, template: &JigsawPiece, spawn_points: &mut Vec<Vec2i>, filter: &mut Box<F>) where F: StructureFilter + ?Sized {
         let resources = resources();
         for i in 0..template.size.area() {
             let x = origin.x as usize + i % template.size.x();
@@ -462,7 +439,7 @@ impl<'a> ChunkGenerator<'a> {
                 JigsawPieceTile::Air => (),
                 JigsawPieceTile::Empty => (),
                 JigsawPieceTile::PathEndpoint => self.path_endpoints.push(Coord2::xy(x as i32, y as i32)),
-                JigsawPieceTile::Fixed { ground, object, statue_spot, connection: _ } => {
+                JigsawPieceTile::Fixed { ground, object, spawn_point, statue_spot, connection: _ } => {
                     let ground_id = resources.tiles.validate_id(ground).unwrap();
                     let object_id = object.and_then(|object| resources.object_tiles.validate_id(object - 1));
                     let filtered = filter.filter(Coord2::xy(x as i32, y as i32), &ground_id, object_id);
@@ -477,6 +454,9 @@ impl<'a> ChunkGenerator<'a> {
                         }
                         if statue_spot {
                             self.statue_spots.push(Coord2::xy(x as i32, y as i32))
+                        }
+                        if spawn_point {
+                            spawn_points.push(Vec2i(x as i32, y as i32))
                         }
                     }
                 },

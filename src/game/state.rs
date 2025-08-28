@@ -242,6 +242,7 @@ impl GameState {
                 SiteType::Village => ()
             };
 
+            // Spawn creatures in structures
             for structure in site.structures.iter() {
                 let data = structure.generated_data.as_ref().unwrap();
                 let mut spawnpoint_i = 0;
@@ -255,6 +256,7 @@ impl GameState {
                 }
             }
 
+            // Spawn others
             for (pos, spawner) in self.chunk.spawn_points() {
             let actor = match spawner {
                 Spawner::CreatureId(creature_id) => {
