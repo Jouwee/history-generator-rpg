@@ -1,8 +1,9 @@
 use std::{fs::File, io::Write};
 
+use math::rng::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Structure, StructureStatus, StructureType, SiteId, SiteType}}, Event, Resources};
+use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Structure, StructureStatus, StructureType, SiteId, SiteType}}, Event, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, site::Sites};
 
@@ -39,6 +40,10 @@ impl World {
             codex: Codex::new(),
             played_creature: None,
         }
+    }
+
+    pub(crate) fn rng(&self) -> Rng {
+        self.generation_parameters.rng()
     }
 
     pub(crate) fn create_scenario(&mut self) -> Result<(CreatureId, Coord2), ()> {
@@ -339,7 +344,7 @@ pub(crate) mod fixture {
 
 impl World {
 
-    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, site_id: &SiteId, rng: &mut Rng) -> Result<(), &'static str> {
+    pub(crate) fn creature_couple_have_child(&mut self, mother_id: CreatureId, site_id: &SiteId, rng: &mut OldRng) -> Result<(), &'static str> {
         let mother = self.creatures.get_mut(&mother_id);
 
         let father_id = mother.spouse.ok_or("Woman with no spouse trying to have a child")?;
@@ -504,7 +509,7 @@ impl World {
                             if killer_relationship.mortal_enemy_or_worse() {
                                 // TODO(IhlgIYVA): Determinate
                                 // TODO(IhlgIYVA): Magic number
-                                if Rng::rand().rand_chance(0.8) {
+                                if OldRng::rand().rand_chance(0.8) {
                                     let goal = Goal::KillBeast(*killer_id);
                                     history_trace!("creature_add_goal creature_id:{:?} goal:{:?}", relationship_creature_id, goal);
                                     relationship_creature.goals.push(goal);

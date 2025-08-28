@@ -185,15 +185,20 @@ impl Console {
                 }
                 return Result::Ok(format!("All in-progress quests completed"));
             },
+            Some("/reveal") => {
+                for site in scene.world.sites.iter_ids() {
+                    scene.world.codex.site_mut(&site);
+                }
+                return Result::Ok(format!("All sites revealed"));
+            },
             Some("/skip") => {
 
                 let days = parts.next().ok_or("Param 1 should be the the number of days")?;
                 let days: i32 = days.parse().or(Err("Param 1 should be a number"))?;
 
-                // TODO(WCF3fkX3): Store in the world?
-                let rng = Rng::rand();
+                let rng = scene.world.rng().hash(scene.world.date);
 
-                let mut history_simulation = HistorySimulation::new(rng.clone(), scene.world.generation_parameters.clone());
+                let mut history_simulation = HistorySimulation::new(rng.into(), scene.world.generation_parameters.clone());
                 let step = Duration::days(days);
                 history_simulation.simulate_step(step, &mut scene.world);
 

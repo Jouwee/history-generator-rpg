@@ -1,15 +1,16 @@
 use std::time::Instant;
 
+use math::rng::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::Duration, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
+use crate::{commons::rng::Rng as OldRng, engine::geometry::Size2D, info, resources::resources::Resources, world::{date::Duration, history_sim::history_simulation::HistorySimulation, topology::WorldTopology}};
 
 use super::world::World;
 
 #[derive(Clone, Serialize, Deserialize)]
 
 pub(crate) struct WorldGenerationParameters {
-    pub(crate) seed: u32,
+    pub(crate) seed: u64,
     // Terain
     /// Size of the world, in chunks
     pub(crate) world_size: Size2D,
@@ -32,6 +33,14 @@ pub(crate) struct WorldGenerationParameters {
     pub(crate) st_village_population: u16,
 }
 
+impl WorldGenerationParameters {
+
+    pub(crate) fn rng(&self) -> Rng {
+        Rng::new(self.seed)
+    }
+
+}
+
 pub(crate) struct WorldHistoryGenerator {
     pub(crate) world: World,
     pub(crate) parameters: WorldGenerationParameters,
@@ -42,7 +51,7 @@ pub(crate) struct WorldHistoryGenerator {
 impl WorldHistoryGenerator {
 
     pub(crate) fn seed_world(parameters: WorldGenerationParameters, resources: &Resources) -> WorldHistoryGenerator {
-        let mut rng = Rng::seeded(parameters.seed);
+        let mut rng = OldRng::seeded(parameters.seed);
 
         let mut world_map = WorldTopology::new(parameters.world_size);
         let now = Instant::now();
@@ -75,7 +84,7 @@ impl WorldHistoryGenerator {
     pub(crate) fn simulator(world: World) -> WorldHistoryGenerator {
         let parameters = world.generation_parameters.clone();
 
-        let rng = Rng::seeded(parameters.seed);
+        let rng = OldRng::seeded(parameters.seed);
 
         let history_sim = HistorySimulation::new(rng.derive("history"), parameters.clone());
 

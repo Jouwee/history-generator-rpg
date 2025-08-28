@@ -1,5 +1,7 @@
 use std::{hash::{DefaultHasher, Hash, Hasher}, time::Instant};
 
+use math::rng::Rng as NewRng;
+
 #[derive(Clone)]
 pub(crate) struct Rng {
     seed: u32
@@ -103,3 +105,10 @@ impl Rng {
 
 }
 
+impl From<NewRng> for Rng {
+
+    fn from(mut value: NewRng) -> Self {
+        Self::new(value.u32())
+    }
+
+}
