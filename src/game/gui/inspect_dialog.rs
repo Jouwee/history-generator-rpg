@@ -54,6 +54,10 @@ impl UINode for InspectDialog {
         };
 
         let text = &writer.take_text();
+        if text.is_empty() {
+            let line = Label::text("You see nothing of interest.");
+            self.info_container.add(line);
+        }
         for line in text.split("\n") {
             let line = Label::text(&line);
             self.info_container.add(line);

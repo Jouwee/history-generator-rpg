@@ -69,8 +69,6 @@ impl Assets {
                 for y in 0..tiles_y {
                     for x in 0..tiles_x {
                         let tile = image.crop_imm(x * size.0 as u32, y * size.1 as u32, size.0 as u32, size.1 as u32).to_rgba8();
-                        // TODO: Subimage works with references. Maybe it's better?
-                        //let tile = image.sub_image(x, y, params.tile_size.0 as u32, params.tile_size.1 as u32);
                         textures.push(Texture::from_image(&tile, &settings));
                         map.push([x as f64 * size.0 as f64, y as f64 * size.1 as f64, size.0 as f64, size.1 as f64]);
                     }

@@ -309,7 +309,6 @@ impl Scene for GameSceneState {
         self.state.render(ctx, game_ctx);
 
         if let Some(action_id) = &self.hotbar.selected_action {
-            // TODO: Cleanup
             let action = game_ctx.resources.actions.get(action_id);
             let can_use = ActionRunner::can_use(action_id, &action, PLAYER_IDX, self.cursor_pos, &self.state);
             let color = match can_use {

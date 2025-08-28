@@ -332,7 +332,6 @@ impl JigsawPieceTile {
 
 #[derive(Clone)]
 pub(crate) struct Structure {
-    // TODO: Turn to reference
     pub(crate) vec: Vec<(Coord2, JigsawPiece)>,
     pub(crate) open_connections: Vec<(Coord2, String)>
 }
