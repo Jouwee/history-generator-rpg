@@ -1,11 +1,13 @@
-use crate::{game::{game_log::GameLog, state::{GameState, PLAYER_IDX}}, resources::action::ActionRunner, world::world::World, Actor, Coord2, GameContext, RenderContext, Update};
+use math::Vec2i;
+
+use crate::{game::{game_log::GameLog, state::{GameState, PLAYER_IDX}}, resources::action::ActionRunner, world::world::World, Actor, GameContext, RenderContext, Update};
 
 use super::TurnMode;
 
 pub(crate) struct PlayerPathing {
-    last_path_to: Option<Coord2>,
-    preview: Option<Vec<Coord2>>,
-    running: Option<Vec<Coord2>>,
+    last_path_to: Option<Vec2i>,
+    preview: Option<Vec<Vec2i>>,
+    running: Option<Vec<Vec2i>>,
     wait: f64,
 }
 
@@ -24,7 +26,7 @@ impl PlayerPathing {
         let mut running = false;
         if let Some(path) = &self.running {
             for tile in path.iter() {
-                ctx.image("gui/path.png", [tile.x * 24, tile.y * 24]);
+                ctx.image("gui/path.png", (*tile * 24).into());
                 running = true;
             }
         }
@@ -33,9 +35,9 @@ impl PlayerPathing {
             if let Some(path) = &self.preview {
                 for tile in path.iter().rev() {
                     if *turn_mode == TurnMode::RealTime || remaining_ap >= 0 {
-                        ctx.image("gui/path.png", [tile.x * 24, tile.y * 24]);
+                        ctx.image("gui/path.png", (*tile * 24).into());
                     } else {
-                        ctx.image("gui/path.png", [tile.x * 24, tile.y * 24]);
+                        ctx.image("gui/path.png", (*tile * 24).into());
                     }
                     // TODO(OLaU4Dth): 
                     remaining_ap -= 20;
@@ -44,14 +46,14 @@ impl PlayerPathing {
         }
     }
 
-    pub(crate) fn should_recompute_pathing(&mut self, cursor: Coord2) -> bool {
+    pub(crate) fn should_recompute_pathing(&mut self, cursor: Vec2i) -> bool {
         return match &self.last_path_to {
             None => true,
             Some(coord) => *coord != cursor,
         };
     }
 
-    pub(crate) fn set_preview(&mut self, cursor: Coord2, mut path: Vec<Coord2>) {
+    pub(crate) fn set_preview(&mut self, cursor: Vec2i, mut path: Vec<Vec2i>) {
         // Removes the first move as it's always the current position
         let _ = path.pop();
         self.preview = Some(path);
@@ -78,7 +80,7 @@ impl PlayerPathing {
             if let Some(pos) = pos {
                 let action_id = ctx.resources.actions.id_of("act:move");  
                 let action = ctx.resources.actions.get(&action_id);  
-                let result = action_runner.try_use(&action_id, &action, PLAYER_IDX, pos, chunk, world, game_log, ctx);
+                let result = action_runner.try_use(&action_id, &action, PLAYER_IDX, pos.into(), chunk, world, game_log, ctx);
                 if result.is_err() {
                     self.clear_running();
                 }
@@ -96,18 +98,18 @@ impl PlayerPathing {
         return false
     }
 
-    pub(crate) fn pop_running(&mut self) -> Option<Coord2> {
+    pub(crate) fn pop_running(&mut self) -> Option<Vec2i> {
         if let Some(path) = &mut self.running {
             return path.pop()
         }
         return None
     }
 
-    pub(crate) fn get_preview(&self) -> &Option<Vec<Coord2>> {
+    pub(crate) fn get_preview(&self) -> &Option<Vec<Vec2i>> {
         return &self.preview;
     }
 
-    pub(crate) fn start_running(&mut self, path: Vec<Coord2>) {
+    pub(crate) fn start_running(&mut self, path: Vec<Vec2i>) {
         self.running = Some(path.clone());
     }
 

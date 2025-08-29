@@ -2,6 +2,7 @@ use std::ops::ControlFlow;
 
 use ai::AiSolver;
 use effect_layer::EffectLayer;
+use engine::astar::AStar;
 use game_context_menu::GameContextMenu;
 use game_log::GameLog;
 use graphics::draw_state::Blend;
@@ -14,7 +15,6 @@ use math::Vec2i;
 use piston::{Key, MouseButton};
 use player_pathing::PlayerPathing;
 use serde::{Deserialize, Serialize};
-use crate::commons::astar::AStar;
 use crate::commons::interpolate::lerp;
 use crate::commons::rng::Rng;
 use crate::engine::assets::assets;
@@ -666,10 +666,10 @@ impl Scene for GameSceneState {
             }
         }
 
-        if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
-            let mut player_pathfinding = AStar::new(self.state.chunk.size, self.state.player().xy.into());
-            player_pathfinding.find_path(self.cursor_pos, |xy| self.state.astar_movement_cost(xy));
-            self.player_pathing.set_preview(self.cursor_pos, player_pathfinding.get_path(self.cursor_pos));
+        if self.player_pathing.should_recompute_pathing(self.cursor_pos.to_vec2i()) {
+            let mut player_pathfinding = AStar::new(self.state.chunk.size.vec2i(), self.state.player().xy);
+            player_pathfinding.find_path(self.cursor_pos.to_vec2i(), |xy| self.state.astar_movement_cost(xy.into()));
+            self.player_pathing.set_preview(self.cursor_pos.to_vec2i(), player_pathfinding.get_path(self.cursor_pos.to_vec2i()));
         }
 
         match evt {

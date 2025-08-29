@@ -1,4 +1,3 @@
-pub(crate) mod astar;
 pub(crate) mod bitmask;
 pub(crate) mod damage_model;
 pub(crate) mod id_vec;

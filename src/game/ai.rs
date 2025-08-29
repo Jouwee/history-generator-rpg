@@ -1,8 +1,9 @@
 use std::{collections::VecDeque, time::Instant, vec};
 
+use engine::astar::{AStar, MovementCost};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::astar::{AStar, MovementCost}, engine::geometry::Coord2, game::{inventory::inventory::EquipmentType, state::{AiGroups, GameState}}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
+use crate::{engine::geometry::Coord2, game::{inventory::inventory::EquipmentType, state::{AiGroups, GameState}}, info, resources::action::{ActionEffect, ActionId, ActionTarget, Actions, Affliction}, GameContext};
 
 use super::{actor::actor::Actor};
 
@@ -124,10 +125,10 @@ impl AiSolver {
             team_damage: 0.,
         };
 
-        let mut astar = AStar::new(chunk.chunk.size, chunk.player().xy.into());
+        let mut astar = AStar::new(chunk.chunk.size.vec2i(), chunk.player().xy);
         
-        astar.find_path(ctx.xy, |xy| {
-            if !chunk.chunk.size.in_bounds(xy) || !chunk.can_occupy(&xy) {
+        astar.find_path(ctx.xy.to_vec2i(), |xy| {
+            if !chunk.chunk.size.in_bounds(xy.into()) || !chunk.can_occupy(&xy.into()) {
                 return MovementCost::Impossible;
             } else {
                 return MovementCost::Cost(1.);
@@ -248,7 +249,7 @@ impl AiSolver {
         if dist <= 1.5 {
             return 1.;
         }        
-        let path = astar.get_path(ctx.xy);
+        let path = astar.get_path(ctx.xy.to_vec2i());
         if path.len() == 0 {
             return 0.
         }

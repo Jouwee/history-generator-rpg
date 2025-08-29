@@ -20,6 +20,11 @@ impl Size2D {
     pub(crate) fn in_bounds(&self, xy: Coord2) -> bool {
         return xy.x > 0 && xy.y > 0 && xy.x < self.0 as i32 && xy.y < self.1 as i32
     }
+
+    pub(crate) fn vec2i(&self) -> Vec2i {
+        return Vec2i(self.0 as i32, self.1 as i32)
+    }
+
 }
 
 pub(crate) struct Vector2 {

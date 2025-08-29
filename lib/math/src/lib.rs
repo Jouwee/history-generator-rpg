@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub};
+use std::ops::{Add, Mul, Sub};
 
 use serde::{Deserialize, Serialize};
 
@@ -48,5 +48,25 @@ impl Sub for Vec2i {
             self.0 - other.0,
             self.1 - other.1,
         )
+    }
+}
+
+impl Mul<i32> for Vec2i {
+    type Output = Self;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        return Self(self.0 * rhs, self.1 * rhs)
+    }
+}
+
+impl From<Vec2i> for [i32; 2] {
+    fn from(value: Vec2i) -> Self {
+        return [value.0, value.1]
+    }
+}
+
+impl From<Vec2i> for [f64; 2] {
+    fn from(value: Vec2i) -> Self {
+        return [value.0 as f64, value.1 as f64]
     }
 }

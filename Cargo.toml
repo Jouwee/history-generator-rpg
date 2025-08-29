@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib/text"]
+members = ["lib/text", "lib/engine"]
 
 [package]
 name = "tales_of_kathay"
@@ -25,6 +25,7 @@ unic-langid = "0.9.6"
 common = { path = "lib/common" }
 math = { path = "lib/math" }
 text = { path = "lib/text" }
+engine = { path = "lib/engine" }
 
 [profile.release]
 # Stip symbols

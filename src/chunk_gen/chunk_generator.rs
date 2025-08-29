@@ -1,10 +1,11 @@
 use std::{collections::BTreeSet, time::Instant};
 
 use common::error::Error;
+use engine::astar::{AStar, MovementCost};
 use math::Vec2i;
 use noise::{NoiseFn, Perlin};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{astar::{AStar, MovementCost}, id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -274,17 +275,17 @@ impl<'a> ChunkGenerator<'a> {
                 }
             }
             
-            let mut astar = AStar::new(self.chunk.size, start);
-            astar.find_path(*closest, |xy| {
-                if !self.chunk.size.in_bounds(xy) || self.chunk.blocks_movement(&xy) || solver.is_occupied(xy) {
+            let mut astar = AStar::new(self.chunk.size.vec2i(), start.to_vec2i());
+            astar.find_path((*closest).to_vec2i(), |xy| {
+                if !self.chunk.size.in_bounds(xy.into()) || self.chunk.blocks_movement(&xy.into()) || solver.is_occupied(xy.into()) {
                     return MovementCost::Impossible;
                 } else {
                     return MovementCost::Cost(1.);
                 }
             });
-            let path = astar.get_path(*closest);
+            let path = astar.get_path((*closest).to_vec2i());
             for step in path {
-                self.chunk.ground_layer.set_tile(step.x as usize, step.y as usize, path_tile);
+                self.chunk.ground_layer.set_tile(step.x() as usize, step.y() as usize, path_tile);
             }
 
 
