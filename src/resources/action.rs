@@ -528,7 +528,7 @@ impl ActionRunner {
 
                                             let (name, color) = affliction.name_color();
                                             game_log.log(GameLogEntry::from_parts(vec!(
-                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), action.actor == PLAYER_IDX),
+                                                GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), i == PLAYER_IDX),
                                                 GameLogPart::Text(format!(" is {}", name))
                                             )));
                                             effect_layer.add_text_indicator(target.xy.into(), name, color);
