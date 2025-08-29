@@ -471,7 +471,7 @@ impl Resources {
             description: String::from("Harvest"),
             icon: String::from("missing.png"),
             log_use: true,
-            cast_sfx: None,
+            cast_sfx: Some(SoundEffect::new(vec!("sfx/foliage.mp3"))),
             ap_cost: 50,
             stamina_cost: 0.,
             cooldown: 0,
