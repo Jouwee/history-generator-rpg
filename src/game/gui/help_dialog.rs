@@ -53,4 +53,8 @@ impl UINode for HelpDialog {
         perf().end("help");
     }
 
+    fn input(&mut self, state: &mut Self::State, evt: &crate::engine::input::InputEvent, ctx: &mut GameContext) -> std::ops::ControlFlow<Self::Input> {
+        self.container.input(state, evt, ctx)
+    }
+
 }

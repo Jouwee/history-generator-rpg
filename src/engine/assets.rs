@@ -159,29 +159,31 @@ impl ImageSheet {
     pub(crate) fn draw_as_scalable(&self, rect: [f64; 4], ctx: &mut RenderContext) {
         let w = self.tile_size.x() as f64;
         let h = self.tile_size.y() as f64;
+        let image = GlImage::new();
+        let draw_state = ctx.context.draw_state;
         match self.len() {
             9 => {
                 // Body
                 let transform = ctx.context.transform.trans(rect[0] + w, rect[1] + h).scale((rect[2] - w * 2.) / w, (rect[3] - h * 2.) / h);
-                GlImage::new().src_rect(self.map[4]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[4]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 // Borders
                 let transform = ctx.context.transform.trans(rect[0] + w, rect[1]).scale((rect[2] - w) / w, 1.);
-                GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[1]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0] + w, rect[1] + rect[3] - h).scale((rect[2] - w) / w, 1.);
-                GlImage::new().src_rect(self.map[7]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[7]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0], rect[1] + h).scale(1., (rect[3] - h) / h);
-                GlImage::new().src_rect(self.map[3]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[3]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0] + rect[2] - w, rect[1] + h).scale(1., (rect[3] - h) / h);
-                GlImage::new().src_rect(self.map[5]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[5]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 // Corners
                 let transform = ctx.context.transform.trans(rect[0], rect[1]);
-                GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[0]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0], rect[1] + rect[3] - h);
-                GlImage::new().src_rect(self.map[6]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[6]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0] + rect[2] - w, rect[1]);
-                GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[2]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 let transform = ctx.context.transform.trans(rect[0] + rect[2] - w, rect[1] + rect[3] - h);
-                GlImage::new().src_rect(self.map[8]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                image.src_rect(self.map[8]).draw(&self.texture, &draw_state, transform, ctx.gl);
             },
             3 => {
                 let size = self.texture.get_size();
@@ -189,23 +191,23 @@ impl ImageSheet {
                 if size.0 > self.tile_size.0 as u32 {
                     // Left
                     let transform = ctx.context.transform.trans(rect[0], rect[1]);
-                    GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[0]).draw(&self.texture, &draw_state, transform, ctx.gl);
                     // Center
                     let transform = ctx.context.transform.trans(rect[0] + w, rect[1]).scale((rect[2] - w * 2.) / w, 1.);
-                    GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[1]).draw(&self.texture, &draw_state, transform, ctx.gl);
                     // Right
                     let transform = ctx.context.transform.trans(rect[0] + rect[2] - w, rect[1]);
-                    GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[2]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 } else { // Vertical
                     // Top
                     let transform = ctx.context.transform.trans(rect[0], rect[1]);
-                    GlImage::new().src_rect(self.map[0]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[0]).draw(&self.texture, &draw_state, transform, ctx.gl);
                     // Center
                     let transform = ctx.context.transform.trans(rect[0], rect[1] + h).scale(1., (rect[3] - h * 2.) / h);
-                    GlImage::new().src_rect(self.map[1]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[1]).draw(&self.texture, &draw_state, transform, ctx.gl);
                     // Bottom
                     let transform = ctx.context.transform.trans(rect[0], rect[1] + rect[3] - h);
-                    GlImage::new().src_rect(self.map[2]).draw(&self.texture, &DrawState::default(), transform, ctx.gl);
+                    image.src_rect(self.map[2]).draw(&self.texture, &draw_state, transform, ctx.gl);
                 }
             },
             _ => warn!("Can't draw sprite as scalable with size {}", self.len())

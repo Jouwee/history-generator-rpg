@@ -1,6 +1,6 @@
 use std::{hash::{DefaultHasher, Hash, Hasher}, ops::ControlFlow};
 
-use graphics::{image, Transformed};
+use graphics::{Transformed, Image as GlImage};
 use ::image::ImageReader;
 use piston::MouseButton;
 
@@ -122,6 +122,9 @@ impl UINode for Button {
     }
 
     fn render(&mut self, _state: &Self::State, ctx: &mut RenderContext, _game_ctx: &mut GameContext) {
+        let draw_state = ctx.context.draw_state;
+        let image = GlImage::new();
+
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
 
         let background = assets().image(&self.background);
@@ -130,7 +133,7 @@ impl UINode for Button {
         let size = [layout[2], layout[3]];
         // Background
         let transform = ctx.context.transform.trans(position[0], position[1]).scale(size[0] / 24., size[1] / 24.);
-        image(&background.texture, transform, ctx.gl);
+        image.draw(&background.texture, &draw_state, transform, ctx.gl);
 
         let state_offset = match (self.is_selected(), self.is_pressed(), self.is_hover()) {
             (true, _, _) => 6,
@@ -141,22 +144,22 @@ impl UINode for Button {
 
         // Corners
         let transform = ctx.context.transform.trans(position[0], position[1]);
-        image(self.frame.sprite(state_offset + 0, 0), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 0, 0), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0], position[1] + size[1] - 8.);
-        image(self.frame.sprite(state_offset + 0, 2), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 0, 2), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1]);
-        image(self.frame.sprite(state_offset + 2, 0), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 2, 0), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + size[1] - 8.);
-        image(self.frame.sprite(state_offset + 2, 2), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 2, 2), &draw_state, transform, ctx.gl);
         // Borders
         let transform = ctx.context.transform.trans(position[0] + 8., position[1]).scale((size[0]-16.) / 8., 1.);
-        image(self.frame.sprite(state_offset + 1, 0), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 1, 0), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + 8., position[1] + size[1] - 8.).scale((size[0]-16.) / 8., 1.);
-        image(self.frame.sprite(state_offset + 1, 2), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 1, 2), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0], position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-        image(self.frame.sprite(state_offset + 0, 1), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 0, 1), &draw_state, transform, ctx.gl);
         let transform = ctx.context.transform.trans(position[0] + size[0] - 8., position[1] + 8.).scale(1., (size[1]-16.) / 8.);
-        image(self.frame.sprite(state_offset + 2, 1), transform, ctx.gl);
+        image.draw(self.frame.sprite(state_offset + 2, 1), &draw_state, transform, ctx.gl);
 
         let text_width = assets().font_standard().width(&self.text);
         let text_height = assets().font_standard().line_height();

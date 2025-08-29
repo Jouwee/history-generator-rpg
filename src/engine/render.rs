@@ -1,4 +1,4 @@
-use graphics::{image, rectangle, Context, Text, Transformed};
+use graphics::{image, rectangle, Context, Text, Transformed, Image as GlImage};
 use opengl_graphics::{GlGraphics, Texture};
 
 use crate::engine::assets::{assets, Font};
@@ -88,7 +88,8 @@ impl<'a> RenderContext<'a> {
     }
 
     pub(crate) fn texture(&mut self, texture: &Texture, transform: [[f64; 3]; 2]) {
-        image(texture, transform, self.gl);
+        let draw_state = self.context.draw_state;
+        GlImage::new().draw(texture, &draw_state, transform, self.gl);
     }
 
     pub(crate) fn at(&self, x: f64, y: f64) -> [[f64; 3]; 2] {

@@ -41,14 +41,18 @@ impl MainMenuScene {
 
     fn build_load_menu(&mut self) {
         self.container.clear();
-        self.container.layout_component().anchor_center().size([124., 200.]);
+        self.container.layout_component().anchor_center().size([200., 232.]);
+
+        let mut inner = SimpleContainer::new();
+        inner.layout_component().anchor_center().size([200., 200.]);
 
         let save_files = SaveFile::enumerate_saves();
         if let Ok(save_files) = save_files {
             for save_file in save_files {
-                self.container.add(Self::build_save_panel(&save_file));
+                inner.add(Self::build_save_panel(&save_file));
             }
         }
+        self.container.add(inner);
 
         let mut quit = Button::text(loc!("main-menu-load-back")).key("back");
         quit.layout_component().size([124., 24.]);
@@ -86,9 +90,8 @@ impl Scene for MainMenuScene {
         let w = self.logo.size.x() as f64 / 2.;
         let h = self.logo.size.y() as f64 / 2.;
         let x = ctx.layout_rect[2] / 2. - w / 2.;
-        let y = self.container.layout_component().last_layout[1] - h as f64 - 16.;
+        let y = self.container.layout_component().last_layout[1] - h as f64;
         ctx.texture(&self.logo.texture, ctx.at(x, y).scale(0.5, 0.5));
-
     }
 
     fn update(&mut self, _update: &Update, _ctx: &mut GameContext) {
