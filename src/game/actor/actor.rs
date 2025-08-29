@@ -305,7 +305,7 @@ impl Actor {
         for (_z, image) in textures {
             ctx.texture_old(image, pos);
         }
-        ctx.try_pop();
+        let _ = ctx.try_pop();
     }
 }
 

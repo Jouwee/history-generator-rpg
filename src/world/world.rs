@@ -4,7 +4,7 @@ use common::error::Error;
 use math::{rng::Rng, Vec2i};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{SettlementComponent, Site, SiteId, SiteResources, SiteType, Structure, StructureStatus, StructureType}}, Event, Resources};
+use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Site, SiteId, SiteResources, SiteType, Structure, StructureStatus, StructureType}}, Event, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, site::Sites};
 

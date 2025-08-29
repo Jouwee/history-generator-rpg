@@ -110,10 +110,6 @@ impl Chunk {
         self.object_layer.set_shadow(pos.x as usize, pos.y as usize, shadow);
     }
 
-    pub(crate) fn get_object_idx(&self, pos: Coord2) -> usize {
-        return self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize)
-    }
-
     pub(crate) fn get_object_id(&self, pos: Coord2) -> Option<ObjectTileId> {
         let i = self.object_layer.get_tile_idx(pos.x as usize, pos.y as usize);
         if i == 0 {
