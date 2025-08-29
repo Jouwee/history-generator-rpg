@@ -22,7 +22,6 @@ pub(crate) enum CreatureSideEffect {
 
 impl CreatureSimulation {
 
-    // TODO: Smaller steps
     pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, site: &Site, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &SiteChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).year();
         // Death by disease

@@ -179,9 +179,6 @@ impl CodexDialog {
                 self.info_container.add(event);
 
             }
-
-            // TODO(hu2htwck): Other info
-
         }
 
         if let Selection::Quest(quest) = &self.selected {

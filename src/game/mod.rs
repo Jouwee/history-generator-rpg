@@ -742,7 +742,6 @@ impl Scene for GameSceneState {
                 return ControlFlow::Break(());
             },
             BusEvent::CreatureKilled(creature_id) => {
-                // TODO: Full remove logic
                 for site_id in self.world.sites.iter_ids::<SiteId>() {
 
                     let site = self.world.sites.get_mut(&site_id);

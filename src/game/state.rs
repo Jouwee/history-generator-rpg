@@ -71,14 +71,12 @@ impl GameState {
         }
     }
 
-    // TODO(QZ94ei4M): Remove
     pub(crate) fn actors_iter(&self) -> impl Iterator<Item = &Actor> {
         let player = iter::once(&self.player);
         let others = self.actors.iter();
         return others.chain(player);
     }
 
-    // TODO(QZ94ei4M): Remove
     pub(crate) fn actors_iter_mut(&mut self) -> impl Iterator<Item = &mut Actor> {
         let player = iter::once(&mut self.player);
         let others = self.actors.iter_mut();
@@ -206,7 +204,7 @@ impl GameState {
         let chunk = save_file.load_chunk(&coord, &resources);
         let chunk = match chunk {
             Ok(mut chunk) => {
-                // TODO: Dupped code
+                // TODO(WCF3fkX3): Dupped code
                 let mut rng = Rng::rand();
                 rng.next();
 
@@ -216,7 +214,7 @@ impl GameState {
                 chunk
             }
             Err(_) => {
-                // TODO: Dupped code
+                // TODO(WCF3fkX3): Dupped code
                 let mut rng = Rng::rand();
                 rng.next();
 
