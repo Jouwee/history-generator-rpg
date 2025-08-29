@@ -270,6 +270,7 @@ impl UINode for CharacterDialog {
             }
         }
         match evt {
+            InputEvent::MouseMove { pos } => self.cursor_pos = [pos[0] as i32, pos[1] as i32],
             InputEvent::Click { button: _, pos: _ } => self.context_menu = None,
             _ => ()
         }
