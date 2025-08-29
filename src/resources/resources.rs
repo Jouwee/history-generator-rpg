@@ -657,11 +657,11 @@ impl Resources {
 
     fn load_object_tiles_late(&mut self) {
         let image = String::from("chunk_tiles/comfrey.png");
-        self.object_tiles.add("obj:comfrey", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true)
+        self.object_tiles.add("obj:comfrey", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), false)
             .harvestable(self.item_blueprints.id_of("itb:comfrey")));
 
         let image = String::from("chunk_tiles/echinacea.png");
-        self.object_tiles.add("obj:echinacea", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), true)
+        self.object_tiles.add("obj:echinacea", ObjectTile::new(crate::engine::tilemap::Tile::SingleTile(TileSingle::new(image)), false)
             .harvestable(self.item_blueprints.id_of("itb:echinacea")));
     }
 

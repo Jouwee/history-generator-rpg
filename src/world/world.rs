@@ -451,15 +451,12 @@ impl World {
         } else {
             // Creates new camp
             let pos = self.site_search_new_pos_closeby(site_xy, 15, rng).ok_or("No position found for new bandit camp")?;
-            let new_camp_id = self.sites.add(Site {
+            let mut site = Site {
                 xy: pos,
                 artifacts: Vec::new(),
                 cemetery: Vec::new(),
                 creatures: vec!(creature_id),
-                settlement: Some(SettlementComponent {
-                    leader: Some(creature_id),
-                    material_stock: Vec::new(),
-                }),
+                settlement: None,
                 name: None,
                 population_peak: (0, 0),
                 site_type: SiteType::BanditCamp,
@@ -467,7 +464,9 @@ impl World {
                     food: 1.
                 },
                 structures: vec!(Structure::new(StructureType::BanditCamp))
-            });
+            };
+            site.structures.get_mut(0).unwrap().add_ocuppant(creature_id);
+            let new_camp_id = self.sites.add(site);
             self.events.push(Event::CreateBanditCamp { date: self.date, creature_id: creature_id, site_id: site_id, new_site_id: new_camp_id });
         }
         // Removes creature from site

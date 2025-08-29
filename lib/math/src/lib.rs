@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod rng;
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Hash, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Vec2i(pub i32, pub i32);
 
 impl Vec2i {

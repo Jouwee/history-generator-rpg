@@ -265,11 +265,11 @@ impl GameState {
                         continue;
                     }
                     let species = resources.species.get(&creature.species);
-                    Actor::from_creature(*pos, ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources)
+                    Actor::from_creature((*pos).into(), ai_group, *creature_id, &creature, &creature.species, &species, &world, &resources)
                 },
                 Spawner::Species(species_id) => {
                     let species = resources.species.get(species_id);
-                    Actor::from_species(*pos, &species_id, &species, ai_group)
+                    Actor::from_species((*pos).into(), &species_id, &species, ai_group)
                 },
             };
             self.actors.push(actor);

@@ -33,10 +33,11 @@ impl ItemFactory {
         let offset = rng.randu_range(0, 3);
         let mut rewards = Vec::new();
         for i in 0..rewards_count {
-            match (i + offset) % 4 {
+            match (i + offset) % 5 {
                 0 => rewards.push(Self::inner_armor(&mut rng, resources)),
                 1 => rewards.push(Self::spell_tome(&mut rng, resources)),
                 2 => rewards.push(Self::head_armor(&mut rng, resources)),
+                3 => rewards.push(Self::potion(&mut rng, resources)),
                 _ => rewards.push(Self::weapon(&mut rng, resources).make()),
             }
         }
@@ -95,6 +96,12 @@ impl ItemFactory {
             ItemMakeArguments::PrimaryMaterial(material_id),
             ItemMakeArguments::Quality(random_quality(rng))
         ), &resources);
+        return item;
+    }
+
+    pub(crate) fn potion<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:health_potion");
+        let item = blueprint.make(vec!(), &resources);
         return item;
     }
 

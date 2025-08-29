@@ -310,7 +310,7 @@ impl<'a> ChunkGenerator<'a> {
     fn generate_wolf_pack(&mut self, site: &Site) {
         let pos = Coord2::xy(self.chunk.size.x() as i32 / 2, self.chunk.size.x() as i32 / 2);
         for creature_id in site.creatures.iter() {
-            self.spawn(Spawner::CreatureId(*creature_id), pos.to_vec2i());
+            self.spawn_radius(Spawner::CreatureId(*creature_id), pos.to_vec2i(), 7);
         }
     }
 
@@ -353,11 +353,20 @@ impl<'a> ChunkGenerator<'a> {
         }
     }
 
-    fn spawn(&mut self, spawner: Spawner, close_to: Vec2i) {
-        let xy: Coord2 = close_to.into();
-        if !self.chunk.blocks_movement(&xy) && self.chunk.get_spawner_at(&xy).is_none() {
+    fn spawn(&mut self, spawner: Spawner, xy: Vec2i) {
+        if !self.chunk.blocks_movement(&xy.into()) && self.chunk.get_spawner_at(&xy.into()).is_none() {
             self.chunk.add_spawn_point(xy, spawner);
             return;
+        }
+    }
+
+    fn spawn_radius(&mut self, spawner: Spawner, close_to: Vec2i, r: i32) {
+        for _ in 0..100 {
+            let xy = close_to + Vec2i(self.rng.randi_range(-r, r), self.rng.randi_range(-r, r));
+            if !self.chunk.blocks_movement(&xy.into()) && self.chunk.get_spawner_at(&xy.into()).is_none() {
+                self.chunk.add_spawn_point(xy.into(), spawner);
+                return;
+            }
         }
     }
 

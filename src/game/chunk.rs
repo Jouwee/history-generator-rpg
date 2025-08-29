@@ -11,7 +11,7 @@ pub(crate) struct Chunk {
     pub(crate) size: Size2D,
     pub(crate) tiles_metadata: HashMap<Vec2i, TileMetadata>,
     pub(crate) items_on_ground: Vec<(Coord2, Item, Texture)>,
-    spawn_points: Vec<(Coord2, Spawner)>,
+    spawn_points: Vec<(Vec2i, Spawner)>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
     pub(crate) object_layer: TileMap,
 }
@@ -139,7 +139,7 @@ impl Chunk {
         None
     }
 
-    pub(crate) fn add_spawn_point(&mut self, coord: Coord2, spawner: Spawner) {
+    pub(crate) fn add_spawn_point(&mut self, coord: Vec2i, spawner: Spawner) {
         let pos = self.spawn_points.binary_search_by(|(c, _)| c.cmp(&coord));
         match pos {
             Ok(_) => (),
@@ -147,7 +147,7 @@ impl Chunk {
         }
     }
 
-    pub(crate) fn get_spawner_at(&mut self, coord: &Coord2) -> Option<&Spawner> {
+    pub(crate) fn get_spawner_at(&mut self, coord: &Vec2i) -> Option<&Spawner> {
         let pos = self.spawn_points.binary_search_by(|(c, _)| c.cmp(coord));
         match pos {
             Ok(pos) => Some(&self.spawn_points[pos].1),
@@ -155,7 +155,7 @@ impl Chunk {
         }
     }
 
-    pub(crate) fn spawn_points(&self) -> impl Iterator<Item = &(Coord2, Spawner)> {
+    pub(crate) fn spawn_points(&self) -> impl Iterator<Item = &(Vec2i, Spawner)> {
         return self.spawn_points.iter();
     }
 
@@ -179,7 +179,7 @@ impl ChunkSerialized {
             coord: chunk.coord,
             size: chunk.size,
             tiles_metadata: chunk.tiles_metadata.clone(),
-            spawn_points: chunk.spawn_points.iter().map(|(c, s)| (c.to_vec2i(), s.clone())).collect(),
+            spawn_points: chunk.spawn_points.clone(),
             items_on_ground: chunk.items_on_ground.iter().map(|i| (i.0.to_vec2i(), i.1.clone())).collect(),
             ground_layer: chunk.ground_layer.tiles().iter().map(|i| i.and_then(|i| Some(TileId::new(i)))).collect(),
             object_layer: chunk.object_layer.tiles().iter().map(|(i, _)| match i {
@@ -194,7 +194,7 @@ impl ChunkSerialized {
         let mut chunk = Chunk::new(self.coord, self.size, resources);
 
         chunk.tiles_metadata = self.tiles_metadata.clone();
-        chunk.spawn_points = self.spawn_points.iter().map(|(c, s)| (c.clone().into(), s.clone())).collect();
+        chunk.spawn_points = self.spawn_points.clone();
         chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0.into(), i.1.clone(), i.1.make_texture(resources))).collect();
 
         for x in 0..self.size.x() {

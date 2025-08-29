@@ -95,7 +95,7 @@ impl<'a> RenderContext<'a> {
         return self.context.transform.trans(x, y);
     }
 
-    #[deprecated]
+    //#[deprecated]
     pub(crate) fn texture_old(&mut self, texture: Texture, position: [f64; 2]) {
         let transform = self.context.transform.trans(position[0], position[1]);
         // Workaround for a behaviour of piston where it passes a reference of the texture to the backend for async rendering,
