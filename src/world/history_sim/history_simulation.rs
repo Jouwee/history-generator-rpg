@@ -120,6 +120,9 @@ impl HistorySimulation {
         drop(site);
 
         for creature_id in creatures.iter() {
+            if world.is_played_creature(creature_id) {
+                continue;
+            }
             let site = world.sites.get_mut(site_id);
             let mut creature = world.creatures.get_mut(creature_id);
 
@@ -215,7 +218,7 @@ impl HistorySimulation {
                 let mut candidates_pool = Vec::new();
                 for creature_id in site.creatures.iter() {
                     let creature = world.creatures.get(creature_id);
-                    let age = (*now - creature.birth).year();
+                    let age = (*now - creature.birth).get_years();
                     if age > 18 {
                         candidates_pool.push(creature_id);
                     }

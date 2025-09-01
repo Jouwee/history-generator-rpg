@@ -5,7 +5,7 @@ use graphics::{image, Transformed};
 use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{id_vec::Id, rng::Rng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer, Spawner}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{item::ItemId, site::SiteType, world::World}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::{id_vec::Id, rng::Rng as OldRng}, engine::{assets::assets, geometry::{Coord2, Size2D}, scene::BusEvent, Color}, game::{actor::actor::Actor, chunk::{Chunk, ChunkCoord, ChunkLayer, Spawner}, factory::item_factory::ItemFactory, Renderable}, loadsave::SaveFile, resources::resources::{resources, Resources}, world::{date::WorldDate, item::ItemId, site::SiteType, world::World}, GameContext};
 
 pub(crate) const PLAYER_IDX: usize = usize::MAX;
 
@@ -23,10 +23,10 @@ pub(crate) struct GameState {
 }
 
 impl GameState {
-    pub(crate) fn new(coord: ChunkCoord, size: Size2D, player: Actor, resources: &Resources) -> GameState {
+    pub(crate) fn new(coord: ChunkCoord, size: Size2D, now: WorldDate, player: Actor, resources: &Resources) -> GameState {
         GameState {
             coord,
-            chunk: Chunk::new(coord, size, resources),
+            chunk: Chunk::new(coord, size, now, resources),
             ai_groups: AiGroups::new(),
             player,
             actors: Vec::new(),
@@ -85,7 +85,7 @@ impl GameState {
     }
 
     pub(crate) fn playground(resources: &Resources, player: Actor, world: &World) -> GameState {
-        let mut chunk = Self::new(ChunkCoord::new(Vec2i(0,0), ChunkLayer::Surface), Size2D(128, 128), player, resources);
+        let mut chunk = Self::new(ChunkCoord::new(Vec2i(0,0), ChunkLayer::Surface), Size2D(128, 128), WorldDate::new(1, 1, 1), player, resources);
         for x in 0..chunk.chunk.size.x() {
             for y in 0..chunk.chunk.size.y() {
                 chunk.chunk.ground_layer.set_tile(x, y, 1);
@@ -102,7 +102,7 @@ impl GameState {
 
         chunk.player_mut().xy = Vec2i(64, 64);
 
-        let mut rng = Rng::seeded("items");
+        let mut rng = OldRng::seeded("items");
         for i in 0..60 {
             let point = Coord2::xy(60 + (i % 10), 68 + (i / 10));
             if i < 10 {
@@ -146,10 +146,8 @@ impl GameState {
     }
 
     pub(crate) fn from_world_tile(world: &World, save_file: &SaveFile, resources: &Resources, coord: ChunkCoord, player: Actor) -> GameState {
-        let mut rng = Rng::seeded(coord.xy);
-        rng.next();
         // TODO: Size from params
-        let mut state = GameState::new(coord, Size2D(80, 80), player, resources);
+        let mut state = GameState::new(coord, Size2D(80, 80), world.date, player, resources);
         state.load_or_generate_chunk(state.coord, save_file, world);
         save_file.save_game_state(&state).unwrap();
         return state;
@@ -205,23 +203,17 @@ impl GameState {
         let chunk = save_file.load_chunk(&coord, &resources);
         let chunk = match chunk {
             Ok(mut chunk) => {
-                // TODO(WCF3fkX3): Dupped code
-                let mut rng = Rng::rand();
-                rng.next();
-
-                let mut generator = ChunkGenerator::new(&mut chunk, rng);
+                let rng = world.rng().hash(coord);
+                let mut generator = ChunkGenerator::new(&mut chunk, rng.into());
                 generator.regenerate(world);
 
                 chunk
             }
             Err(_) => {
-                // TODO(WCF3fkX3): Dupped code
-                let mut rng = Rng::rand();
-                rng.next();
-
+                let rng = world.rng().hash(coord);
                 // TODO: Size from params
-                let mut chunk = Chunk::new(coord, Size2D(80, 80), &resources);
-                let mut generator = ChunkGenerator::new(&mut chunk, rng);
+                let mut chunk = Chunk::new(coord, Size2D(80, 80), world.date, &resources);
+                let mut generator = ChunkGenerator::new(&mut chunk, rng.into());
                 generator.generate(world, &resources);
                 
                 chunk

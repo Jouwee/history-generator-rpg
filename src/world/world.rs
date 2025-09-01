@@ -4,7 +4,7 @@ use common::error::Error;
 use math::{rng::Rng, Vec2i};
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Site, SiteId, SiteResources, SiteType, Structure, StructureStatus, StructureType}}, Event, Resources};
+use crate::{commons::rng::Rng as OldRng, engine::geometry::Coord2, game::codex::Codex, history_trace, info, resources::resources::resources, warn, world::{creature::{CauseOfDeath, Creature, CreatureGender, Goal, Profession}, history_generator::WorldGenerationParameters, item::{ItemId, Items}, plot::Plots, site::{Site, SiteId, SiteResources, SiteType, Structure, StructureType}}, Event, Resources};
 
 use super::{creature::{CreatureId, Creatures}, date::WorldDate, lineage::Lineages, topology::WorldTopology, site::Sites};
 
@@ -54,7 +54,7 @@ impl World {
             if site.site_type == SiteType::Village {
                 for creature_id in site.creatures.iter() {
                     let creature = self.creatures.get(creature_id);
-                    let age = (self.date - creature.birth).year();
+                    let age = (self.date - creature.birth).get_years();
                     if age > 20 && age < 40 && creature.spouse.is_none() && creature.profession == Profession::Peasant {
                         candidate = Some((creature_id.clone(), site.xy.into()));
                         break 'outer;
@@ -409,11 +409,11 @@ impl World {
                 }
             }
             return creature.offspring.contains(id);
-        });
+        }, self.date);
 
         // Moves into existing house
         for structure in site.structures.iter_mut() {
-            if structure.get_type() == &StructureType::House && structure.get_status() == &StructureStatus::Abandoned {
+            if structure.get_type() == &StructureType::House && structure.get_status().is_abandoned() {
                 for id in family {
                     structure.add_ocuppant(id);
                 }
@@ -471,7 +471,7 @@ impl World {
         }
         // Removes creature from site
         let mut site = self.sites.get_mut(&site_id);
-        site.remove_creature(&creature_id);
+        site.remove_creature(&creature_id, self.date);
         site.resources.food -= 1.;
         // Chances profession
         let mut creature = self.creatures.get_mut(&creature_id);
@@ -498,7 +498,7 @@ impl World {
                 spouse.spouse = None;
             }
             let mut site = self.sites.get_mut(&site_from_id);
-            site.remove_creature(&creature_id);
+            site.remove_creature(&creature_id, self.date);
 
             if let Some(plot_id) = creature.supports_plot {
                 let mut plot = self.plots.get_mut(&plot_id);
@@ -645,10 +645,10 @@ impl World {
             let move_into_townhall = site.structure_occupied_by(&new_leader).ok_or("Homeless leader")?.get_type() == &StructureType::House;
             if move_into_townhall {
                 let townhall = site.structures.iter_mut().find(|s| s.get_type() == &StructureType::TownHall).ok_or("Village with no townhall")?;
-                let townhall_occupants = townhall.occupants_take();
+                let townhall_occupants = townhall.occupants_take(self.date);
 
                 let house = site.structure_occupied_by_mut(&new_leader).ok_or("Homeless leader")?;
-                let house_occupants = house.occupants_take();
+                let house_occupants = house.occupants_take(self.date);
                 for id in townhall_occupants {
                     house.add_ocuppant(id);
                 }

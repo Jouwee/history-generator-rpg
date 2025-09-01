@@ -111,7 +111,7 @@ impl Event {
                 let name_b = world.creature_desc(creator_id, resources);
                 let artifact = world.artifacts.get(item_id);
                 let creature = world.creatures.get(creature_id);
-                let age = (*date - creature.birth).year();
+                let age = (*date - creature.birth).get_years();
                 return format!("> {}, {} commissioned {} from {} for his {}th birthday", world.date_desc(date), name, artifact.name(&resources.materials), name_b, age);
             },
             Event::NewLeaderElected { date, site_id, creature_id } => {

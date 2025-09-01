@@ -23,7 +23,7 @@ pub(crate) enum CreatureSideEffect {
 impl CreatureSimulation {
 
     pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, site: &Site, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &SiteChances) -> CreatureSideEffect {
-        let age = (*now - creature.birth).year();
+        let age = (*now - creature.birth).get_years();
         // Death by disease
         if rng.rand_chance(chances.disease_death) {
             return CreatureSideEffect::Death(CauseOfDeath::Disease);
@@ -120,7 +120,7 @@ impl CreatureSimulation {
     }
 
     fn chance_of_child(now: &WorldDate, creature: &Creature, chances: &SiteChances) -> f32 {
-        let age = (*now - creature.birth).year() as f32;        
+        let age = (*now - creature.birth).get_years() as f32;        
         let fertility_mult = (0.96 as f32).powf(age - 18.) * (0.92 as f32).powf(age - 18.);
 
         return (chances.have_child * fertility_mult).clamp(0., 1.);

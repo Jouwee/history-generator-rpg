@@ -16,7 +16,6 @@ use piston::{Key, MouseButton};
 use player_pathing::PlayerPathing;
 use serde::{Deserialize, Serialize};
 use crate::commons::interpolate::lerp;
-use crate::commons::rng::Rng;
 use crate::engine::assets::assets;
 use crate::engine::audio::SoundEffect;
 use crate::engine::gui::button::Button;
@@ -26,7 +25,7 @@ use crate::engine::gui::UINode;
 use crate::engine::input::InputEvent;
 
 use crate::engine::scene::BusEvent;
-use crate::engine::{Color, COLOR_WHITE};
+use crate::engine::{Color, COLOR_BLACK, COLOR_WHITE};
 use crate::game::ai::AiState;
 use crate::game::chunk::{ChunkCoord, ChunkLayer};
 use crate::game::codex::{QuestObjective, QuestStatus};
@@ -112,10 +111,8 @@ pub(crate) struct GameSceneState {
     action_runner: ActionRunner,
     camera_offset: [f64; 2],
     shown_help: bool,
-
-    // TODO(WCF3fkX3):
-    debug_gen: bool,
-    debug_timer: f64
+    /// Data for the sleep coroutine
+    sleep_coroutine: Option<(f64, Duration, bool)>,
 }
 
 impl GameSceneState {
@@ -166,9 +163,7 @@ impl GameSceneState {
             action_runner: ActionRunner::new(),
             camera_offset: [0.; 2],
             shown_help: false,
-
-            debug_gen: false,
-            debug_timer: 0.,
+            sleep_coroutine: None,
         }
     }
 
@@ -272,10 +267,15 @@ impl GameSceneState {
         self.turn_mode = turn_mode;
     }
 
-    fn simulate_time(&mut self, step: Duration) {
+    fn simulate_time(&mut self, mut step: Duration) {
         let rng = self.world.rng().hash(self.world.date);
-
         let mut history_simulation = HistorySimulation::new(rng.into(), self.world.generation_parameters.clone());
+        
+        // Simulates at most 1 year per iteration
+        while step > Duration::years(1) {
+            history_simulation.simulate_step(Duration::years(1), &mut self.world);
+            step = step - Duration::years(1);
+        }
         history_simulation.simulate_step(step, &mut self.world);
 
         let save_file = SaveFile::new(self.current_save_file.clone());
@@ -392,28 +392,31 @@ impl Scene for GameSceneState {
 
         self.tooltip_overlay.render(&(), ctx, game_ctx); 
         self.game_context_menu.render(&(), ctx, game_ctx);
+
+        if let Some((timer, _, _)) = self.sleep_coroutine {
+            let alpha;
+            if timer < 0.5 {
+                alpha = lerp(0., 1., timer / 0.5);
+            } else {
+                alpha = lerp(1., 0., (timer - 0.5) / 0.5);
+            }
+            ctx.rectangle_fill(ctx.layout_rect, &COLOR_BLACK.alpha(alpha as f32));
+        }
+
     }
 
     fn update(&mut self, update: &Update, ctx: &mut GameContext) {
+        self.time.set_time(&self.world.date);
 
-        if self.debug_gen == true {
-
-            self.debug_timer += update.delta_time;
-
-            if self.debug_timer > 0.3 {
-
-                let rng = Rng::rand();
-
-                let mut history_simulation = HistorySimulation::new(rng.clone(), self.world.generation_parameters.clone());
-                let step = Duration::days(75);
-                history_simulation.simulate_step(step, &mut self.world);
-
-                let save_file = SaveFile::new(self.current_save_file.clone());
-                self.state.switch_chunk(self.state.coord.clone(), &save_file, &self.world);
-
-                self.debug_timer -= 0.3;
+        if let Some((mut timer, duration, mut updated)) = self.sleep_coroutine.take() {
+            timer += update.delta_time;
+            if timer > 0.5 && !updated {
+                self.simulate_time(duration);
+                updated = true;
             }
-            self.time.set_time(&self.world.date);
+            if timer < 1. || !updated {
+                self.sleep_coroutine = Some((timer, duration, updated));
+            }
             return;
         }
 
@@ -434,7 +437,6 @@ impl Scene for GameSceneState {
         }
 
         self.hud.update(self.state.player(), update, ctx);
-        self.time.set_time(&self.world.date);
         if self.can_change_turn_mode() {
             match self.turn_mode {
                 TurnMode::RealTime => self.button_toggle_turn_based.set_text("Trn"),
@@ -673,11 +675,6 @@ impl Scene for GameSceneState {
         }
 
         match evt {
-
-            InputEvent::Key { key: Key::F8 } => {
-                self.debug_gen = !self.debug_gen;
-            },
-
             InputEvent::Key { key: Key::Escape } => {
                 self.ingame_menu.show();
             },
@@ -790,12 +787,12 @@ impl Scene for GameSceneState {
                 for affliction in consumable.effects.iter() {
                     actor.add_affliction(&affliction);
                 }
-                
                 return ControlFlow::Break(());
             },
             BusEvent::SimulateTime(time) => {
-                self.simulate_time(*time);
+                self.sleep_coroutine = Some((0., *time, false));
                 return ControlFlow::Break(());
+
             },
             _ => ControlFlow::Continue(()),
         }

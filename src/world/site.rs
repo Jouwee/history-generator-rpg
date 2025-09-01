@@ -3,7 +3,7 @@ use std::ops::Add;
 use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{id_vec::IdVec, rng::Rng}, resources::material::MaterialId};
+use crate::{commons::{id_vec::IdVec, rng::Rng}, resources::material::MaterialId, world::date::WorldDate};
 
 use super::{creature::{CreatureId, Profession}, item::ItemId};
 
@@ -48,10 +48,10 @@ impl Site {
         }
     }
 
-    pub(crate) fn remove_creature(&mut self, id: &CreatureId) {
+    pub(crate) fn remove_creature(&mut self, id: &CreatureId, now: WorldDate) {
         if let Some(idx) = self.creatures.iter().position(|another| another == id) {
             if let Some(structure) = self.structure_occupied_by_mut(&id) {
-                structure.remove_ocuppant(id);
+                structure.remove_ocuppant(id, now);
             }
             self.creatures.remove(idx);
         }
@@ -132,7 +132,7 @@ mod tests_site {
         };
         site.creatures.push(CreatureId::mock(0));
         site.creatures.push(CreatureId::mock(1));
-        site.remove_creature(&CreatureId::mock(0));
+        site.remove_creature(&CreatureId::mock(0), WorldDate::new(1, 1, 1));
         assert_eq!(site.creatures.len(), 1);
         assert_eq!(site.creatures[0].as_usize(), 1);
     }
@@ -194,7 +194,7 @@ impl Structure {
         return self.occupants.iter();
     }
 
-    pub(crate) fn occupants_drain<F>(&mut self, predicate: F) -> Vec<CreatureId> where F: Fn(&CreatureId) -> bool {
+    pub(crate) fn occupants_drain<F>(&mut self, predicate: F, now: WorldDate) -> Vec<CreatureId> where F: Fn(&CreatureId) -> bool {
         let mut vec: Vec<_> = Vec::new();
         for i in (0..self.occupants.len()).rev() {
             if predicate(&self.occupants[i]) {
@@ -202,13 +202,13 @@ impl Structure {
             }
         }
         if self.occupants.len() == 0 {
-            self.status = StructureStatus::Abandoned;
+            self.status = StructureStatus::Abandoned(now);
         }
         return vec;
     }
 
-    pub(crate) fn occupants_take(&mut self) -> Vec<CreatureId> {
-        self.status = StructureStatus::Abandoned;
+    pub(crate) fn occupants_take(&mut self, now: WorldDate) -> Vec<CreatureId> {
+        self.status = StructureStatus::Abandoned(now);
         return self.occupants.drain(..).collect();
     }    
 
@@ -225,12 +225,12 @@ impl Structure {
         self.status = StructureStatus::Occupied;
     }
 
-    pub(crate) fn remove_ocuppant(&mut self, creature_id: &CreatureId) {
+    pub(crate) fn remove_ocuppant(&mut self, creature_id: &CreatureId, now: WorldDate) {
         if let Some(idx) = self.occupants.iter().position(|another| another == creature_id) {
             self.occupants.remove(idx);
         }
         if self.occupants.len() == 0 {
-            self.status = StructureStatus::Abandoned;
+            self.status = StructureStatus::Abandoned(now);
         }
     } 
 
@@ -266,8 +266,18 @@ impl StructureGeneratedData {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum StructureStatus {
     Occupied,
-    // TODO(7gOA81VK): Abandoned since?
-    Abandoned
+    Abandoned(WorldDate)
+}
+
+impl StructureStatus {
+
+    pub(crate) fn is_abandoned(&self) -> bool {
+        if let Self::Abandoned(_) = self {
+            return true;
+        }
+        return false;
+    }
+
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

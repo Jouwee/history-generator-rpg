@@ -1,4 +1,4 @@
-use crate::{commons::{bitmask::bitmask_get, rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::WorldDate, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
+use crate::{commons::{bitmask::bitmask_get, rng::Rng, xp_table::level_to_xp}, resources::{resources::Resources, species::SpeciesId}, world::{creature::{Creature, CreatureGender, CreatureId, Profession, SIM_FLAG_INTELIGENT}, date::{Duration, WorldDate}, item::{ArtworkScene, Item}, lineage::Lineage, world::World}, ItemFactory};
 
 pub(crate) struct CreatureFactory {
     rng: Rng
@@ -24,7 +24,7 @@ impl CreatureFactory {
                 gender = CreatureGender::Female;
             }
             let creature_id = world.creatures.add(Creature {
-                birth: *now - WorldDate::new(age, 0, 0),
+                birth: *now - Duration::years(age),
                 death: None,
                 lineage: Some(lineage),
                 father: CreatureId::ancients(),
@@ -48,7 +48,7 @@ impl CreatureFactory {
             // TODO: Children
 
             let father_id = world.creatures.add(Creature {
-                birth: *now - WorldDate::new(age, 0, 0),
+                birth: *now - Duration::years(age),
                 death: None,
                 lineage: Some(lineage),
                 father: CreatureId::ancients(),
@@ -69,7 +69,7 @@ impl CreatureFactory {
             family.push(father_id);
             
             let mother_id = world.creatures.add(Creature {
-                birth: *now - WorldDate::new(age + self.rng.randi_range(-5, 5), 0 ,0),
+                birth: *now - Duration::years(age + self.rng.randi_range(-5, 5)),
                 death: None,
                 lineage: Some(lineage),
                 father: CreatureId::ancients(),

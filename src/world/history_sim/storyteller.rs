@@ -59,7 +59,7 @@ impl Storyteller {
             };
             let adults = site.creatures.iter().filter(|id| {
                 let creature = world.creatures.get(*id);
-                (world.date - creature.birth).year() > 18
+                (world.date - creature.birth).get_years() > 18
             }).count();
 
             // Balances site population

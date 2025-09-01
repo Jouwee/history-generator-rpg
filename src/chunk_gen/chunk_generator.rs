@@ -5,7 +5,7 @@ use engine::astar::{AStar, MovementCost};
 use math::Vec2i;
 use noise::{NoiseFn, Perlin};
 
-use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{site::{Structure, StructureGeneratedData, StructureStatus, StructureType, Site, SiteType}, world::World}, Coord2, Resources};
+use crate::{chunk_gen::jigsaw_structure_generator::JigsawPieceRequirement, commons::{id_vec::Id, rng::Rng}, engine::tilemap::Tile, game::chunk::{Chunk, ChunkLayer, Spawner}, info, resources::resources::resources, warn, world::{date::{Duration, WorldDate}, site::{Site, SiteType, Structure, StructureGeneratedData, StructureStatus, StructureType}, world::World}, Coord2, Resources};
 
 use super::{jigsaw_parser::JigsawParser, jigsaw_structure_generator::{JigsawPiece, JigsawPieceTile, JigsawSolver}, structure_filter::{AbandonedStructureFilter, NoopFilter, StructureFilter}};
 
@@ -53,7 +53,7 @@ impl<'a> ChunkGenerator<'a> {
 
             for structure in site.structures.iter_mut() {
                 if structure.generated_data.is_none() {
-                    match self.generate_structure(structure, &mut solver) {
+                    match self.generate_structure(structure, &mut solver, world.date) {
                         Ok(data) => structure.generated_data = Some(data),
                         Err(err) => warn!("{err}")
                     }
@@ -100,7 +100,7 @@ impl<'a> ChunkGenerator<'a> {
             for structure in site.structures.iter_mut() {
                 match &structure.generated_data {
                     None => {
-                        match self.generate_structure(structure, &mut solver) {
+                        match self.generate_structure(structure, &mut solver, world.date) {
                             Ok(data) => structure.generated_data = Some(data),
                             Err(err) => warn!("{err}")
                         }
@@ -113,8 +113,9 @@ impl<'a> ChunkGenerator<'a> {
                                     Err(err) => warn!("{err}")
                                 }
                             },
-                            StructureStatus::Abandoned => {
-                                if let Err(err) = self.age_structure(generated_data) {
+                            StructureStatus::Abandoned(since) => {
+                                let since = since.max(&self.chunk.last_generated);
+                                if let Err(err) = self.age_structure(generated_data, world.date - *since) {
                                     warn!("{err}")
                                 }
                             }
@@ -123,9 +124,10 @@ impl<'a> ChunkGenerator<'a> {
                 }
             }
         }
+        self.chunk.last_generated = world.date;
     }
 
-    fn generate_structure(&mut self, structure: &Structure, solver: &mut JigsawSolver) -> Result<StructureGeneratedData, Error> {
+    fn generate_structure(&mut self, structure: &Structure, solver: &mut JigsawSolver, now: WorldDate) -> Result<StructureGeneratedData, Error> {
         let pool =  match structure.get_type() {
             StructureType::House => "village_house_start",
             StructureType::TownHall => "village_house_ruler",
@@ -138,8 +140,10 @@ impl<'a> ChunkGenerator<'a> {
             let pos = self.structure_point_cloud.pop().ok_or("No more possible points for structure")?;
 
             let mut filter: Box<dyn StructureFilter> = match structure.get_status() {
-                // TODO(WCF3fkX3): Age
-                StructureStatus::Abandoned => Box::new(AbandonedStructureFilter::new(self.rng.clone(), 30 as u32)),
+                StructureStatus::Abandoned(since) => {
+                    let age = now - *since;
+                    Box::new(AbandonedStructureFilter::new(self.rng.clone(), age.get_years() as u32))
+                },
                 StructureStatus::Occupied => Box::new(NoopFilter {}),
             };
 
@@ -177,13 +181,9 @@ impl<'a> ChunkGenerator<'a> {
         Ok(new_generated_data)
     }
 
-    fn age_structure(&mut self, generated_data: &StructureGeneratedData) -> Result<(), Error> {
+    fn age_structure(&mut self, generated_data: &StructureGeneratedData, age: Duration) -> Result<(), Error> {
         let resources = resources();
-
-        // TODO(WCF3fkX3): Compute
-        let age = 1;
-
-        let mut filter = AbandonedStructureFilter::new(self.rng.clone(), age);
+        let mut filter = AbandonedStructureFilter::new(self.rng.clone(), age.get_years() as u32);
 
         for (_piece_name, rect) in generated_data.pieces() {
             for x in rect[0]..(rect[0] + rect[2]) {

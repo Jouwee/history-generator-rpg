@@ -89,7 +89,7 @@ impl Actor {
             afflictions: Vec::new(),
             cooldowns: Vec::new(),
             just_entered_fight: false,
-            age: (world.date - creature.birth).year()
+            age: (world.date - creature.birth).get_years()
         }
     }
 

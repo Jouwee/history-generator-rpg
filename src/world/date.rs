@@ -76,14 +76,26 @@ impl Add<Duration> for WorldDate {
 }
 
 impl Sub for WorldDate {
-    type Output = WorldDate;
+    type Output = Duration;
     
     fn sub(self, rhs: Self) -> Self::Output {
-        return WorldDate {
+        return Duration {
             timestamp: self.timestamp - rhs.timestamp
         }
     }
 
+}
+
+
+
+impl Sub<Duration> for WorldDate {
+    type Output = Self;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        Self {
+            timestamp: self.timestamp - rhs.timestamp
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -101,10 +113,28 @@ impl Duration {
         return Self { timestamp: months * DAYS_IN_MONTH }
     }
 
+    pub(crate) fn years(years: i32) -> Self {
+        return Self { timestamp: years * DAYS_IN_YEAR }
+    }
+
+    pub(crate) fn get_years(&self) -> i32 {
+        return self.timestamp / DAYS_IN_YEAR;
+    }
+
     pub(crate) fn percentage_of_year(&self) -> f32 {
         return self.timestamp as f32 / DAYS_IN_YEAR as f32
     }
 
+}
+
+impl Sub for Duration {
+    type Output = Duration;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            timestamp: self.timestamp - rhs.timestamp
+        }
+    }
 }
 
 #[cfg(test)]

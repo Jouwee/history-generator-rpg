@@ -4,7 +4,7 @@ use math::Vec2i;
 use opengl_graphics::Texture;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, error, resources::{object_tile::ObjectTileId, resources::{resources, Resources}, species::SpeciesId, tile::TileId}, world::{creature::CreatureId, item::Item}};
+use crate::{commons::id_vec::Id, engine::{audio::SoundEffect, geometry::{Coord2, Size2D}, layered_dualgrid_tilemap::{LayeredDualgridTilemap, LayeredDualgridTileset}, tilemap::{TileMap, TileSet}}, error, resources::{object_tile::ObjectTileId, resources::{resources, Resources}, species::SpeciesId, tile::TileId}, world::{creature::CreatureId, date::WorldDate, item::Item}};
 
 pub(crate) struct Chunk {
     pub(crate) coord: ChunkCoord,
@@ -14,6 +14,7 @@ pub(crate) struct Chunk {
     spawn_points: Vec<(Vec2i, Spawner)>,
     pub(crate) ground_layer: LayeredDualgridTilemap,
     pub(crate) object_layer: TileMap,
+    pub(crate) last_generated: WorldDate,
 }
 
 /// This is used as a temporary value during deserialization, but the chunk in this state is not useful
@@ -27,7 +28,8 @@ impl Default for Chunk {
             items_on_ground: Vec::new(),
             spawn_points: Vec::new(),
             ground_layer: LayeredDualgridTilemap::new(LayeredDualgridTileset::new(), 1, 1, 1, 1),
-            object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1).draw_shadows()
+            object_layer: TileMap::new(TileSet::new(), 1, 1, 1, 1).draw_shadows(),
+            last_generated: WorldDate::new(1, 1, 1),
         }
     }
 
@@ -35,7 +37,7 @@ impl Default for Chunk {
 
 impl Chunk {
 
-    pub(crate) fn new(coord: ChunkCoord, size: Size2D, resources: &Resources) -> Self {
+    pub(crate) fn new(coord: ChunkCoord, size: Size2D, now: WorldDate, resources: &Resources) -> Self {
         let mut tileset = TileSet::new();
         for tile in resources.object_tiles.iter() {
             tileset.add(tile.tile.clone());    
@@ -54,6 +56,7 @@ impl Chunk {
             spawn_points: Vec::new(),
             items_on_ground: Vec::new(),
             tiles_metadata: HashMap::new(),
+            last_generated: now,
         }
     }
 
@@ -167,6 +170,7 @@ pub(crate) struct ChunkSerialized {
     pub(crate) spawn_points: Vec<(Vec2i, Spawner)>,
     pub(crate) ground_layer: Vec<Option<TileId>>,
     pub(crate) object_layer: Vec<Option<ObjectTileId>>,
+    pub(crate) last_generated: WorldDate,
 }
 
 impl ChunkSerialized {
@@ -182,12 +186,13 @@ impl ChunkSerialized {
                 0 => None,
                 // SMELL: See other smells in this file
                 i => Some(ObjectTileId::new(i - 1))
-            }).collect()
+            }).collect(),
+            last_generated: chunk.last_generated
         }
     }
 
     pub(crate) fn to_chunk(&self, resources: &Resources) -> Chunk {
-        let mut chunk = Chunk::new(self.coord, self.size, resources);
+        let mut chunk = Chunk::new(self.coord, self.size, self.last_generated, resources);
 
         chunk.tiles_metadata = self.tiles_metadata.clone();
         chunk.spawn_points = self.spawn_points.clone();
@@ -209,7 +214,7 @@ impl ChunkSerialized {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize, Hash)]
 pub(crate) struct ChunkCoord {
     pub(crate) xy: Vec2i,
     pub(crate) layer: ChunkLayer,    
@@ -223,7 +228,7 @@ impl ChunkCoord {
 
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum ChunkLayer {
     Surface,
     Underground

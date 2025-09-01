@@ -524,8 +524,6 @@ impl ActionRunner {
                                     ActionEffect::Inflicts { affliction } => {
                                         for i in action.spell_area.actors_indices(action.center, action.actor, chunk.actors_iter_mut()) {
                                             let target = chunk.actor_mut(i).unwrap();
-
-
                                             let (name, color) = affliction.name_color();
                                             game_log.log(GameLogEntry::from_parts(vec!(
                                                 GameLogPart::Actor(GameLogEntry::actor_name(target, world, &ctx.resources), i == PLAYER_IDX),
