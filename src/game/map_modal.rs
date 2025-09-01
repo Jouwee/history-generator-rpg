@@ -134,14 +134,14 @@ impl MapModal {
         if camera_rect[2] > map_size[0] {
             x = [map_size[0] / 2.; 2]
         } else {
-            x = [camera_rect[2] / 2., map_size[0] - camera_rect[2] / 2.]
+            x = [camera_rect[2] / 2. + 8., map_size[0] - camera_rect[2] / 2.]
         }
 
         let y;
         if camera_rect[3] > map_size[1] {
             y = [map_size[1] / 2.; 2]
         } else {
-            y = [camera_rect[3] / 2., map_size[1] - camera_rect[3] / 2.]
+            y = [camera_rect[3] / 2. + 8., map_size[1] - camera_rect[3] / 2.]
         }
         return [x, y]
     }
