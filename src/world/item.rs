@@ -5,7 +5,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use serde::{Deserialize, Serialize};
 use text::capitalize;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::{resources, Resources}, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::{ActionId, Affliction}, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::{resources, Resources}, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -59,9 +59,25 @@ impl Item {
     }
 
     pub(crate) fn make_tooltip(&self, materials: &Materials) -> Tooltip {
+        let resources = resources();
+        let blueprint = resources.item_blueprints.get(&self.blueprint_id);
         let mut tooltip = Tooltip::new(&capitalize(&self.name(materials)));
         if let Some(_) = self.mellee_damage {
             tooltip.add_line(TooltipLine::DamageRoll(self.total_damage(materials)));
+        }
+        if let Some(consumable) = &blueprint.consumable {
+            tooltip.add_line(TooltipLine::Body(String::from("When consumed:")));
+            for effect in consumable.effects.iter() {
+                let text = match effect {
+                    Affliction::Bleeding { duration } => format!("Bleeding for {duration} turns"),
+                    Affliction::Poisoned { duration } => format!("Poisoned for {duration} turns"),
+                    Affliction::OnFire { duration } => format!("Burns for {duration} turns"),
+                    Affliction::Stunned { duration } => format!("Stunned for {duration} turns"),
+                    Affliction::Healing { duration, strength  } => format!("Heal wounds {strength} points for {duration} turns"),
+                    Affliction::Recovery { duration, strength  } => format!("Recovers HP {strength} points for {duration} turns"),
+                };
+                tooltip.add_line(TooltipLine::Body(text));
+            }
         }
         return tooltip;
     }
