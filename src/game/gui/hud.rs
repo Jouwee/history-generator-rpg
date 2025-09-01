@@ -1,4 +1,4 @@
-use crate::{engine::{assets::assets, COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, Actor, Color, GameContext, InputEvent, RenderContext, Update};
+use crate::{engine::{assets::assets, geometry::Size2D, COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, resources::action::Affliction, Actor, Color, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) struct HeadsUpDisplay {
     health: NumberedBar,
@@ -40,6 +40,30 @@ impl HeadsUpDisplay {
         ctx.text(&health_text, assets().font_standard(), [42+16+8, 12+16+7], &COLOR_WHITE);
 
         ctx.image(&"gui/hud/foreground.png", [16, 16]);
+
+        // Status moodles
+        let sheet = assets().image_sheet("status/moodles.png", Size2D(14, 14));
+        let mut x = 56;
+        for affliction in player.afflictions.iter() {
+            let i = match affliction.affliction {
+                Affliction::Bleeding { duration: _ } => 0,
+                Affliction::OnFire { duration: _ } => 1,
+                Affliction::Stunned { duration: _ } => 2,
+                Affliction::Poisoned { duration: _ } => 3,
+                Affliction::Healing { duration: _, strength: _ } => 4,
+                Affliction::Recovery { duration: _, strength: _ } => 5,
+            };
+            let texture = sheet.get(i).unwrap();
+            ctx.texture(texture, ctx.at(x as f64, 10.));
+
+            let mut assets = assets();
+            let text = affliction.remaining.to_string();
+            let font = assets.font_small();
+            let text_width = font.width(&text);
+            ctx.text_shadow(&text, font, [x - text_width as i32 + 16, 23], &COLOR_WHITE);
+            x += 18;
+        }
+
         perf().end("hud");
     }
 

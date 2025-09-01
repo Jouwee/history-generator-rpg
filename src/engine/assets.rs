@@ -103,6 +103,14 @@ impl Assets {
         return self.font(&Self::font_standard_asset())
     }
 
+    pub(crate) fn font_small_asset() -> FontAsset {
+        return FontAsset::new("Everyday_Slight_Blocky.ttf", 6)
+    }
+
+    pub(crate) fn font_small(&mut self) -> &mut Font {
+        return self.font(&Self::font_small_asset())
+    }  
+
     pub(crate) fn font_heading_asset() -> FontAsset {
         return FontAsset::new("Fabled.ttf", 11)
     }

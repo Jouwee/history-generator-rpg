@@ -182,7 +182,9 @@ impl App {
                 let _ = game_state.input(args, &mut self.context);
             },
             SceneEnum::Game(game_state) => {
-                let _ = self.console.input(game_state, &args, &mut self.context).is_break();
+                if self.console.input(game_state, &args, &mut self.context).is_break() {
+                    return;
+                }
                 let _ = game_state.input(args, &mut self.context);
             },
         }

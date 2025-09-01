@@ -28,9 +28,9 @@ pub(crate) struct Actor {
     pub(crate) level: u32,
     pub(crate) inventory: Inventory,
     pub(crate) cooldowns: Vec<(ActionId, u16)>,
+    pub(crate) afflictions: Vec<RunningAffliction>,
     age: i32,
     just_entered_fight: bool,
-    afflictions: Vec<RunningAffliction>,
 }
 
 impl Actor {
@@ -99,7 +99,7 @@ impl Actor {
 
     pub(crate) fn start_of_round(&mut self, effect_layer: &mut EffectLayer) {
         for affliction in self.afflictions.iter_mut() {
-            affliction.delta += 1;
+            affliction.remaining -= 1;
             match affliction.affliction {
                 Affliction::Bleeding { duration: _ } => {
                     let target_body_part = BodyPart::random(&mut Rng::rand());
@@ -127,16 +127,7 @@ impl Actor {
                 },
             }
         }
-        self.afflictions.retain(|affliction| {
-            match affliction.affliction {
-                Affliction::Bleeding { duration } => affliction.delta < duration,
-                Affliction::OnFire { duration } => affliction.delta < duration,
-                Affliction::Poisoned { duration } => affliction.delta < duration,
-                Affliction::Stunned { duration } => affliction.delta < duration,
-                Affliction::Healing { duration, strength: _ } => affliction.delta < duration,
-                Affliction::Recovery { duration, strength: _ } => affliction.delta < duration,
-            }
-        });
+        self.afflictions.retain(|affliction| affliction.remaining > 0);
 
         self.cooldowns.retain_mut(|cooldown| {
             cooldown.1 -= 1;
@@ -160,7 +151,17 @@ impl Actor {
                 _ => true
             }
         });
-        self.afflictions.push(RunningAffliction { affliction: affliction.clone(), delta: 0 });
+
+        let duration = match affliction {
+            Affliction::Bleeding { duration } => *duration,
+            Affliction::Poisoned { duration } => *duration,
+            Affliction::OnFire { duration } => *duration,
+            Affliction::Healing { duration, strength: _ } => *duration,
+            Affliction::Stunned { duration } => *duration,
+            Affliction::Recovery { duration, strength: _ } => *duration,
+        };
+
+        self.afflictions.push(RunningAffliction { affliction: affliction.clone(), remaining: duration as i32 });
     }
 
     pub(crate) fn add_xp(&mut self, ammount: u32) {
@@ -412,7 +413,7 @@ impl StaminaComponent {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-struct RunningAffliction {
-    affliction: Affliction,
-    delta: usize,
+pub(crate) struct RunningAffliction {
+    pub(crate) affliction: Affliction,
+    pub(crate) remaining: i32,
 }
