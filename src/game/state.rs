@@ -107,12 +107,12 @@ impl GameState {
             let point = Coord2::xy(60 + (i % 10), 68 + (i / 10));
             if i < 10 {
                 let item = ItemFactory::weapon(&mut rng, &resources).make();
-                let texture = item.make_texture(&resources);
+                let texture = item.make_texture();
                 chunk.chunk.items_on_ground.push((point, item, texture));
             } else {
                 let i = rng.randu_range(0, world.artifacts.len());
                 let item = world.artifacts.get(&ItemId::new(i));
-                let texture = item.make_texture(&resources);
+                let texture = item.make_texture();
                 chunk.chunk.items_on_ground.push((point, item.clone(), texture));
             }         
         }
@@ -133,7 +133,7 @@ impl GameState {
 
         let npc = self.actors.get_mut(i).unwrap();
         for item in npc.inventory.take_all() {
-            let texture = item.make_texture(&ctx.resources);
+            let texture = item.make_texture();
             self.chunk.items_on_ground.push((npc.xy.into(), item, texture));
         }
 

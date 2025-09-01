@@ -592,7 +592,7 @@ impl ActionRunner {
                                                         if let Some(details) = &creature.details {
                                                             for item in details.inventory.iter() {
                                                                 let item = world.artifacts.get(item);
-                                                                chunk.chunk.items_on_ground.push((point, item.clone(), item.make_texture(&ctx.resources)));
+                                                                chunk.chunk.items_on_ground.push((point, item.clone(), item.make_texture()));
                                                             }
                                                         }
                                                     }
@@ -618,7 +618,7 @@ impl ActionRunner {
                                             let actor = chunk.actor_mut(action.actor).unwrap();
                                             let result = actor.inventory.add(item);
                                             if let Err(item) = result {
-                                                let texture = item.make_texture(&resources);
+                                                let texture = item.make_texture();
                                                 chunk.chunk.items_on_ground.push((action.center.clone(), item, texture));
                                             }
                                             // Removes the object

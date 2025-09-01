@@ -5,7 +5,7 @@ use opengl_graphics::{Filter, Texture, TextureSettings};
 use serde::{Deserialize, Serialize};
 use text::capitalize;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::Resources, species::SPECIES_SPRITE_SIZE}, Color};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::IdVec}, engine::{gui::tooltip::{Tooltip, TooltipLine}, pallete_sprite::ColorMap}, game::actor::health_component::BodyPart, resources::{action::ActionId, item_blueprint::ItemBlueprintId, material::{MaterialId, Materials}, resources::{resources, Resources}, species::SPECIES_SPRITE_SIZE}, Color};
 
 use super::creature::CreatureId;
 
@@ -66,8 +66,9 @@ impl Item {
         return tooltip;
     }
 
-    pub(crate) fn make_texture(&self, resources: &Resources) -> Texture {
+    pub(crate) fn make_texture(&self) -> Texture {
         if self.cached_placed_texture.borrow().is_none() {
+            let resources = resources();
             let mut map = HashMap::new();
             if let Some(material) = &self.material {
                 map = material.pallete_sprite(&resources.materials);

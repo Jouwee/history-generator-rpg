@@ -25,6 +25,7 @@ pub(crate) enum BusEvent {
     CreatureKilled(CreatureId),
     AddItemToPlayer(Item),
     ConsumeInventoryItem(usize),
+    DropInventoryItem(usize),
     SimulateTime(Duration),
     PlayerDied,
     QuitToMenu,

@@ -232,7 +232,7 @@ impl UINode for CharacterDialog {
         }
 
         if let Some(item) = &game_ctx.drag_item {
-            let texture = item.make_texture(&game_ctx.resources);
+            let texture = item.make_texture();
             ctx.texture_old(texture, [self.cursor_pos[0] as f64 - 12., self.cursor_pos[1] as f64 - 12.]);
         }
 
@@ -244,7 +244,7 @@ impl UINode for CharacterDialog {
         if let Some((menu, model, i)) = &mut self.context_menu {
             if let ControlFlow::Break((idu, _)) = menu.input(model, evt, ctx) {
                 match idu {
-                    MENU_DROP => (),
+                    MENU_DROP => ctx.event_bus.push(BusEvent::DropInventoryItem(*i)),
                     MENU_CONSUME => ctx.event_bus.push(BusEvent::ConsumeInventoryItem(*i)),
                     _ => (),
                 }

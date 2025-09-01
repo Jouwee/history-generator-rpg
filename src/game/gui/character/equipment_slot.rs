@@ -44,13 +44,13 @@ impl UINode for EquipmentSlot {
         return &mut self.layout;
     }
 
-    fn render(&mut self, state: &Self::State, ctx: &mut crate::RenderContext, game_ctx: &mut crate::GameContext) {
+    fn render(&mut self, state: &Self::State, ctx: &mut crate::RenderContext, _game_ctx: &mut crate::GameContext) {
         let layout = self.layout.compute_layout_rect(ctx.layout_rect);
         ctx.rectangle_fill(layout, &Color::from_hex("090714"));
         let layout = self.layout.compute_inner_layout_rect(ctx.layout_rect);
         ctx.rectangle_fill(layout, &Color::from_hex("24232a"));
         if let Some(item) = &state.equipped_i(&self.slot, self.slot_i) {
-            let texture = item.make_texture(&game_ctx.resources);
+            let texture = item.make_texture();
             ctx.texture_old(texture, [layout[0], layout[1]]);
         }
     }

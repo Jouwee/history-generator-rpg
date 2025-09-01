@@ -196,7 +196,7 @@ impl ChunkSerialized {
 
         chunk.tiles_metadata = self.tiles_metadata.clone();
         chunk.spawn_points = self.spawn_points.clone();
-        chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0.into(), i.1.clone(), i.1.make_texture(resources))).collect();
+        chunk.items_on_ground = self.items_on_ground.iter().map(|i| (i.0.into(), i.1.clone(), i.1.make_texture())).collect();
 
         for x in 0..self.size.x() {
             for y in 0..self.size.y() {

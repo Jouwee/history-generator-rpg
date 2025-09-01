@@ -789,6 +789,14 @@ impl Scene for GameSceneState {
                 }
                 return ControlFlow::Break(());
             },
+            BusEvent::DropInventoryItem(item) => {
+                let actor = self.state.player_mut();
+                let item = actor.inventory.take(*item).ok_or("Dropped missing item").unwrap();
+                let xy = actor.xy.into();
+                let texture = item.make_texture();
+                self.state.chunk.items_on_ground.push((xy, item, texture));
+                return ControlFlow::Break(());
+            },
             BusEvent::SimulateTime(time) => {
                 self.sleep_coroutine = Some((0., *time, false));
                 return ControlFlow::Break(());
