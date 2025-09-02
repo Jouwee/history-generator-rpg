@@ -35,6 +35,8 @@ macro_rules! history_trace {
 #[macro_export]
 macro_rules! fatal {
     ($($arg:tt)*) => {{
+        #[cfg(debug_assertions)]
+        println!("[FATAL] {}", &format!($($arg)*));
         $crate::engine::debug::log::log().log("FATAL", &format!($($arg)*));
     }};
 }
@@ -42,6 +44,8 @@ macro_rules! fatal {
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
+        #[cfg(debug_assertions)]
+        println!("[ERROR] {}", &format!($($arg)*));
         $crate::engine::debug::log::log().log("ERROR", &format!($($arg)*));
     }};
 }
@@ -49,6 +53,8 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
+        #[cfg(debug_assertions)]
+        println!("[WARN] {}", &format!($($arg)*));
         $crate::engine::debug::log::log().log("WARN", &format!($($arg)*));
     }};
 }
