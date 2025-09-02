@@ -3,7 +3,7 @@ use std::ops::ControlFlow;
 use math::Vec2i;
 use piston::Key;
 
-use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration}, GameContext};
+use crate::{chunk_gen::chunk_generator::ChunkGenerator, commons::rng::Rng, engine::{assets::assets, geometry::Coord2, input::InputEvent, render::RenderContext, COLOR_BLACK, COLOR_WHITE}, game::{actor::actor::Actor, codex::QuestStatus, GameSceneState}, resources::{item_blueprint::{ItemBlueprintId, ItemBlueprints, ItemMaker}, species::{SpeciesId, SpeciesMap}}, world::{date::Duration, item::{ItemMakeArguments, ItemQuality}}, GameContext};
 
 pub(crate) struct Console {
     visible: bool,
@@ -172,7 +172,12 @@ impl Console {
                 let item_id = parse_item(item, &ctx.resources.item_blueprints)?;
                 let blueprint = ctx.resources.item_blueprints.get(&item_id);
 
-                let item = blueprint.make(vec!(), &ctx.resources);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(ctx.resources.materials.id_of("mat:steel")),
+                    ItemMakeArguments::SecondaryMaterial(ctx.resources.materials.id_of("mat:bronze")),
+                    ItemMakeArguments::DetailsMaterial(ctx.resources.materials.id_of("mat:birch")),
+                    ItemMakeArguments::Quality(ItemQuality::Good),
+                ), &ctx.resources);
 
                 let _ = scene.state.player_mut().inventory.add(item);
 

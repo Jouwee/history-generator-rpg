@@ -2,7 +2,7 @@ use std::{sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard}, time::Ins
 
 use image::ImageReader;
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_HARVEST, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, ConsumableComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::ResourceMap}, engine::{assets::ImageSheetAsset, audio::SoundEffect, geometry::Size2D, pallete_sprite::PalleteSprite, tilemap::{Tile16Subset, TileRandom, TileSingle}, Color}, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, info, resources::{action::{ActionArea, ActionEffect, ActionProjectile, ActionTarget, ImpactPosition, SpellProjectileType, FILTER_CAN_DIG, FILTER_CAN_HARVEST, FILTER_CAN_OCCUPY, FILTER_CAN_SLEEP, FILTER_CAN_VIEW, FILTER_ITEM, FILTER_NOT_HOSTILE}, item_blueprint::{ArmorBlueprintComponent, ConsumableComponent, EquippableComponent}, material::{MAT_TAG_BONE, MAT_TAG_CLOTH, MAT_TAG_LEATHER, MAT_TAG_METAL, MAT_TAG_WOOD}, species::SpeciesAppearance}, world::{attributes::Attributes, item::ActionProviderComponent}, MarkovChainSingleWordModel};
 use super::{action::{Action, Actions, Affliction}, biome::{Biome, Biomes}, culture::{Culture, Cultures}, item_blueprint::{ArtworkSceneBlueprintComponent, ItemBlueprint, ItemBlueprints, MaterialBlueprintComponent, MelleeDamageBlueprintComponent, NameBlueprintComponent, QualityBlueprintComponent}, material::{Material, Materials}, object_tile::{ObjectTile, ObjectTileId}, species::{Species, SpeciesIntelligence, SpeciesMap}, tile::{Tile, TileId}};
 
 static RESOURCES: LazyLock<RwLock<Resources>> = LazyLock::new(|| RwLock::new(Resources::new()));
@@ -94,6 +94,12 @@ impl Resources {
         let mut bone = Material::new_bone("varningr's bone");
         bone.extra_damage = DamageRoll::arcane(10.);
         self.materials.add("mat:varningr_bone", bone);
+
+        self.materials.add("mat:leather", Material::new_leather("leather"));
+        self.materials.add("mat:hide", Material::new_leather("hide"));
+
+        self.materials.add("mat:linen", Material::new_cloth("linen"));
+
     }
 
     fn load_biomes(&mut self) {
@@ -793,8 +799,12 @@ impl Resources {
             inventory_sprite: pallete_sprite, 
             action_provider: None,
             equippable: Some(EquippableComponent { slot: EquipmentType::TorsoGarment }),
-            material: None,
-            quality: None,
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_CLOTH,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
@@ -845,7 +855,7 @@ impl Resources {
 
         let image = ImageReader::open("./assets/sprites/species/human/brigandine_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
-        let image = ImageReader::open("./assets/sprites/species/human/armor.png").unwrap().decode().unwrap();
+        let image = ImageReader::open("./assets/sprites/items/brigandine.png").unwrap().decode().unwrap();
         let placed_sprite = PalleteSprite::new(image);
         let shirt_blueprint = ItemBlueprint {
             name: String::from("brigandine"),
@@ -853,8 +863,12 @@ impl Resources {
             inventory_sprite: pallete_sprite, 
             action_provider: None,
             equippable: Some(EquippableComponent { slot: EquipmentType::TorsoInner }),
-            material: None,
-            quality: None,
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_LEATHER,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
@@ -878,7 +892,7 @@ impl Resources {
                 secondary_tag_bitmask: None,
                 details_tag_bitmask: None,
             }),
-            quality: None,
+            quality: Some(QualityBlueprintComponent { }),
             mellee_damage: None,
             armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(10, 10, 10), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
@@ -930,6 +944,30 @@ impl Resources {
             name_blueprint: None
         };
         self.item_blueprints.add("itb:kettlehat", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/open_bascinet_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/items/open_bascinet.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("open bascinet"),
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { slot: EquipmentType::Head }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_METAL,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: None,
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(7, 6, 4), coverage: vec!(BodyPart::Head) }),
+            artwork_scene: None,
+            consumable: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:open_bascinet", shirt_blueprint);
 
         let image = ImageReader::open("./assets/sprites/species/human/tome_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
