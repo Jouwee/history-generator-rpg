@@ -335,10 +335,13 @@ fn main() {
 
                         player.inventory.auto_equip(&app.context.resources);
 
-                        let chunk = GameState::from_world_tile(&world, &load_save_manager, &app.context.resources, ChunkCoord::new(pos.to_vec2i(), ChunkLayer::Surface), player);
-                        let mut scene = GameSceneState::new(world, save.save_file_name, chunk);
+                        let game_state = GameState::from_world_tile(&world, &load_save_manager, &app.context.resources, ChunkCoord::new(pos.to_vec2i(), ChunkLayer::Surface), player);
+                        load_save_manager.save_game_state(&game_state).unwrap();
+                        load_save_manager.save_chunk(&game_state.chunk).unwrap();
+                        let mut scene = GameSceneState::new(world, save.save_file_name, game_state);
                         scene.init(&mut app.context);
                         app.scene = SceneEnum::Game(scene);
+
 
                         continue
                     }
