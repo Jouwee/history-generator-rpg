@@ -1,4 +1,4 @@
-use std::{cell::{Ref, RefCell, RefMut}, ops::Deref};
+use std::{cell::{Ref, RefCell, RefMut}, ops::{Deref, DerefMut}};
 
 use serde::{Deserialize, Serialize};
 
@@ -12,36 +12,6 @@ pub(crate) trait Id: Clone + Copy {
         return Self::new(id)
     }
 
-}
-
-pub(crate) struct Identified<'a, I, V> {
-    id: I,
-    value: &'a V
-}
-
-impl<'a, I, V> Identified<'a, I, V> {
-
-    pub(crate) fn new(id: I, value: &'a V) -> Self {
-        Self { id, value }
-    }
-
-    pub(crate) fn id(&self) -> &I {
-        return &self.id;
-    }
-
-}
-
-impl<'a, I, V> Deref for Identified<'a, I, V> {
-    type Target = V;
-    fn deref(&self) -> &Self::Target {
-        return self.value;
-    }
-}
-
-impl<'a, I, V> AsRef<V> for Identified<'a, I, V> {
-    fn as_ref(&self) -> &V {
-        return self.value;
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,16 +31,18 @@ impl<V> IdVec<V> {
         return id
     }
 
-    pub(crate) fn get<K>(&'_ self, id: &K) -> Ref<'_, V> where K: Id {
-        return self.vector.get(id.as_usize())
+    pub(crate) fn get<K>(&'_ self, id: &K) -> Identified<'_, K, V> where K: Id {
+        let value = self.vector.get(id.as_usize())
             .expect("Using IdVec should be safe to unwrap")
-            .borrow()
+            .borrow();
+        return Identified::new(*id, value)
     }
 
-    pub(crate) fn get_mut<K>(&'_ self, id: &K) -> RefMut<'_, V> where K: Id {
-        return self.vector.get(id.as_usize())
+    pub(crate) fn get_mut<K>(&'_ self, id: &K) -> IdentifiedMut<'_, K, V> where K: Id {
+        let value = self.vector.get(id.as_usize())
             .expect("Using IdVec should be safe to unwrap")
-            .borrow_mut()
+            .borrow_mut();
+        return IdentifiedMut::new(*id, value)
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -94,5 +66,78 @@ impl<V> IdVec<V> {
 impl<V> Default for IdVec<V> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub(crate) struct Identified<'a, I, V> {
+    _id: I,
+    value: Ref<'a, V>
+}
+
+impl<'a, I, V> Identified<'a, I, V> {
+
+    pub(crate) fn new(id: I, value: Ref<'a, V>) -> Self {
+        Self { _id: id, value }
+    }
+
+    // pub(crate) fn id(&self) -> &I {
+    //     return &self.id;
+    // }
+
+}
+
+impl<'a, I, V> Deref for Identified<'a, I, V> {
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        return self.value.deref();
+    }
+}
+
+impl<'a, I, V> AsRef<V> for Identified<'a, I, V> {
+    fn as_ref(&self) -> &V {
+        return &self.value;
+    }
+}
+
+
+pub(crate) struct IdentifiedMut<'a, I, V> {
+    _id: I,
+    value: RefMut<'a, V>
+}
+
+impl<'a, I, V> IdentifiedMut<'a, I, V> {
+
+    pub(crate) fn new(id: I, value: RefMut<'a, V>) -> Self {
+        Self { _id: id, value }
+    }
+
+    // pub(crate) fn id(&self) -> &I {
+    //     return &self.id;
+    // }
+
+}
+
+impl<'a, I, V> Deref for IdentifiedMut<'a, I, V> {
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        return self.value.deref();
+    }
+}
+
+impl<'a, I, V> DerefMut for IdentifiedMut<'a, I, V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        return self.value.deref_mut();
+    }
+}
+
+impl<'a, I, V> AsRef<V> for IdentifiedMut<'a, I, V> {
+    fn as_ref(&self) -> &V {
+        return &self.value;
+    }
+}
+
+impl<'a, I, V> AsMut<V> for IdentifiedMut<'a, I, V> {
+    fn as_mut(&mut self) -> &mut V {
+        return &mut self.value;
     }
 }

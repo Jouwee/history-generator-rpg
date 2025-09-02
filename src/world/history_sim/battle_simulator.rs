@@ -1,6 +1,4 @@
-use std::cell::Ref;
-
-use crate::{commons::xp_table::xp_to_level, world::{creature::{Creature, CreatureId, Profession}, site::{Site, SiteId}, world::World}, Rng};
+use crate::{commons::{id_vec::Identified, xp_table::xp_to_level}, world::{creature::{Creature, CreatureId, Profession}, site::{Site, SiteId}, world::World}, Rng};
 
 pub(crate) struct BattleSimulator {
 }
@@ -110,7 +108,7 @@ impl BattleSimulator {
 struct BattleCreature<'a> {
     id: CreatureId,
     site_id: SiteId,
-    creature: Ref<'a, Creature>,
+    creature: Identified<'a, CreatureId, Creature>,
     tactic: Tactic,
     hp: f32,
     team: u8,

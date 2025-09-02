@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{damage_model::{DamageModel, DamageRoll}, id_vec::Identified, resource_map::ResourceMap}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::action::Affliction, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
+use crate::{commons::{damage_model::{DamageModel, DamageRoll}, resource_map::{IdentifiedResource, ResourceMap}}, engine::pallete_sprite::PalleteSprite, game::{actor::health_component::BodyPart, inventory::inventory::EquipmentType}, resources::action::Affliction, world::item::{ActionProviderComponent, ArmorComponent, ArtworkSceneComponent, ItemMakeArguments, MaterialComponent, MelleeDamageComponent, QualityComponent}, Item, Resources};
 
 // TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -38,7 +38,7 @@ pub(crate) trait ItemMaker {
     fn make(&self, arguments: Vec<ItemMakeArguments>, resources: &Resources) -> Item;
 }
 
-impl<'_a> ItemMaker for Identified<'_a, ItemBlueprintId, ItemBlueprint> {
+impl<'_a> ItemMaker for IdentifiedResource<'_a, ItemBlueprintId, ItemBlueprint> {
 
     fn make(&self, arguments: Vec<ItemMakeArguments>, resources: &Resources) -> Item {
         Item {

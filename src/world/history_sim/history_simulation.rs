@@ -132,7 +132,7 @@ impl HistorySimulation {
                 !goal.check_completed(world)
             });
 
-            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &site, &creature_id, &creature, plot, &chances);
+            let side_effect = CreatureSimulation::simulate_step_creature(step, now, &mut rng, &site, creature_id, &creature, plot, &chances);
 
             // Production and consumption
             let mut production = creature.profession.base_resource_production();

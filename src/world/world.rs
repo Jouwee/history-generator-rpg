@@ -168,9 +168,8 @@ impl World {
 
 #[cfg(test)]
 pub(crate) mod fixture {
-    use std::cell::{Ref, RefMut};
 
-    use crate::{engine::geometry::Size2D, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, site::{Site, SiteId, SiteResources}}};
+    use crate::{commons::id_vec::{Identified, IdentifiedMut}, engine::geometry::Size2D, world::{creature::{Creature, CreatureGender, Profession, SIM_FLAG_INTELIGENT}, lineage::Lineage, site::{Site, SiteId, SiteResources}}};
 
     use super::*;
 
@@ -313,27 +312,27 @@ pub(crate) mod fixture {
             }
         }
 
-        pub(crate) fn creature_a1(&'_ self) -> Ref<'_, Creature> {
+        pub(crate) fn creature_a1(&'_ self) -> Identified<'_, CreatureId, Creature> {
             return self.world.creatures.get(&self.creature_a1);
         }
 
-        pub(crate) fn creature_a2(&'_ self) -> Ref<'_, Creature> {
+        pub(crate) fn creature_a2(&'_ self) -> Identified<'_, CreatureId, Creature> {
             return self.world.creatures.get(&self.creature_a2);
         }
 
-        pub(crate) fn creature_a3(&'_ self) -> Ref<'_, Creature> {
+        pub(crate) fn creature_a3(&'_ self) -> Identified<'_, CreatureId, Creature> {
             return self.world.creatures.get(&self.creature_a3);
         }
 
-        pub(crate) fn creature_a4(&'_ self) -> Ref<'_, Creature> {
+        pub(crate) fn creature_a4(&'_ self) -> Identified<'_, CreatureId, Creature> {
             return self.world.creatures.get(&self.creature_a4);
         }
 
-        pub(crate) fn creature_a3_mut(&'_ mut self) -> RefMut<'_, Creature> {
+        pub(crate) fn creature_a3_mut(&'_ mut self) -> IdentifiedMut<'_, CreatureId, Creature> {
             return self.world.creatures.get_mut(&self.creature_a3);
         }
 
-        pub(crate) fn creature_a4_mut(&'_ mut self) -> RefMut<'_, Creature> {
+        pub(crate) fn creature_a4_mut(&'_ mut self) -> IdentifiedMut<'_, CreatureId, Creature> {
             return self.world.creatures.get_mut(&self.creature_a4);
         }
 

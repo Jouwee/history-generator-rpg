@@ -1,6 +1,4 @@
-use std::cell::Ref;
-
-use crate::{commons::rng::Rng, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::SiteChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal}, site::{Site, SiteId, SiteType}, world::World}};
+use crate::{commons::{id_vec::Identified, rng::Rng}, history_trace, warn, world::{creature::{CauseOfDeath, Creature, CreatureId, Profession}, date::{Duration, WorldDate}, history_sim::{battle_simulator::BattleSimulator, storyteller::SiteChances}, item::{Item, ItemId}, plot::{Plot, PlotGoal, PlotId}, site::{Site, SiteId, SiteType}, world::World}};
 
 pub(crate) struct CreatureSimulation {}
 
@@ -22,7 +20,7 @@ pub(crate) enum CreatureSideEffect {
 
 impl CreatureSimulation {
 
-    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, site: &Site, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Ref<Plot>>, chances: &SiteChances) -> CreatureSideEffect {
+    pub(crate) fn simulate_step_creature(_step: &Duration, now: &WorldDate, rng: &mut Rng, site: &Site, creature_id: &CreatureId, creature: &Creature, supported_plot: Option<Identified<PlotId, Plot>>, chances: &SiteChances) -> CreatureSideEffect {
         let age = (*now - creature.birth).get_years();
         // Death by disease
         if rng.rand_chance(chances.disease_death) {

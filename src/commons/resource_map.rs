@@ -1,6 +1,4 @@
-use std::{collections::HashMap, slice::Iter};
-
-use crate::commons::id_vec::Identified;
+use std::{collections::HashMap, ops::Deref, slice::Iter};
 
 use super::id_vec::Id;
 
@@ -29,16 +27,16 @@ impl<I, V> ResourceMap<I, V> where I: Id {
         return id
     }
 
-    pub(crate) fn get<'a>(&'a self, id: &I) -> Identified<'a, I, V> {
+    pub(crate) fn get<'a>(&'a self, id: &I) -> IdentifiedResource<'a, I, V> {
         let value = self.vector.get(id.as_usize()).expect("Using ResourceMap should be safe to unwrap");
-        return Identified::new(id.clone(), value);
+        return IdentifiedResource::new(id.clone(), value);
     }
 
     pub(crate) fn try_get(&self, id: usize) -> Option<&V> {
         return self.vector.get(id)
     }
 
-    pub(crate) fn find(&'_ self, key: &str) -> Identified<'_, I, V> {
+    pub(crate) fn find(&'_ self, key: &str) -> IdentifiedResource<'_, I, V> {
         return self.get(&self.id_of(key))
     }
 
@@ -107,3 +105,33 @@ mod tests {
     }
 }
 
+
+pub(crate) struct IdentifiedResource<'a, I, V> {
+    id: I,
+    value: &'a V
+}
+
+impl<'a, I, V> IdentifiedResource<'a, I, V> {
+
+    pub(crate) fn new(id: I, value: &'a V) -> Self {
+        Self { id, value }
+    }
+
+    pub(crate) fn id(&self) -> &I {
+        return &self.id;
+    }
+
+}
+
+impl<'a, I, V> Deref for IdentifiedResource<'a, I, V> {
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        return self.value;
+    }
+}
+
+impl<'a, I, V> AsRef<V> for IdentifiedResource<'a, I, V> {
+    fn as_ref(&self) -> &V {
+        return self.value;
+    }
+}
