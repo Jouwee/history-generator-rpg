@@ -102,8 +102,8 @@ impl Creature {
         }
     }
 
-    pub(crate) fn relationship_find(&self, other_creature_id: CreatureId) -> Option<&Relationship> {
-        let pos = self.relationships.binary_search_by(|r| r.creature_id.cmp(&other_creature_id));
+    pub(crate) fn relationship_find(&self, other_creature_id: &CreatureId) -> Option<&Relationship> {
+        let pos = self.relationships.binary_search_by(|r| r.creature_id.cmp(other_creature_id));
         match pos {
             Ok(pos) => Some(self.relationships.get(pos).expect("Just checked")),
             Err(_) => None

@@ -230,7 +230,18 @@ impl GameState {
                 SiteType::BanditCamp | SiteType::VarningrLair | SiteType::WolfPack => {
                     self.ai_groups.make_hostile(AiGroups::player(), ai_group);
                 },
-                SiteType::Village => ()
+                SiteType::Village => {
+                    let player_id = world.get_played_creature().unwrap();
+                    let any_hostille = site.creatures.iter()
+                        .any(|id| {
+                            let creature = world.creatures.get(id);
+                            let relationship = creature.relationship_find(player_id);
+                            relationship.and_then(|r| Some(r.mortal_enemy_or_worse())).unwrap_or(false)
+                        });
+                    if any_hostille {
+                        self.ai_groups.make_hostile(AiGroups::player(), ai_group);
+                    }
+                }
             };
 
             // Spawn creatures in structures

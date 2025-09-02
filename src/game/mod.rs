@@ -605,7 +605,7 @@ impl Scene for GameSceneState {
         if let ControlFlow::Break((cursor, action_id)) = self.game_context_menu.input(&mut (), &evt, ctx) {
             let action = ctx.resources.actions.get(&action_id);
 
-            let _ = self.action_runner.try_use(
+            let result = self.action_runner.try_use(
                 &action_id,
                 &action,
                 PLAYER_IDX,
@@ -615,6 +615,22 @@ impl Scene for GameSceneState {
                 &mut self.game_log,
                 ctx
             );
+            if let Ok(output) = result {
+                if output.hostile {
+                    // Decreases the relationship with everyone
+                    let player_id = self.world.get_played_creature().unwrap();
+                    let player = self.world.creatures.get(player_id);
+                    for actor in self.state.actors_iter() {
+                        if let Some(creature_id) = actor.creature_id {
+                            if !self.world.is_played_creature(&creature_id) {
+                                let mut creature = self.world.creatures.get_mut(&creature_id);
+                                let relationship = creature.relationship_find_mut_or_insert(&creature_id, *player_id, &player);
+                                relationship.add_opinion(-75);
+                            }
+                        }
+                    }
+                }
+            }
             return ControlFlow::Break(());
         }
 
@@ -726,7 +742,6 @@ impl Scene for GameSceneState {
                 return ControlFlow::Break(());
             },
             BusEvent::ShowChatDialog(data) => {
-
                 let pending_quest = self.world.codex.quests()
                     .filter(|quest| quest.quest_giver == data.actor.creature_id.unwrap() && quest.status == QuestStatus::RewardPending)
                     .next();

@@ -323,7 +323,7 @@ impl ActionRunner {
         return action.target.can_use(&actor.xy.into(), chunk, &cursor);
     }
 
-    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut GameState, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<(), ActionFailReason> {
+    pub(crate) fn try_use(&mut self, action_id: &ActionId, action: &Action, actor_index: usize, cursor: Coord2, chunk: &mut GameState, world: &mut World, game_log: &mut GameLog, ctx: &GameContext) -> Result<ActionOutput, ActionFailReason> {
         let r = Self::can_use(action_id, action, actor_index, cursor, chunk);
         if let Err(reason) = r {
             return Err(reason);
@@ -436,7 +436,22 @@ impl ActionRunner {
             steps
         });
 
-        return Ok(());
+        let mut output = ActionOutput {
+            hostile: false,
+        };
+        for effect in action.effects.iter() {
+            let hostile = match effect {
+                ActionEffect::Damage { add_weapon: _, damage: _ } => true,
+                ActionEffect::Inflicts { affliction: _ } => true,
+                _ => false,
+            };
+            if hostile {
+                output.hostile = hostile;
+                break;
+            }
+        }
+
+        return Ok(output);
     }
 
     pub(crate) fn update(&mut self, update: &Update, chunk: &mut GameState, world: &mut World, effect_layer: &mut EffectLayer, game_log: &mut GameLog, ctx: &mut GameContext) {
@@ -744,4 +759,9 @@ pub(crate) enum ActionFailReason {
     CantReach,
     CantSee,
     NoValidTarget
+}
+
+pub(crate) struct ActionOutput {
+    /// Is the action considered hostile towards the targets?
+    pub(crate) hostile: bool
 }

@@ -543,7 +543,7 @@ impl World {
                 for relationship in creature.relationships.iter() {
                     let relationship_creature_id = relationship.creature_id;
                     let mut relationship_creature = self.creatures.get_mut(&relationship_creature_id);
-                    let relationship = relationship_creature.relationship_find(creature_id);
+                    let relationship = relationship_creature.relationship_find(&creature_id);
                     if let Some(relationship) = relationship {
                         if relationship.friend_or_better() {
                             // TODO(IhlgIYVA): How did I get to a point where it killed his own "friend"?
