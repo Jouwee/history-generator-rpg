@@ -21,7 +21,7 @@ impl GameContextMenu {
     pub(crate) fn show(&mut self, actor_index: usize, cursor: Coord2, chunk: &mut GameState, ctx: &mut GameContext, position: [f64; 2]) {
         let actor = chunk.actor(actor_index).unwrap();
 
-        let actions: Vec<(i32, String)> = actor.get_all_available_actions(ctx).iter()
+        let actions: Vec<(i32, String)> = actor.get_all_available_actions().iter()
             .map(|id| (*id, ctx.resources.actions.get(id)))
             .filter(|(id, action)| ActionRunner::can_use(id, action, actor_index, cursor, chunk).is_ok())
             .map(|(id, action)| (id.as_usize() as i32, action.name.clone()))

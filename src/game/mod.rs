@@ -1,4 +1,5 @@
 use std::ops::ControlFlow;
+use std::u8;
 
 use ai::AiSolver;
 use effect_layer::EffectLayer;
@@ -39,7 +40,7 @@ use crate::game::gui::quest_complete_dialog::QuestCompleteDialog;
 use crate::game::gui::time_widget::TimeWidget;
 use crate::game::state::{AiGroups, GameState, PLAYER_IDX};
 use crate::loadsave::SaveFile;
-use crate::resources::action::{ActionRunner, ActionArea};
+use crate::resources::action::{ActionArea, ActionId, ActionRunner};
 use crate::resources::resources::resources;
 use crate::warn;
 use crate::world::date::Duration;
@@ -101,7 +102,7 @@ pub(crate) struct GameSceneState {
     death_dialog: DialogWrapper<DeathDialog>,
     help_dialog: DialogWrapper<HelpDialog>,
     ingame_menu: InGameMenu,
-    cursor_pos: Coord2,
+    cursor_pos: Vec2i,
     tooltip_overlay: TooltipOverlay,
     effect_layer: EffectLayer,
     game_context_menu: GameContextMenu,
@@ -153,7 +154,7 @@ impl GameSceneState {
             death_dialog: DialogWrapper::new().hide_close_button(),
             help_dialog: DialogWrapper::new(),
             ingame_menu: InGameMenu::new(),
-            cursor_pos: Coord2::xy(0, 0),
+            cursor_pos: Vec2i(0, 0),
             tooltip_overlay: TooltipOverlay::new(),
             effect_layer: EffectLayer::new(),
             game_context_menu: GameContextMenu::new(),
@@ -282,6 +283,29 @@ impl GameSceneState {
         self.state.switch_chunk(self.state.coord.clone(), &save_file, &self.world);
     }
 
+    fn get_click_action(&self, cursor: Vec2i) -> ClickAction {
+        if let Some(action_id) = &self.hotbar.selected_action {
+            return ClickAction::Selected(*action_id)
+        }
+        let resources = resources();
+        let actor = self.state.player();
+
+        // TODO: Sort
+
+        let mut actions: Vec<(u8, ActionId)> = actor.get_all_available_actions().iter()
+            .map(|id| resources.actions.get(id))
+            .filter(|action| action.smart_use_priority.is_some() && ActionRunner::can_use(action.id(), action, PLAYER_IDX, cursor.into(), &self.state).is_ok())
+            .map(|action| (action.smart_use_priority.unwrap_or(u8::MAX), *action.id()))
+            .collect();
+        actions.sort_by(|a, b| a.0.cmp(&b.0));
+
+        if let Some(action) = actions.first() {
+            return ClickAction::Smart(action.1)
+        } else {
+            return ClickAction::Path
+        }
+    }
+
 }
 
 impl Scene for GameSceneState {
@@ -318,31 +342,40 @@ impl Scene for GameSceneState {
 
         self.state.render(ctx, game_ctx);
 
-        if let Some(action_id) = &self.hotbar.selected_action {
-            let action = game_ctx.resources.actions.get(action_id);
-            let can_use = ActionRunner::can_use(action_id, &action, PLAYER_IDX, self.cursor_pos, &self.state);
-            let color = match can_use {
-                Ok(_) => (COLOR_WHITE.alpha(0.2), COLOR_WHITE),
-                Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
-            };
-            if action.area != ActionArea::Target {
-                for point in action.area.points(self.cursor_pos) {
-                    ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], &color.0);
+        // Draws cursor, pathing, and action name
+        match self.get_click_action(self.cursor_pos) {
+            ClickAction::Selected(action_id) => {
+                let action = game_ctx.resources.actions.get(&action_id);
+                let can_use = ActionRunner::can_use(&action_id, &action, PLAYER_IDX, self.cursor_pos.into(), &self.state);
+                let color = match can_use {
+                    Ok(_) => (COLOR_WHITE.alpha(0.2), COLOR_WHITE),
+                    Err(_) => (Color::from_hex("ff000030"), Color::from_hex("ff0000ff"))
+                };
+                if action.area != ActionArea::Target {
+                    for point in action.area.points(self.cursor_pos.into()) {
+                        ctx.rectangle_fill([point.x as f64 * 24., point.y as f64 * 24., 24., 24.], &color.0);
+                    }
                 }
+                let image = assets().image("gui/cursor.png");
+                let pos: [f64; 2] = (self.cursor_pos * 24).into();
+                let transform = ctx.context.transform.trans(pos[0], pos[1]);
+                Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
+                if let Err(msg) = can_use {
+                    ctx.text_shadow(&format!("{:?}", msg), assets().font_standard(), [pos[0] as i32, pos[1] as i32 + 32 ], &COLOR_WHITE);
+                }
+                ctx.text_shadow(&action.name, assets().font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
+            },
+            ClickAction::Smart(action_id) => {
+                let pos: [i32; 2] = (self.cursor_pos * 24).into();
+                ctx.image("gui/cursor.png", pos);
+                let action = game_ctx.resources.actions.get(&action_id);
+                
+                ctx.text_shadow(&action.name, assets().font_standard(), pos, &COLOR_WHITE);
+            },
+            ClickAction::Path => {
+                ctx.image("gui/cursor.png", (self.cursor_pos * 24).into());
+                self.player_pathing.render(&self.turn_mode, self.state.player(), ctx);
             }
-            let image = assets().image("gui/cursor.png");
-            let pos = [self.cursor_pos.x as f64 * 24., self.cursor_pos.y as f64 * 24.];
-            let transform = ctx.context.transform.trans(pos[0], pos[1]);
-            Image::new().color(color.1.f32_arr()).draw(&image.texture, &Default::default(), transform, ctx.gl);
-            if let Err(msg) = can_use {
-                ctx.text_shadow(&format!("{:?}", msg), assets().font_standard(), [pos[0] as i32, pos[1] as i32], &COLOR_WHITE);
-            }
-        } else {
-            ctx.image("gui/cursor.png", [self.cursor_pos.x * 24, self.cursor_pos.y * 24]);
-        }
-
-        if self.hotbar.selected_action.is_none() {
-            self.player_pathing.render(&self.turn_mode, self.state.player(), ctx);
         }
 
         // Effects
@@ -430,7 +463,7 @@ impl Scene for GameSceneState {
         }
 
         // TODO: Should not be done in update. Input doesn't have "mouse pos"
-        self.cursor_pos = Coord2::xy((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
+        self.cursor_pos = Vec2i((update.mouse_pos_cam[0] / 24.) as i32, (update.mouse_pos_cam[1] / 24.) as i32);
 
         if self.turn_mode == TurnMode::TurnBased {
             self.hud.preview_action_points(self.state.player(), self.player_pathing.get_preview_ap_cost());
@@ -684,10 +717,10 @@ impl Scene for GameSceneState {
             }
         }
 
-        if self.player_pathing.should_recompute_pathing(self.cursor_pos.to_vec2i()) {
+        if self.player_pathing.should_recompute_pathing(self.cursor_pos) {
             let mut player_pathfinding = AStar::new(self.state.chunk.size.vec2i(), self.state.player().xy);
-            player_pathfinding.find_path(self.cursor_pos.to_vec2i(), |xy| self.state.astar_movement_cost(xy.into()));
-            self.player_pathing.set_preview(self.cursor_pos.to_vec2i(), player_pathfinding.get_path(self.cursor_pos.to_vec2i()));
+            player_pathfinding.find_path(self.cursor_pos, |xy| self.state.astar_movement_cost(xy.into()));
+            self.player_pathing.set_preview(self.cursor_pos, player_pathfinding.get_path(self.cursor_pos));
         }
 
         match evt {
@@ -705,25 +738,27 @@ impl Scene for GameSceneState {
                 self.map_modal = Some(map);
             },
             InputEvent::Click { button: MouseButton::Right, pos } => {
-                self.game_context_menu.show(PLAYER_IDX, self.cursor_pos, &mut self.state, ctx, *pos);
+                self.game_context_menu.show(PLAYER_IDX, self.cursor_pos.into(), &mut self.state, ctx, *pos);
             }
             InputEvent::Click { button: MouseButton::Left, pos: _ } => {
-                if let Some(action_id) = &self.hotbar.selected_action {
-
-                    let action = ctx.resources.actions.get(action_id);
-                    let _ = self.action_runner.try_use(
-                        action_id,
-                        &action,
-                        PLAYER_IDX,
-                        self.cursor_pos,
-                        &mut self.state,
-                        &mut self.world,
-                        &mut self.game_log,
-                        ctx
-                    );
-                } else {
-                    if let Some(path) = &mut self.player_pathing.get_preview() {
-                        self.player_pathing.start_running(path.clone());
+                match self.get_click_action(self.cursor_pos) {
+                    ClickAction::Selected(action_id) | ClickAction::Smart(action_id) => {
+                        let action = ctx.resources.actions.get(&action_id);
+                        let _ = self.action_runner.try_use(
+                            &action_id,
+                            &action,
+                            PLAYER_IDX,
+                            self.cursor_pos.into(),
+                            &mut self.state,
+                            &mut self.world,
+                            &mut self.game_log,
+                            ctx
+                        );
+                    },
+                    ClickAction::Path => {
+                        if let Some(path) = &mut self.player_pathing.get_preview() {
+                            self.player_pathing.start_running(path.clone());
+                        }
                     }
                 }
             }
@@ -821,4 +856,10 @@ impl Scene for GameSceneState {
         }
     }
 
+}
+
+enum ClickAction {
+    Selected(ActionId),
+    Smart(ActionId),
+    Path
 }

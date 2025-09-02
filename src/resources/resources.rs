@@ -121,6 +121,7 @@ impl Resources {
         self.actions.add("act:strike", Action {
             name: String::from("Strike"),
             description: String::from("Strikes with your weapon"),
+            smart_use_priority: Some(10),
             icon: String::from("gui/icons/actions/slashing_cut.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword-01.mp3", "sfx/sword-02.mp3", "sfx/sword-03.mp3"))),
@@ -142,6 +143,7 @@ impl Resources {
         self.actions.add("act:sword:bleeding_cut", Action {
             name: String::from("Bleeding Cut"),
             description: String::from("A deep cut that causes bleeding"),
+            smart_use_priority: None,
             log_use: true,
             icon: String::from("gui/icons/actions/bleeding_cut.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/sword-01.mp3", "sfx/sword-02.mp3", "sfx/sword-03.mp3"))),
@@ -164,6 +166,7 @@ impl Resources {
         self.actions.add("act:mace:concussive_strike", Action {
             name: String::from("Concussive Strike"),
             description: String::from("An aimed hit at the head"),
+            smart_use_priority: None,
             log_use: true,
             icon: String::from("gui/icons/actions/concussive_strike.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
@@ -185,6 +188,7 @@ impl Resources {
         self.actions.add("act:punch", Action {
             name: String::from("Punch"),
             description: String::from("A good ol' punch"),
+            smart_use_priority: Some(11),
             log_use: true,
             icon: String::from("gui/icons/actions/unarmed_attack.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/punch_1.mp3", "sfx/punch_2.mp3"))),
@@ -205,6 +209,7 @@ impl Resources {
         self.actions.add("act:spider_bite", Action {
             name: String::from("Bite"),
             description: String::from("A spider bite"),
+            smart_use_priority: Some(11),
             log_use: true,
             icon: String::from("missing.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
@@ -226,6 +231,7 @@ impl Resources {
         self.actions.add("act:bite", Action {
             name: String::from("Bite"),
             description: String::from("A bite"),
+            smart_use_priority: Some(11),
             icon: String::from("missing.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
@@ -246,6 +252,7 @@ impl Resources {
         self.actions.add("act:bite_varningr", Action {
             name: String::from("Bite"),
             description: String::from("A bite"),
+            smart_use_priority: Some(11),
             icon: String::from("missing.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/generic_swoosh_1.mp3", "sfx/generic_swoosh_2.mp3", "sfx/generic_swoosh_3.mp3", "sfx/generic_swoosh_4.mp3"))),
@@ -267,6 +274,7 @@ impl Resources {
         self.actions.add("act:deafening_howl", Action {
             name: String::from("Deafening howl"),
             description: String::from("A deafening howl"),
+            smart_use_priority: None,
             icon: String::from("missing.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/varningr_screech.mp3"))),
@@ -288,6 +296,7 @@ impl Resources {
         self.actions.add("act:firebolt", Action {
             name: String::from("Firebolt"),
             description: String::from("Throws a fiery bolt"),
+            smart_use_priority: None,
             icon: String::from("gui/icons/actions/firebolt.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
@@ -310,6 +319,7 @@ impl Resources {
         self.actions.add("act:fireball", Action {
             name: String::from("Fireball"),
             description: String::from("Casts an explosive ball of fire"),
+            smart_use_priority: None,
             log_use: true,
             icon: String::from("gui/icons/actions/fireball.png"),
             cast_sfx: Some(SoundEffect::new(vec!("sfx/firebolt_cast.wav"))),
@@ -331,6 +341,7 @@ impl Resources {
         self.actions.add("act:rockpillar", Action {
             name: String::from("Rock Pillar"),
             description: String::from("Summons a pillar of rock"),
+            smart_use_priority: None,
             icon: String::from("gui/icons/actions/rock_pillar.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/rockwall.wav"))),
@@ -352,6 +363,7 @@ impl Resources {
         self.actions.add("act:teleport", Action {
             name: String::from("Teleport"),
             description: String::from("Instantly teleports away"),
+            smart_use_priority: None,
             icon: String::from("gui/icons/actions/teleport.png"),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/teleport_cast.wav"))),
@@ -373,6 +385,7 @@ impl Resources {
         self.actions.add("act:talk", Action {
             name: String::from("Talk"),
             description: String::from("Talk with"),
+            smart_use_priority: Some(5),
             icon: String::from("gui/icons/actions/talk.png"),
             log_use: false,
             cast_sfx: None,
@@ -394,6 +407,7 @@ impl Resources {
         self.actions.add("act:inspect", Action {
             name: String::from("Inspect"),
             description: String::from("Inspect something"),
+            smart_use_priority: None,
             icon: String::from("gui/icons/actions/inspect.png"),
             log_use: false,
             cast_sfx: None,
@@ -415,6 +429,7 @@ impl Resources {
             name: String::from("Dig"),
             description: String::from("Dig the ground"),
             icon: String::from("gui/icons/actions/dig.png"),
+            smart_use_priority: Some(5),
             log_use: false,
             cast_sfx: None,
             ap_cost: 0,
@@ -435,6 +450,7 @@ impl Resources {
             name: String::from("Pick Up"),
             description: String::from("Pick up something from the ground"),
             icon: String::from("gui/icons/actions/pickup.png"),
+            smart_use_priority: Some(6),
             log_use: false,
             cast_sfx: None,
             ap_cost: 20,
@@ -455,6 +471,7 @@ impl Resources {
             name: String::from("Sleep"),
             description: String::from("Sleep in a bed"),
             icon: String::from("gui/icons/actions/sleep.png"),
+            smart_use_priority: Some(5),
             log_use: false,
             cast_sfx: None,
             ap_cost: 0,
@@ -476,6 +493,7 @@ impl Resources {
             name: String::from("Harvest"),
             description: String::from("Harvest"),
             icon: String::from("missing.png"),
+            smart_use_priority: Some(5),
             log_use: true,
             cast_sfx: Some(SoundEffect::new(vec!("sfx/foliage.mp3"))),
             ap_cost: 50,
@@ -497,6 +515,7 @@ impl Resources {
             name: String::from("Move"),
             description: String::from("Move"),
             icon: String::from("gui/icons/actions/sleep.png"),
+            smart_use_priority: None,
             log_use: false,
             cast_sfx: None,
             ap_cost: 20,

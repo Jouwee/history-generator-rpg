@@ -2,7 +2,7 @@ use graphics::Transformed;
 use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, species::{CreatureAppearance, LayerType, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
+use crate::{commons::{interpolate::lerp, rng::Rng}, engine::{animation::AnimationTransform, assets::assets, geometry::{Coord2, Size2D}, render::RenderContext}, game::{actor::health_component::BodyPart, ai::{AiRunner, AiState}, effect_layer::EffectLayer, inventory::inventory::Inventory, Renderable}, resources::{action::{ActionId, Affliction}, resources::resources, species::{CreatureAppearance, LayerType, Species, SpeciesId}}, world::{attributes::Attributes, creature::{Creature, CreatureGender, CreatureId}, world::World}, EquipmentType, GameContext, Resources};
 
 use super::{actor_stats::ActorStats, equipment_generator::EquipmentGenerator, health_component::HealthComponent};
 
@@ -230,10 +230,11 @@ impl Actor {
         }
     }
 
-    pub(crate) fn get_all_available_actions(&self, game_ctx: &mut GameContext) -> Vec<ActionId> {
+    pub(crate) fn get_all_available_actions(&self) -> Vec<ActionId> {
+        let resources = resources();
         let mut vec = Vec::new();
 
-        let species = game_ctx.resources.species.get(&self.species);
+        let species = resources.species.get(&self.species);
         vec.extend(species.innate_actions.clone());
 
         for (_slot, item) in self.inventory.all_equipped() {
@@ -242,12 +243,12 @@ impl Actor {
             }
         }
 
-        vec.push(game_ctx.resources.actions.id_of("act:talk"));
-        vec.push(game_ctx.resources.actions.id_of("act:inspect"));
-        vec.push(game_ctx.resources.actions.id_of("act:pickup"));
-        vec.push(game_ctx.resources.actions.id_of("act:dig"));
-        vec.push(game_ctx.resources.actions.id_of("act:sleep"));
-        vec.push(game_ctx.resources.actions.id_of("act:harvest"));
+        vec.push(resources.actions.id_of("act:talk"));
+        vec.push(resources.actions.id_of("act:inspect"));
+        vec.push(resources.actions.id_of("act:pickup"));
+        vec.push(resources.actions.id_of("act:dig"));
+        vec.push(resources.actions.id_of("act:sleep"));
+        vec.push(resources.actions.id_of("act:harvest"));
         
         return vec;
     }

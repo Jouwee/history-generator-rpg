@@ -24,6 +24,8 @@ pub(crate) struct Action {
     pub(crate) name: String,
     pub(crate) icon: String,
     pub(crate) description: String,
+    /// Priority for smart use. Lower = more prioritary
+    pub(crate) smart_use_priority: Option<u8>,
     pub(crate) ap_cost: u16,
     pub(crate) stamina_cost: f32,
     pub(crate) cooldown: u16,
