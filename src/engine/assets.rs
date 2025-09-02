@@ -4,7 +4,7 @@ use graphics::{CharacterCache, DrawState, Image as GlImage, ImageSize, Transform
 use image::ImageReader;
 use opengl_graphics::{Filter, GlGraphics, GlyphCache, Texture, TextureSettings};
 
-use crate::{engine::{geometry::Size2D, render::RenderContext}, warn};
+use crate::{engine::{geometry::Size2D, render::RenderContext}, error, warn};
 
 static ASSETS: LazyLock<Mutex<Assets>> = LazyLock::new(|| Mutex::new(Assets::new()));
 
@@ -38,9 +38,14 @@ impl Assets {
         match self.images.get(&key) {
             None => {
                 let path = format!("./assets/sprites/{path}");
-                let image = ImageReader::open(&path)
-                    .expect(&format!("Image not found: {}", path))
-                    .decode().unwrap();
+                let mut result = ImageReader::open(&path);
+                if let Err(err) = &result {
+                    error!("Error loading image {path}: {err}");
+                    let path = format!("./assets/sprites/missing.png");
+                    result = ImageReader::open(&path);
+                }
+                let image = result
+                    .unwrap().decode().unwrap();
                 let settings = TextureSettings::new().filter(Filter::Nearest);
                 let texture = Texture::from_image(&image.to_rgba8(), &settings);
                 let arc = Arc::new(Image {
@@ -60,7 +65,13 @@ impl Assets {
         match self.image_sheets.get(&key) {
             None => {
                 let path = format!("./assets/sprites/{}", path);
-                let image = ImageReader::open(&path).unwrap().decode().unwrap();
+                let mut result = ImageReader::open(&path);
+                if let Err(err) = &result {
+                    error!("Error loading image {path}: {err}");
+                    let path = format!("./assets/sprites/missing.png");
+                    result = ImageReader::open(&path);
+                }
+                let image = result.unwrap().decode().unwrap();
                 let settings = TextureSettings::new().filter(Filter::Nearest);
                 let mut textures = Vec::new();
                 let mut map = Vec::new();
