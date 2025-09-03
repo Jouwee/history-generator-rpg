@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Item;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InventoryContainer {
     items: Vec<Option<Item>>,
     none: Option<Item>

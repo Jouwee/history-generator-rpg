@@ -33,11 +33,14 @@ impl HeadsUpDisplay {
         Self::draw_bar(ctx, &self.action_points, Color::from_hex("77a8c8"), Color::from_hex("486a75"), [45 + 16, 23 + 16, 165-45, 4]);
         Self::draw_bar(ctx, &self.stamina, Color::from_hex("7b8c48"), Color::from_hex("566639"), [42 + 16, 30 + 16, 156-42, 4]);
 
+        if player.ap.action_points < 20 {
+            ctx.text_shadow("No more AP, end your turn", assets().font_small(), [45 + 16, 23 + 36], &COLOR_WHITE);
+        }
+
         player.render_layers([14., 11.], ctx, game_ctx);
 
         let health_text = format!("{:.0} / {:.0}", player.hp.health_points(), player.hp.max_health_points());
-        ctx.text(&health_text, assets().font_standard(), [42+16+8, 12+16+7+1], &COLOR_BLACK);
-        ctx.text(&health_text, assets().font_standard(), [42+16+8, 12+16+7], &COLOR_WHITE);
+        ctx.text_shadow(&health_text, assets().font_standard(), [42+16+8, 12+16+7+1], &COLOR_WHITE);
 
         ctx.image(&"gui/hud/foreground.png", [16, 16]);
 

@@ -80,7 +80,7 @@ pub(crate) enum TurnMode {
 }
 
 pub(crate) struct GameSceneState {
-    current_save_file: String,
+    pub(crate) current_save_file: String,
     pub(crate) world: World,
     turn_mode: TurnMode,
     pub(crate) state: GameState,
@@ -444,6 +444,7 @@ impl Scene for GameSceneState {
             timer += update.delta_time;
             if timer > 0.5 && !updated {
                 self.simulate_time(duration);
+                self.hud.update(self.state.player(), update, ctx);
                 updated = true;
             }
             if timer < 1. || !updated {
@@ -840,7 +841,7 @@ impl Scene for GameSceneState {
             },
             BusEvent::DropInventoryItem(item) => {
                 let actor = self.state.player_mut();
-                let item = actor.inventory.take(*item).ok_or("Dropped missing item").unwrap();
+                let item = actor.inventory.take(*item).ok_or(format!("Dropped missing item {item}")).unwrap();
                 let xy = actor.xy.into();
                 let texture = item.make_texture();
                 self.state.chunk.items_on_ground.push((xy, item, texture));

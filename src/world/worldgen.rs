@@ -12,6 +12,7 @@ pub(crate) struct WorldGenScene {
     generator: WorldHistoryGenerator,
     map: MapComponent,
     banner_texture: Texture,
+    pub(crate) save_file: Option<String>
 }
 
 impl WorldGenScene {
@@ -23,12 +24,13 @@ impl WorldGenScene {
             generator: WorldHistoryGenerator::seed_world(params.clone(), resources),
             map: MapComponent::new(),
             banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
+            save_file: None,
         };
         scene.build_tilemap();
         return scene
     }
 
-    pub(crate) fn continue_simulation(mut world: World) -> WorldGenScene {
+    pub(crate) fn continue_simulation(save_file: String, mut world: World) -> WorldGenScene {
         world.generation_parameters.history_length = world.generation_parameters.history_length + 50;
 
         let spritesheet = ImageReader::open("assets/sprites/banner.png").unwrap().decode().unwrap();
@@ -38,6 +40,7 @@ impl WorldGenScene {
             generator: WorldHistoryGenerator::simulator(world),
             map: MapComponent::new(),
             banner_texture: Texture::from_image(&spritesheet.to_rgba8(), &settings),
+            save_file: Some(save_file)
         };
         scene.build_tilemap();
         return scene

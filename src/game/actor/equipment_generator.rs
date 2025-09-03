@@ -1,4 +1,4 @@
-use crate::{game::inventory::inventory::Inventory, resources::item_blueprint::ItemMaker, world::{creature::{Creature, CreatureId, Profession}, world::World}, ItemFactory, Resources, Rng};
+use crate::{game::inventory::inventory::Inventory, world::{creature::{Creature, CreatureId, Profession}, world::World}, ItemFactory, Resources, Rng};
 
 pub(crate) struct EquipmentGenerator {
 
@@ -26,9 +26,7 @@ impl EquipmentGenerator {
             let item = ItemFactory::weapon(rng, &resources).make();
             let _ = inventory.add(item);
 
-            let blueprint = resources.item_blueprints.find("itb:brigandine");
-            let item = blueprint.make(vec!(), &resources);
-            let _ = inventory.add(item);
+            let _ = inventory.add(ItemFactory::bandit_armor(rng, resources));
         }
 
         if creature.profession == Profession::Guard || creature.profession == Profession::Ruler {

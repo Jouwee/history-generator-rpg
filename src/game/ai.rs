@@ -58,7 +58,7 @@ pub(crate) struct AiSolver {
 
 }
 
-const DETECTION_RANGE_SQRD: f32 = 12. * 12.;
+const DETECTION_RANGE_SQRD: f32 = 10. * 10.;
 
 impl AiSolver {
 

@@ -411,6 +411,10 @@ impl StaminaComponent {
         self.stamina = (self.stamina + 1.).min(self.max_stamina);
     }
 
+    pub(crate) fn recover_full(&mut self) {
+        self.stamina = self.max_stamina;
+    }
+
 }
 
 #[derive(Clone, Serialize, Deserialize)]

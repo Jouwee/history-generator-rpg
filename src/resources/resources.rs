@@ -167,7 +167,7 @@ impl Resources {
             area: ActionArea::Target,
             effects: vec!(
                 ActionEffect::Damage { add_weapon: true, damage: DamageRoll::empty() },
-                ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 3 } }
+                ActionEffect::Inflicts { affliction: Affliction::Bleeding { duration: 5 } }
             ),
             cast_sprite: None,
             projectile: None,
@@ -254,7 +254,7 @@ impl Resources {
             target: ActionTarget::Actor { range: 1.5, filter_mask: 0 },
             area: ActionArea::Target,
             effects: vec!(
-                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(8.) },
+                ActionEffect::Damage { add_weapon: false, damage: DamageRoll::piercing(7.) },
             ),
             cast_sprite: None,
             projectile: None,

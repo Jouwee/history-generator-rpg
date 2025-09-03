@@ -249,6 +249,7 @@ impl UINode for CharacterDialog {
                     _ => (),
                 }
                 self.context_menu = None;
+                return ControlFlow::Break(UIEvent::None)
             }
         }
 

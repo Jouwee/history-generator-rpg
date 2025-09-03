@@ -99,7 +99,7 @@ impl CreatureFactory {
             gender = CreatureGender::Female;
         }
         let creature_id = world.creatures.add(Creature {
-            birth: world.date.clone(),
+            birth: world.date - Duration::years(16),
             death: None,
             lineage: None,
             father: CreatureId::ancients(),

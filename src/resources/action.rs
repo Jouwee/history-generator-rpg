@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use math::Vec2i;
 use serde::{Deserialize, Serialize};
 
-use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{item_blueprint::ItemMaker, object_tile::ObjectTileId, resources::resources}, world::{date::Duration, world::World}, Actor, GameContext, SPRITE_FPS};
+use crate::{commons::{bitmask::bitmask_get, damage_model::DamageRoll, id_vec::Id, interpolate::lerp, resource_map::ResourceMap, rng::Rng}, engine::{animation::Animation, assets::{assets, ImageSheetAsset}, audio::SoundEffect, geometry::Coord2, scene::{BusEvent, ShowChatDialogData, ShowInspectDialogData, Update}, Palette}, game::{actor::{damage_resolver::{resolve_damage, DamageOutput}, health_component::BodyPart}, ai::AiState, chunk::TileMetadata, effect_layer::EffectLayer, game_log::{GameLog, GameLogEntry, GameLogPart}, inventory::inventory::EquipmentType, state::{GameState, PLAYER_IDX}}, resources::{item_blueprint::ItemMaker, object_tile::ObjectTileId, resources::resources}, world::{date::Duration, world::World}, Actor, GameContext, SPRITE_FPS};
 
 // TODO(0xtBbih5): Should serialize the string id, not the internal id
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq, Serialize, Deserialize)]
@@ -527,14 +527,17 @@ impl ActionRunner {
                                             actor.animation.play(&Self::build_attack_anim(dir));
                                             let actor_ai = actor.ai_group;
 
+                                            // SMELL: Ugly to avoid borrow issues
                                             if dead == 0. {
                                                 actor.add_xp(100);
                                                 chunk.remove_npc(i, ctx);
+                                            } else if actor_ai != target_ai {
+                                                actor.ai_state = AiState::Fight;
                                             }
-
                                             if actor_ai != target_ai {
                                                 chunk.ai_groups.make_hostile(actor_ai, target_ai);
                                             }
+
                                         }
 
                                     },
@@ -620,6 +623,7 @@ impl ActionRunner {
                                     ActionEffect::Sleep =>  {
                                         let actor = chunk.actor_mut(action.actor).unwrap();
                                         actor.hp.recover_full();
+                                        actor.stamina.recover_full();
                                         ctx.event_bus.push(BusEvent::SimulateTime(Duration::days(1)));
                                     },
                                     ActionEffect::Harvest => {

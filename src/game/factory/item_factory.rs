@@ -114,6 +114,29 @@ impl ItemFactory {
         }
     }
 
+    pub(crate) fn bandit_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        match rng.randi_range(0, 2) {
+            0 => {
+                let blueprint = resources.item_blueprints.find("itb:brigandine");
+                let material_id = random_leather(rng);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(material_id),
+                    ItemMakeArguments::Quality(random_quality(rng))
+                ), &resources);
+                return item;
+            },
+            _ => {
+                let blueprint = resources.item_blueprints.find("itb:jerkin");
+                let material_id = random_leather_or_cloth(rng);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(material_id),
+                    ItemMakeArguments::Quality(random_quality(rng))
+                ), &resources);
+                return item;
+            }
+        }
+    }
+
     pub(crate) fn head_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:kettlehat");
         let material_id = random_metal(rng);

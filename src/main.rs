@@ -315,10 +315,14 @@ fn main() {
                 app.input(&input_event);
 
                 if let Button::Keyboard(Key::Return) = k.button {
-                    if let SceneEnum::WorldGen(scene) = app.scene {
+                    if let SceneEnum::WorldGen(scene) = app.scene {                                                
+                        let load_save_manager = match &scene.save_file {
+                            Some(file) => SaveFile::new(file.clone()),
+                            None => SaveFile::create_new_save_file().unwrap()
+                        };
+
                         let mut world = scene.into_world();
 
-                        let load_save_manager = SaveFile::create_new_save_file().unwrap();
                         load_save_manager.save_world(&world).unwrap();
                         let save = load_save_manager.load_metadata().unwrap();
 
@@ -377,7 +381,7 @@ fn main() {
                 },
                 BusEvent::CreateNewCharacter => {
                     if let SceneEnum::Game(state) = app.scene {
-                        app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.world));
+                        app.scene = SceneEnum::WorldGen(WorldGenScene::continue_simulation(state.current_save_file, state.world));
                     }
                 },
                 _ => ()
