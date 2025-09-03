@@ -70,21 +70,25 @@ impl Resources {
         let mut steel = Material::new_metal("steel");
         steel.color_pallete = [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")];
         steel.sharpness = 1.75;
+        steel.strength = 1.75;
         self.materials.add("mat:steel", steel);
         
         let mut iron = Material::new_metal("iron");
         iron.color_pallete = [Color::from_hex("4d5666"), Color::from_hex("798494"), Color::from_hex("a1aab6"), Color::from_hex("c0c4cb")];
         iron.sharpness = 1.5;
+        iron.strength = 1.5;
         self.materials.add("mat:iron", iron);
         
         let mut bronze = Material::new_metal("bronze");
         bronze.color_pallete = [Color::from_hex("a57855"), Color::from_hex("de9f47"), Color::from_hex("fdd179"), Color::from_hex("fee1b8")];
         bronze.sharpness = 1.2;
+        bronze.strength = 1.2;
         self.materials.add("mat:bronze", bronze);
 
         let mut copper = Material::new_metal("copper");
         copper.color_pallete = [Color::from_hex("593e47"), Color::from_hex("b55945"), Color::from_hex("de9f47"), Color::from_hex("f2b888")];
         copper.sharpness = 1.;
+        copper.strength = 1.;
         self.materials.add("mat:copper", copper);
 
         self.materials.add("mat:birch", Material::new_wood("birch"));
@@ -95,10 +99,19 @@ impl Resources {
         bone.extra_damage = DamageRoll::arcane(10.);
         self.materials.add("mat:varningr_bone", bone);
 
-        self.materials.add("mat:leather", Material::new_leather("leather"));
-        self.materials.add("mat:hide", Material::new_leather("hide"));
+        let leather = Material::new_leather("leather");
+        self.materials.add("mat:leather", leather);
+
+        let mut hide = Material::new_leather("hide");
+        hide.strength = 0.6;
+        hide.color_pallete = [Color::from_hex("524235"), Color::from_hex("6f5f48"), Color::from_hex("7d6d50"), Color::from_hex("92825c")];
+        self.materials.add("mat:hide", hide);
 
         self.materials.add("mat:linen", Material::new_cloth("linen"));
+
+        let mut wool = Material::new_cloth("wool");
+        wool.color_pallete = [Color::from_hex("65646c"), Color::from_hex("84838a"), Color::from_hex("a3a2a8"), Color::from_hex("c2c1c5")];
+        self.materials.add("mat:wool", wool);
 
     }
 
@@ -832,6 +845,30 @@ impl Resources {
         };
         self.item_blueprints.add("itb:shirt", shirt_blueprint);
 
+        let image = ImageReader::open("./assets/sprites/species/human/tunic_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/items/tunic.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("tunic"),
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { slot: EquipmentType::TorsoGarment }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_CLOTH,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: None,
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 1, 0), coverage: vec!(BodyPart::Torso) }),
+            artwork_scene: None,
+            consumable: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:tunic", shirt_blueprint);
+
         let image = ImageReader::open("./assets/sprites/species/human/pants_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
         let image = ImageReader::open("./assets/sprites/species/human/pants_simple.png").unwrap().decode().unwrap();
@@ -851,6 +888,26 @@ impl Resources {
             name_blueprint: None
         };
         self.item_blueprints.add("itb:pants", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/skirt_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/items/skirt.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("skirt"),
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { slot: EquipmentType::Legs }),
+            material: None,
+            quality: None,
+            mellee_damage: None,
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(1, 0, 0), coverage: vec!(BodyPart::LeftLeg, BodyPart::RightLeg) }),
+            artwork_scene: None,
+            consumable: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:skirt", shirt_blueprint);
 
         let image = ImageReader::open("./assets/sprites/species/human/boots_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);
@@ -889,12 +946,36 @@ impl Resources {
             }),
             quality: Some(QualityBlueprintComponent { }),
             mellee_damage: None,
-            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(3, 3, 1), coverage: vec!(BodyPart::Torso) }),
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(8, 8, 4), coverage: vec!(BodyPart::Torso) }),
             artwork_scene: None,
             consumable: None,
             name_blueprint: None
         };
         self.item_blueprints.add("itb:brigandine", shirt_blueprint);
+
+        let image = ImageReader::open("./assets/sprites/species/human/jerkin_equipped.png").unwrap().decode().unwrap();
+        let pallete_sprite = PalleteSprite::new(image);
+        let image = ImageReader::open("./assets/sprites/items/jerkin.png").unwrap().decode().unwrap();
+        let placed_sprite = PalleteSprite::new(image);
+        let shirt_blueprint = ItemBlueprint {
+            name: String::from("jerkin"),
+            placed_sprite,
+            inventory_sprite: pallete_sprite, 
+            action_provider: None,
+            equippable: Some(EquippableComponent { slot: EquipmentType::TorsoInner }),
+            material: Some(MaterialBlueprintComponent {
+                primary_tag_bitmask: MAT_TAG_LEATHER | MAT_TAG_CLOTH,
+                secondary_tag_bitmask: None,
+                details_tag_bitmask: None,
+            }),
+            quality: Some(QualityBlueprintComponent { }),
+            mellee_damage: None,
+            armor: Some(ArmorBlueprintComponent { protection: DamageModel::new_spb(5, 5, 2), coverage: vec!(BodyPart::Torso) }),
+            artwork_scene: None,
+            consumable: None,
+            name_blueprint: None
+        };
+        self.item_blueprints.add("itb:jerkin", shirt_blueprint);
 
         let image = ImageReader::open("./assets/sprites/species/human/cuirass_equipped.png").unwrap().decode().unwrap();
         let pallete_sprite = PalleteSprite::new(image);

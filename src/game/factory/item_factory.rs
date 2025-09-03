@@ -65,7 +65,10 @@ impl ItemFactory {
     }
 
     pub(crate) fn torso_garment<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
-        let blueprint = resources.item_blueprints.find("itb:shirt");
+        let blueprint = match rng.randu_range(0, 4) {
+            1 => resources.item_blueprints.find("itb:shirt"),
+            _ => resources.item_blueprints.find("itb:tunic"),
+        };
         let item = blueprint.make(vec!(
             ItemMakeArguments::PrimaryMaterial(random_cloth(rng)),
             ItemMakeArguments::Quality(random_quality(rng))
@@ -80,22 +83,34 @@ impl ItemFactory {
     }
 
     pub(crate) fn inner_armor<'a>(rng: &'a mut Rng, resources: &'a Resources) -> Item {
-        if rng.rand_chance(0.5) {
-            let blueprint = resources.item_blueprints.find("itb:brigandine");
-            let material_id = random_leather(rng);
-            let item = blueprint.make(vec!(
-                ItemMakeArguments::PrimaryMaterial(material_id),
-                ItemMakeArguments::Quality(random_quality(rng))
-            ), &resources);
-            return item;
-        } else {
-            let blueprint = resources.item_blueprints.find("itb:cuirass");
-            let material_id = random_metal(rng);
-            let item = blueprint.make(vec!(
-                ItemMakeArguments::PrimaryMaterial(material_id),
-                ItemMakeArguments::Quality(random_quality(rng))
-            ), &resources);
-            return item;
+        match rng.randi_range(0, 3) {
+            0 => {
+                let blueprint = resources.item_blueprints.find("itb:brigandine");
+                let material_id = random_leather(rng);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(material_id),
+                    ItemMakeArguments::Quality(random_quality(rng))
+                ), &resources);
+                return item;
+            },
+            1 => {
+                let blueprint = resources.item_blueprints.find("itb:jerkin");
+                let material_id = random_leather_or_cloth(rng);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(material_id),
+                    ItemMakeArguments::Quality(random_quality(rng))
+                ), &resources);
+                return item;
+            },
+            _ => {
+                let blueprint = resources.item_blueprints.find("itb:cuirass");
+                let material_id = random_metal(rng);
+                let item = blueprint.make(vec!(
+                    ItemMakeArguments::PrimaryMaterial(material_id),
+                    ItemMakeArguments::Quality(random_quality(rng))
+                ), &resources);
+                return item;
+            }
         }
     }
 
@@ -117,6 +132,12 @@ impl ItemFactory {
 
     pub(crate) fn pants<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
         let blueprint = resources.item_blueprints.find("itb:pants");
+        let item = blueprint.make(vec!(), &resources);
+        return item;
+    }
+
+    pub(crate) fn skirt<'a>(_rng: &'a mut Rng, resources: &'a Resources) -> Item {
+        let blueprint = resources.item_blueprints.find("itb:skirt");
         let item = blueprint.make(vec!(), &resources);
         return item;
     }
@@ -316,7 +337,16 @@ fn random_leather(rng: &mut Rng) -> MaterialId {
 fn random_cloth(rng: &mut Rng) -> MaterialId {
     return match rng.randu_range(0, 2) {
         0 => resources().materials.id_of("mat:linen"),
-        _ => resources().materials.id_of("mat:linen"),
+        _ => resources().materials.id_of("mat:wool"),
+    };
+}
+
+fn random_leather_or_cloth(rng: &mut Rng) -> MaterialId {
+    return match rng.randu_range(0, 4) {
+        0 => resources().materials.id_of("mat:leather"),
+        1 => resources().materials.id_of("mat:hide"),
+        2 => resources().materials.id_of("mat:linen"),
+        _ => resources().materials.id_of("mat:wool"),
     };
 }
 

@@ -47,7 +47,7 @@ use crate::world::date::Duration;
 use crate::world::history_sim::history_simulation::HistorySimulation;
 use crate::world::site::SiteId;
 use crate::world::world::World;
-use crate::{engine::{audio::TrackMood, geometry::Coord2, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
+use crate::{engine::{audio::TrackMood, gui::tooltip::TooltipOverlay, render::RenderContext, scene::{Scene, Update}}, GameContext};
 
 pub(crate) mod actor;
 pub(crate) mod ai;

@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use serde::{Deserialize, Serialize};
 
-use crate::commons::rng::Rng;
+use crate::{commons::rng::Rng, loc};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct HealthComponent {
@@ -108,6 +108,19 @@ impl BodyPart {
         }
     }
 
+}
+
+impl Display for BodyPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Head => f.write_str(loc!("body-part-name-Head")),
+            Self::Torso => f.write_str(loc!("body-part-name-Torso")),
+            Self::LeftArm => f.write_str(loc!("body-part-name-LeftArm")),
+            Self::RightArm => f.write_str(loc!("body-part-name-RightArm")),
+            Self::LeftLeg => f.write_str(loc!("body-part-name-LeftLeg")),
+            Self::RightLeg => f.write_str(loc!("body-part-name-RightLeg")),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

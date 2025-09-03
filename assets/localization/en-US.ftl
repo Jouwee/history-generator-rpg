@@ -17,3 +17,13 @@ map-modal-click-fast-travel = Click to fast-travel
 ## Character modal
 item-ctx-menu-drop = Drop
 item-ctx-menu-consume = Consume
+
+# General
+
+## Body parts
+body-part-name-Head = head
+body-part-name-Torso = torso
+body-part-name-LeftArm = left arm
+body-part-name-RightArm = right arm
+body-part-name-LeftLeg = left leg
+body-part-name-RightLeg = right leg

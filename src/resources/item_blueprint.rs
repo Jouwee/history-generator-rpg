@@ -169,7 +169,10 @@ impl ArmorBlueprintComponent {
             match argument {
                 ItemMakeArguments::PrimaryMaterial(material) => {
                     let material = resources.materials.get(material);
-                    protection = protection.multiply(material.sharpness);
+                    protection = protection.multiply(material.strength);
+                },
+                ItemMakeArguments::Quality(quality) => {
+                    protection = protection.multiply(quality.main_stat_multiplier());
                 },
                 _ => ()
             }

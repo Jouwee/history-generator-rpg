@@ -16,7 +16,11 @@ impl EquipmentGenerator {
 
         let _ = inventory.add(ItemFactory::torso_garment(rng, &resources));
         let _ = inventory.add(ItemFactory::boots(rng, &resources));
-        let _ = inventory.add(ItemFactory::pants(rng, &resources));
+        if creature.gender.is_female() {
+            let _ = inventory.add(ItemFactory::skirt(rng, &resources));    
+        } else {
+            let _ = inventory.add(ItemFactory::pants(rng, &resources));
+        }
 
         if creature.profession == Profession::Bandit {
             let item = ItemFactory::weapon(rng, &resources).make();

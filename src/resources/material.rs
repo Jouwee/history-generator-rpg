@@ -26,6 +26,7 @@ pub(crate) const MAT_TAG_CLOTH: u8 = 0b0001_0000;
 pub(crate) struct Material {
     pub(crate) name: String,
     pub(crate) sharpness: f32,
+    pub(crate) strength: f32,
     pub(crate) color_pallete: [Color; 4],
     pub(crate) tags_bitmask: u8,
     pub(crate) extra_damage: DamageRoll,
@@ -37,6 +38,7 @@ impl Material {
         Material {
             name: name.to_string(),
             sharpness: 1.,
+            strength: 1.,
             color_pallete: [Color::from_hex("405273"), Color::from_hex("6c81a1"), Color::from_hex("96a9c1"), Color::from_hex("bbc3d0")],
             tags_bitmask: MAT_TAG_METAL,
             extra_damage: DamageRoll::empty(),
@@ -47,6 +49,7 @@ impl Material {
         Material {
             name: name.to_string(),
             sharpness: 0.5,
+            strength: 0.5,
             color_pallete: [Color::from_hex("3d3333"), Color::from_hex("593e47"), Color::from_hex("7a5859"), Color::from_hex("a57855")],
             tags_bitmask: MAT_TAG_WOOD,
             extra_damage: DamageRoll::empty(),
@@ -57,6 +60,7 @@ impl Material {
         Material {
             name: name.to_string(),
             sharpness: 0.8,
+            strength: 0.5,
             color_pallete: [Color::from_hex("d4c692"), Color::from_hex("fee1b8"), Color::from_hex("f1f6f0"), Color::from_hex("f1f6f0")],
             tags_bitmask: MAT_TAG_BONE,
             extra_damage: DamageRoll::empty(),
@@ -66,7 +70,8 @@ impl Material {
     pub(crate) fn new_leather(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 0.8,
+            sharpness: 0.1,
+            strength: 0.7,
             color_pallete: [Color::from_hex("413028"), Color::from_hex("604332"), Color::from_hex("8d634a"), Color::from_hex("604332")],
             tags_bitmask: MAT_TAG_BONE,
             extra_damage: DamageRoll::empty(),
@@ -76,7 +81,8 @@ impl Material {
     pub(crate) fn new_cloth(name: &str) -> Material {
         Material {
             name: name.to_string(),
-            sharpness: 0.8,
+            sharpness: 0.,
+            strength: 0.2,
             color_pallete: [Color::from_hex("524235"), Color::from_hex("6e6750"), Color::from_hex("92825c"), Color::from_hex("92825c")],
             tags_bitmask: MAT_TAG_BONE,
             extra_damage: DamageRoll::empty(),

@@ -79,6 +79,11 @@ impl Item {
                 tooltip.add_line(TooltipLine::Body(text));
             }
         }
+        if let Some(armor) = &self.armor {
+            let coverage: Vec<String> = armor.coverage.iter().map(BodyPart::to_string).collect();
+            tooltip.add_line(TooltipLine::Body(format!("Covers: {}", coverage.join(", "))));
+            tooltip.add_line(TooltipLine::Body(format!("Armor: {}", armor.protection.to_string())));
+        }
         return tooltip;
     }
 
