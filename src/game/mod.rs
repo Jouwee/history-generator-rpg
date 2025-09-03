@@ -417,14 +417,13 @@ impl Scene for GameSceneState {
         self.quest_complete_dialog.render(&mut self.world, ctx, game_ctx);
         self.death_dialog.render(&mut (), ctx, game_ctx);
         self.help_dialog.render(&mut (), ctx, game_ctx);
+        self.tooltip_overlay.render(&(), ctx, game_ctx); 
+        self.game_context_menu.render(&(), ctx, game_ctx);
         self.ingame_menu.render(&mut (), ctx, game_ctx);
 
         if let Some(map) = &mut self.map_modal {
             map.render(ctx, game_ctx);
         }
-
-        self.tooltip_overlay.render(&(), ctx, game_ctx); 
-        self.game_context_menu.render(&(), ctx, game_ctx);
 
         if let Some((timer, _, _)) = self.sleep_coroutine {
             let alpha;
