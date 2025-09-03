@@ -47,7 +47,8 @@ impl MainMenuScene {
         inner.layout_component().anchor_center().size([200., 200.]);
 
         let save_files = SaveFile::enumerate_saves();
-        if let Ok(save_files) = save_files {
+        if let Ok(mut save_files) = save_files {
+            save_files.sort_by(|a, b| b.last_played.cmp(&a.last_played));
             for save_file in save_files {
                 inner.add(Self::build_save_panel(&save_file));
             }
