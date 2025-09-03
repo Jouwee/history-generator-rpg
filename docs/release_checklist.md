@@ -2,5 +2,5 @@
 - Is there any warnings?
 - update cargo.toml
 - Create a tag
-- Run build.sh
-- Write post and upload in website
+- Run build.sh for windows
+- Run build.sh in ubuntu 18 VM
