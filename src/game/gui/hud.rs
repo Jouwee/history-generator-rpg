@@ -1,4 +1,4 @@
-use crate::{engine::{assets::assets, geometry::Size2D, COLOR_BLACK, COLOR_WHITE}, globals::perf::perf, resources::action::Affliction, Actor, Color, GameContext, InputEvent, RenderContext, Update};
+use crate::{engine::{assets::assets, geometry::Size2D, COLOR_WHITE}, globals::perf::perf, resources::action::Affliction, Actor, Color, GameContext, InputEvent, RenderContext, Update};
 
 pub(crate) struct HeadsUpDisplay {
     health: NumberedBar,
