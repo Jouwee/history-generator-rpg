@@ -9,7 +9,7 @@ fn save_files_path() -> Result<PathBuf, LoadSaveError> {
     #[cfg(unix)]
     let app_data = std::env::var("HOME").expect("No HOME directory");
     #[cfg(windows)]
-    let app_data = std::env::var("APP_DATA").expect("No APP_DATA directory");
+    let app_data = std::env::var("APPDATA").expect("No APPDATA directory");
 
     let directory = Path::new(&app_data).join(Path::new("Tales of Kathay"));
     if !directory.exists() {
